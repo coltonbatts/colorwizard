@@ -123,11 +123,14 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     if (!ctx) return
 
     const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
 
     // Get pixel data
-    const pixelData = ctx.getImageData(x, y, 1, 1).data
+    const pixelData = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data
     const r = pixelData[0]
     const g = pixelData[1]
     const b = pixelData[2]
@@ -154,11 +157,10 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${
-            isDragging
+          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${isDragging
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-gray-600 bg-gray-800/50'
-          }`}
+            }`}
         >
           <div className="text-center">
             <p className="text-xl text-gray-400 mb-4">
