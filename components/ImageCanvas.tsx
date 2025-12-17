@@ -477,7 +477,7 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           </div>
 
           {/* Canvas Container */}
-          <div className="flex-1 relative overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
+          <div className="flex-1 flex items-center justify-center overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
             <canvas
               ref={canvasRef}
               width={1000}
@@ -488,8 +488,11 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
               onContextMenu={(e) => e.preventDefault()}
-              className="absolute top-0 left-0"
-              style={{ cursor: getCursorStyle() }}
+              className="max-w-full max-h-full"
+              style={{
+                cursor: getCursorStyle(),
+                aspectRatio: '1000 / 700',
+              }}
             />
           </div>
 
