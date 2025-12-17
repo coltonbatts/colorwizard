@@ -80,6 +80,48 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     reader.readAsDataURL(file)
   }
 
+  /**
+   * Converts RGB color values to HSL (Hue, Saturation, Lightness) color space.
+   *
+   * RGB (Red, Green, Blue) represents colors as combinations of red, green, and blue light,
+   * with values ranging from 0-255. HSL represents colors in terms of:
+   * - Hue: The color type (red, yellow, green, blue, etc.) as a degree on the color wheel (0-360)
+   * - Saturation: The intensity/purity of the color as a percentage (0-100)
+   * - Lightness: How light or dark the color is as a percentage (0-100)
+   *
+   * HSL is often more intuitive for color manipulation and analysis because it separates
+   * the color information (hue) from the brightness (lightness) and intensity (saturation).
+   *
+   * @param {number} r - Red component (0-255)
+   * @param {number} g - Green component (0-255)
+   * @param {number} b - Blue component (0-255)
+   *
+   * @returns {Object} HSL color representation
+   * @returns {number} returns.h - Hue in degrees (0-360)
+   * @returns {number} returns.s - Saturation percentage (0-100)
+   * @returns {number} returns.l - Lightness percentage (0-100)
+   *
+   * @example
+   * // Convert pure red to HSL
+   * const hsl = rgbToHsl(255, 0, 0)
+   * // Returns: { h: 0, s: 100, l: 50 }
+   *
+   * @example
+   * // Convert a gray color to HSL
+   * const hsl = rgbToHsl(128, 128, 128)
+   * // Returns: { h: 0, s: 0, l: 50 }
+   *
+   * @example
+   * // Convert a sky blue to HSL
+   * const hsl = rgbToHsl(135, 206, 235)
+   * // Returns: { h: 197, s: 71, l: 73 }
+   *
+   * @remarks
+   * - This implementation uses the standard HSL conversion algorithm
+   * - All return values are rounded to the nearest integer for practical use
+   * - When saturation is 0 (achromatic/gray), the hue value is meaningless and set to 0
+   * - The algorithm normalizes RGB values to 0-1 range before calculation
+   */
   const rgbToHsl = (r: number, g: number, b: number) => {
     r /= 255
     g /= 255
