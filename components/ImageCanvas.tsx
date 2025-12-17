@@ -20,8 +20,12 @@ const ZOOM_WHEEL_SENSITIVITY = 0.001
 export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+
+  // Canvas dimensions state
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
 
   // Zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -85,17 +89,37 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     ctx.restore()
   }, [image, imageDrawInfo, zoomLevel, panOffset])
 
-  // Update image draw info when image changes
+  // Resize observer to update canvas dimensions when container resizes
+  useEffect(() => {
+    const canvasContainer = canvasContainerRef.current
+    if (!canvasContainer) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        // Update canvas dimensions based on container size
+        setCanvasDimensions({
+          width: Math.floor(width),
+          height: Math.floor(height),
+        })
+      }
+    })
+
+    resizeObserver.observe(canvasContainer)
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  // Update image draw info when image or canvas dimensions change
   useEffect(() => {
     if (image && canvasRef.current) {
       const canvas = canvasRef.current
       const info = calculateImageFit(image, canvas.width, canvas.height)
       setImageDrawInfo(info)
-      // Reset zoom and pan when new image loads
+      // Reset zoom and pan when new image loads or canvas resizes
       setZoomLevel(1)
       setPanOffset({ x: 0, y: 0 })
     }
-  }, [image, calculateImageFit])
+  }, [image, canvasDimensions, calculateImageFit])
 
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {
@@ -519,18 +543,21 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           </div>
 
           {/* Canvas Container */}
-          <div className="flex-1 relative overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
+          <div
+            ref={canvasContainerRef}
+            className="flex-1 relative overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
+          >
             <canvas
               ref={canvasRef}
-              width={1000}
-              height={700}
+              width={canvasDimensions.width}
+              height={canvasDimensions.height}
               onClick={handleCanvasClick}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
               onContextMenu={(e) => e.preventDefault()}
-              className="absolute top-0 left-0"
+              className="absolute top-0 left-0 w-full h-full"
               style={{ cursor: getCursorStyle() }}
             />
           </div>
