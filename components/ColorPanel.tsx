@@ -1,6 +1,7 @@
 'use client'
 
 import PaintRecipe from './PaintRecipe'
+import DMCFlossMatch from './DMCFlossMatch'
 
 interface ColorPanelProps {
   sampledColor: {
@@ -77,6 +78,11 @@ export default function ColorPanel({ sampledColor }: ColorPanelProps) {
 
       {/* Paint Recipe */}
       <PaintRecipe hsl={hsl} />
+
+      {/* DMC Floss Matches */}
+      <div className="mt-6">
+        <DMCFlossMatch rgb={rgb} />
+      </div>
     </div>
   )
 }

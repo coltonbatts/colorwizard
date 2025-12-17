@@ -107,7 +107,7 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
 
     resizeObserver.observe(canvasContainer)
     return () => resizeObserver.disconnect()
-  }, [])
+  }, [image])
 
   // Update image draw info when image or canvas dimensions change
   useEffect(() => {
@@ -482,11 +482,10 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${
-            isDragging
+          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${isDragging
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-gray-600 bg-gray-800/50'
-          }`}
+            }`}
         >
           <div className="text-center">
             <p className="text-xl text-gray-400 mb-4">
