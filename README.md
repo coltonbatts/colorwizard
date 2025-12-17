@@ -10,6 +10,7 @@ An interactive web application for sampling colors from images and generating oi
 ## Features
 
 ### 🖼️ Interactive Image Canvas
+
 - **Drag & Drop or Browse**: Upload images directly or drag them into the canvas
 - **Zoom Controls**:
   - Mouse wheel zoom with cursor-centered scaling
@@ -23,6 +24,7 @@ An interactive web application for sampling colors from images and generating oi
 - **Responsive Design**: Canvas automatically resizes to fit your viewport
 
 ### 🎨 Color Analysis
+
 - **Precise Color Sampling**: Click any pixel to extract its exact color
 - **Multiple Color Formats**:
   - **HEX**: Standard hexadecimal color codes (e.g., `#FF5733`)
@@ -31,7 +33,9 @@ An interactive web application for sampling colors from images and generating oi
 - **Visual Color Swatch**: See the sampled color displayed prominently
 
 ### 🖌️ Oil Paint Recipe Generator
+
 Unique algorithm that generates realistic oil paint mixing recipes using a **limited palette** of six essential colors:
+
 - **Titanium White** - Cool white base
 - **Ivory Black** - Neutral black
 - **Yellow Ochre** - Warm, muted yellow
@@ -40,6 +44,7 @@ Unique algorithm that generates realistic oil paint mixing recipes using a **lim
 - **Phthalo Blue** - Cool, intense blue
 
 The algorithm intelligently:
+
 - Analyzes hue, saturation, and lightness values
 - Determines appropriate base colors and mixing proportions
 - Provides qualitative amounts (mostly, moderate, small amount, tiny touch)
@@ -47,7 +52,9 @@ The algorithm intelligently:
 - Handles edge cases like near-white, near-black, and desaturated colors
 
 ### 🧵 DMC Embroidery Floss Color Matching
+
 Find the perfect embroidery thread colors with our comprehensive DMC floss database:
+
 - **Complete DMC Database**: All 454 official DMC embroidery floss colors
 - **Accurate Color Matching**: Uses Euclidean distance algorithm in RGB color space
 - **Top 5 Matches**: Displays the closest matching floss colors with similarity percentages
@@ -55,6 +62,7 @@ Find the perfect embroidery thread colors with our comprehensive DMC floss datab
 - **Instant Results**: Real-time color matching as you sample colors from your image
 
 Perfect for:
+
 - Cross-stitch pattern designers
 - Embroidery artists matching thread to reference images
 - Crafters converting digital designs to physical projects
@@ -63,23 +71,27 @@ Perfect for:
 ## Installation
 
 ### Prerequisites
+
 - Node.js 20.x or higher
 - npm or yarn package manager
 
 ### Setup
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/yourusername/colorwizard.git
 cd colorwizard
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
 
 3. **Run the development server**
+
 ```bash
 npm run dev
 ```
@@ -195,7 +207,7 @@ The recipe generator uses a sophisticated algorithm that:
    - Blues: 190-250°
    - Purples: 250-290°
    - Magentas: 290-340°
-4. **Generates Recipe**: Selects appropriate base colors and mixing proportions based on the analysis
+4. **Generates Recipe**: Selects appropriate base colors and mixing proportions based on the analysis (Refined for accurate moderate saturation levels across all hues)
 5. **Adds Mixing Notes**: Provides warnings about strong tinting colors (phthalos) and helpful tips
 
 ### DMC Color Matching Algorithm
@@ -203,9 +215,11 @@ The recipe generator uses a sophisticated algorithm that:
 The DMC floss matcher uses Euclidean distance in RGB color space to find the closest matching thread colors:
 
 1. **Distance Calculation**: For each of the 454 DMC colors, calculates:
+
    ```
    distance = √[(R₁-R₂)² + (G₁-G₂)² + (B₁-B₂)²]
    ```
+
    where (R₁, G₁, B₁) is the sampled color and (R₂, G₂, B₂) is the DMC color
 
 2. **Similarity Scoring**: Converts distance to a percentage match:
@@ -233,6 +247,7 @@ The `ImageCanvas` component provides a fully-featured image viewer:
 ### Color Analysis
 
 The color panel displays:
+
 - Large color swatch showing the sampled color
 - HEX code for easy copying
 - Individual RGB components
@@ -241,6 +256,7 @@ The color panel displays:
 ### Paint Recipe Display
 
 Each recipe includes:
+
 - **Description**: Brief characterization of the resulting color
 - **Color List**: Ordered list of paints with qualitative amounts
 - **Mixing Notes**: Special considerations and warnings
@@ -249,6 +265,7 @@ Each recipe includes:
 ### DMC Floss Match Display
 
 The DMC floss matcher shows:
+
 - **Color Swatches**: Visual preview of each matched DMC color
 - **DMC Numbers**: Official floss numbers (e.g., "310" for Black, "B5200" for Snow White)
 - **Descriptive Names**: Full color names (e.g., "Salmon Very Light", "Peacock Blue")
@@ -298,6 +315,7 @@ This project is licensed under the MIT License.
 ## Roadmap
 
 Future enhancements could include:
+
 - Color palette extraction from entire image
 - Export sampled colors and matches to various formats (CSV, JSON, PDF)
 - Color harmony suggestions (complementary, analogous, triadic)

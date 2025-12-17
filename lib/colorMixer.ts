@@ -196,13 +196,24 @@ export function generatePaintRecipe(hsl: {
           { name: 'Cadmium Red', amount: 'moderate' },
         ],
       }
-    } else {
-      // Saturated reds
+    } else if (isModeratelySaturated) {
+      // Moderate reds (natural red)
       recipe = {
-        description: 'Rich red',
+        description: 'Natural red',
+        colors: [
+          { name: 'Cadmium Red', amount: 'mostly' },
+          { name: 'Titanium White', amount: 'moderate' },
+          { name: 'Yellow Ochre', amount: 'small amount' }, // Warms and dulls slightly
+        ],
+      }
+    } else {
+      // Saturated reds (vibrant)
+      recipe = {
+        description: 'Vibrant red',
         colors: [
           { name: 'Cadmium Red', amount: 'mostly' },
           { name: 'Titanium White', amount: isLight ? 'moderate' : 'touch' },
+          // Pure Cad Red is very saturated, so we just add white/black as needed
           { name: 'Ivory Black', amount: isDark ? 'small amount' : 'none' },
         ],
       }
@@ -221,13 +232,23 @@ export function generatePaintRecipe(hsl: {
           { name: 'Titanium White', amount: isLight ? 'moderate' : 'touch' },
         ],
       }
+    } else if (isModeratelySaturated) {
+      // Natural orange/terracotta
+      recipe = {
+        description: 'Natural orange/terracotta',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'base' },
+          { name: 'Cadmium Red', amount: 'moderate' },
+          { name: 'Titanium White', amount: 'moderate' },
+        ],
+      }
     } else {
       // Bright oranges
       recipe = {
-        description: 'Orange',
+        description: 'Vibrant orange',
         colors: [
           { name: 'Cadmium Red', amount: 'base' },
-          { name: 'Yellow Ochre', amount: 'moderate' },
+          { name: 'Yellow Ochre', amount: 'moderate' }, // Yellow Ochre + Cad Red makes a good natural orange
           { name: 'Titanium White', amount: isLight ? 'moderate' : 'touch' },
         ],
       }
@@ -245,30 +266,59 @@ export function generatePaintRecipe(hsl: {
           { name: 'Ivory Black', amount: isDark ? 'moderate' : 'tiny touch' },
         ],
       }
-    } else {
-      // Bright yellows
+    } else if (isModeratelySaturated) {
+      // Natural yellow
       recipe = {
-        description: 'Warm yellow',
+        description: 'Natural yellow',
         colors: [
           { name: 'Yellow Ochre', amount: 'mostly' },
           { name: 'Titanium White', amount: 'moderate' },
-          { name: 'Cadmium Red', amount: h < 60 ? 'tiny touch' : 'none' },
+          { name: 'Cadmium Red', amount: 'tiny touch' }, // Adds warmth
         ],
-        notes: 'Yellow Ochre is already muted; for brighter yellow, add more white',
+      }
+    } else {
+      // Bright yellows
+      recipe = {
+        description: 'Vibrant yellow',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'mostly' },
+          { name: 'Titanium White', amount: 'generous' }, // Need lots of white to brighten Ochre
+          { name: 'Cadmium Red', amount: 'none' },
+        ],
+        notes: 'Yellow Ochre is naturally muted. To get a vivid yellow, you would typically need Cadmium Yellow, but adding White to Ochre is our best approximation.',
       }
     }
   }
   // Yellow-greens (75-100)
   else if (h > 75 && h <= 100) {
-    recipe = {
-      description: 'Yellow-green',
-      colors: [
-        { name: 'Yellow Ochre', amount: 'base' },
-        { name: 'Phthalo Green', amount: 'tiny touch' },
-        { name: 'Titanium White', amount: isLight ? 'moderate' : 'small amount' },
-        { name: 'Ivory Black', amount: isDesaturated ? 'small amount' : 'none' },
-      ],
-      notes: 'Phthalo Green is very strong - use sparingly',
+    if (isDesaturated) {
+      recipe = {
+        description: 'Gray-green',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'base' },
+          { name: 'Ivory Black', amount: 'small amount' }, // Yellow Ochre + Black = Greenish Gray
+          { name: 'Titanium White', amount: 'moderate' },
+        ],
+      }
+    } else if (isModeratelySaturated) {
+      recipe = {
+        description: 'Natural yellow-green',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'base' },
+          { name: 'Phthalo Green', amount: 'tiny touch' },
+          { name: 'Titanium White', amount: isLight ? 'moderate' : 'small amount' },
+        ],
+      }
+    } else {
+      recipe = {
+        description: 'Vibrant lime green',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'base' },
+          { name: 'Phthalo Green', amount: 'small amount' }, // Slightly more green
+          { name: 'Titanium White', amount: 'moderate' },
+        ],
+        notes: 'Phthalo Green is very strong - use sparingly',
+      }
     }
   }
   // Greens (100-165)
@@ -284,10 +334,21 @@ export function generatePaintRecipe(hsl: {
           { name: 'Titanium White', amount: isLight ? 'moderate' : 'touch' },
         ],
       }
+    } else if (isModeratelySaturated) {
+      // Natural green (grass)
+      recipe = {
+        description: 'Leaf green',
+        colors: [
+          { name: 'Yellow Ochre', amount: 'moderate' },
+          { name: 'Phthalo Green', amount: 'small amount' },
+          { name: 'Titanium White', amount: isLight ? 'generous' : 'moderate' },
+          { name: 'Ivory Black', amount: 'tiny touch' }, // Dulls it slightly
+        ],
+      }
     } else {
       // Bright greens
       recipe = {
-        description: 'Green',
+        description: 'Vibrant green',
         colors: [
           { name: 'Phthalo Green', amount: 'small amount' },
           { name: 'Yellow Ochre', amount: 'moderate' },
@@ -299,14 +360,36 @@ export function generatePaintRecipe(hsl: {
   }
   // Cyans/turquoises (165-190)
   else if (h > 165 && h <= 190) {
-    recipe = {
-      description: 'Cyan/turquoise',
-      colors: [
-        { name: 'Phthalo Blue', amount: 'small amount' },
-        { name: 'Phthalo Green', amount: 'small amount' },
-        { name: 'Titanium White', amount: 'generous' },
-      ],
-      notes: 'Both phthalos are very strong - use tiny amounts',
+    if (isDesaturated) {
+      recipe = {
+        description: 'Gray-teal',
+        colors: [
+          { name: 'Titanium White', amount: 'base' },
+          { name: 'Ivory Black', amount: 'small amount' },
+          { name: 'Phthalo Green', amount: 'tiny touch' },
+          { name: 'Phthalo Blue', amount: 'tiny touch' },
+        ],
+      }
+    } else if (isModeratelySaturated) {
+      recipe = {
+        description: 'Muted turquoise',
+        colors: [
+          { name: 'Phthalo Blue', amount: 'small amount' },
+          { name: 'Phthalo Green', amount: 'small amount' },
+          { name: 'Titanium White', amount: 'generous' },
+          { name: 'Ivory Black', amount: 'tiny touch' },
+        ],
+      }
+    } else {
+      recipe = {
+        description: 'Vibrant cyan/turquoise',
+        colors: [
+          { name: 'Phthalo Blue', amount: 'small amount' },
+          { name: 'Phthalo Green', amount: 'small amount' },
+          { name: 'Titanium White', amount: 'generous' },
+        ],
+        notes: 'Both phthalos are very strong - use tiny amounts',
+      }
     }
   }
   // Blues (190-250)
@@ -331,14 +414,24 @@ export function generatePaintRecipe(hsl: {
           { name: 'Titanium White', amount: 'generous' },
         ],
       }
+    } else if (isModeratelySaturated) {
+      // Moderate blue
+      recipe = {
+        description: 'Natural blue',
+        colors: [
+          { name: 'Phthalo Blue', amount: 'small amount' },
+          { name: 'Titanium White', amount: 'generous' },
+          { name: 'Ivory Black', amount: 'tiny touch' }, // Dulls it
+        ],
+      }
     } else {
       // Saturated blues
       recipe = {
-        description: 'Rich blue',
+        description: 'Vibrant blue',
         colors: [
           { name: 'Phthalo Blue', amount: 'moderate' },
           { name: 'Titanium White', amount: isLight ? 'moderate' : 'small amount' },
-          { name: 'Ivory Black', amount: isDark ? 'small amount' : 'none' },
+          // No black for vibrant blue
         ],
         notes: 'Phthalo Blue is very strong',
       }
@@ -357,10 +450,21 @@ export function generatePaintRecipe(hsl: {
           { name: 'Ivory Black', amount: 'small amount' },
         ],
       }
+    } else if (isModeratelySaturated) {
+      // Moderate purple
+      recipe = {
+        description: 'Natural purple',
+        colors: [
+          { name: 'Phthalo Blue', amount: 'small amount' },
+          { name: 'Cadmium Red', amount: 'moderate' },
+          { name: 'Titanium White', amount: 'moderate' },
+          { name: 'Yellow Ochre', amount: 'tiny touch' }, // Dulls it
+        ],
+      }
     } else {
       // Bright purples
       recipe = {
-        description: 'Purple/violet',
+        description: 'Vibrant purple',
         colors: [
           { name: 'Phthalo Blue', amount: 'moderate' },
           { name: 'Cadmium Red', amount: 'moderate' },
@@ -382,10 +486,21 @@ export function generatePaintRecipe(hsl: {
           { name: 'Ivory Black', amount: 'tiny touch' },
         ],
       }
+    } else if (isModeratelySaturated) {
+      // Moderate magenta
+      recipe = {
+        description: 'Natural magenta',
+        colors: [
+          { name: 'Cadmium Red', amount: 'base' },
+          { name: 'Phthalo Blue', amount: 'small amount' },
+          { name: 'Titanium White', amount: 'moderate' },
+          { name: 'Yellow Ochre', amount: 'tiny touch' },
+        ],
+      }
     } else {
       // Bright magentas
       recipe = {
-        description: 'Magenta/pink-red',
+        description: 'Vibrant magenta',
         colors: [
           { name: 'Cadmium Red', amount: 'base' },
           { name: 'Phthalo Blue', amount: 'small amount' },
