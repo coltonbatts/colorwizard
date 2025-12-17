@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 
 interface ColorData {
   hex: string
@@ -12,35 +12,255 @@ interface ImageCanvasProps {
   onColorSample: (color: ColorData) => void
 }
 
+const MIN_ZOOM = 0.1
+const MAX_ZOOM = 5
+const ZOOM_STEP = 0.1
+const ZOOM_WHEEL_SENSITIVITY = 0.001
+
 export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  // Draw image on canvas when image changes
+  // Zoom and pan state
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [isSpaceDown, setIsSpaceDown] = useState(false)
+  const lastPanPoint = useRef({ x: 0, y: 0 })
+
+  // Image dimensions after initial fit
+  const [imageDrawInfo, setImageDrawInfo] = useState<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
+
+  // Calculate initial image fit
+  const calculateImageFit = useCallback(
+    (img: HTMLImageElement, canvasWidth: number, canvasHeight: number) => {
+      const ratio = Math.min(canvasWidth / img.width, canvasHeight / img.height)
+      const width = img.width * ratio
+      const height = img.height * ratio
+      const x = (canvasWidth - width) / 2
+      const y = (canvasHeight - height) / 2
+      return { x, y, width, height }
+    },
+    []
+  )
+
+  // Draw image on canvas with zoom and pan transforms
+  const drawCanvas = useCallback(() => {
+    if (!canvasRef.current) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    if (!image || !imageDrawInfo) return
+
+    // Save context state
+    ctx.save()
+
+    // Apply pan and zoom transforms
+    // First translate to pan offset, then scale for zoom
+    ctx.translate(panOffset.x, panOffset.y)
+    ctx.scale(zoomLevel, zoomLevel)
+
+    // Draw image at the calculated fit position
+    ctx.drawImage(
+      image,
+      imageDrawInfo.x,
+      imageDrawInfo.y,
+      imageDrawInfo.width,
+      imageDrawInfo.height
+    )
+
+    // Restore context state
+    ctx.restore()
+  }, [image, imageDrawInfo, zoomLevel, panOffset])
+
+  // Update image draw info when image changes
   useEffect(() => {
     if (image && canvasRef.current) {
       const canvas = canvasRef.current
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-
-      // Calculate scaled dimensions to fit canvas while maintaining aspect ratio
-      const maxWidth = canvas.width
-      const maxHeight = canvas.height
-      let width = image.width
-      let height = image.height
-
-      const ratio = Math.min(maxWidth / width, maxHeight / height)
-      width = width * ratio
-      height = height * ratio
-
-      // Clear canvas and draw image centered
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const x = (canvas.width - width) / 2
-      const y = (canvas.height - height) / 2
-      ctx.drawImage(image, x, y, width, height)
+      const info = calculateImageFit(image, canvas.width, canvas.height)
+      setImageDrawInfo(info)
+      // Reset zoom and pan when new image loads
+      setZoomLevel(1)
+      setPanOffset({ x: 0, y: 0 })
     }
-  }, [image])
+  }, [image, calculateImageFit])
+
+  // Redraw canvas when zoom, pan, or image changes
+  useEffect(() => {
+    drawCanvas()
+  }, [drawCanvas])
+
+  // Zoom function centered on a point
+  const zoomAtPoint = useCallback(
+    (newZoom: number, centerX: number, centerY: number) => {
+      const clampedZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom))
+      const zoomRatio = clampedZoom / zoomLevel
+
+      // Adjust pan to keep the point under cursor stationary
+      const newPanX = centerX - (centerX - panOffset.x) * zoomRatio
+      const newPanY = centerY - (centerY - panOffset.y) * zoomRatio
+
+      setZoomLevel(clampedZoom)
+      setPanOffset({ x: newPanX, y: newPanY })
+    },
+    [zoomLevel, panOffset]
+  )
+
+  // Handle mouse wheel for zoom
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      if (!image) return
+      e.preventDefault()
+
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width
+      const scaleY = canvas.height / rect.height
+
+      // Get cursor position in canvas coordinates
+      const cursorX = (e.clientX - rect.left) * scaleX
+      const cursorY = (e.clientY - rect.top) * scaleY
+
+      // Calculate zoom delta
+      const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
+      const newZoom = zoomLevel * (1 + delta)
+
+      zoomAtPoint(newZoom, cursorX, cursorY)
+    },
+    [image, zoomLevel, zoomAtPoint]
+  )
+
+  // Add wheel event listener (passive: false required for preventDefault)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false })
+    return () => canvas.removeEventListener('wheel', handleWheel)
+  }, [handleWheel])
+
+  // Handle keyboard events for pan mode and zoom shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!image) return
+
+      // Spacebar for pan mode
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        setIsSpaceDown(true)
+      }
+
+      // + / = for zoom in
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        const canvas = canvasRef.current
+        if (canvas) {
+          const centerX = canvas.width / 2
+          const centerY = canvas.height / 2
+          zoomAtPoint(zoomLevel + ZOOM_STEP, centerX, centerY)
+        }
+      }
+
+      // - for zoom out
+      if (e.key === '-') {
+        e.preventDefault()
+        const canvas = canvasRef.current
+        if (canvas) {
+          const centerX = canvas.width / 2
+          const centerY = canvas.height / 2
+          zoomAtPoint(zoomLevel - ZOOM_STEP, centerX, centerY)
+        }
+      }
+
+      // 0 to reset view
+      if (e.key === '0') {
+        e.preventDefault()
+        resetView()
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpaceDown(false)
+        setIsPanning(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [image, zoomLevel, zoomAtPoint])
+
+  // Reset view to initial state
+  const resetView = useCallback(() => {
+    setZoomLevel(1)
+    setPanOffset({ x: 0, y: 0 })
+  }, [])
+
+  // Fit to view
+  const fitToView = useCallback(() => {
+    resetView()
+  }, [resetView])
+
+  // Handle mouse down for panning
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Middle mouse button or spacebar held
+    if (e.button === 1 || isSpaceDown) {
+      e.preventDefault()
+      setIsPanning(true)
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
+    }
+  }
+
+  // Handle mouse move for panning
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isPanning) {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width
+      const scaleY = canvas.height / rect.height
+
+      const deltaX = (e.clientX - lastPanPoint.current.x) * scaleX
+      const deltaY = (e.clientY - lastPanPoint.current.y) * scaleY
+
+      setPanOffset((prev) => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY,
+      }))
+
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
+    }
+  }
+
+  // Handle mouse up to stop panning
+  const handleMouseUp = () => {
+    setIsPanning(false)
+  }
+
+  // Handle mouse leave to stop panning
+  const handleMouseLeave = () => {
+    setIsPanning(false)
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -158,6 +378,8 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
   }
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Don't sample color if we were panning or spacebar is held
+    if (isPanning || isSpaceDown) return
     if (!canvasRef.current || !image) return
 
     const canvas = canvasRef.current
@@ -168,14 +390,25 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
 
-    const x = (e.clientX - rect.left) * scaleX
-    const y = (e.clientY - rect.top) * scaleY
+    // Convert screen coordinates to canvas coordinates
+    const canvasX = (e.clientX - rect.left) * scaleX
+    const canvasY = (e.clientY - rect.top) * scaleY
 
-    // Get pixel data
-    const pixelData = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data
+    // Get pixel data from the transformed canvas
+    // We need to sample from the actual rendered canvas, not the original image
+    const pixelData = ctx.getImageData(
+      Math.floor(canvasX),
+      Math.floor(canvasY),
+      1,
+      1
+    ).data
     const r = pixelData[0]
     const g = pixelData[1]
     const b = pixelData[2]
+
+    // Check if we clicked on the image (not the background)
+    // Background is gray-900 which is roughly rgb(17, 24, 39)
+    if (pixelData[3] === 0) return // Transparent pixel
 
     // Convert to hex
     const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
@@ -190,8 +423,34 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     })
   }
 
+  // Zoom control handlers
+  const handleZoomIn = () => {
+    const canvas = canvasRef.current
+    if (canvas) {
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      zoomAtPoint(zoomLevel + ZOOM_STEP, centerX, centerY)
+    }
+  }
+
+  const handleZoomOut = () => {
+    const canvas = canvasRef.current
+    if (canvas) {
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+      zoomAtPoint(zoomLevel - ZOOM_STEP, centerX, centerY)
+    }
+  }
+
+  // Get cursor style based on current mode
+  const getCursorStyle = () => {
+    if (isPanning) return 'grabbing'
+    if (isSpaceDown) return 'grab'
+    return 'crosshair'
+  }
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" ref={containerRef}>
       <h1 className="text-3xl font-bold mb-6 text-gray-100">Color Wizard</h1>
 
       {!image ? (
@@ -199,10 +458,11 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${isDragging
+          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${
+            isDragging
               ? 'border-blue-500 bg-blue-500/10'
               : 'border-gray-600 bg-gray-800/50'
-            }`}
+          }`}
         >
           <div className="text-center">
             <p className="text-xl text-gray-400 mb-4">
@@ -223,19 +483,70 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
-          <canvas
-            ref={canvasRef}
-            width={1000}
-            height={700}
-            onClick={handleCanvasClick}
-            className="border border-gray-700 rounded-lg cursor-crosshair bg-gray-900"
-          />
-          <button
-            onClick={() => setImage(null)}
-            className="mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
-          >
-            Load New Image
-          </button>
+          {/* Zoom Controls Bar */}
+          <div className="flex items-center justify-between mb-2 px-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= MIN_ZOOM}
+                className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
+                title="Zoom Out (-)"
+              >
+                −
+              </button>
+              <div className="w-20 text-center text-gray-300 text-sm font-mono">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+              <button
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= MAX_ZOOM}
+                className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
+                title="Zoom In (+)"
+              >
+                +
+              </button>
+              <button
+                onClick={fitToView}
+                className="px-3 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors"
+                title="Reset View (0)"
+              >
+                Fit
+              </button>
+            </div>
+            <div className="text-gray-500 text-xs">
+              Scroll to zoom • Hold Space to pan • Click to sample
+            </div>
+          </div>
+
+          {/* Canvas Container */}
+          <div className="flex-1 relative overflow-hidden rounded-lg border border-gray-700 bg-gray-900">
+            <canvas
+              ref={canvasRef}
+              width={1000}
+              height={700}
+              onClick={handleCanvasClick}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onContextMenu={(e) => e.preventDefault()}
+              className="absolute top-0 left-0"
+              style={{ cursor: getCursorStyle() }}
+            />
+          </div>
+
+          {/* Bottom Controls */}
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={() => setImage(null)}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
+            >
+              Load New Image
+            </button>
+            <div className="text-gray-500 text-sm">
+              Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
+            </div>
+          </div>
         </div>
       )}
     </div>
