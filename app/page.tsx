@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
+import ShoppingListPanel from '@/components/ShoppingListPanel'
 
 export default function Home() {
   const [sampledColor, setSampledColor] = useState<{
@@ -14,6 +15,8 @@ export default function Home() {
   const [activeHighlightColor, setActiveHighlightColor] = useState<{ r: number; g: number; b: number } | null>(null)
   const [highlightTolerance, setHighlightTolerance] = useState(20)
   const [highlightMode, setHighlightMode] = useState<'solid' | 'heatmap'>('solid')
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  const [activeTab, setActiveTab] = useState<'inspect' | 'shopping'>('inspect')
 
   return (
     <main className="flex h-screen bg-[#1a1a1a]">
@@ -62,6 +65,9 @@ export default function Home() {
 
         <div className="flex-1 min-h-0">
           <ImageCanvas
+            image={image}
+            onImageLoad={setImage}
+            onReset={() => setImage(null)}
             onColorSample={setSampledColor}
             highlightColor={activeHighlightColor}
             highlightTolerance={highlightTolerance}
@@ -69,11 +75,37 @@ export default function Home() {
           />
         </div>
       </div>
-      <div className="w-[30%] border-l border-gray-700">
-        <ColorPanel
-          sampledColor={sampledColor}
-          onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
-        />
+      <div className="w-[30%] border-l border-gray-700 flex flex-col">
+        {/* Simple Tab Switcher */}
+        <div className="flex border-b border-gray-700">
+          <button
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${!activeTab || activeTab === 'inspect' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            onClick={() => setActiveTab('inspect')}
+          >
+            Inspect
+          </button>
+          <button
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'shopping' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            onClick={() => setActiveTab('shopping')}
+          >
+            Shopping List <span className="text-xs bg-blue-900 text-blue-200 px-1.5 rounded ml-1">NEW</span>
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-hidden relative">
+          {(!activeTab || activeTab === 'inspect') ? (
+            <div className="absolute inset-0 overflow-y-auto">
+              <ColorPanel
+                sampledColor={sampledColor}
+                onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+              />
+            </div>
+          ) : (
+            <div className="absolute inset-0">
+              <ShoppingListPanel image={image} />
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )

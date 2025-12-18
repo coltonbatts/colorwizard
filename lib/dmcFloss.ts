@@ -3,11 +3,14 @@
  * Data source: DMC Cotton Floss RGB Values
  */
 
+import { rgbToLab, deltaE, Lab } from './colorUtils'
+
 export interface DMCColor {
   number: string
   name: string
   rgb: { r: number; g: number; b: number }
   hex: string
+  lab?: Lab // Optional for now, populated on demand or statically
 }
 
 export interface DMCMatch extends DMCColor {
@@ -508,10 +511,23 @@ export function findClosestDMCColors(
   rgb: { r: number; g: number; b: number },
   count: number = 5
 ): DMCMatch[] {
-  // Calculate distance for each DMC color
+  const targetLab = rgbToLab(rgb.r, rgb.g, rgb.b)
+
+  // Calculate distance for each DMC color using Delta E (Lab)
   const matches = DMC_COLORS.map((dmcColor) => {
-    const distance = calculateDistance(rgb, dmcColor.rgb)
-    const similarity = distanceToSimilarity(distance)
+    // Lazy calculate Lab if not present
+    let lab = dmcColor.lab
+    if (!lab) {
+      lab = rgbToLab(dmcColor.rgb.r, dmcColor.rgb.g, dmcColor.rgb.b)
+      dmcColor.lab = lab // Cache it
+    }
+
+    const distance = deltaE(targetLab, lab)
+
+    // Delta E to similarity (rough approximation)
+    // Delta E < 2.3 is JND. Let's say 0 dist = 100%, 100 dist = 0%
+    const similarity = Math.max(0, 100 - distance)
+
     return {
       ...dmcColor,
       distance,

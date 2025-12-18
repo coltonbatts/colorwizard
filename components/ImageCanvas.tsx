@@ -11,10 +11,13 @@ interface ColorData {
 import { rgbToLab, deltaE, Lab, RGB } from '@/lib/colorUtils'
 
 interface ImageCanvasProps {
+  image: HTMLImageElement | null
+  onImageLoad: (img: HTMLImageElement) => void
   onColorSample: (color: ColorData) => void
   highlightColor?: RGB | null
   highlightTolerance?: number // Delta E
   highlightMode?: 'solid' | 'heatmap'
+  onReset: () => void
 }
 
 const MIN_ZOOM = 0.1
@@ -23,11 +26,11 @@ const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
 
 export default function ImageCanvas(props: ImageCanvasProps) {
-  const { onColorSample } = props
+  const { onColorSample, image, onImageLoad } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  // Internal image state removed in favor of prop
   const [isDragging, setIsDragging] = useState(false)
 
   // Highlight system state
@@ -341,7 +344,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     reader.onload = (event) => {
       const img = new Image()
       img.onload = () => {
-        setImage(img)
+        onImageLoad(img)
       }
       img.src = event.target?.result as string
     }
@@ -735,7 +738,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           {/* Bottom Controls */}
           <div className="flex items-center justify-between mt-4">
             <button
-              onClick={() => setImage(null)}
+              onClick={props.onReset}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
             >
               Load New Image
