@@ -8,8 +8,13 @@ interface ColorData {
   hsl: { h: number; s: number; l: number }
 }
 
+import { rgbToLab, deltaE, Lab, RGB } from '@/lib/colorUtils'
+
 interface ImageCanvasProps {
   onColorSample: (color: ColorData) => void
+  highlightColor?: RGB | null
+  highlightTolerance?: number // Delta E
+  highlightMode?: 'solid' | 'heatmap'
 }
 
 const MIN_ZOOM = 0.1
@@ -17,12 +22,17 @@ const MAX_ZOOM = 5
 const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
 
-export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
+export default function ImageCanvas(props: ImageCanvasProps) {
+  const { onColorSample } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+
+  // Highlight system state
+  const [labBuffer, setLabBuffer] = useState<{ l: Float32Array; a: Float32Array; b: Float32Array; width: number; height: number } | null>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
@@ -85,9 +95,23 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
       imageDrawInfo.height
     )
 
+    // Draw Highlight Overlay if available
+    if (overlayCanvasRef.current && labBuffer?.width) {
+      // We draw the overlay canvas (which is at buffer resolution)
+      // onto the main canvas at the same screen coordinates as the image.
+      // Context is already transformed for zoom/pan.
+      ctx.drawImage(
+        overlayCanvasRef.current,
+        imageDrawInfo.x,
+        imageDrawInfo.y,
+        imageDrawInfo.width,
+        imageDrawInfo.height
+      )
+    }
+
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset])
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer]) // Added labBuffer dep
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -124,7 +148,7 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {
     drawCanvas()
-  }, [drawCanvas])
+  }, [drawCanvas, props.highlightMode, props.highlightColor, props.highlightTolerance])
 
   // Zoom function centered on a point
   const zoomAtPoint = useCallback(
@@ -324,6 +348,126 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
     reader.readAsDataURL(file)
   }
 
+  // Pre-calculate Lab values for the image for fast comparison
+  useEffect(() => {
+    if (!image) {
+      setLabBuffer(null)
+      return
+    }
+
+    // Create a temporary canvas to read pixel data
+    const canvas = document.createElement('canvas')
+    // Limit processing resolution for performance (max 1000px longest side)
+    const MAX_PROCESS_DIM = 1000
+    let width = image.width
+    let height = image.height
+
+    if (width > MAX_PROCESS_DIM || height > MAX_PROCESS_DIM) {
+      const ratio = Math.min(MAX_PROCESS_DIM / width, MAX_PROCESS_DIM / height)
+      width = Math.round(width * ratio)
+      height = Math.round(height * ratio)
+    }
+
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.drawImage(image, 0, 0, width, height)
+    const imageData = ctx.getImageData(0, 0, width, height)
+    const data = imageData.data
+    const pixelCount = width * height
+
+    const lBuffer = new Float32Array(pixelCount)
+    const aBuffer = new Float32Array(pixelCount)
+    const bBuffer = new Float32Array(pixelCount)
+
+    // Process pixels
+    // NOTE: This could be moved to a Web Worker if it blocks the UI too much
+    for (let i = 0; i < pixelCount; i++) {
+      const r = data[i * 4]
+      const g = data[i * 4 + 1]
+      const b = data[i * 4 + 2]
+
+      const lab = rgbToLab(r, g, b)
+      lBuffer[i] = lab.l
+      aBuffer[i] = lab.a
+      bBuffer[i] = lab.b
+    }
+
+    setLabBuffer({
+      l: lBuffer,
+      a: aBuffer,
+      b: bBuffer,
+      width,
+      height
+    })
+
+  }, [image])
+
+  // Draw highlight overlay
+  useEffect(() => {
+    const { highlightColor, highlightTolerance = 20, highlightMode = 'solid' } = props
+    const canvas = overlayCanvasRef.current
+    if (!canvas || !labBuffer || !highlightColor) {
+      // Clear overlay if no highlight
+      if (canvas) {
+        const ctx = canvas.getContext('2d')
+        ctx?.clearRect(0, 0, canvas.width, canvas.height)
+      }
+      return
+    }
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Resize overlay canvas to match the buffer dimensions
+    if (canvas.width !== labBuffer.width || canvas.height !== labBuffer.height) {
+      canvas.width = labBuffer.width
+      canvas.height = labBuffer.height
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    const targetLab = rgbToLab(highlightColor.r, highlightColor.g, highlightColor.b)
+    const imageData = ctx.createImageData(labBuffer.width, labBuffer.height)
+    const data = imageData.data
+
+    const { l: lBuffer, a: aBuffer, b: bBuffer } = labBuffer
+    const pixelCount = lBuffer.length
+
+    for (let i = 0; i < pixelCount; i++) {
+      const currentLab = { l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] }
+      const dist = deltaE(currentLab, targetLab)
+
+      if (dist <= highlightTolerance) {
+        const idx = i * 4
+        // Color overlay based on mode
+        if (highlightMode === 'solid') {
+          // Vivid pink/magenta for high visibility default
+          data[idx] = 255     // R
+          data[idx + 1] = 0   // G
+          data[idx + 2] = 255 // B
+          data[idx + 3] = 180 // Alpha
+        } else {
+          // Heatmap: Closer match = more opaque / intense
+          // Scale alpha from 255 (dist=0) to 0 (dist=tolerance)
+          const strength = 1 - (dist / highlightTolerance)
+          data[idx] = 255
+          data[idx + 1] = Math.floor(255 * (1 - strength)) // G goes 0->255 (Red -> White/Yellowish)
+          data[idx + 2] = 0
+          data[idx + 3] = Math.min(255, Math.floor(255 * strength * 1.5))
+        }
+      } else {
+        // Optional: Dim non-matching areas? 
+        // For now, transparent. User can see original image underneath.
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+
+  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode])
+
   /**
    * Converts RGB color values to HSL (Hue, Saturation, Lightness) color space.
    *
@@ -483,8 +627,8 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${isDragging
-              ? 'border-blue-500 bg-blue-500/10'
-              : 'border-gray-600 bg-gray-800/50'
+            ? 'border-blue-500 bg-blue-500/10'
+            : 'border-gray-600 bg-gray-800/50'
             }`}
         >
           <div className="text-center">
@@ -558,6 +702,33 @@ export default function ImageCanvas({ onColorSample }: ImageCanvasProps) {
               onContextMenu={(e) => e.preventDefault()}
               className="absolute top-0 left-0 w-full h-full"
               style={{ cursor: getCursorStyle() }}
+            />
+
+            {/* Highlight Overlay Canvas */}
+            <canvas
+              ref={overlayCanvasRef}
+              className="absolute top-0 left-0 pointer-events-none"
+              style={{
+                // We need to apply the same transform as the main image
+                // But since the overlay is generated at buffer size (potentially diff from image.naturalSize), 
+                // we need to be careful.
+                // Actually easier strategy: Render overlay at 'buffer' size, but use CSS transform to align?
+                // Or better: Draw the overlay INTO the main canvas context?
+                // No, separate canvas is better for performance (don't redraw base image constantly).
+
+                // Let's position it exactly like the main image using the same `imageDrawInfo`
+                // logic, simply drawing it with CSS width/height?
+                // The overlayCanvas has resolution `labBuffer.width` x `labBuffer.height`.
+                // We want it to occupy `imageDrawInfo.x`, `imageDrawInfo.y` with size `imageDrawInfo.width` x `imageDrawInfo.height`
+                // AND be affected by the parent zoom/pan which is on the context?
+
+                // Wait, the main canvas uses context transforms (ctx.translate/scale).
+                // The main canvas is full size of container.
+                // We should probably draw the overlay onto the MAIN canvas in `drawCanvas`?
+                // Pros: Perfect sync with zoom/pan. Cons: Re-uploading texture every frame?
+                // Actually `putImageData` is slow. Creating an ImageBitmap from the overlay canvas and drawing that is fast.
+                display: 'none' // We will draw this separate canvas onto the main canvas
+              }}
             />
           </div>
 

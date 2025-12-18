@@ -9,9 +9,10 @@ interface ColorPanelProps {
     rgb: { r: number; g: number; b: number }
     hsl: { h: number; s: number; l: number }
   } | null
+  onColorSelect: (rgb: { r: number; g: number; b: number }) => void
 }
 
-export default function ColorPanel({ sampledColor }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelProps) {
   if (!sampledColor) {
     return (
       <div className="h-full p-6 flex items-center justify-center">
@@ -81,7 +82,7 @@ export default function ColorPanel({ sampledColor }: ColorPanelProps) {
 
       {/* DMC Floss Matches */}
       <div className="mt-6">
-        <DMCFlossMatch rgb={rgb} />
+        <DMCFlossMatch rgb={rgb} onColorSelect={onColorSelect} />
       </div>
     </div>
   )

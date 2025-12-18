@@ -4,9 +4,10 @@ import { findClosestDMCColors } from '@/lib/dmcFloss'
 
 interface DMCFlossMatchProps {
   rgb: { r: number; g: number; b: number }
+  onColorSelect: (rgb: { r: number; g: number; b: number }) => void
 }
 
-export default function DMCFlossMatch({ rgb }: DMCFlossMatchProps) {
+export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps) {
   const matches = findClosestDMCColors(rgb, 5)
 
   return (
@@ -14,12 +15,14 @@ export default function DMCFlossMatch({ rgb }: DMCFlossMatchProps) {
       <h3 className="text-xl font-bold mb-4 text-gray-100">
         DMC Embroidery Floss Matches
       </h3>
+      <p className="text-xs text-gray-400 mb-3">Click a color to see where it appears on the image</p>
 
       <div className="space-y-3">
         {matches.map((match, index) => (
-          <div
+          <button
             key={match.number}
-            className="flex items-center gap-3 p-3 bg-gray-800/50 rounded border border-gray-700"
+            onClick={() => onColorSelect(match.rgb)}
+            className="w-full text-left flex items-center gap-3 p-3 bg-gray-800/50 rounded border border-gray-700 hover:bg-gray-700 hover:border-gray-500 transition-all group"
           >
             {/* Color Swatch */}
             <div
@@ -52,7 +55,7 @@ export default function DMCFlossMatch({ rgb }: DMCFlossMatchProps) {
               </div>
               <div className="text-xs text-gray-500">match</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
