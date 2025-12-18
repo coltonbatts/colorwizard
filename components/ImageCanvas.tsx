@@ -18,7 +18,7 @@ interface ImageCanvasProps {
 }
 
 const MIN_ZOOM = 0.1
-const MAX_ZOOM = 5
+const MAX_ZOOM = 10
 const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
 
