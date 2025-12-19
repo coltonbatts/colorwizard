@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
@@ -21,6 +22,16 @@ export default function Home() {
   return (
     <main className="flex h-screen bg-[#1a1a1a]">
       <div className="w-[70%] p-6 flex flex-col">
+        {/* Color Theory Lab Button */}
+        <div className="mb-4 flex justify-end">
+          <Link
+            href="/color-theory"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
+          >
+            <span>🎨</span>
+            Color Theory Lab
+          </Link>
+        </div>
         {/* Highlight Controls - Only show active if a color is selected */}
         {activeHighlightColor && (
           <div className="mb-4 p-3 bg-gray-800 rounded-lg flex items-center gap-6 border border-gray-700 animate-in fade-in slide-in-from-top-2">
