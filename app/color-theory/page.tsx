@@ -6,6 +6,8 @@ import { converter } from 'culori'
 import ColorTheoryCanvas from '@/components/color-theory/ColorTheoryCanvas'
 import ColorWheelDisplay from '@/components/color-theory/ColorWheelDisplay'
 import ColorAnalysisPanel from '@/components/color-theory/ColorAnalysisPanel'
+import MixAdjustmentGuide from '@/components/color-theory/MixAdjustmentGuide'
+import ChromaMap from '@/components/color-theory/ChromaMap'
 import { getSegmentIndex, RGB } from '@/lib/colorTheory'
 import { rotateHue, mixColors, getComplementaryColor, adjustChroma } from '@/lib/paintingMath'
 import { MixState } from '@/components/color-theory/MixLadders'
@@ -35,6 +37,17 @@ export default function ColorTheoryPage() {
     useEffect(() => {
         setMixState({ white: 0, complement: 0, black: 0, hue: 0, saturation: 1 })
     }, [sampledColor?.hex])
+
+    // Reset Mix Handler
+    const handleResetMix = () => {
+        setMixState({
+            white: 0,
+            complement: 0,
+            black: 0,
+            hue: 0,
+            saturation: 1
+        })
+    }
 
     const handleColorSample = (color: SampledColor) => {
         setSampledColor(color)
@@ -74,7 +87,7 @@ export default function ColorTheoryPage() {
         }
 
         // Convert to RGB object for Wheel Display
-        const rgbObj = toRgb(c);
+        const rgbObj = toRgb(c) || { r: 0, g: 0, b: 0 };
 
         return {
             hex: c,
@@ -129,13 +142,40 @@ export default function ColorTheoryPage() {
                     </div>
 
                     {/* Analysis Panel */}
-                    <div className="flex-1 overflow-y-auto">
-                        <ColorAnalysisPanel
-                            sampledColor={sampledColor}
-                            mixState={mixState}
-                            onMixChange={setMixState}
-                            mixResult={mixResult ? mixResult.hex : '#000000'}
-                        />
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {sampledColor && mixResult ? (
+                            <>
+                                {/* New: Mix Adjustment and Maps */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <MixAdjustmentGuide
+                                            targetColor={sampledColor.hex}
+                                            mixColor={mixResult.hex}
+                                            onFixMix={handleResetMix}
+                                        />
+                                    </div>
+                                    <div className="col-span-1 md:col-span-2">
+                                        <ChromaMap
+                                            targetColor={sampledColor.hex}
+                                            mixColor={mixResult.hex}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-800 pt-6">
+                                    <ColorAnalysisPanel
+                                        sampledColor={sampledColor}
+                                        mixState={mixState}
+                                        onMixChange={setMixState}
+                                        mixResult={mixResult.hex}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                                <p>Select a color from the image to begin analysis</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
