@@ -12,8 +12,9 @@ interface ColorWheelDisplayProps {
 export default function ColorWheelDisplay({
     sampledColor,
     highlightedIndex,
-    onSegmentClick
-}: ColorWheelDisplayProps) {
+    onSegmentClick,
+    mixColor
+}: ColorWheelDisplayProps & { mixColor?: { hex: string, rgb: RGB } }) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -225,43 +226,11 @@ export default function ColorWheelDisplay({
             ctx.stroke()
         }
 
-        // 3. Draw Sampled Color Marker
-        if (sampledColor) {
-            const hsl = rgbToHsl(sampledColor.rgb.r, sampledColor.rgb.g, sampledColor.rgb.b)
+        // Shared function for marker position
+        const getMarkerPos = (rgb: RGB) => {
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b)
 
-            // TO DO: We need to reverse map the Hue to the Angle on our warped wheel!
-            // If we just plot at "True HSL Angle", it won't match the background color if we warped it.
-            // Since we warped the background to match segments...
-            // The marker should probably also respect that warp? 
-            // OR the marker shows the "True HSL Physics" vs "Artist Wheel"?
-            // If the user picked a color from the image, and it is "True Green (120)",
-            // On our wheel, Green (120) is at Bottom (180 deg).
-            // If we plot it at 120 deg (4 o'clock), it will land on Yellow-Green (90).
-            // So we MUST warp the marker position too unless we want confusion.
-
-            // Reverse mapping: Hue -> AngleRelTop
-            // We need to find which "segment interval" this Hue belongs to.
-            // The intervals are defined by the Segment Centers? Or Start/Ends?
-            // our getInterpolatedHue used Centers: 0 (at 15deg), 30 (at 45deg)...
-            // So we linearly interpolated Hues between 15deg, 45deg, etc.
-
-            // Inverse: Find i such that Hue is between Hue(i) and Hue(i+1).
-            // Then t = (Hue - Hue(i)) / (Hue(i+1) - Hue(i)).
-            // Then Angle = Center(i) + t * 30.
-
-            // Problem: Hues are not monotonic 0-360 because of "Orange=30, RedOrange=30".
-            // If Hue is 30, it could be anywhere between -45 and -15?
-            // This ambiguity implies we map to the center of that range?
-            // Or just pick one.
-
-            // Implementation: Scan segments to find the interval.
-            // Since we know the ordered hues: 0, 30, 30, 45, 60, 90, 120, 160, 210, 260, 280, 320.
-            // Note: 160 -> 210 -> 260 -> 280 -> 320 -> 0.
-
-            // For a given Hue h:
-            // Find i where Hue(i) <= h <= Hue(i+1). 
-            // Handle wrap.
-
+            // Inverse Hue mapping logic
             const findAngleForHue = (h: number): number => {
                 // Simple scan
                 for (let i = 0; i < 12; i++) {
@@ -277,49 +246,81 @@ export default function ColorWheelDisplay({
 
                     // If h is exactly h1, or h is between h1 and h2 (considering wrap)
                     if (val <= diff || (diff === 0 && val === 0)) {
-                        // Found it. 
-                        // t = val / diff
-                        // If diff is 0 (e.g., Red-Orange and Orange both have hue 30),
-                        // then h must be equal to h1 (approx). We map to the center of the segment.
                         const t = diff === 0 ? 0.5 : val / diff
-
-                        // The angle for segment i starts at i*30 (relative to top)
-                        // The interpolation happens across the 30-degree segment.
                         const segmentStartAngleRelTop = i * 30
-
                         return segmentStartAngleRelTop + t * 30
                     }
                 }
-                return 0 // Fallback (should not happen if hue is within 0-360 range)
+                return 0
             }
 
             const angleRelTop = findAngleForHue(hsl.h)
-
-            // convert back to canvas radians
-            // AngleRelTop 0 = -90 canvas degrees
-            // angleCanvas = angleRelTop - 90
             const angleRad = (angleRelTop - 90) * (Math.PI / 180)
-
-            // dist = sat % * radius
             const dist = (hsl.s / 100) * radius
 
-            const markerX = cx + dist * Math.cos(angleRad)
-            const markerY = cy + dist * Math.sin(angleRad)
+            return {
+                x: cx + dist * Math.cos(angleRad),
+                y: cy + dist * Math.sin(angleRad),
+                rgb: rgb
+            }
+        }
 
-            // Draw marker
+        let sampledPos;
+        let mixPos;
+
+        // 3. Draw Sampled Color Marker
+        if (sampledColor) {
+            sampledPos = getMarkerPos(sampledColor.rgb)
+        }
+
+        // 4. Draw Mix Color Marker
+        if (mixColor) {
+            mixPos = getMarkerPos(mixColor.rgb)
+        }
+
+        // 5. Draw Connector Line
+        if (sampledPos && mixPos) {
+            ctx.beginPath();
+            ctx.moveTo(sampledPos.x, sampledPos.y);
+            ctx.lineTo(mixPos.x, mixPos.y);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw Sampled Dot
+        if (sampledPos) {
             ctx.beginPath()
-            ctx.arc(markerX, markerY, 5, 0, Math.PI * 2)
-            ctx.fillStyle = `rgb(${sampledColor.rgb.r}, ${sampledColor.rgb.g}, ${sampledColor.rgb.b})`
+            ctx.arc(sampledPos.x, sampledPos.y, 6, 0, Math.PI * 2)
+            ctx.fillStyle = `rgb(${sampledPos.rgb.r}, ${sampledPos.rgb.g}, ${sampledPos.rgb.b})`
             ctx.fill()
             ctx.strokeStyle = 'white'
             ctx.lineWidth = 2
-            ctx.shadowColor = 'rgba(0,0,0,0.5)'
-            ctx.shadowBlur = 4
+            // ctx.shadowColor = 'rgba(0,0,0,0.5)'
+            // ctx.shadowBlur = 4
             ctx.stroke()
-            ctx.shadowBlur = 0
+            // Label?
+            // ctx.fillStyle = 'white'
+            // ctx.font = '10px monospace'
+            // ctx.fillText('Target', sampledPos.x + 8, sampledPos.y)
         }
 
-    }, [sampledColor, highlightedIndex])
+        // Draw Mix Dot
+        if (mixPos) {
+            ctx.beginPath()
+            // Make it a square to differentiate? Or just a dot.
+            // Square:
+            ctx.rect(mixPos.x - 5, mixPos.y - 5, 10, 10);
+            ctx.fillStyle = `rgb(${mixPos.rgb.r}, ${mixPos.rgb.g}, ${mixPos.rgb.b})`
+            ctx.fill()
+            ctx.strokeStyle = 'white'
+            ctx.lineWidth = 2
+            ctx.stroke()
+        }
+
+    }, [sampledColor, highlightedIndex, mixColor])
 
     return (
         <div ref={containerRef} className="flex flex-col items-center w-full">
