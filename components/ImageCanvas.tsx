@@ -39,6 +39,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
+  const [isGrayscale, setIsGrayscale] = useState(false)
 
   // Zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -46,6 +47,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [isPanning, setIsPanning] = useState(false)
   const [isSpaceDown, setIsSpaceDown] = useState(false)
   const lastPanPoint = useRef({ x: 0, y: 0 })
+  const dragStartRef = useRef({ x: 0, y: 0 })
+  const hasDraggedRef = useRef(false)
 
   // Image dimensions after initial fit
   const [imageDrawInfo, setImageDrawInfo] = useState<{
@@ -90,13 +93,18 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
-    ctx.drawImage(
-      image,
-      imageDrawInfo.x,
-      imageDrawInfo.y,
-      imageDrawInfo.width,
-      imageDrawInfo.height
-    )
+    const renderImage = () => {
+      if (isGrayscale) ctx.filter = 'grayscale(100%)'
+      ctx.drawImage(
+        image,
+        imageDrawInfo.x,
+        imageDrawInfo.y,
+        imageDrawInfo.width,
+        imageDrawInfo.height
+      )
+      if (isGrayscale) ctx.filter = 'none'
+    }
+    renderImage()
 
     // Draw Highlight Overlay if available
     if (overlayCanvasRef.current && labBuffer?.width) {
@@ -114,7 +122,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer]) // Added labBuffer dep
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale]) // Added labBuffer dep
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -271,19 +279,72 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     resetView()
   }, [resetView])
 
+  const sampleColor = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !image) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    // Convert screen coordinates to canvas coordinates
+    const canvasX = (e.clientX - rect.left) * scaleX
+    const canvasY = (e.clientY - rect.top) * scaleY
+
+    // Get pixel data from the transformed canvas
+    const pixelData = ctx.getImageData(
+      Math.floor(canvasX),
+      Math.floor(canvasY),
+      1,
+      1
+    ).data
+    const r = pixelData[0]
+    const g = pixelData[1]
+    const b = pixelData[2]
+
+    // Check if we clicked on the image (not the background)
+    if (pixelData[3] === 0) return
+
+    // Convert to hex
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+
+    // Convert to HSL
+    const hsl = rgbToHsl(r, g, b)
+
+    onColorSample({
+      hex,
+      rgb: { r, g, b },
+      hsl,
+    })
+  }
+
   // Handle mouse down for panning
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Middle mouse button or spacebar held
-    if (e.button === 1 || isSpaceDown) {
+    // Left click, Middle mouse button or spacebar held
+    if (e.button === 0 || e.button === 1 || isSpaceDown) {
       e.preventDefault()
       setIsPanning(true)
       lastPanPoint.current = { x: e.clientX, y: e.clientY }
+      dragStartRef.current = { x: e.clientX, y: e.clientY }
+      hasDraggedRef.current = false
     }
   }
 
   // Handle mouse move for panning
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanning) {
+      // Check for drag threshold
+      if (!hasDraggedRef.current) {
+        const dist = Math.hypot(
+          e.clientX - dragStartRef.current.x,
+          e.clientY - dragStartRef.current.y
+        )
+        if (dist > 3) hasDraggedRef.current = true
+      }
+
       const canvas = canvasRef.current
       if (!canvas) return
 
@@ -304,8 +365,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   }
 
   // Handle mouse up to stop panning
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsPanning(false)
+    if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
+      sampleColor(e)
+    }
   }
 
   // Handle mouse leave to stop panning
@@ -548,51 +612,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Don't sample color if we were panning or spacebar is held
-    if (isPanning || isSpaceDown) return
-    if (!canvasRef.current || !image) return
 
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    // Convert screen coordinates to canvas coordinates
-    const canvasX = (e.clientX - rect.left) * scaleX
-    const canvasY = (e.clientY - rect.top) * scaleY
-
-    // Get pixel data from the transformed canvas
-    // We need to sample from the actual rendered canvas, not the original image
-    const pixelData = ctx.getImageData(
-      Math.floor(canvasX),
-      Math.floor(canvasY),
-      1,
-      1
-    ).data
-    const r = pixelData[0]
-    const g = pixelData[1]
-    const b = pixelData[2]
-
-    // Check if we clicked on the image (not the background)
-    // Background is gray-900 which is roughly rgb(17, 24, 39)
-    if (pixelData[3] === 0) return // Transparent pixel
-
-    // Convert to hex
-    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
-
-    // Convert to HSL
-    const hsl = rgbToHsl(r, g, b)
-
-    onColorSample({
-      hex,
-      rgb: { r, g, b },
-      hsl,
-    })
-  }
 
   // Zoom control handlers
   const handleZoomIn = () => {
@@ -683,8 +703,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
                 Fit
               </button>
             </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsGrayscale(!isGrayscale)}
+                className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isGrayscale
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-700 text-white hover:bg-gray-600'
+                  }`}
+                title="Toggle Grayscale"
+              >
+                B&W
+              </button>
+            </div>
             <div className="text-gray-500 text-xs">
-              Scroll to zoom • Hold Space to pan • Click to sample
+              Scroll to zoom • Drag to pan • Click to sample
             </div>
           </div>
 
@@ -697,7 +729,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               ref={canvasRef}
               width={canvasDimensions.width}
               height={canvasDimensions.height}
-              onClick={handleCanvasClick}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
