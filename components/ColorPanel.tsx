@@ -43,27 +43,30 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
     <div className="h-full flex flex-col bg-gray-950 text-gray-100 font-sans">
 
       {/* HERO SWATCH AREA - Always Visible */}
-      <div className="p-6 pb-4 border-b border-gray-800 bg-gray-900/50">
-        <div className="flex gap-4 items-start">
-          {/* Big Swatch */}
-          <div
-            className="w-24 h-24 rounded-2xl shadow-2xl border border-gray-700/50 relative overflow-hidden group"
+      <div className="p-6 pb-6 border-b border-gray-800 bg-gray-950">
+        <div className="flex flex-col gap-4">
+
+          {/* Giant Hero Swatch */}
+          <div className="w-full aspect-video rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden group transition-all duration-500 hover:shadow-gray-900/50"
             style={{ backgroundColor: hex }}
           >
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent pointer-events-none"></div>
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-3xl"></div>
           </div>
 
-          {/* Hero Info */}
-          <div className="flex-1 min-w-0 pt-1">
-            <h2 className="text-3xl font-black tracking-tight font-mono text-white mb-1">{hex}</h2>
-            <div className="flex gap-3 text-sm">
-              <div className="flex flex-col">
-                <span className="text-gray-500 text-xs uppercase font-bold">Value</span>
-                <span className="font-mono text-gray-200 font-bold">{value}</span>
+          {/* Hero Info - Now below the swatch for max width */}
+          <div className="flex flex-col items-center justify-center pt-2">
+            <h2 className="text-6xl font-black tracking-tighter font-mono text-white mb-3 tabular-nums">{hex}</h2>
+
+            <div className="flex gap-8 items-center justify-center w-full px-4">
+              <div className="flex flex-col items-center">
+                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Value</span>
+                <span className="font-mono text-2xl text-gray-200 font-bold">{value}</span>
               </div>
-              <div className="flex flex-col pl-3 border-l border-gray-800">
-                <span className="text-gray-500 text-xs uppercase font-bold">Chroma</span>
-                <span className="font-mono text-gray-200 font-bold">{chroma.label}</span>
+              <div className="w-px h-8 bg-gray-800"></div>
+              <div className="flex flex-col items-center">
+                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Chroma</span>
+                <span className="font-mono text-2xl text-gray-200 font-bold">{chroma.label}</span>
               </div>
             </div>
           </div>
