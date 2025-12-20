@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import PaintRecipe from './PaintRecipe'
+import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
 import ValueChromaGraph from './ValueChromaGraph'
 import { getPainterValue, getPainterChroma } from '@/lib/paintingMath'
@@ -16,9 +17,11 @@ interface ColorPanelProps {
 }
 
 type Tab = 'painter' | 'thread'
+type PainterSubTab = 'recipe' | 'mixlab'
 
 export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
+  const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
 
   if (!sampledColor) {
     return (
@@ -72,8 +75,8 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
         <button
           onClick={() => setActiveTab('painter')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'painter'
-              ? 'text-white border-b-2 border-blue-500 bg-gray-800/50'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
+            ? 'text-white border-b-2 border-blue-500 bg-gray-800/50'
+            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
             }`}
         >
           Painter
@@ -81,13 +84,37 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
         <button
           onClick={() => setActiveTab('thread')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'thread'
-              ? 'text-white border-b-2 border-pink-500 bg-gray-800/50'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
+            ? 'text-white border-b-2 border-pink-500 bg-gray-800/50'
+            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
             }`}
         >
           Threads
         </button>
       </div>
+
+      {/* PAINTER SUB-TABS */}
+      {activeTab === 'painter' && (
+        <div className="flex border-b border-gray-800 bg-gray-900/20">
+          <button
+            onClick={() => setPainterSubTab('recipe')}
+            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'recipe'
+              ? 'text-blue-400 border-b border-blue-500/50 bg-gray-800/30'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Recipe
+          </button>
+          <button
+            onClick={() => setPainterSubTab('mixlab')}
+            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'mixlab'
+              ? 'text-purple-400 border-b border-purple-500/50 bg-gray-800/30'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Mix Lab
+          </button>
+        </div>
+      )}
 
       {/* CONTENT AREA */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
@@ -95,15 +122,21 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
         {activeTab === 'painter' && (
           <div className="space-y-8 animate-in fade-in duration-300">
 
-            {/* Visualizer */}
+            {/* Visualizer - always visible in painter tab */}
             <section>
               <ValueChromaGraph color={hex} />
             </section>
 
-            {/* Recipe */}
-            <section>
-              <PaintRecipe hsl={hsl} />
-            </section>
+            {/* Recipe or Mix Lab based on sub-tab */}
+            {painterSubTab === 'recipe' ? (
+              <section>
+                <PaintRecipe hsl={hsl} targetHex={hex} />
+              </section>
+            ) : (
+              <section>
+                <MixLab targetHex={hex} />
+              </section>
+            )}
 
             {/* Tech Specs */}
             <section className="p-4 bg-gray-900 rounded-lg border border-gray-800">

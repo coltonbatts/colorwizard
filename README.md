@@ -51,6 +51,26 @@ The algorithm intelligently:
 - Includes helpful mixing notes and warnings
 - Handles edge cases like near-white, near-black, and desaturated colors
 
+#### 🔬 Spectral.js Paint Mixing
+
+ColorWizard now uses **Spectral.js** for physically-accurate paint mixing based on **Kubelka-Munk theory**. Unlike RGB blending which produces unrealistic results (e.g., red + green = muddy brown instead of yellow), spectral mixing simulates how real pigments absorb and scatter light.
+
+Key features:
+- **Perceptual Color Matching**: Uses OKLab color space for Delta E calculations that match human perception
+- **Grid Search Solver**: Finds optimal pigment combinations by testing thousands of weight combinations
+- **Tinting Strength**: Accounts for highly-tinting pigments like Phthalos that dominate mixes
+- **Match Quality**: Shows how close the predicted mix is to your target color (Excellent/Good/Fair/Poor)
+
+**Important Note**: The pigment colors are approximations based on typical hex values. For truly accurate predictions, measured spectral reflectance data from actual paint samples would be needed.
+
+#### 🧪 Mix Lab
+
+An interactive playground for experimenting with spectral paint mixing:
+- **6 Sliders**: Adjust the proportion of each palette pigment (0-100)
+- **Live Preview**: See the resulting spectral mix update in real-time
+- **Auto-Normalization**: Weights are automatically normalized to percentages
+- **Compare to Target**: See your mix alongside the sampled target color
+
 ### 🧵 DMC Embroidery Floss Color Matching
 
 Find the perfect embroidery thread colors with our comprehensive DMC floss database:
@@ -179,6 +199,7 @@ colorwizard/
 | `npm run build` | Build production-optimized bundle |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint for code quality checks |
+| `npm run test` | Run Vitest unit tests |
 
 ## Color Theory & Algorithm
 
