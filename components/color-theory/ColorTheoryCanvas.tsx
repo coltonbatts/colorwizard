@@ -1,0 +1,218 @@
+'use client'
+
+import { useRef, useState, useEffect, useCallback } from 'react'
+
+interface ColorData {
+    hex: string
+    rgb: { r: number; g: number; b: number }
+    hsl: { h: number; s: number; l: number }
+}
+
+interface ColorTheoryCanvasProps {
+    onColorSample: (color: ColorData) => void
+}
+
+export default function ColorTheoryCanvas({ onColorSample }: ColorTheoryCanvasProps) {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const [image, setImage] = useState<HTMLImageElement | null>(null)
+    const [isDragging, setIsDragging] = useState(false)
+    const [hoveredColor, setHoveredColor] = useState<ColorData | null>(null)
+
+    // Fit and render image when loaded
+    useEffect(() => {
+        if (!image || !canvasRef.current || !containerRef.current) return
+
+        const canvas = canvasRef.current
+        const container = containerRef.current
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        canvas.width = container.clientWidth
+        canvas.height = container.clientHeight
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        // Calculate fit
+        const scale = Math.min(
+            canvas.width / image.width,
+            canvas.height / image.height
+        ) * 0.9
+
+        const x = (canvas.width - image.width * scale) / 2
+        const y = (canvas.height - image.height * scale) / 2
+
+        ctx.drawImage(image, x, y, image.width * scale, image.height * scale)
+    }, [image])
+
+    // Handle resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (!image || !canvasRef.current || !containerRef.current) return
+            const canvas = canvasRef.current
+            const container = containerRef.current
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return
+
+            canvas.width = container.clientWidth
+            canvas.height = container.clientHeight
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+            const scale = Math.min(
+                canvas.width / image.width,
+                canvas.height / image.height
+            ) * 0.9
+
+            const x = (canvas.width - image.width * scale) / 2
+            const y = (canvas.height - image.height * scale) / 2
+
+            ctx.drawImage(image, x, y, image.width * scale, image.height * scale)
+        }
+
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [image])
+
+    const rgbToHsl = (r: number, g: number, b: number) => {
+        r /= 255; g /= 255; b /= 255
+        const max = Math.max(r, g, b), min = Math.min(r, g, b)
+        let h = 0, s = 0
+        const l = (max + min) / 2
+
+        if (max !== min) {
+            const d = max - min
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+            switch (max) {
+                case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+                case g: h = ((b - r) / d + 2) / 6; break
+                case b: h = ((r - g) / d + 4) / 6; break
+            }
+        }
+
+        return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+    }
+
+    const getColorAtPosition = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current
+        if (!canvas || !image) return null
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return null
+
+        const rect = canvas.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        const pixel = ctx.getImageData(x, y, 1, 1).data
+        const [r, g, b] = pixel
+
+        if (pixel[3] === 0) return null
+
+        const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()
+        const hsl = rgbToHsl(r, g, b)
+
+        return { hex, rgb: { r, g, b }, hsl }
+    }, [image])
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const color = getColorAtPosition(e)
+        setHoveredColor(color)
+    }
+
+    const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const color = getColorAtPosition(e)
+        if (color) onColorSample(color)
+    }
+
+    const loadImage = (file: File) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            const img = new Image()
+            img.onload = () => setImage(img)
+            img.src = event.target?.result as string
+        }
+        reader.readAsDataURL(file)
+    }
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault()
+        setIsDragging(false)
+        const file = e.dataTransfer.files[0]
+        if (file?.type.startsWith('image/')) loadImage(file)
+    }
+
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) loadImage(file)
+    }
+
+    return (
+        <div
+            ref={containerRef}
+            className="relative w-full h-full bg-gray-900 rounded-xl overflow-hidden"
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+        >
+            {!image ? (
+                <div
+                    className={`absolute inset-0 flex flex-col items-center justify-center border-2 border-dashed rounded-xl transition-colors ${isDragging ? 'border-blue-400 bg-blue-500/10' : 'border-gray-600'
+                        }`}
+                >
+                    <svg className="w-16 h-16 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-gray-400 text-lg mb-2">Drop an image here</p>
+                    <p className="text-gray-500 text-sm mb-4">or</p>
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+                    >
+                        Browse Files
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileInput}
+                        className="hidden"
+                    />
+                </div>
+            ) : (
+                <>
+                    <canvas
+                        ref={canvasRef}
+                        className="w-full h-full cursor-crosshair"
+                        onClick={handleClick}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setHoveredColor(null)}
+                    />
+
+                    {/* Hover preview */}
+                    {hoveredColor && (
+                        <div className="absolute top-4 left-4 bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 border border-gray-700 flex items-center gap-3">
+                            <div
+                                className="w-10 h-10 rounded-lg border border-gray-600"
+                                style={{ backgroundColor: hoveredColor.hex }}
+                            />
+                            <div className="text-sm">
+                                <p className="text-white font-mono">{hoveredColor.hex}</p>
+                                <p className="text-gray-400 text-xs">Click to analyze</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reset button */}
+                    <button
+                        onClick={() => setImage(null)}
+                        className="absolute top-4 right-4 px-3 py-1.5 bg-gray-800/90 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition-colors backdrop-blur-sm border border-gray-700"
+                    >
+                        Change Image
+                    </button>
+                </>
+            )}
+        </div>
+    )
+}

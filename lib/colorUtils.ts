@@ -1,0 +1,73 @@
+/**
+ * Color utility functions for Perceptual Color Matching.
+ * Abstractions over 'culori' for consistent usage across the app.
+ */
+import {
+  converter,
+  differenceCiede2000,
+  wcagContrast,
+  formatHex,
+  Color,
+  Lab,
+  Rgb,
+  Oklch
+} from 'culori';
+
+// Converters
+const toLab = converter('lab');
+const toRgb = converter('rgb');
+
+// Difference function factory
+const ciede2000 = differenceCiede2000();
+
+export type { Lab, Rgb, Oklch };
+
+/**
+ * Calculates the Delta E (CIEDE2000) distance between two colors.
+ * This represents perceptual color difference.
+ * 
+ * Thresholds (approx):
+ * <= 1.0: Not perceptible by human eyes.
+ * 1 - 2: Perceptible through close observation.
+ * 2 - 10: Perceptible at a glance.
+ * 11 - 49: Colors are more similar than opposite.
+ * 100: Colors are exact opposite.
+ */
+export function deltaE(color1: string | Color, color2: string | Color): number {
+  // culori handles parsing strings -> objects internal to the difference function usually,
+  // but to be safe we can ensure they are objects or let culori handle it.
+  // The difference function returned by factory takes (color1, color2).
+  return ciede2000(color1, color2);
+}
+
+/**
+ * Converts Hex string (or any color) to RGB object {r, g, b} normalized 0-255
+ */
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const rgb = toRgb(hex);
+  if (!rgb) return null;
+  return {
+    r: Math.round(rgb.r * 255),
+    g: Math.round(rgb.g * 255),
+    b: Math.round(rgb.b * 255)
+  };
+}
+
+/**
+ * Converts RGB (0-255) to Lab color space.
+ * returns Culori Lab object { mode: 'lab', l, a, b }
+ */
+export function rgbToLab(r: number, g: number, b: number): Lab {
+  return toLab({ mode: 'rgb', r: r / 255, g: g / 255, b: b / 255 });
+}
+
+/**
+ * Helper to get a strict match confidence label
+ */
+export function getMatchConfidence(dE: number): { label: string; color: string; bgColor: string } {
+  if (dE < 1.0) return { label: 'Exact Match', color: 'text-green-500', bgColor: 'bg-green-500' };
+  if (dE < 2.5) return { label: 'Very Close', color: 'text-emerald-400', bgColor: 'bg-emerald-400' };
+  if (dE < 5.0) return { label: 'Close', color: 'text-blue-400', bgColor: 'bg-blue-400' };
+  if (dE < 10.0) return { label: 'Similar', color: 'text-yellow-400', bgColor: 'bg-yellow-400' };
+  return { label: 'Distant', color: 'text-gray-400', bgColor: 'bg-gray-400' };
+}
