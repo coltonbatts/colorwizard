@@ -63,10 +63,10 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
 
   return (
     <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-gray-100">Oil Paint Recipe</h3>
+      <div className="flex items-center justify-between mb-3 lg:mb-4">
+        <h3 className="text-lg lg:text-xl font-bold text-gray-100">Oil Paint Recipe</h3>
         {isFallback && (
-          <span className="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/30">
+          <span className="text-[10px] lg:text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 lg:py-1 rounded border border-yellow-500/30">
             Basic Mode
           </span>
         )}
@@ -122,11 +122,11 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
             {fallbackRecipe.description}
           </p>
 
-          <div className="mb-6">
-            <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">
+          <div className="mb-4 lg:mb-6">
+            <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
               Mixing Steps
             </h4>
-            <ol className="list-decimal list-outside ml-4 space-y-2 text-sm text-gray-300">
+            <ol className="list-decimal list-outside ml-4 space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm text-gray-300">
               {fallbackRecipe.steps.map((step, i) => (
                 <li
                   key={i}
@@ -141,19 +141,21 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
             </ol>
           </div>
 
-          <div className="space-y-2 mb-6">
-            <h4 className="text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
+          <div className="space-y-2 mb-4 lg:mb-6">
+            <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
               Ingredients
             </h4>
-            {fallbackRecipe.colors.map((color, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-2 bg-gray-800/30 rounded border border-gray-800"
-              >
-                <span className="font-medium text-gray-200 text-sm">{color.name}</span>
-                <span className="text-xs text-gray-400 capitalize">{color.amount}</span>
-              </div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+              {fallbackRecipe.colors.map((color, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-gray-800/30 rounded border border-gray-800"
+                >
+                  <span className="font-medium text-gray-200 text-xs lg:text-sm">{color.name}</span>
+                  <span className="text-[10px] lg:text-xs text-gray-400 capitalize">{color.amount}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {fallbackRecipe.notes && (
@@ -169,11 +171,11 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
         recipe && (
           <>
             {/* Steps */}
-            <div className="mb-6">
-              <h4 className="text-sm font-bold text-gray-300 mb-3 uppercase tracking-wider">
+            <div className="mb-4 lg:mb-6">
+              <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
                 Mixing Steps
               </h4>
-              <ol className="list-decimal list-outside ml-4 space-y-2 text-sm text-gray-300">
+              <ol className="list-decimal list-outside ml-4 space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm text-gray-300">
                 {recipe.steps.map((step, i) => (
                   <li
                     key={i}
@@ -187,35 +189,37 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
             </div>
 
             {/* Ingredients with Percentages */}
-            <div className="space-y-2 mb-6">
-              <h4 className="text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
+            <div className="space-y-2 mb-4 lg:mb-6">
+              <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
                 Ingredients
               </h4>
-              {recipe.ingredients.map((ingredient, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-2 bg-gray-800/30 rounded border border-gray-800"
-                >
-                  {/* Color swatch */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
+                {recipe.ingredients.map((ingredient, index) => (
                   <div
-                    className="w-5 h-5 rounded border border-gray-600 shrink-0"
-                    style={{ backgroundColor: ingredient.pigment.hex }}
-                  />
-                  <span className="font-medium text-gray-200 text-sm flex-1">
-                    {ingredient.pigment.name}
-                  </span>
-                  {/* Percentage bar */}
-                  <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    key={index}
+                    className="flex items-center gap-2 p-2 bg-gray-800/30 rounded border border-gray-800"
+                  >
+                    {/* Color swatch */}
                     <div
-                      className="h-full bg-blue-500 rounded-full"
-                      style={{ width: `${Math.round(ingredient.weight * 100)}%` }}
+                      className="w-4 h-4 rounded border border-gray-600 shrink-0"
+                      style={{ backgroundColor: ingredient.pigment.hex }}
                     />
+                    <span className="font-medium text-gray-200 text-xs lg:text-sm flex-1 truncate">
+                      {ingredient.pigment.name}
+                    </span>
+                    {/* Percentage bar - hide on narrow screens if needed, or keep small */}
+                    <div className="w-12 xl:w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden shrink-0 hidden sm:block">
+                      <div
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${Math.round(ingredient.weight * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] lg:text-xs text-gray-300 font-mono w-8 text-right shrink-0">
+                      {ingredient.percentage}
+                    </span>
                   </div>
-                  <span className="text-sm text-gray-300 font-mono w-10 text-right">
-                    {ingredient.percentage}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </>
         )

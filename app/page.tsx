@@ -20,8 +20,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'inspect' | 'shopping'>('inspect')
 
   return (
-    <main className="flex h-screen bg-[#1a1a1a]">
-      <div className="w-[70%] p-6 flex flex-col">
+    <main className="flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden">
+      <div className="flex-1 lg:flex-[7] p-6 flex flex-col min-h-0 min-w-0">
         {/* Color Theory Lab Button */}
         <div className="mb-4 flex justify-end">
           <Link
@@ -86,7 +86,7 @@ export default function Home() {
           />
         </div>
       </div>
-      <div className="w-[30%] border-l border-gray-700 flex flex-col">
+      <div className="w-full lg:w-[30%] lg:min-w-[400px] border-l border-gray-700 flex flex-col h-1/2 lg:h-full bg-gray-950 shadow-2xl z-10">
         {/* Simple Tab Switcher */}
         <div className="flex border-b border-gray-700">
           <button

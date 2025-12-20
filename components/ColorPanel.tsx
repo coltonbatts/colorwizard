@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { rgb as culoriRgb } from 'culori'
 import PaintRecipe from './PaintRecipe'
 import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
-import ValueChromaGraph from './ValueChromaGraph'
+import PhotoshopColorWheel from './PhotoshopColorWheel'
 import { getPainterValue, getPainterChroma } from '@/lib/paintingMath'
 
 interface ColorPanelProps {
@@ -43,30 +44,30 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
     <div className="h-full flex flex-col bg-gray-950 text-gray-100 font-sans">
 
       {/* HERO SWATCH AREA - Always Visible */}
-      <div className="p-6 pb-6 border-b border-gray-800 bg-gray-950">
-        <div className="flex flex-col gap-4">
+      <div className="p-4 lg:p-6 border-b border-gray-800 bg-gray-950 shrink-0">
+        <div className="flex flex-col lg:gap-4 gap-2">
 
           {/* Giant Hero Swatch */}
-          <div className="w-full aspect-video rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden group transition-all duration-500 hover:shadow-gray-900/50"
+          <div className="w-full aspect-[2/1] lg:aspect-video rounded-2xl lg:rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden group transition-all duration-500 hover:shadow-gray-900/50"
             style={{ backgroundColor: hex }}
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent pointer-events-none"></div>
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-3xl"></div>
+            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl lg:rounded-3xl"></div>
           </div>
 
           {/* Hero Info - Now below the swatch for max width */}
-          <div className="flex flex-col items-center justify-center pt-2">
-            <h2 className="text-6xl font-black tracking-tighter font-mono text-white mb-3 tabular-nums">{hex}</h2>
+          <div className="flex flex-col items-center justify-center pt-1 lg:pt-2">
+            <h2 className="text-4xl lg:text-6xl font-black tracking-tighter font-mono text-white mb-1 lg:mb-3 tabular-nums">{hex}</h2>
 
-            <div className="flex gap-8 items-center justify-center w-full px-4">
+            <div className="flex gap-4 lg:gap-8 items-center justify-center w-full px-2 lg:px-4">
               <div className="flex flex-col items-center">
-                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Value</span>
-                <span className="font-mono text-2xl text-gray-200 font-bold">{value}</span>
+                <span className="text-gray-500 text-[9px] lg:text-[10px] uppercase font-bold tracking-widest mb-0.5 lg:mb-1">Value</span>
+                <span className="font-mono text-xl lg:text-2xl text-gray-200 font-bold">{value}</span>
               </div>
-              <div className="w-px h-8 bg-gray-800"></div>
+              <div className="w-px h-6 lg:h-8 bg-gray-800"></div>
               <div className="flex flex-col items-center">
-                <span className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1">Chroma</span>
-                <span className="font-mono text-2xl text-gray-200 font-bold">{chroma.label}</span>
+                <span className="text-gray-500 text-[9px] lg:text-[10px] uppercase font-bold tracking-widest mb-0.5 lg:mb-1">Chroma</span>
+                <span className="font-mono text-xl lg:text-2xl text-gray-200 font-bold">{chroma.label}</span>
               </div>
             </div>
           </div>
@@ -120,37 +121,47 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
       )}
 
       {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 min-h-0">
 
         {activeTab === 'painter' && (
-          <div className="space-y-8 animate-in fade-in duration-300">
+          <div className="space-y-6 lg:space-y-8 animate-in fade-in duration-300">
 
             {/* Visualizer - always visible in painter tab */}
-            <section>
-              <ValueChromaGraph color={hex} />
+            <section className="min-h-0">
+              <PhotoshopColorWheel
+                color={hex}
+                onChange={(newHex) => {
+                  const parsed = culoriRgb(newHex)
+                  if (parsed) {
+                    onColorSelect({
+                      r: Math.round(parsed.r * 255),
+                      g: Math.round(parsed.g * 255),
+                      b: Math.round(parsed.b * 255)
+                    })
+                  }
+                }}
+              />
             </section>
 
             {/* Recipe or Mix Lab based on sub-tab */}
-            {painterSubTab === 'recipe' ? (
-              <section>
+            <section className="min-h-0">
+              {painterSubTab === 'recipe' ? (
                 <PaintRecipe hsl={hsl} targetHex={hex} />
-              </section>
-            ) : (
-              <section>
+              ) : (
                 <MixLab targetHex={hex} />
-              </section>
-            )}
+              )}
+            </section>
 
             {/* Tech Specs */}
-            <section className="p-4 bg-gray-900 rounded-lg border border-gray-800">
-              <h3 className="text-xs font-bold text-gray-400 mb-3 uppercase">Technical Data</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm font-mono">
+            <section className="p-3 lg:p-4 bg-gray-900 rounded-lg border border-gray-800">
+              <h3 className="text-[10px] lg:text-xs font-bold text-gray-400 mb-2 lg:mb-3 uppercase">Technical Data</h3>
+              <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm font-mono">
                 <div>
-                  <span className="text-gray-600 block text-xs">RGB</span>
+                  <span className="text-gray-600 block text-[9px] lg:text-xs">RGB</span>
                   <span>{rgb.r}, {rgb.g}, {rgb.b}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 block text-xs">HSL</span>
+                  <span className="text-gray-600 block text-[9px] lg:text-xs">HSL</span>
                   <span>{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
                 </div>
               </div>
