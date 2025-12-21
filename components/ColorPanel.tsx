@@ -41,10 +41,10 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
   const chroma = getPainterChroma(hex)
 
   return (
-    <div className="h-full flex flex-col bg-gray-950 text-gray-100 font-sans">
+    <div className="bg-gray-950 text-gray-100 font-sans min-h-full">
 
       {/* HERO SWATCH AREA - Always Visible */}
-      <div className="p-4 lg:p-6 border-b border-gray-800 bg-gray-950 shrink-0">
+      <div className="p-4 lg:p-6 border-b border-gray-800 bg-gray-950">
         <div className="flex flex-col lg:gap-4 gap-2">
 
           {/* Giant Hero Swatch */}
@@ -121,7 +121,7 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
       )}
 
       {/* CONTENT AREA */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 min-h-0">
+      <div className="p-4 lg:p-6">
 
         {activeTab === 'painter' && (
           <div className="space-y-6 lg:space-y-8 animate-in fade-in duration-300">
