@@ -54,9 +54,9 @@ export interface SpectralRecipe {
  * Match quality thresholds (Delta E OKLab)
  */
 export const MATCH_THRESHOLDS = {
-    EXCELLENT: 2,
-    GOOD: 5,
-    FAIR: 10,
+    EXCELLENT: 1.0,
+    GOOD: 2.5,
+    FAIR: 6.0,
 } as const;
 
 /**

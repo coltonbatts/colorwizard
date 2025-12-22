@@ -13,39 +13,39 @@ export const PALETTE: Pigment[] = [
         id: 'titanium-white',
         name: 'Titanium White',
         hex: '#FDFDFD',
-        tintingStrength: 1.0,
+        tintingStrength: 1.0, // Baseline
         isValueAdjuster: true,
     },
     {
         id: 'ivory-black',
         name: 'Ivory Black',
         hex: '#0B0B0B',
-        tintingStrength: 0.8,
+        tintingStrength: 5.0, // Strong
         isValueAdjuster: true,
     },
     {
         id: 'yellow-ochre',
         name: 'Yellow Ochre',
         hex: '#CC8E35',
-        tintingStrength: 0.9,
+        tintingStrength: 0.9, // Earth color, slightly weaker
     },
     {
         id: 'cadmium-red',
         name: 'Cadmium Red',
         hex: '#E52B21',
-        tintingStrength: 0.85,
+        tintingStrength: 1.5, // Decent strength
     },
     {
         id: 'phthalo-green',
         name: 'Phthalo Green',
         hex: '#123524',
-        tintingStrength: 0.25, // Very strong, needs low tinting strength
+        tintingStrength: 8.0, // Very strong
     },
     {
         id: 'phthalo-blue',
         name: 'Phthalo Blue',
         hex: '#0F2E53',
-        tintingStrength: 0.3, // Very strong, needs low tinting strength
+        tintingStrength: 10.0, // Extremely strong
     },
 ];
 

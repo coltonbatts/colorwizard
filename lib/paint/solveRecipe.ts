@@ -19,15 +19,15 @@ import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS } from '../
  */
 const CONFIG = {
     /** Coarse grid step (percentage points) */
-    COARSE_STEP: 5,
+    COARSE_STEP: 2,
     /** Fine grid step for refinement */
-    FINE_STEP: 1,
+    FINE_STEP: 0.5,
     /** Error threshold to include 3-pigment search */
-    THREE_PIGMENT_THRESHOLD: 5,
+    THREE_PIGMENT_THRESHOLD: 1.5,
     /** Minimum weight to include a pigment */
-    MIN_WEIGHT: 0.02,
+    MIN_WEIGHT: 0.01,
     /** Max value deviation that triggers white/black */
-    VALUE_DEVIATION_THRESHOLD: 0.15,
+    VALUE_DEVIATION_THRESHOLD: 0.1,
 };
 
 /**

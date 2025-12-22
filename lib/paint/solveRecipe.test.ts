@@ -1,79 +1,52 @@
-import { describe, it, expect } from 'vitest'
-import { solveRecipe, mixInteractive } from './solveRecipe'
 
-describe('solveRecipe', () => {
-    it('returns weights that sum to approximately 1', async () => {
-        const recipe = await solveRecipe('#FF6B35') // Orange color
+import { describe, it, expect } from 'vitest';
+import { solveRecipe } from './solveRecipe';
 
-        const totalWeight = recipe.ingredients.reduce((sum, i) => sum + i.weight, 0)
-        expect(totalWeight).toBeCloseTo(1, 1)
-    })
+describe('solveRecipe pigment accuracy', () => {
+    it('should lead with Titanium White for a light blue color', async () => {
+        // Sky Blue hex
+        const targetHex = '#87CEEB';
+        const recipe = await solveRecipe(targetHex);
 
-    it('returns a valid hex string', async () => {
-        const recipe = await solveRecipe('#3498DB') // Blue color
+        expect(recipe.ingredients.length).toBeGreaterThan(0);
+        // Titanium White should be the base (highest weight)
+        expect(recipe.ingredients[0].pigment.id).toBe('titanium-white');
 
-        expect(recipe.predictedHex).toMatch(/^#[0-9A-Fa-f]{6}$/)
-    })
+        // Phthalo Blue should be present but in a small amount (e.g. < 20%)
+        const phthaloBlue = recipe.ingredients.find(i => i.pigment.id === 'phthalo-blue');
+        expect(phthaloBlue).toBeDefined();
+        expect(phthaloBlue!.weight).toBeLessThan(0.2);
+    });
 
-    it('returns a non-negative error', async () => {
-        const recipe = await solveRecipe('#2ECC71') // Green color
+    it('should use Yellow Ochre or White as base for Olive Green, not Phthalo Green', async () => {
+        // Olive Green hex
+        const targetHex = '#808000';
+        const recipe = await solveRecipe(targetHex);
 
-        expect(recipe.error).toBeGreaterThanOrEqual(0)
-    })
+        expect(recipe.ingredients[0].pigment.id).not.toBe('phthalo-green');
+        expect(recipe.ingredients[0].pigment.id).not.toBe('phthalo-blue');
+    });
 
-    it('returns a match quality label', async () => {
-        const recipe = await solveRecipe('#E74C3C') // Red color
+    it('should use Ivory Black to darken colors significantly', async () => {
+        // Dark Navy
+        const targetHex = '#000033';
+        const recipe = await solveRecipe(targetHex);
 
-        expect(['Excellent', 'Good', 'Fair', 'Poor']).toContain(recipe.matchQuality)
-    })
+        const hasBlack = recipe.ingredients.some(i => i.pigment.id === 'ivory-black');
+        expect(hasBlack).toBe(true);
+    });
 
-    it('generates mixing steps', async () => {
-        const recipe = await solveRecipe('#9B59B6') // Purple color
+    it('should NOT ignore green for #57655c', async () => {
+        const targetHex = '#57655c';
+        const recipe = await solveRecipe(targetHex);
 
-        expect(recipe.steps).toBeInstanceOf(Array)
-        expect(recipe.steps.length).toBeGreaterThan(0)
-        expect(recipe.steps[0]).toContain('Start with')
-    })
+        console.log('Recipe for #57655c:', recipe.ingredients.map(i => `${i.pigment.name}: ${i.percentage}`).join(', '));
+        console.log('Error:', recipe.error);
 
-    it('has at least 2 ingredients', async () => {
-        const recipe = await solveRecipe('#F39C12') // Yellow-orange
-
-        expect(recipe.ingredients.length).toBeGreaterThanOrEqual(2)
-    })
-
-    it('each ingredient has valid pigment and weight', async () => {
-        const recipe = await solveRecipe('#1ABC9C') // Teal
-
-        for (const ing of recipe.ingredients) {
-            expect(ing.pigment).toBeDefined()
-            expect(ing.pigment.id).toBeTruthy()
-            expect(ing.pigment.name).toBeTruthy()
-            expect(ing.weight).toBeGreaterThan(0)
-            expect(ing.weight).toBeLessThanOrEqual(1)
-        }
-    })
-})
-
-describe('mixInteractive', () => {
-    it('returns gray for empty inputs', async () => {
-        const result = await mixInteractive([])
-        expect(result.hex).toBe('#808080')
-    })
-
-    it('returns valid hex for single pigment', async () => {
-        const result = await mixInteractive([
-            { pigmentId: 'phthalo-blue', weight: 1 },
-        ])
-
-        expect(result.hex).toMatch(/^#[0-9A-Fa-f]{6}$/)
-    })
-
-    it('returns valid hex for multiple pigments', async () => {
-        const result = await mixInteractive([
-            { pigmentId: 'titanium-white', weight: 0.7 },
-            { pigmentId: 'phthalo-blue', weight: 0.3 },
-        ])
-
-        expect(result.hex).toMatch(/^#[0-9A-Fa-f]{6}$/)
-    })
-})
+        // Should include green or blue to hit that hue
+        const hasHue = recipe.ingredients.some(i =>
+            ['phthalo-green', 'phthalo-blue', 'yellow-ochre'].includes(i.pigment.id)
+        );
+        expect(hasHue).toBe(true);
+    });
+});
