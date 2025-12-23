@@ -128,3 +128,13 @@ export function getStepIndex(y: number, thresholds: number[]): number {
     }
     return 0;
 }
+
+/**
+ * Converts a step index (0..N-1) to a grayscale value (0..255).
+ * Uses linear interpolation across the step range.
+ */
+export function stepToGray(step: number, totalSteps: number): number {
+    if (totalSteps <= 1) return 128;
+    const t = step / (totalSteps - 1);
+    return Math.round(t * 255);
+}

@@ -150,15 +150,14 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   <div className="flex flex-col items-center gap-1 mt-1">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
-                      <span className="text-yellow-400 font-mono text-xs font-bold">Step {sampledColor.valueMetadata.step}</span>
+                      <span className="text-yellow-400 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step} / {valueScaleSettings?.steps || 7}</span>
                     </div>
                     <span className="text-[9px] text-gray-500 font-mono uppercase">Range: {sampledColor.valueMetadata.range[0].toFixed(2)}-{sampledColor.valueMetadata.range[1].toFixed(2)}</span>
                     <span className="text-[9px] text-blue-400 font-mono font-bold uppercase">Rank: {(sampledColor.valueMetadata.percentile * 100).toFixed(1)}%</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
-                    <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
-                    <span className="text-gray-400 font-mono text-xs font-bold">Step {valueStep10}</span>
+                    <span className="text-gray-500 font-mono text-sm">Value Step: —</span>
                   </div>
                 )}
                 {!sampledColor.valueMetadata && <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">{valueBand}</span>}
@@ -285,21 +284,20 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                     </div>
 
                     <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
-                          <span>Steps ({valueScaleSettings?.steps})</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="3"
-                          max="11"
-                          value={valueScaleSettings?.steps}
-                          onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
-                          className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                        />
-                      </div>
-
                       <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Steps</span>
+                          <select
+                            value={valueScaleSettings?.steps}
+                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="5">5 Steps</option>
+                            <option value="7">7 Steps</option>
+                            <option value="9">9 Steps</option>
+                            <option value="11">11 Steps</option>
+                          </select>
+                        </div>
                         <div>
                           <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
                           <select
@@ -311,6 +309,9 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                             <option value="Percentile">Percentile</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Clip</span>
                           <select
@@ -323,6 +324,20 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                             <option value="0.01">1%</option>
                             <option value="0.02">2%</option>
                           </select>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
+                            <span>Opacity</span>
+                            <span>{Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}
+                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, opacity: parseInt(e.target.value) / 100 })}
+                            className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                          />
                         </div>
                       </div>
                     </div>

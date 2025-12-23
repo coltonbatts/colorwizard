@@ -17,7 +17,7 @@ interface ColorData {
 import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
 import { getLuminance } from '@/lib/paintingMath'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
-import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance } from '@/lib/valueScale'
+import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -149,9 +149,23 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
-    // Draw image at the calculated fit position
+    // Always draw original image first, then overlay value map with opacity if enabled
     const renderImage = () => {
+      // Draw the base image (original or grayscale)
+      if (isGrayscale) ctx.filter = 'grayscale(100%)'
+      ctx.drawImage(
+        image,
+        imageDrawInfo.x,
+        imageDrawInfo.y,
+        imageDrawInfo.width,
+        imageDrawInfo.height
+      )
+      if (isGrayscale) ctx.filter = 'none'
+
+      // Blend value map overlay on top with opacity
       if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+        const opacity = valueScaleSettings.opacity ?? 0.45
+        ctx.globalAlpha = opacity
         ctx.drawImage(
           valueMapCanvasRef.current,
           imageDrawInfo.x,
@@ -159,16 +173,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           imageDrawInfo.width,
           imageDrawInfo.height
         )
-      } else {
-        if (isGrayscale) ctx.filter = 'grayscale(100%)'
-        ctx.drawImage(
-          image,
-          imageDrawInfo.x,
-          imageDrawInfo.y,
-          imageDrawInfo.width,
-          imageDrawInfo.height
-        )
-        if (isGrayscale) ctx.filter = 'none'
+        ctx.globalAlpha = 1.0
       }
     }
     renderImage()
@@ -239,7 +244,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleResult]) // Updated deps
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult]) // Updated deps
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -665,16 +670,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const pixelCount = yBuffer.length
 
     const thresholds = valueScaleResult.thresholds
-    const steps = valueScaleResult.steps
     const numSteps = thresholds.length - 1
 
     for (let i = 0; i < pixelCount; i++) {
       const y = yBuffer[i]
       const stepIdx = getStepIndex(y, thresholds)
-      const step = steps[stepIdx]
 
-      // Render grayscale as the center value of that bin
-      const val = Math.round(step.center * 255)
+      // Use stepToGray for consistent quantization across overlay and hero readout
+      const val = stepToGray(stepIdx, numSteps)
 
       const idx = i * 4
       data[idx] = val
