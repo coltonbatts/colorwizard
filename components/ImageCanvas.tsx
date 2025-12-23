@@ -6,10 +6,18 @@ interface ColorData {
   hex: string
   rgb: { r: number; g: number; b: number }
   hsl: { h: number; s: number; l: number }
+  valueMetadata?: {
+    y: number
+    step: number
+    range: [number, number]
+    percentile: number
+  }
 }
 
 import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
 import { getLuminance } from '@/lib/paintingMath'
+import { ValueScaleSettings } from '@/lib/types/valueScale'
+import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance } from '@/lib/valueScale'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -26,6 +34,7 @@ interface ImageCanvasProps {
   highlightTolerance?: number // Delta E
   highlightMode?: 'solid' | 'heatmap'
   onReset: () => void
+  valueScaleSettings?: ValueScaleSettings
 }
 
 const MIN_ZOOM = 0.1
@@ -34,7 +43,7 @@ const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
 
 export default function ImageCanvas(props: ImageCanvasProps) {
-  const { onColorSample, image, onImageLoad } = props
+  const { onColorSample, image, onImageLoad, valueScaleSettings } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -44,14 +53,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   // Highlight system state
   const [labBuffer, setLabBuffer] = useState<{ l: Float32Array; a: Float32Array; b: Float32Array; width: number; height: number } | null>(null)
   const [valueBuffer, setValueBuffer] = useState<{ y: Float32Array; width: number; height: number } | null>(null)
+  const [sortedLuminances, setSortedLuminances] = useState<Float32Array | null>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
   // Value Map state
-  const [valueMapEnabled, setValueMapEnabled] = useState(false)
-  const [posterizeSteps, setPosterizeSteps] = useState(5)
+  const [valueScaleResult, setValueScaleResult] = useState<ValueScaleResult | null>(null)
   const [rangeHighlightMin, setRangeHighlightMin] = useState(0)
   const [rangeHighlightMax, setRangeHighlightMax] = useState(100)
   const [isGrayscale, setIsGrayscale] = useState(false)
@@ -142,7 +151,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Draw image at the calculated fit position
     // Draw image at the calculated fit position
     const renderImage = () => {
-      if (valueMapEnabled && valueMapCanvasRef.current) {
+      if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
         ctx.drawImage(
           valueMapCanvasRef.current,
           imageDrawInfo.x,
@@ -230,7 +239,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueMapEnabled]) // Simplified deps
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleResult]) // Updated deps
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -422,10 +431,42 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Convert to HSL
     const hsl = rgbToHsl(r, g, b)
 
+    // Value Metadata
+    let valueMetadata = undefined
+    if (valueScaleResult) {
+      const y = getRelativeLuminance(r, g, b)
+      const stepIdx = getStepIndex(y, valueScaleResult.thresholds)
+      const step = valueScaleResult.steps[stepIdx]
+
+      let percentile = 0
+      if (sortedLuminances) {
+        // Binary search for approximate percentile rank
+        let low = 0
+        let high = sortedLuminances.length - 1
+        while (low <= high) {
+          const mid = (low + high) >> 1
+          if (sortedLuminances[mid] < y) {
+            low = mid + 1
+          } else {
+            high = mid - 1
+          }
+        }
+        percentile = low / sortedLuminances.length
+      }
+
+      valueMetadata = {
+        y,
+        step: stepIdx + 1,
+        range: [step.min, step.max] as [number, number],
+        percentile
+      }
+    }
+
     onColorSample({
       hex,
       rgb: { r, g, b },
       hsl,
+      valueMetadata
     })
   }
 
@@ -571,7 +612,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       aBuffer[i] = lab.a
       bBuffer[i] = lab.b
 
-      yBuffer[i] = getLuminance(r, g, b)
+      yBuffer[i] = getRelativeLuminance(r, g, b)
     }
 
     setLabBuffer({
@@ -588,12 +629,27 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       height
     })
 
-  }, [image])
+    const sorted = new Float32Array(yBuffer).sort()
+    setSortedLuminances(sorted)
+
+    // Compute initial value scale
+    const result = computeValueScale(yBuffer, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
+    setValueScaleResult(result)
+
+  }, [image, valueScaleSettings])
+
+  // Re-compute value scale result when settings change
+  useEffect(() => {
+    if (!valueBuffer) return
+    const result = computeValueScale(valueBuffer.y, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
+    setValueScaleResult(result)
+  }, [valueScaleSettings, valueBuffer])
 
   // Draw value map overlay
   useEffect(() => {
     const canvas = valueMapCanvasRef.current
-    if (!canvas || !valueBuffer || !valueMapEnabled) return
+    const enabled = valueScaleSettings?.enabled
+    if (!canvas || !valueBuffer || !enabled || !valueScaleResult) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -608,39 +664,27 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const { y: yBuffer } = valueBuffer
     const pixelCount = yBuffer.length
 
+    const thresholds = valueScaleResult.thresholds
+    const steps = valueScaleResult.steps
+    const numSteps = thresholds.length - 1
+
     for (let i = 0; i < pixelCount; i++) {
-      let y = yBuffer[i]
+      const y = yBuffer[i]
+      const stepIdx = getStepIndex(y, thresholds)
+      const step = steps[stepIdx]
+
+      // Render grayscale as the center value of that bin
+      const val = Math.round(step.center * 255)
+
       const idx = i * 4
-
-      // 1. Check Range Highlight
-      const inRange = y >= rangeHighlightMin && y <= rangeHighlightMax
-
-      // 2. Posterize
-      // Quantize y (0-100) into posterizeSteps buckets
-      const bucketSize = 100 / (posterizeSteps - 1)
-      y = Math.round(y / bucketSize) * bucketSize
-
-      // 3. Apply to pixel data
-      const val = Math.round(y * 2.55) // 0-255 scale
-
-      if (!inRange) {
-        // Dim out of range
-        data[idx] = val * 0.2
-        data[idx + 1] = val * 0.2
-        data[idx + 2] = val * 0.2
-        data[idx + 3] = 255
-      } else {
-        // Highlight in range (blue/cyan tint or just pure)
-        // Let's use a subtle cyan tint for range highlight
-        data[idx] = val * 0.8
-        data[idx + 1] = val
-        data[idx + 2] = val
-        data[idx + 3] = 255
-      }
+      data[idx] = val
+      data[idx + 1] = val
+      data[idx + 2] = val
+      data[idx + 3] = 255
     }
 
     ctx.putImageData(imageData, 0, 0)
-  }, [valueBuffer, valueMapEnabled, posterizeSteps, rangeHighlightMin, rangeHighlightMax])
+  }, [valueBuffer, valueScaleSettings?.enabled, valueScaleResult])
 
   // Draw highlight overlay
   useEffect(() => {
@@ -885,55 +929,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               >
                 Gray
               </button>
-
-              <div className="h-6 w-px bg-gray-700 mx-1"></div>
-
-              <div className="flex items-center gap-2 bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-700/50">
-                <button
-                  onClick={() => setValueMapEnabled(!valueMapEnabled)}
-                  className={`px-3 h-6 flex items-center justify-center rounded text-[10px] font-bold uppercase transition-colors ${valueMapEnabled
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                    }`}
-                >
-                  Value Map
-                </button>
-                {valueMapEnabled && (
-                  <>
-                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-700 pl-2">
-                      <span className="text-[10px] text-gray-500 font-bold uppercase">Steps</span>
-                      <input
-                        type="range"
-                        min="2"
-                        max="10"
-                        value={posterizeSteps}
-                        onChange={(e) => setPosterizeSteps(parseInt(e.target.value))}
-                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <span className="text-[10px] text-gray-300 font-mono w-4">{posterizeSteps}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-700 pl-2">
-                      <span className="text-[10px] text-gray-500 font-bold uppercase">Range</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={rangeHighlightMin}
-                        onChange={(e) => setRangeHighlightMin(parseInt(e.target.value))}
-                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={rangeHighlightMax}
-                        onChange={(e) => setRangeHighlightMax(parseInt(e.target.value))}
-                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
             <div className="text-gray-500 text-xs">
               Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • Click to Sample
@@ -1032,6 +1027,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
                 display: 'none' // We will draw this separate canvas onto the main canvas
               }}
             />
+            <canvas ref={valueMapCanvasRef} id="value-map-canvas" style={{ display: 'none' }} />
           </div>
 
           {/* Bottom Controls */}

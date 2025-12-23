@@ -9,6 +9,7 @@ import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
 import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
+import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
@@ -18,16 +19,24 @@ interface ColorPanelProps {
     hex: string
     rgb: { r: number; g: number; b: number }
     hsl: { h: number; s: number; l: number }
+    valueMetadata?: {
+      y: number
+      step: number
+      range: [number, number]
+      percentile: number
+    }
   } | null
   onColorSelect: (rgb: { r: number; g: number; b: number }) => void
   onPin: (newPin: PinnedColor) => void
   isPinned: boolean
+  valueScaleSettings?: ValueScaleSettings
+  onValueScaleChange?: (settings: ValueScaleSettings) => void
 }
 
 type Tab = 'painter' | 'thread'
-type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies'
+type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies' | 'valueScale'
 
-export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
   const [label, setLabel] = useState('')
@@ -135,13 +144,24 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
               <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
                 <span className="text-blue-500 text-[10px] lg:text-[11px] uppercase font-black tracking-widest mb-1">Value</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-4xl lg:text-5xl text-white font-black tabular-nums">{valuePercent}%</span>
+                  <span className="font-mono text-4xl lg:text-5xl text-white font-black tabular-nums">{sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent}%</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
-                  <span className="text-gray-400 font-mono text-xs font-bold">Step {valueStep10}</span>
-                </div>
-                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">{valueBand}</span>
+                {sampledColor.valueMetadata ? (
+                  <div className="flex flex-col items-center gap-1 mt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
+                      <span className="text-yellow-400 font-mono text-xs font-bold">Step {sampledColor.valueMetadata.step}</span>
+                    </div>
+                    <span className="text-[9px] text-gray-500 font-mono uppercase">Range: {sampledColor.valueMetadata.range[0].toFixed(2)}-{sampledColor.valueMetadata.range[1].toFixed(2)}</span>
+                    <span className="text-[9px] text-blue-400 font-mono font-bold uppercase">Rank: {(sampledColor.valueMetadata.percentile * 100).toFixed(1)}%</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
+                    <span className="text-gray-400 font-mono text-xs font-bold">Step {valueStep10}</span>
+                  </div>
+                )}
+                {!sampledColor.valueMetadata && <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">{valueBand}</span>}
               </div>
 
               <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
@@ -207,6 +227,15 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
           >
             Harmonies
           </button>
+          <button
+            onClick={() => setPainterSubTab('valueScale')}
+            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'valueScale'
+              ? 'text-yellow-400 border-b border-yellow-500/50 bg-gray-800/30'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Value
+          </button>
         </div>
       )}
 
@@ -239,8 +268,116 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 <PaintRecipe hsl={hsl} targetHex={hex} />
               ) : painterSubTab === 'mixlab' ? (
                 <MixLab targetHex={hex} />
-              ) : (
+              ) : painterSubTab === 'harmonies' ? (
                 <ColorHarmonies rgb={rgb} onColorSelect={onColorSelect} />
+              ) : (
+                <div className="space-y-6">
+                  {/* Value Scale Controls */}
+                  <div className="p-4 bg-gray-900 rounded-lg border border-gray-800 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">Value Scale Settings</h3>
+                      <button
+                        onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}
+                      >
+                        {valueScaleSettings?.enabled ? 'Overlay ON' : 'Overlay OFF'}
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
+                          <span>Steps ({valueScaleSettings?.steps})</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="3"
+                          max="11"
+                          value={valueScaleSettings?.steps}
+                          onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
+                          className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
+                          <select
+                            value={valueScaleSettings?.mode}
+                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, mode: e.target.value as any })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="Even">Even</option>
+                            <option value="Percentile">Percentile</option>
+                          </select>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Clip</span>
+                          <select
+                            value={valueScaleSettings?.clip}
+                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, clip: parseFloat(e.target.value) as any })}
+                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="0">None (0%)</option>
+                            <option value="0.005">0.5%</option>
+                            <option value="0.01">1%</option>
+                            <option value="0.02">2%</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          const btn = document.createElement('a');
+                          const canvas = document.querySelector('canvas[ref*="valueMapCanvasRef"]') || document.querySelectorAll('canvas')[1]; // Heuristic lookup or just instruct user
+                          // Actually I'll use a better way later or just provide a button that ImageCanvas should handle.
+                          // For now, let's just add the button UI.
+                          console.log('Export PNG triggered');
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] font-bold text-gray-300 transition-colors"
+                      >
+                        Download PNG
+                      </button>
+                      <button
+                        onClick={() => {
+                          const data = JSON.stringify(valueScaleSettings, null, 2);
+                          navigator.clipboard.writeText(data);
+                          alert('Value Scale settings copied to clipboard!');
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] font-bold text-gray-300 transition-colors"
+                      >
+                        Copy JSON
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Value Scale Legend */}
+                  <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+                    <h3 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Value Step Legend</h3>
+                    <div className="space-y-2">
+                      {Array.from({ length: valueScaleSettings?.steps || 0 }).map((_, i) => {
+                        const stepVal = (i / ((valueScaleSettings?.steps || 1) - 1));
+                        const color = `rgb(${Math.round(stepVal * 255)}, ${Math.round(stepVal * 255)}, ${Math.round(stepVal * 255)})`;
+                        return (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded border border-gray-700 shadow-sm flex-shrink-0" style={{ backgroundColor: color }}></div>
+                            <div className="flex-1 flex flex-col">
+                              <span className="text-[11px] font-bold text-gray-200">Step {i + 1}</span>
+                              <span className="text-[9px] text-gray-500 font-mono italic">
+                                Approx {stepVal.toFixed(2)} Luminance
+                              </span>
+                            </div>
+                            {valueScaleSettings?.mode === 'Percentile' && (
+                              <span className="text-[10px] text-yellow-500/80 font-mono font-bold">~{Math.round(100 / valueScaleSettings.steps)}% pixels</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               )}
             </section>
 

@@ -7,6 +7,7 @@ import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import { PinnedColor } from '@/lib/types/pinnedColor'
+import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '@/lib/types/valueScale'
 
 export default function Home() {
   const [sampledColor, setSampledColor] = useState<{
@@ -21,6 +22,7 @@ export default function Home() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [activeTab, setActiveTab] = useState<'inspect' | 'shopping' | 'pinned'>('inspect')
   const [pinnedColors, setPinnedColors] = useState<PinnedColor[]>([])
+  const [valueScaleSettings, setValueScaleSettings] = useState<ValueScaleSettings>(DEFAULT_VALUE_SCALE_SETTINGS)
 
   // Persistence
   useEffect(() => {
@@ -133,6 +135,7 @@ export default function Home() {
             highlightColor={activeHighlightColor}
             highlightTolerance={highlightTolerance}
             highlightMode={highlightMode}
+            valueScaleSettings={valueScaleSettings}
           />
         </div>
       </div>
@@ -167,6 +170,8 @@ export default function Home() {
                 onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
                 onPin={handlePinColor}
                 isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
+                valueScaleSettings={valueScaleSettings}
+                onValueScaleChange={setValueScaleSettings}
               />
             </div>
           ) : activeTab === 'shopping' ? (
