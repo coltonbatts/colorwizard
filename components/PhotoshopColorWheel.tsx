@@ -273,7 +273,7 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
     return (
         <div className="w-full bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-inner">
             <h4 className="text-[10px] lg:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider flex justify-between items-center">
-                <span>Photoshop Style Wheel</span>
+                <span>Color Wheel</span>
                 <span className="text-[9px] lg:text-[10px] text-gray-600 font-normal underline">HSB Logic</span>
             </h4>
 
