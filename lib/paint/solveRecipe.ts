@@ -238,16 +238,22 @@ function generateSteps(
 
     steps.push(`Start with **${base.pigment.name}** as your base (${base.percentage}).`);
 
-    // Add chromatic pigments
-    for (const ing of chromatic) {
-        const amount = ing.weight < 0.1 ? 'a small amount' : 'a moderate amount';
-        steps.push(`Add ${amount} of **${ing.pigment.name}** (${ing.percentage}).`);
+    // 1. Value Adjusters first - IMPORTANT: Value First
+    if (valueAdj.length > 0) {
+        steps.push(`**Step 1: Lock the value.** Adjust your base to the target lightness/darkness.`);
+        for (const ing of valueAdj) {
+            const action = ing.pigment.id === 'titanium-white' ? 'lighten' : 'darken';
+            steps.push(`Add **${ing.pigment.name}** to ${action} until you hit the value (${ing.percentage}).`);
+        }
     }
 
-    // Add value adjusters
-    for (const ing of valueAdj) {
-        const action = ing.pigment.id === 'titanium-white' ? 'lighten' : 'darken';
-        steps.push(`Add **${ing.pigment.name}** to ${action} (${ing.percentage}).`);
+    // 2. Chromatic adjustments second
+    if (chromatic.length > 0) {
+        steps.push(`**Step 2: Find the hue.** Now that value is locked, shift the color.`);
+        for (const ing of chromatic) {
+            const amount = ing.weight < 0.1 ? 'a small amount' : 'a moderate amount';
+            steps.push(`Add ${amount} of **${ing.pigment.name}** (${ing.percentage}).`);
+        }
     }
 
     steps.push('Mix thoroughly until uniform.');

@@ -6,7 +6,8 @@ import PaintRecipe from './PaintRecipe'
 import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
-import { getPainterValue, getPainterChroma } from '@/lib/paintingMath'
+import ColorHarmonies from './ColorHarmonies'
+import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
@@ -24,7 +25,7 @@ interface ColorPanelProps {
 }
 
 type Tab = 'painter' | 'thread'
-type PainterSubTab = 'recipe' | 'mixlab'
+type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies'
 
 export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
@@ -47,6 +48,12 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const { hex, rgb, hsl } = sampledColor
   const value = getPainterValue(hex)
   const chroma = getPainterChroma(hex)
+
+  // Value First Data
+  const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
+  const valueStep10 = Math.min(10, Math.max(0, Math.round(valuePercent / 10)))
+  const valueBand = getValueBand(valuePercent)
+  const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
   return (
     <div className="bg-gray-950 text-gray-100 font-sans min-h-full">
@@ -123,15 +130,25 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
               />
             </div>
 
-            <div className="flex gap-4 lg:gap-8 items-center justify-center w-full px-2 lg:px-4">
-              <div className="flex flex-col items-center">
-                <span className="text-gray-500 text-[9px] lg:text-[10px] uppercase font-bold tracking-widest mb-0.5 lg:mb-1">Value</span>
-                <span className="font-mono text-xl lg:text-2xl text-gray-200 font-bold">{value}</span>
+            {/* Value First Readout */}
+            <div className="w-full grid grid-cols-2 gap-4 lg:gap-6 items-center justify-center px-2 lg:px-4 mt-2">
+              <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
+                <span className="text-blue-500 text-[10px] lg:text-[11px] uppercase font-black tracking-widest mb-1">Value</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-mono text-4xl lg:text-5xl text-white font-black tabular-nums">{valuePercent}%</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
+                  <span className="text-gray-400 font-mono text-xs font-bold">Step {valueStep10}</span>
+                </div>
+                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">{valueBand}</span>
               </div>
-              <div className="w-px h-6 lg:h-8 bg-gray-800"></div>
-              <div className="flex flex-col items-center">
-                <span className="text-gray-500 text-[9px] lg:text-[10px] uppercase font-bold tracking-widest mb-0.5 lg:mb-1">Chroma</span>
-                <span className="font-mono text-xl lg:text-2xl text-gray-200 font-bold">{chroma.label}</span>
+
+              <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
+                <span className="text-gray-500 text-[10px] lg:text-[11px] uppercase font-bold tracking-widest mb-1">Chroma</span>
+                <span className="font-mono text-2xl lg:text-3xl text-gray-200 font-black">{chroma.label}</span>
+                <div className="w-px h-2 bg-gray-800 my-1"></div>
+                <span className="text-[10px] text-gray-600 font-mono uppercase tracking-tight">{hex}</span>
               </div>
             </div>
           </div>
@@ -181,6 +198,15 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
           >
             Mix Lab
           </button>
+          <button
+            onClick={() => setPainterSubTab('harmonies')}
+            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'harmonies'
+              ? 'text-teal-400 border-b border-teal-500/50 bg-gray-800/30'
+              : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Harmonies
+          </button>
         </div>
       )}
 
@@ -211,8 +237,10 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             <section className="min-h-0">
               {painterSubTab === 'recipe' ? (
                 <PaintRecipe hsl={hsl} targetHex={hex} />
-              ) : (
+              ) : painterSubTab === 'mixlab' ? (
                 <MixLab targetHex={hex} />
+              ) : (
+                <ColorHarmonies rgb={rgb} onColorSelect={onColorSelect} />
               )}
             </section>
 

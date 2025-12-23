@@ -9,6 +9,7 @@ interface ColorData {
 }
 
 import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
+import { getLuminance } from '@/lib/paintingMath'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -42,10 +43,17 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   // Highlight system state
   const [labBuffer, setLabBuffer] = useState<{ l: Float32Array; a: Float32Array; b: Float32Array; width: number; height: number } | null>(null)
+  const [valueBuffer, setValueBuffer] = useState<{ y: Float32Array; width: number; height: number } | null>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
+  const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
+  // Value Map state
+  const [valueMapEnabled, setValueMapEnabled] = useState(false)
+  const [posterizeSteps, setPosterizeSteps] = useState(5)
+  const [rangeHighlightMin, setRangeHighlightMin] = useState(0)
+  const [rangeHighlightMax, setRangeHighlightMax] = useState(100)
   const [isGrayscale, setIsGrayscale] = useState(false)
 
   // Zoom and pan state
@@ -132,16 +140,27 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
+    // Draw image at the calculated fit position
     const renderImage = () => {
-      if (isGrayscale) ctx.filter = 'grayscale(100%)'
-      ctx.drawImage(
-        image,
-        imageDrawInfo.x,
-        imageDrawInfo.y,
-        imageDrawInfo.width,
-        imageDrawInfo.height
-      )
-      if (isGrayscale) ctx.filter = 'none'
+      if (valueMapEnabled && valueMapCanvasRef.current) {
+        ctx.drawImage(
+          valueMapCanvasRef.current,
+          imageDrawInfo.x,
+          imageDrawInfo.y,
+          imageDrawInfo.width,
+          imageDrawInfo.height
+        )
+      } else {
+        if (isGrayscale) ctx.filter = 'grayscale(100%)'
+        ctx.drawImage(
+          image,
+          imageDrawInfo.x,
+          imageDrawInfo.y,
+          imageDrawInfo.width,
+          imageDrawInfo.height
+        )
+        if (isGrayscale) ctx.filter = 'none'
+      }
     }
     renderImage()
 
@@ -211,7 +230,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize]) // Added labBuffer dep
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueMapEnabled]) // Simplified deps
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -504,10 +523,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     reader.readAsDataURL(file)
   }
 
-  // Pre-calculate Lab values for the image for fast comparison
+  // Pre-calculate Lab and Value values for the image for fast comparison
   useEffect(() => {
     if (!image) {
       setLabBuffer(null)
+      setValueBuffer(null)
       return
     }
 
@@ -537,6 +557,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const lBuffer = new Float32Array(pixelCount)
     const aBuffer = new Float32Array(pixelCount)
     const bBuffer = new Float32Array(pixelCount)
+    const yBuffer = new Float32Array(pixelCount)
 
     // Process pixels
     // NOTE: This could be moved to a Web Worker if it blocks the UI too much
@@ -549,6 +570,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       lBuffer[i] = lab.l
       aBuffer[i] = lab.a
       bBuffer[i] = lab.b
+
+      yBuffer[i] = getLuminance(r, g, b)
     }
 
     setLabBuffer({
@@ -559,7 +582,65 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       height
     })
 
+    setValueBuffer({
+      y: yBuffer,
+      width,
+      height
+    })
+
   }, [image])
+
+  // Draw value map overlay
+  useEffect(() => {
+    const canvas = valueMapCanvasRef.current
+    if (!canvas || !valueBuffer || !valueMapEnabled) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    if (canvas.width !== valueBuffer.width || canvas.height !== valueBuffer.height) {
+      canvas.width = valueBuffer.width
+      canvas.height = valueBuffer.height
+    }
+
+    const imageData = ctx.createImageData(valueBuffer.width, valueBuffer.height)
+    const data = imageData.data
+    const { y: yBuffer } = valueBuffer
+    const pixelCount = yBuffer.length
+
+    for (let i = 0; i < pixelCount; i++) {
+      let y = yBuffer[i]
+      const idx = i * 4
+
+      // 1. Check Range Highlight
+      const inRange = y >= rangeHighlightMin && y <= rangeHighlightMax
+
+      // 2. Posterize
+      // Quantize y (0-100) into posterizeSteps buckets
+      const bucketSize = 100 / (posterizeSteps - 1)
+      y = Math.round(y / bucketSize) * bucketSize
+
+      // 3. Apply to pixel data
+      const val = Math.round(y * 2.55) // 0-255 scale
+
+      if (!inRange) {
+        // Dim out of range
+        data[idx] = val * 0.2
+        data[idx + 1] = val * 0.2
+        data[idx + 2] = val * 0.2
+        data[idx + 3] = 255
+      } else {
+        // Highlight in range (blue/cyan tint or just pure)
+        // Let's use a subtle cyan tint for range highlight
+        data[idx] = val * 0.8
+        data[idx + 1] = val
+        data[idx + 2] = val
+        data[idx + 3] = 255
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0)
+  }, [valueBuffer, valueMapEnabled, posterizeSteps, rangeHighlightMin, rangeHighlightMax])
 
   // Draw highlight overlay
   useEffect(() => {
@@ -797,13 +878,62 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               <button
                 onClick={() => setIsGrayscale(!isGrayscale)}
                 className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isGrayscale
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-700 text-white hover:bg-gray-600'
+                  ? 'bg-blue-600 text-white hover:bg-blue-600/80'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
                 title="Toggle Grayscale"
               >
-                B&W
+                Gray
               </button>
+
+              <div className="h-6 w-px bg-gray-700 mx-1"></div>
+
+              <div className="flex items-center gap-2 bg-gray-800/50 p-1 px-2 rounded-lg border border-gray-700/50">
+                <button
+                  onClick={() => setValueMapEnabled(!valueMapEnabled)}
+                  className={`px-3 h-6 flex items-center justify-center rounded text-[10px] font-bold uppercase transition-colors ${valueMapEnabled
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                    }`}
+                >
+                  Value Map
+                </button>
+                {valueMapEnabled && (
+                  <>
+                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-700 pl-2">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase">Steps</span>
+                      <input
+                        type="range"
+                        min="2"
+                        max="10"
+                        value={posterizeSteps}
+                        onChange={(e) => setPosterizeSteps(parseInt(e.target.value))}
+                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <span className="text-[10px] text-gray-300 font-mono w-4">{posterizeSteps}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-2 border-l border-gray-700 pl-2">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase">Range</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={rangeHighlightMin}
+                        onChange={(e) => setRangeHighlightMin(parseInt(e.target.value))}
+                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={rangeHighlightMax}
+                        onChange={(e) => setRangeHighlightMax(parseInt(e.target.value))}
+                        className="w-16 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="text-gray-500 text-xs">
               Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • Click to Sample
@@ -916,8 +1046,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        </div >
+      )
+      }
+    </div >
   )
 }

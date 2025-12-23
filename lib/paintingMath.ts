@@ -19,16 +19,56 @@ export function toCss(color: string | Color): string {
 }
 
 /**
+ * Converts sRGB value to linear RGB.
+ */
+export function sRGBToLinear(v: number): number {
+    v /= 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+}
+
+/**
+ * Get Relative Luminance (Y) from RGB.
+ * Y = 0.2126R + 0.7152G + 0.0722B
+ * Returns 0-100.
+ */
+export function getLuminance(r: number, g: number, b: number): number {
+    const rl = sRGBToLinear(r);
+    const gl = sRGBToLinear(g);
+    const bl = sRGBToLinear(b);
+    const y = 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+    return Math.round(y * 100);
+}
+
+/**
+ * Get Value Band label from ValuePercent (0-100)
+ */
+export function getValueBand(value: number): string {
+    if (value <= 10) return 'Near black';
+    if (value <= 20) return 'Deep shadow';
+    if (value <= 30) return 'Shadow';
+    if (value <= 40) return 'Dark half tone';
+    if (value <= 50) return 'Half tone';
+    if (value <= 60) return 'Light half tone';
+    if (value <= 70) return 'Light';
+    if (value <= 80) return 'Highlight';
+    if (value <= 90) return 'Hot highlight';
+    return 'Near white';
+}
+
+/**
  * Get Painter's Value (0-10 scale)
- * Derived from OKLCH Lightness (0-1)
+ * Derived from Relative Luminance Y.
  */
 export function getPainterValue(color: string | Color): number {
-    const c = toOklch(color);
+    const c = toRgb(color);
     if (!c) return 0;
-    // OKLCH L is 0-1 usually. Map to 0-10.
-    // Ensure bounds.
-    const l = Math.max(0, Math.min(1, c.l ?? 0));
-    return Number((l * 10).toFixed(1));
+
+    const r = Math.round((c.r ?? 0) * 255);
+    const g = Math.round((c.g ?? 0) * 255);
+    const b = Math.round((c.b ?? 0) * 255);
+
+    const y = getLuminance(r, g, b); // 0-100
+    return Math.min(10, Math.max(0, Math.round(y / 10)));
 }
 
 /**
