@@ -56,6 +56,7 @@ The algorithm intelligently:
 ColorWizard now uses **Spectral.js** for physically-accurate paint mixing based on **Kubelka-Munk theory**. Unlike RGB blending which produces unrealistic results (e.g., red + green = muddy brown instead of yellow), spectral mixing simulates how real pigments absorb and scatter light.
 
 Key features:
+
 - **Perceptual Color Matching**: Uses OKLab color space for Delta E calculations that match human perception
 - **Grid Search Solver**: Finds optimal pigment combinations by testing thousands of weight combinations
 - **Tinting Strength**: Accounts for highly-tinting pigments like Phthalos that dominate mixes
@@ -66,6 +67,7 @@ Key features:
 #### 🧪 Mix Lab
 
 An interactive playground for experimenting with spectral paint mixing:
+
 - **6 Sliders**: Adjust the proportion of each palette pigment (0-100)
 - **Live Preview**: See the resulting spectral mix update in real-time
 - **Auto-Normalization**: Weights are automatically normalized to percentages
@@ -104,19 +106,19 @@ git clone https://github.com/yourusername/colorwizard.git
 cd colorwizard
 ```
 
-2. **Install dependencies**
+1. **Install dependencies**
 
 ```bash
 npm install
 ```
 
-3. **Run the development server**
+1. **Run the development server**
 
 ```bash
 npm run dev
 ```
 
-4. **Open your browser**
+1. **Open your browser**
 Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Usage
@@ -304,6 +306,20 @@ The component automatically updates with the 5 best matches whenever a new color
 - Opera 76+
 
 All modern browsers with HTML5 Canvas support are compatible.
+
+## Developer Tooling
+
+### 🤖 Agent Control & Manual Verification
+
+This project includes custom configurations for AI coding agents (like Antigravity/Gemini) to ensure a smooth development experience:
+
+- **Manual Verification Workflow**: A specialized workflow in `.agent/workflows/manual-verify.md` that instructs the agent to implementation code and then pause for manual user verification instead of using automated browser checks.
+- **Improved Reliability**: By prioritizing manual "vibe checks" for UI and interaction, we avoid the overhead and potential "hiccups" of automated browser agents.
+
+To use this workflow with your agent:
+
+1. Ensure `npm run dev` is running.
+2. Ask the agent to "Follow the manual-verify workflow" for your task.
 
 ## Performance Considerations
 
