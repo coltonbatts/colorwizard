@@ -330,11 +330,28 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={() => {
-                          const btn = document.createElement('a');
-                          const canvas = document.querySelector('canvas[ref*="valueMapCanvasRef"]') || document.querySelectorAll('canvas')[1]; // Heuristic lookup or just instruct user
-                          // Actually I'll use a better way later or just provide a button that ImageCanvas should handle.
-                          // For now, let's just add the button UI.
-                          console.log('Export PNG triggered');
+                          const canvas = document.getElementById('value-map-canvas') as HTMLCanvasElement;
+                          if (!canvas) {
+                            alert('Value map canvas not found. Please enable the overlay first.');
+                            return;
+                          }
+
+                          // Convert canvas to blob and download
+                          canvas.toBlob((blob) => {
+                            if (!blob) {
+                              alert('Failed to generate PNG');
+                              return;
+                            }
+
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `value-map-${Date.now()}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                          }, 'image/png');
                         }}
                         className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] font-bold text-gray-300 transition-colors"
                       >
