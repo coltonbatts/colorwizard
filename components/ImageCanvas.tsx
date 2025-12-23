@@ -65,6 +65,38 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     height: number
   } | null>(null)
 
+  // Grid system state
+  const [gridEnabled, setGridEnabled] = useState(false)
+  const [gridPhysicalWidth, setGridPhysicalWidth] = useState(20)
+  const [gridPhysicalHeight, setGridPhysicalHeight] = useState(16)
+  const [gridSquareSize, setGridSquareSize] = useState(1)
+
+  // Load grid settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('colorwizard_grid_settings')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        setGridEnabled(parsed.enabled ?? false)
+        setGridPhysicalWidth(parsed.physicalWidth ?? 20)
+        setGridPhysicalHeight(parsed.physicalHeight ?? 16)
+        setGridSquareSize(parsed.squareSize ?? 1)
+      } catch (e) {
+        console.error('Failed to parse grid settings', e)
+      }
+    }
+  }, [])
+
+  // Save grid settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('colorwizard_grid_settings', JSON.stringify({
+      enabled: gridEnabled,
+      physicalWidth: gridPhysicalWidth,
+      physicalHeight: gridPhysicalHeight,
+      squareSize: gridSquareSize
+    }))
+  }, [gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize])
+
   // Calculate initial image fit
   const calculateImageFit = useCallback(
     (img: HTMLImageElement, canvasWidth: number, canvasHeight: number) => {
@@ -127,9 +159,59 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       )
     }
 
+    // Draw Grid
+    if (gridEnabled) {
+      const ppi = image.width / gridPhysicalWidth
+      const ppiDraw = imageDrawInfo.width / gridPhysicalWidth
+
+      ctx.save()
+      ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
+      ctx.lineWidth = 1 / zoomLevel
+      ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
+
+      ctx.font = `${12 / zoomLevel}px monospace`
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      // Vertical lines (Columns)
+      for (let x = 0; x <= gridPhysicalWidth; x += gridSquareSize) {
+        const xPos = x * ppiDraw
+        ctx.beginPath()
+        ctx.moveTo(xPos, 0)
+        ctx.lineTo(xPos, imageDrawInfo.height)
+        ctx.stroke()
+
+        // Column label (A, B, C...)
+        if (x < gridPhysicalWidth) {
+          const colLabel = String.fromCharCode(65 + Math.floor(x / gridSquareSize))
+          ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
+        }
+      }
+
+      // Horizontal lines (Rows)
+      for (let y = 0; y <= gridPhysicalHeight; y += gridSquareSize) {
+        const yPos = y * ppiDraw
+        ctx.beginPath()
+        ctx.moveTo(0, yPos)
+        ctx.lineTo(imageDrawInfo.width, yPos)
+        ctx.stroke()
+
+        // Row label (1, 2, 3...)
+        if (y < gridPhysicalHeight) {
+          const rowLabel = (Math.floor(y / gridSquareSize) + 1).toString()
+          ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
+        }
+      }
+
+      ctx.restore()
+    }
+
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale]) // Added labBuffer dep
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize]) // Added labBuffer dep
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -725,6 +807,54 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             </div>
             <div className="text-gray-500 text-xs">
               Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • Click to Sample
+            </div>
+          </div>
+
+          {/* Grid Controls */}
+          <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 mb-4 flex flex-wrap items-center gap-4 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={gridEnabled}
+                onChange={(e) => setGridEnabled(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-gray-200 font-medium">Grid Overlay</span>
+            </label>
+
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Canvas:</span>
+              <input
+                type="number"
+                value={gridPhysicalWidth}
+                onChange={(e) => setGridPhysicalWidth(Number(e.target.value))}
+                className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+                min="1"
+              />
+              <span className="text-gray-500">×</span>
+              <input
+                type="number"
+                value={gridPhysicalHeight}
+                onChange={(e) => setGridPhysicalHeight(Number(e.target.value))}
+                className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+                min="1"
+              />
+              <span className="text-gray-500">in</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Size:</span>
+              <select
+                value={gridSquareSize}
+                onChange={(e) => setGridSquareSize(Number(e.target.value))}
+                className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+              >
+                <option value="0.25">0.25"</option>
+                <option value="0.5">0.5"</option>
+                <option value="1">1"</option>
+                <option value="2">2"</option>
+                <option value="3">3"</option>
+              </select>
             </div>
           </div>
 
