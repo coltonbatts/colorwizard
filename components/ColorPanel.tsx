@@ -7,6 +7,10 @@ import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
 import { getPainterValue, getPainterChroma } from '@/lib/paintingMath'
+import { PinnedColor } from '@/lib/types/pinnedColor'
+import { generatePaintRecipe } from '@/lib/colorMixer'
+import { solveRecipe } from '@/lib/paint/solveRecipe'
+import { findClosestDMCColors } from '@/lib/dmcFloss'
 
 interface ColorPanelProps {
   sampledColor: {
@@ -15,14 +19,18 @@ interface ColorPanelProps {
     hsl: { h: number; s: number; l: number }
   } | null
   onColorSelect: (rgb: { r: number; g: number; b: number }) => void
+  onPin: (newPin: PinnedColor) => void
+  isPinned: boolean
 }
 
 type Tab = 'painter' | 'thread'
 type PainterSubTab = 'recipe' | 'mixlab'
 
-export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
+  const [label, setLabel] = useState('')
+  const [isPinning, setIsPinning] = useState(false)
 
   if (!sampledColor) {
     return (
@@ -57,7 +65,63 @@ export default function ColorPanel({ sampledColor, onColorSelect }: ColorPanelPr
 
           {/* Hero Info - Now below the swatch for max width */}
           <div className="flex flex-col items-center justify-center pt-1 lg:pt-2">
-            <h2 className="text-4xl lg:text-6xl font-black tracking-tighter font-mono text-white mb-1 lg:mb-3 tabular-nums">{hex}</h2>
+            <div className="flex items-center gap-4 mb-2">
+              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter font-mono text-white tabular-nums">{hex}</h2>
+              <button
+                onClick={async () => {
+                  if (isPinned) return
+                  setIsPinning(true)
+                  try {
+                    const spectral = await solveRecipe(hex)
+                    const fallback = generatePaintRecipe(hsl)
+                    const dmc = findClosestDMCColors(rgb, 5)
+
+                    onPin({
+                      id: crypto.randomUUID(),
+                      hex,
+                      rgb,
+                      hsl,
+                      label: label.trim() || `Color ${hex}`,
+                      timestamp: Date.now(),
+                      spectralRecipe: spectral,
+                      fallbackRecipe: fallback,
+                      dmcMatches: dmc
+                    })
+                    setLabel('')
+                  } catch (e) {
+                    console.error('Failed to pin color', e)
+                  } finally {
+                    setIsPinning(false)
+                  }
+                }}
+                disabled={isPinning || isPinned}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isPinned
+                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
+                  }`}
+              >
+                {isPinning ? (
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Pinning...
+                  </span>
+                ) : isPinned ? (
+                  <><span>✓</span> Pinned</>
+                ) : (
+                  <><span>📌</span> Pin Color</>
+                )}
+              </button>
+            </div>
+
+            <div className="w-full max-w-xs mb-4">
+              <input
+                type="text"
+                placeholder="Add a label/note..."
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              />
+            </div>
 
             <div className="flex gap-4 lg:gap-8 items-center justify-center w-full px-2 lg:px-4">
               <div className="flex flex-col items-center">

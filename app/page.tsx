@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
+import PinnedColorsPanel from '@/components/PinnedColorsPanel'
+import { PinnedColor } from '@/lib/types/pinnedColor'
 
 export default function Home() {
   const [sampledColor, setSampledColor] = useState<{
@@ -17,7 +19,55 @@ export default function Home() {
   const [highlightTolerance, setHighlightTolerance] = useState(20)
   const [highlightMode, setHighlightMode] = useState<'solid' | 'heatmap'>('solid')
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [activeTab, setActiveTab] = useState<'inspect' | 'shopping'>('inspect')
+  const [activeTab, setActiveTab] = useState<'inspect' | 'shopping' | 'pinned'>('inspect')
+  const [pinnedColors, setPinnedColors] = useState<PinnedColor[]>([])
+
+  // Persistence
+  useEffect(() => {
+    const saved = localStorage.getItem('colorwizard_pinned_colors')
+    if (saved) {
+      try {
+        setPinnedColors(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to load pinned colors', e)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('colorwizard_pinned_colors', JSON.stringify(pinnedColors))
+  }, [pinnedColors])
+
+  const handlePinColor = (newPin: PinnedColor) => {
+    setPinnedColors(prev => {
+      // Limit to 30 colors
+      const filtered = prev.filter(p => p.hex !== newPin.hex)
+      const next = [newPin, ...filtered]
+      if (next.length > 30) return next.slice(0, 30)
+      return next
+    })
+  }
+
+  const handleUnpinColor = (id: string) => {
+    setPinnedColors(prev => prev.filter(p => p.id !== id))
+  }
+
+  const handleClearPinned = () => {
+    if (confirm('Clear all pinned colors?')) {
+      setPinnedColors([])
+    }
+  }
+
+  const handleExportPalette = () => {
+    const data = JSON.stringify(pinnedColors, null, 2)
+    const blob = new Blob([data], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `colorwizard_palette_${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <main className="flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden">
@@ -99,7 +149,13 @@ export default function Home() {
             className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'shopping' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
             onClick={() => setActiveTab('shopping')}
           >
-            Shopping List <span className="text-xs bg-blue-900 text-blue-200 px-1.5 rounded ml-1">NEW</span>
+            List
+          </button>
+          <button
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'pinned' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            onClick={() => setActiveTab('pinned')}
+          >
+            Pinned <span className="text-[10px] bg-gray-700 px-1 rounded ml-1">{pinnedColors.length}</span>
           </button>
         </div>
 
@@ -109,11 +165,24 @@ export default function Home() {
               <ColorPanel
                 sampledColor={sampledColor}
                 onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+                onPin={handlePinColor}
+                isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
               />
             </div>
-          ) : (
+          ) : activeTab === 'shopping' ? (
             <div className="absolute inset-0">
               <ShoppingListPanel image={image} />
+            </div>
+          ) : (
+            <div className="absolute inset-0 overflow-y-auto">
+              <PinnedColorsPanel
+                pinnedColors={pinnedColors}
+                activeHighlightColor={activeHighlightColor}
+                onUnpin={handleUnpinColor}
+                onClearAll={handleClearPinned}
+                onExport={handleExportPalette}
+                onSelect={(rgb: { r: number; g: number; b: number }) => setActiveHighlightColor(rgb)}
+              />
             </div>
           )}
         </div>
