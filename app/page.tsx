@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
+import PaletteSelector from '@/components/PaletteSelector'
+import PaletteManager from '@/components/PaletteManager'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '@/lib/types/valueScale'
+import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
 
 export default function Home() {
   const [sampledColor, setSampledColor] = useState<{
@@ -23,6 +26,13 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'inspect' | 'shopping' | 'pinned'>('inspect')
   const [pinnedColors, setPinnedColors] = useState<PinnedColor[]>([])
   const [valueScaleSettings, setValueScaleSettings] = useState<ValueScaleSettings>(DEFAULT_VALUE_SCALE_SETTINGS)
+  const [palettes, setPalettes] = useState<Palette[]>([DEFAULT_PALETTE])
+  const [showPaletteManager, setShowPaletteManager] = useState(false)
+
+  // Derived active palette
+  const activePalette = useMemo(() => {
+    return palettes.find(p => p.isActive) || palettes[0] || DEFAULT_PALETTE
+  }, [palettes])
 
   // Persistence
   useEffect(() => {
@@ -39,6 +49,34 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('colorwizard_pinned_colors', JSON.stringify(pinnedColors))
   }, [pinnedColors])
+
+  // Palette persistence - load
+  useEffect(() => {
+    const saved = localStorage.getItem('colorwizard_palettes')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Palette[]
+        // Ensure default palette exists
+        const hasDefault = parsed.some(p => p.isDefault)
+        if (!hasDefault) {
+          parsed.unshift(DEFAULT_PALETTE)
+        }
+        // Ensure at least one is active
+        const hasActive = parsed.some(p => p.isActive)
+        if (!hasActive && parsed.length > 0) {
+          parsed[0].isActive = true
+        }
+        setPalettes(parsed)
+      } catch (e) {
+        console.error('Failed to load palettes', e)
+      }
+    }
+  }, [])
+
+  // Palette persistence - save
+  useEffect(() => {
+    localStorage.setItem('colorwizard_palettes', JSON.stringify(palettes))
+  }, [palettes])
 
   const handlePinColor = (newPin: PinnedColor) => {
     setPinnedColors(prev => {
@@ -71,11 +109,47 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
+  // Palette CRUD handlers
+  const handleCreatePalette = (newPalette: Palette) => {
+    setPalettes(prev => [...prev, newPalette])
+  }
+
+  const handleUpdatePalette = (updatedPalette: Palette) => {
+    setPalettes(prev => prev.map(p =>
+      p.id === updatedPalette.id ? updatedPalette : p
+    ))
+  }
+
+  const handleDeletePalette = (paletteId: string) => {
+    setPalettes(prev => {
+      const filtered = prev.filter(p => p.id !== paletteId)
+      // If deleted palette was active, activate the first one
+      const hadActive = prev.find(p => p.id === paletteId)?.isActive
+      if (hadActive && filtered.length > 0) {
+        filtered[0].isActive = true
+      }
+      return filtered
+    })
+  }
+
+  const handleSetActivePalette = (paletteId: string) => {
+    setPalettes(prev => prev.map(p => ({
+      ...p,
+      isActive: p.id === paletteId
+    })))
+  }
+
   return (
     <main className="flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden">
       <div className="flex-1 lg:flex-[7] p-6 flex flex-col min-h-0 min-w-0">
-        {/* Color Theory Lab Button */}
-        <div className="mb-4 flex justify-end">
+        {/* Header with Palette Selector and Color Theory Lab */}
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <PaletteSelector
+            palettes={palettes}
+            activePalette={activePalette}
+            onSelectPalette={handleSetActivePalette}
+            onOpenManager={() => setShowPaletteManager(true)}
+          />
           <Link
             href="/color-theory"
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
@@ -172,6 +246,7 @@ export default function Home() {
                 isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
                 valueScaleSettings={valueScaleSettings}
                 onValueScaleChange={setValueScaleSettings}
+                activePalette={activePalette}
               />
             </div>
           ) : activeTab === 'shopping' ? (
@@ -192,6 +267,16 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Palette Manager Modal */}
+      <PaletteManager
+        isOpen={showPaletteManager}
+        onClose={() => setShowPaletteManager(false)}
+        palettes={palettes}
+        onCreatePalette={handleCreatePalette}
+        onUpdatePalette={handleUpdatePalette}
+        onDeletePalette={handleDeletePalette}
+      />
     </main>
   )
 }

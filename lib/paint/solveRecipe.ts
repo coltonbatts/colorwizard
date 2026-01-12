@@ -90,12 +90,24 @@ interface SolverCandidate {
 }
 
 /**
+ * Options for the recipe solver.
+ */
+export interface SolveOptions {
+    /** If provided, only use these pigment IDs in the recipe */
+    paletteColorIds?: string[];
+}
+
+/**
  * Search for best 2-pigment mix.
  */
 async function search2Pigments(
-    targetHex: string
+    targetHex: string,
+    filteredPalette: typeof PALETTE
 ): Promise<SolverCandidate | null> {
-    const pigmentCombos = combinations(PALETTE.map((p) => p.id), 2);
+    if (filteredPalette.length < 2) {
+        return null; // Need at least 2 pigments for 2-pigment mix
+    }
+    const pigmentCombos = combinations(filteredPalette.map((p) => p.id), 2);
     const weights = weightGrid(2, CONFIG.COARSE_STEP);
 
     let best: SolverCandidate | null = null;
@@ -128,9 +140,13 @@ async function search2Pigments(
  * Search for best 3-pigment mix.
  */
 async function search3Pigments(
-    targetHex: string
+    targetHex: string,
+    filteredPalette: typeof PALETTE
 ): Promise<SolverCandidate | null> {
-    const pigmentCombos = combinations(PALETTE.map((p) => p.id), 3);
+    if (filteredPalette.length < 3) {
+        return null; // Need at least 3 pigments for 3-pigment mix
+    }
+    const pigmentCombos = combinations(filteredPalette.map((p) => p.id), 3);
     const weights = weightGrid(3, CONFIG.COARSE_STEP);
 
     let best: SolverCandidate | null = null;
@@ -272,8 +288,13 @@ function generateSteps(
 
 /**
  * Solve for the best paint recipe to match a target color.
+ * @param targetHex - The target hex color to match
+ * @param options - Optional configuration including palette filter
  */
-export async function solveRecipe(targetHex: string): Promise<SpectralRecipe> {
+export async function solveRecipe(
+    targetHex: string,
+    options?: SolveOptions
+): Promise<SpectralRecipe> {
     // Validate input
     if (!targetHex || !targetHex.match(/^#[0-9A-Fa-f]{6}$/)) {
         throw new Error('Invalid target hex color');
@@ -284,16 +305,34 @@ export async function solveRecipe(targetHex: string): Promise<SpectralRecipe> {
         throw new Error('Spectral.js not available');
     }
 
-    // Step 1: Coarse 2-pigment search
-    let best = await search2Pigments(targetHex);
+    // Filter palette if specified
+    const filteredPalette = options?.paletteColorIds
+        ? PALETTE.filter(p => options.paletteColorIds!.includes(p.id))
+        : PALETTE;
 
-    if (!best) {
-        throw new Error('No valid 2-pigment mix found');
+    if (filteredPalette.length === 0) {
+        throw new Error('Palette must contain at least one color');
     }
 
-    // Step 2: Try 3-pigment if error is high
-    if (best.error > CONFIG.THREE_PIGMENT_THRESHOLD) {
-        const best3 = await search3Pigments(targetHex);
+    // Step 1: Coarse 2-pigment search (or single if only 1 color)
+    let best = await search2Pigments(targetHex, filteredPalette);
+
+    // If only 1 color in palette, create a 1-pigment "mix"
+    if (!best && filteredPalette.length === 1) {
+        const singlePigment = filteredPalette[0];
+        const inputs: MixInput[] = [{ pigmentId: singlePigment.id, weight: 1 }];
+        const result = await mixPigments(inputs);
+        const error = await deltaEFromSpectral(result.spectralColor, targetHex);
+        best = { inputs, hex: result.hex, error };
+    }
+
+    if (!best) {
+        throw new Error('No valid mix found with available colors');
+    }
+
+    // Step 2: Try 3-pigment if error is high (and we have enough colors)
+    if (best.error > CONFIG.THREE_PIGMENT_THRESHOLD && filteredPalette.length >= 3) {
+        const best3 = await search3Pigments(targetHex, filteredPalette);
         if (best3 && best3.error < best.error) {
             best = best3;
         }

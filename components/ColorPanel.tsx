@@ -10,6 +10,7 @@ import ColorHarmonies from './ColorHarmonies'
 import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
+import { Palette } from '@/lib/types/palette'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
@@ -31,12 +32,13 @@ interface ColorPanelProps {
   isPinned: boolean
   valueScaleSettings?: ValueScaleSettings
   onValueScaleChange?: (settings: ValueScaleSettings) => void
+  activePalette?: Palette
 }
 
 type Tab = 'painter' | 'thread'
 type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies' | 'valueScale'
 
-export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
   const [label, setLabel] = useState('')
@@ -264,7 +266,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             {/* Recipe or Mix Lab based on sub-tab */}
             <section className="min-h-0">
               {painterSubTab === 'recipe' ? (
-                <PaintRecipe hsl={hsl} targetHex={hex} />
+                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
               ) : painterSubTab === 'mixlab' ? (
                 <MixLab targetHex={hex} />
               ) : painterSubTab === 'harmonies' ? (

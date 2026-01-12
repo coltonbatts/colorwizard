@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { SpectralRecipe } from '@/lib/spectral/types'
+import { Palette } from '@/lib/types/palette'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
   targetHex: string
+  activePalette?: Palette
 }
 
 // Match quality colors
@@ -18,7 +20,7 @@ const QUALITY_COLORS = {
   Poor: { text: 'text-red-400', bg: 'bg-red-500' },
 }
 
-export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
+export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isFallback, setIsFallback] = useState(false)
@@ -32,7 +34,12 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
     async function solve() {
       setIsLoading(true)
       try {
-        const recipe = await solveRecipe(targetHex)
+        // Build palette filter if a non-default palette is active
+        const options = activePalette && !activePalette.isDefault
+          ? { paletteColorIds: activePalette.colors.map(c => c.id) }
+          : undefined
+
+        const recipe = await solveRecipe(targetHex, options)
         if (!cancelled) {
           setSpectralRecipe(recipe)
           setIsFallback(false)
@@ -55,7 +62,7 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
     return () => {
       cancelled = true
     }
-  }, [targetHex])
+  }, [targetHex, activePalette])
 
   // Use spectral recipe if available, otherwise use fallback
   const recipe = spectralRecipe
@@ -226,9 +233,22 @@ export default function PaintRecipe({ hsl, targetHex }: PaintRecipeProps) {
       )}
 
       <div className="mt-4 pt-4 border-t border-gray-700">
+        {activePalette && (
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Palette:</span>
+            <span className="text-xs text-blue-400 font-medium">{activePalette.name}</span>
+            {!activePalette.isDefault && (
+              <span className="text-[9px] bg-blue-900/30 text-blue-300 px-1.5 py-0.5 rounded">
+                {activePalette.colors.length} colors
+              </span>
+            )}
+          </div>
+        )}
         <p className="text-xs text-gray-500">
-          Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo
-          Green, Phthalo Blue
+          {activePalette && !activePalette.isDefault
+            ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
+            : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
+          }
         </p>
       </div>
     </div>
