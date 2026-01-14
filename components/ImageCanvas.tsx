@@ -38,6 +38,10 @@ interface ImageCanvasProps {
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: ValueScaleResult) => void
+  /** Enable measurement mode - when true, clicks report screen-space coordinates */
+  measureMode?: boolean
+  /** Callback when a measurement click occurs (screen-space coordinates) */
+  onMeasureClick?: (point: { x: number; y: number }) => void
 }
 
 const MIN_ZOOM = 0.1
@@ -594,7 +598,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsPanning(false)
     if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
-      sampleColor(e)
+      // Check if measurement mode is active
+      if (props.measureMode && props.onMeasureClick) {
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        const rect = canvas.getBoundingClientRect()
+        // Get click position relative to the canvas container (screen-space)
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        props.onMeasureClick({ x, y })
+      } else {
+        sampleColor(e)
+      }
     }
   }
 
