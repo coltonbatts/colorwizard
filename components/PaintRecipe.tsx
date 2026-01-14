@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { generatePaintRecipe } from '@/lib/colorMixer'
-import { solveRecipe } from '@/lib/paint/solveRecipe'
+import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
 import { SpectralRecipe } from '@/lib/spectral/types'
 import { Palette } from '@/lib/types/palette'
 
@@ -10,6 +10,17 @@ interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
   targetHex: string
   activePalette?: Palette
+  /**
+   * Use the new paint catalog instead of legacy palette.
+   * When true, brandId and lineId are used for filtering.
+   */
+  useCatalog?: boolean
+  /** Brand ID when using catalog */
+  brandId?: string
+  /** Line ID when using catalog */
+  lineId?: string
+  /** Specific paint IDs to use (overrides brandId/lineId filter) */
+  paintIds?: string[]
 }
 
 // Match quality colors
@@ -20,7 +31,15 @@ const QUALITY_COLORS = {
   Poor: { text: 'text-red-400', bg: 'bg-red-500' },
 }
 
-export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintRecipeProps) {
+export default function PaintRecipe({
+  hsl,
+  targetHex,
+  activePalette,
+  useCatalog = false,
+  brandId,
+  lineId,
+  paintIds,
+}: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isFallback, setIsFallback] = useState(false)
@@ -34,11 +53,24 @@ export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintReci
 
     async function solve() {
       setIsLoading(true)
-      try {
-        const options = activePalette && !activePalette.isDefault
-          ? { paletteColorIds: activePalette.colors.map(c => c.id) }
-          : undefined
 
+      // Build options based on mode
+      let options: SolveOptions | undefined
+
+      if (useCatalog) {
+        // Use new catalog system
+        options = {
+          useCatalog: true,
+          brandId,
+          lineId,
+          paintIds,
+        }
+      } else if (activePalette && !activePalette.isDefault) {
+        // Legacy palette filter
+        options = { paletteColorIds: activePalette.colors.map(c => c.id) }
+      }
+
+      try {
         // Try using Web Worker for performance
         worker = new Worker(new URL('@/lib/paint/solver.worker.ts', import.meta.url))
 
@@ -71,7 +103,7 @@ export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintReci
         console.error('Spectral recipe failed:', err)
         // Direct fallback if worker fails to start
         try {
-          const recipe = await solveRecipe(targetHex)
+          const recipe = await solveRecipe(targetHex, options)
           if (!cancelled) {
             setSpectralRecipe(recipe)
             setIsFallback(false)
@@ -93,7 +125,7 @@ export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintReci
       cancelled = true
       if (worker) worker.terminate()
     }
-  }, [targetHex, activePalette])
+  }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
 
   // Use spectral recipe if available, otherwise use fallback
   const recipe = spectralRecipe

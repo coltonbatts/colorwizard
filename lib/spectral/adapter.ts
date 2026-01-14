@@ -61,6 +61,35 @@ export async function getPaletteColors(): Promise<Map<string, SpectralColor>> {
 }
 
 /**
+ * Dynamic pigment registry for catalog paints.
+ * Maps pigment ID -> { hex, tintingStrength }
+ */
+const dynamicPigmentRegistry = new Map<string, { hex: string; tintingStrength: number }>();
+
+/**
+ * Register pigments for use in mixing.
+ * Call this before mixPigmentsSync to add catalog paints.
+ */
+export async function registerPigments(
+    pigments: Array<{ id: string; hex: string; tintingStrength: number }>
+): Promise<void> {
+    await isSpectralAvailable(); // Ensure spectral is loaded
+
+    for (const p of pigments) {
+        dynamicPigmentRegistry.set(p.id, { hex: p.hex, tintingStrength: p.tintingStrength });
+        // Pre-warm color cache
+        await getSpectralColor(p.hex, p.tintingStrength);
+    }
+}
+
+/**
+ * Clear dynamic pigment registry.
+ */
+export function clearDynamicPigments(): void {
+    dynamicPigmentRegistry.clear();
+}
+
+/**
  * Mix multiple pigments using spectral mixing.
  * 
  * @param inputs Array of pigment IDs with weights
@@ -183,8 +212,23 @@ export function mixPigmentsSync(inputs: MixInput[]): { hex: string, spectralColo
     if (validInputs.length === 0) throw new Error('At least one input with positive weight required');
 
     const mixArgs: [SpectralColor, number][] = validInputs.map((input) => {
-        const color = colorCache.get(`${PALETTE_MAP.get(input.pigmentId)?.hex}-${PALETTE_MAP.get(input.pigmentId)?.tintingStrength || 1}`);
-        if (!color) throw new Error(`Pigment ${input.pigmentId} not in cache.`);
+        // Try dynamic registry first (for catalog paints), then legacy PALETTE_MAP
+        let pigmentData = dynamicPigmentRegistry.get(input.pigmentId);
+        if (!pigmentData) {
+            const legacyPigment = PALETTE_MAP.get(input.pigmentId);
+            if (legacyPigment) {
+                pigmentData = { hex: legacyPigment.hex, tintingStrength: legacyPigment.tintingStrength };
+            }
+        }
+
+        if (!pigmentData) {
+            throw new Error(`Pigment ${input.pigmentId} not registered. Call registerPigments() first.`);
+        }
+
+        const color = colorCache.get(`${pigmentData.hex}-${pigmentData.tintingStrength}`);
+        if (!color) {
+            throw new Error(`Color for pigment ${input.pigmentId} not in cache.`);
+        }
         return [color, input.weight];
     });
 

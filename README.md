@@ -51,18 +51,16 @@ The algorithm intelligently:
 - Includes helpful mixing notes and warnings
 - Handles edge cases like near-white, near-black, and desaturated colors
 
+#### 🧪 Brand-Aware Paint Library [NEW]
+
+ColorWizard now features a comprehensive, extensible paint library system:
+
+- **Brand & Line Selection**: Choose from popular brands like Winsor & Newton, Golden, and Gamblin.
+- **Searchable Tube Selector**: Browse hundreds of individual paint tubes with real-time filtering and search.
+- **Custom Palettes**: Build your own working palette by selecting specific tubes you own.
+- **Improved Solver**: The recipe generator now prefers your selected tubes to create more practical mixing instructions.
+
 #### 🔬 Spectral.js Paint Mixing
-
-ColorWizard now uses **Spectral.js** for physically-accurate paint mixing based on **Kubelka-Munk theory**. Unlike RGB blending which produces unrealistic results (e.g., red + green = muddy brown instead of yellow), spectral mixing simulates how real pigments absorb and scatter light.
-
-Key features:
-
-- **Perceptual Color Matching**: Uses OKLab color space for Delta E calculations that match human perception
-- **Grid Search Solver**: Finds optimal pigment combinations by testing thousands of weight combinations
-- **Tinting Strength**: Accounts for highly-tinting pigments like Phthalos that dominate mixes
-- **Match Quality**: Shows how close the predicted mix is to your target color (Excellent/Good/Fair/Poor)
-
-**Important Note**: The pigment colors are approximations based on typical hex values. For truly accurate predictions, measured spectral reflectance data from actual paint samples would be needed.
 
 #### 🧪 Mix Lab
 
@@ -146,25 +144,25 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ### Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
+| Shortcut   | Action                  |
+|------------|-------------------------|
 | `Spacebar` | Hold to enable pan mode |
-| `+` or `=` | Zoom in |
-| `-` | Zoom out |
-| `0` | Reset view to 100% zoom |
+| `+` or `=` | Zoom in                 |
+| `-`        | Zoom out                |
+| `0`        | Reset view to 100% zoom |
 
 ### Mouse Controls
 
-| Action | Result |
-|--------|--------|
-| Left Click | Sample color at cursor position |
-| Middle Click + Drag | Pan around the image |
-| Scroll Wheel | Zoom in/out centered on cursor |
-| Spacebar + Drag | Pan around the image |
+| Action               | Result                         |
+|----------------------|--------------------------------|
+| Left Click           | Sample color at cursor position |
+| Middle Click + Drag  | Pan around the image           |
+| Scroll Wheel         | Zoom in/out centered on cursor |
+| Spacebar + Drag      | Pan around the image           |
 
 ## Project Structure
 
-```
+```text
 colorwizard/
 ├── app/
 │   ├── layout.tsx          # Root layout component
@@ -173,10 +171,17 @@ colorwizard/
 ├── components/
 │   ├── ImageCanvas.tsx     # Interactive canvas with zoom/pan
 │   ├── ColorPanel.tsx      # Color information display
-│   ├── PaintRecipe.tsx     # Paint mixing recipe display
+│   ├── PaintRecipe.tsx     # Brand-aware paint recipe display
+│   ├── BrandSelector.tsx   # UI for selecting paint brands/lines
+│   ├── TubeSelector.tsx    # Searchable UI for individual paint tubes
 │   └── DMCFlossMatch.tsx   # DMC floss color matching display
 ├── lib/
-│   ├── colorMixer.ts       # Paint recipe generation algorithm
+│   ├── paint/
+│   │   ├── catalog.ts      # Paint brand and tube database
+│   │   ├── mixEngine.ts    # Kubelka-Munk spectral mixing engine
+│   │   └── solveRecipe.ts  # Optimized recipe solver
+│   ├── spectral/
+│   │   └── adapter.ts      # Spectral.js integration helpers
 │   └── dmcFloss.ts         # DMC floss database and matching algorithm
 ├── public/                 # Static assets
 ├── package.json            # Dependencies and scripts
@@ -195,13 +200,13 @@ colorwizard/
 
 ## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server on port 3000 |
-| `npm run build` | Build production-optimized bundle |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint for code quality checks |
-| `npm run test` | Run Vitest unit tests |
+| Command           | Description                            |
+|-------------------|----------------------------------------|
+| `npm run dev`     | Start development server on port 3000  |
+| `npm run build`   | Build production-optimized bundle      |
+| `npm run start`   | Start production server                |
+| `npm run lint`    | Run ESLint for code quality checks     |
+| `npm run test`    | Run Vitest unit tests                  |
 
 ## Color Theory & Algorithm
 
@@ -239,7 +244,7 @@ The DMC floss matcher uses Euclidean distance in RGB color space to find the clo
 
 1. **Distance Calculation**: For each of the 454 DMC colors, calculates:
 
-   ```
+   ```math
    distance = √[(R₁-R₂)² + (G₁-G₂)² + (B₁-B₂)²]
    ```
 

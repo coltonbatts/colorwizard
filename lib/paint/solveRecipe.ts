@@ -1,6 +1,10 @@
 /**
  * Spectral-based paint recipe solver.
  * Uses grid search to find optimal pigment combinations.
+ * 
+ * Supports both:
+ * - Legacy PALETTE (spectral/palette.ts) for backward compatibility
+ * - New Paint Catalog (paint/catalog.ts) for brand-specific paints
  */
 import {
     mixPigmentsSync,
@@ -14,8 +18,11 @@ import {
     getPigment,
     getPaletteColors,
     createColor,
+    registerPigments,
 } from '../spectral/adapter';
-import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS } from '../spectral/types';
+import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS, Pigment } from '../spectral/types';
+import { getPaints, getPaint, paintToPigment } from './catalog';
+import type { Paint } from './types/Paint';
 
 /**
  * Solver configuration.
@@ -96,8 +103,23 @@ interface SolverCandidate {
  * Options for the recipe solver.
  */
 export interface SolveOptions {
-    /** If provided, only use these pigment IDs in the recipe */
+    /** If provided, only use these pigment IDs in the recipe (legacy mode) */
     paletteColorIds?: string[];
+
+    /**
+     * Use the new paint catalog instead of legacy PALETTE.
+     * When true, brandId and lineId filters are used.
+     */
+    useCatalog?: boolean;
+
+    /** Filter by brand ID (requires useCatalog: true) */
+    brandId?: string;
+
+    /** Filter by line ID (requires useCatalog: true) */
+    lineId?: string;
+
+    /** Only include paints with these pigment IDs (requires useCatalog: true) */
+    paintIds?: string[];
 }
 
 /**
@@ -301,10 +323,40 @@ export async function solveRecipe(
     await getPaletteColors();
     const targetColor = await createColor(targetHex);
 
-    // Filter palette if specified
-    const filteredPalette = options?.paletteColorIds
-        ? PALETTE.filter(p => options.paletteColorIds!.includes(p.id))
-        : PALETTE;
+    // Build palette based on options
+    let filteredPalette: Pigment[];
+
+    if (options?.useCatalog) {
+        // Use new paint catalog
+        const catalogPaints = await getPaints({
+            brandId: options.brandId,
+            lineId: options.lineId,
+        });
+
+        // Filter by specific paint IDs if provided
+        let paintsToUse = catalogPaints;
+        if (options.paintIds && options.paintIds.length > 0) {
+            paintsToUse = catalogPaints.filter(p => options.paintIds!.includes(p.id));
+        }
+
+        // Convert to Pigment format for solver compatibility
+        filteredPalette = paintsToUse.map(paintToPigment);
+
+        // Register these paints with the spectral adapter for mixing
+        await registerPigments(
+            paintsToUse.map(p => ({
+                id: p.id,
+                hex: p.hex,
+                tintingStrength: p.behavior?.tintingStrength ?? 1.0,
+            }))
+        );
+    } else if (options?.paletteColorIds) {
+        // Legacy mode: filter by pigment IDs
+        filteredPalette = PALETTE.filter(p => options.paletteColorIds!.includes(p.id));
+    } else {
+        // Default: use full legacy palette
+        filteredPalette = PALETTE;
+    }
 
     if (filteredPalette.length === 0) {
         throw new Error('Palette must contain at least one color');
