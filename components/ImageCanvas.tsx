@@ -17,7 +17,7 @@ interface ColorData {
 import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
 import { getLuminance } from '@/lib/paintingMath'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
-import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
+import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray, computeHistogram } from '@/lib/valueScale'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -35,6 +35,9 @@ interface ImageCanvasProps {
   highlightMode?: 'solid' | 'heatmap'
   onReset: () => void
   valueScaleSettings?: ValueScaleSettings
+  onValueScaleChange?: (settings: ValueScaleSettings) => void
+  onHistogramComputed?: (bins: number[]) => void
+  onValueScaleResult?: (result: ValueScaleResult) => void
 }
 
 const MIN_ZOOM = 0.1
@@ -64,6 +67,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [rangeHighlightMin, setRangeHighlightMin] = useState(0)
   const [rangeHighlightMax, setRangeHighlightMax] = useState(100)
   const [isGrayscale, setIsGrayscale] = useState(false)
+  const [splitMode, setSplitMode] = useState(false)
 
   // Zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -151,29 +155,54 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Draw image at the calculated fit position
     // Always draw original image first, then overlay value map with opacity if enabled
     const renderImage = () => {
-      // Draw the base image (original or grayscale)
-      if (isGrayscale) ctx.filter = 'grayscale(100%)'
-      ctx.drawImage(
-        image,
-        imageDrawInfo.x,
-        imageDrawInfo.y,
-        imageDrawInfo.width,
-        imageDrawInfo.height
-      )
-      if (isGrayscale) ctx.filter = 'none'
+      const { x, y, width, height } = imageDrawInfo
 
-      // Blend value map overlay on top with opacity
-      if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
-        const opacity = valueScaleSettings.opacity ?? 0.45
-        ctx.globalAlpha = opacity
-        ctx.drawImage(
-          valueMapCanvasRef.current,
-          imageDrawInfo.x,
-          imageDrawInfo.y,
-          imageDrawInfo.width,
-          imageDrawInfo.height
-        )
-        ctx.globalAlpha = 1.0
+      if (splitMode && valueMapCanvasRef.current) {
+        const splitX = width / 2
+
+        // Left half: Original
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x, y, splitX, height)
+        ctx.clip()
+        if (isGrayscale) ctx.filter = 'grayscale(100%)'
+        ctx.drawImage(image, x, y, width, height)
+        ctx.restore()
+
+        // Right half: Value Map
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x + splitX, y, splitX, height)
+        ctx.clip()
+        ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
+        ctx.restore()
+
+        // Divider
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+        ctx.lineWidth = 2 / zoomLevel
+        ctx.beginPath()
+        ctx.moveTo(x + splitX, y)
+        ctx.lineTo(x + splitX, y + height)
+        ctx.stroke()
+      } else {
+        // Normal rendering
+        if (isGrayscale) ctx.filter = 'grayscale(100%)'
+        ctx.drawImage(image, x, y, width, height)
+        if (isGrayscale) ctx.filter = 'none'
+
+        // Blend value map overlay on top with opacity
+        if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+          const opacity = valueScaleSettings.opacity ?? 0.45
+          ctx.globalAlpha = opacity
+          ctx.drawImage(
+            valueMapCanvasRef.current,
+            x,
+            y,
+            width,
+            height
+          )
+          ctx.globalAlpha = 1.0
+        }
       }
     }
     renderImage()
@@ -242,9 +271,32 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       ctx.restore()
     }
 
+    // Draw HUD
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset transforms for HUD
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+    ctx.fillRect(10, 10, 180, 70)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
+    ctx.strokeRect(10, 10, 180, 70)
+
+    ctx.fillStyle = 'white'
+    ctx.font = 'bold 10px sans-serif'
+    ctx.fillText('VIEW MODES', 20, 25)
+
+    ctx.font = '9px sans-serif'
+    ctx.fillStyle = valueScaleSettings?.enabled ? '#3b82f6' : '#9ca3af'
+    ctx.fillText(`[V] Value Overlay: ${valueScaleSettings?.enabled ? 'ON' : 'OFF'}`, 20, 40)
+
+    ctx.fillStyle = splitMode ? '#3b82f6' : '#9ca3af'
+    ctx.fillText(`[S] Split View: ${splitMode ? 'ON' : 'OFF'}`, 20, 52)
+
+    ctx.fillStyle = gridEnabled ? '#3b82f6' : '#9ca3af'
+    ctx.fillText(`[G] Grid: ${gridEnabled ? 'ON' : 'OFF'}`, 20, 64)
+    ctx.restore()
+
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult]) // Updated deps
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult, splitMode]) // Updated deps
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -371,6 +423,26 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       if (e.key === '0') {
         e.preventDefault()
         resetView()
+      }
+
+      // V for Value Scale Toggle
+      if (e.key.toLowerCase() === 'v' && !e.repeat) {
+        if (props.onValueScaleChange && props.valueScaleSettings) {
+          props.onValueScaleChange({
+            ...props.valueScaleSettings,
+            enabled: !props.valueScaleSettings.enabled
+          })
+        }
+      }
+
+      // S for Split Mode Toggle
+      if (e.key.toLowerCase() === 's' && !e.repeat) {
+        setSplitMode(prev => !prev)
+      }
+
+      // G for Grid Toggle
+      if (e.key.toLowerCase() === 'g' && !e.repeat) {
+        setGridEnabled(prev => !prev)
       }
     }
 
@@ -637,10 +709,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const sorted = new Float32Array(yBuffer).sort()
     setSortedLuminances(sorted)
 
+    // Compute histogram
+    const bins = computeHistogram(yBuffer)
+    if (props.onHistogramComputed) props.onHistogramComputed(bins)
+
     // Compute initial value scale
     const result = computeValueScale(yBuffer, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
     setValueScaleResult(result)
-
+    if (props.onValueScaleResult) props.onValueScaleResult(result)
   }, [image, valueScaleSettings])
 
   // Re-compute value scale result when settings change
@@ -648,6 +724,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     if (!valueBuffer) return
     const result = computeValueScale(valueBuffer.y, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
     setValueScaleResult(result)
+    if (props.onValueScaleResult) props.onValueScaleResult(result)
   }, [valueScaleSettings, valueBuffer])
 
   // Draw value map overlay

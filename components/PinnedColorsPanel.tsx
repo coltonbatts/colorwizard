@@ -79,6 +79,15 @@ export default function PinnedColorsPanel({
                             ? 'bg-gray-900 border-gray-700 shadow-xl'
                             : 'bg-gray-900/40 border-gray-800 hover:border-gray-700'
                             }`}
+                        draggable
+                        onDragStart={(e) => {
+                            e.dataTransfer.setData('application/json', JSON.stringify({
+                                type: 'color',
+                                hex: color.hex,
+                                label: color.label
+                            }))
+                            e.dataTransfer.effectAllowed = 'copy'
+                        }}
                     >
                         {/* Card Header (Visible always) */}
                         <div className="p-3 flex items-center gap-3">

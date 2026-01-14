@@ -161,6 +161,50 @@ export async function isSpectralAvailable(): Promise<boolean> {
 }
 
 /**
+ * Synchronous helpers for high-performance loops.
+ * IMPORTANT: Only call these AFTER ensuring isSpectralAvailable() is true.
+ */
+export function getSpectralSync(): SpectralModule {
+    if (!spectralModule) throw new Error('Spectral.js not loaded. Call isSpectralAvailable() first.');
+    return spectralModule;
+}
+
+export function getCachedColorSync(hex: string, tintingStrength = 1): SpectralColor {
+    const cacheKey = `${hex}-${tintingStrength}`;
+    const color = colorCache.get(cacheKey);
+    if (!color) throw new Error(`Color ${hex} not in cache. Pre-warm cache with getPaletteColors().`);
+    return color;
+}
+
+export function mixPigmentsSync(inputs: MixInput[]): { hex: string, spectralColor: SpectralColor } {
+    const spectral = getSpectralSync();
+
+    const validInputs = inputs.filter((i) => i.weight > 0);
+    if (validInputs.length === 0) throw new Error('At least one input with positive weight required');
+
+    const mixArgs: [SpectralColor, number][] = validInputs.map((input) => {
+        const color = colorCache.get(`${PALETTE_MAP.get(input.pigmentId)?.hex}-${PALETTE_MAP.get(input.pigmentId)?.tintingStrength || 1}`);
+        if (!color) throw new Error(`Pigment ${input.pigmentId} not in cache.`);
+        return [color, input.weight];
+    });
+
+    const mixed = spectral.mix(...mixArgs);
+    return {
+        hex: mixed.toString({ format: 'hex' }),
+        spectralColor: mixed,
+    };
+}
+
+export function deltaESync(c1: SpectralColor, c2: SpectralColor): number {
+    const [L1, a1, b1] = c1.OKLab;
+    const [L2, a2, b2] = c2.OKLab;
+    const dL = L1 - L2;
+    const da = a1 - a2;
+    const db = b1 - b2;
+    return Math.sqrt(dL * dL + da * da + db * db) * 100;
+}
+
+/**
  * Get pigment by ID.
  */
 export function getPigment(id: string): Pigment | undefined {

@@ -7,6 +7,7 @@ import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
+import ValueHistogram from './ValueHistogram'
 import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
@@ -14,6 +15,7 @@ import { Palette } from '@/lib/types/palette'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
+import { ValueScaleResult } from '@/lib/valueScale'
 
 interface ColorPanelProps {
   sampledColor: {
@@ -33,12 +35,14 @@ interface ColorPanelProps {
   valueScaleSettings?: ValueScaleSettings
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   activePalette?: Palette
+  histogramBins?: number[]
+  valueScaleResult?: ValueScaleResult | null
 }
 
 type Tab = 'painter' | 'thread'
 type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies' | 'valueScale'
 
-export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette, histogramBins, valueScaleResult }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
   const [label, setLabel] = useState('')
@@ -276,7 +280,19 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   {/* Value Scale Controls */}
                   <div className="p-4 bg-gray-900 rounded-lg border border-gray-800 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">Value Scale Settings</h3>
+                      <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">Value Distribution</h3>
+                    </div>
+
+                    {histogramBins && (
+                      <ValueHistogram
+                        bins={histogramBins}
+                        thresholds={valueScaleResult?.thresholds}
+                        currentValue={sampledColor ? getLuminance(sampledColor.rgb.r, sampledColor.rgb.g, sampledColor.rgb.b) / 100 : undefined}
+                      />
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                      <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settings</h3>
                       <button
                         onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
                         className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}

@@ -30,29 +30,59 @@ export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintReci
 
   useEffect(() => {
     let cancelled = false
+    let worker: Worker | null = null
 
     async function solve() {
       setIsLoading(true)
       try {
-        // Build palette filter if a non-default palette is active
         const options = activePalette && !activePalette.isDefault
           ? { paletteColorIds: activePalette.colors.map(c => c.id) }
           : undefined
 
-        const recipe = await solveRecipe(targetHex, options)
-        if (!cancelled) {
-          setSpectralRecipe(recipe)
-          setIsFallback(false)
+        // Try using Web Worker for performance
+        worker = new Worker(new URL('@/lib/paint/solver.worker.ts', import.meta.url))
+
+        worker.onmessage = (e) => {
+          if (cancelled) return
+          if (e.data.type === 'SUCCESS') {
+            setSpectralRecipe(e.data.recipe)
+            setIsFallback(false)
+            setIsLoading(false)
+          } else {
+            console.error('Worker failed:', e.data.error)
+            setSpectralRecipe(null)
+            setIsFallback(true)
+            setIsLoading(false)
+          }
         }
+
+        worker.onerror = (e) => {
+          console.error('Worker error:', e)
+          if (!cancelled) {
+            setSpectralRecipe(null)
+            setIsFallback(true)
+            setIsLoading(false)
+          }
+        }
+
+        worker.postMessage({ targetHex, options })
+
       } catch (err) {
         console.error('Spectral recipe failed:', err)
-        if (!cancelled) {
-          setSpectralRecipe(null)
-          setIsFallback(true)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
+        // Direct fallback if worker fails to start
+        try {
+          const recipe = await solveRecipe(targetHex)
+          if (!cancelled) {
+            setSpectralRecipe(recipe)
+            setIsFallback(false)
+            setIsLoading(false)
+          }
+        } catch (e) {
+          if (!cancelled) {
+            setSpectralRecipe(null)
+            setIsFallback(true)
+            setIsLoading(false)
+          }
         }
       }
     }
@@ -61,6 +91,7 @@ export default function PaintRecipe({ hsl, targetHex, activePalette }: PaintReci
 
     return () => {
       cancelled = true
+      if (worker) worker.terminate()
     }
   }, [targetHex, activePalette])
 

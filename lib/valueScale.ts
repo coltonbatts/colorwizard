@@ -138,3 +138,16 @@ export function stepToGray(step: number, totalSteps: number): number {
     const t = step / (totalSteps - 1);
     return Math.round(t * 255);
 }
+
+/**
+ * Compute histogram data for luminances (0-1).
+ * Returns array of counts for 256 bins.
+ */
+export function computeHistogram(luminances: Float32Array): number[] {
+    const bins = new Array(256).fill(0);
+    for (let i = 0; i < luminances.length; i++) {
+        const val = Math.min(255, Math.max(0, Math.round(luminances[i] * 255)));
+        bins[val]++;
+    }
+    return bins;
+}

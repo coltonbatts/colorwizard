@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
@@ -8,95 +8,28 @@ import ShoppingListPanel from '@/components/ShoppingListPanel'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import PaletteSelector from '@/components/PaletteSelector'
 import PaletteManager from '@/components/PaletteManager'
-import { PinnedColor } from '@/lib/types/pinnedColor'
-import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '@/lib/types/valueScale'
-import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
+import { useStore } from '@/lib/store/useStore'
 
 export default function Home() {
-  const [sampledColor, setSampledColor] = useState<{
-    hex: string
-    rgb: { r: number; g: number; b: number }
-    hsl: { h: number; s: number; l: number }
-  } | null>(null)
-
-  const [activeHighlightColor, setActiveHighlightColor] = useState<{ r: number; g: number; b: number } | null>(null)
-  const [highlightTolerance, setHighlightTolerance] = useState(20)
-  const [highlightMode, setHighlightMode] = useState<'solid' | 'heatmap'>('solid')
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [activeTab, setActiveTab] = useState<'inspect' | 'shopping' | 'pinned'>('inspect')
-  const [pinnedColors, setPinnedColors] = useState<PinnedColor[]>([])
-  const [valueScaleSettings, setValueScaleSettings] = useState<ValueScaleSettings>(DEFAULT_VALUE_SCALE_SETTINGS)
-  const [palettes, setPalettes] = useState<Palette[]>([DEFAULT_PALETTE])
-  const [showPaletteManager, setShowPaletteManager] = useState(false)
+  const {
+    sampledColor, setSampledColor,
+    activeHighlightColor, setActiveHighlightColor,
+    highlightTolerance, setHighlightTolerance,
+    highlightMode, setHighlightMode,
+    image, setImage,
+    activeTab, setActiveTab,
+    pinnedColors, pinColor, unpinColor, clearPinned,
+    valueScaleSettings, setValueScaleSettings,
+    histogramBins, setHistogramBins,
+    valueScaleResult, setValueScaleResult,
+    palettes, createPalette, updatePalette, deletePalette, setActivePalette,
+    showPaletteManager, setShowPaletteManager
+  } = useStore()
 
   // Derived active palette
   const activePalette = useMemo(() => {
-    return palettes.find(p => p.isActive) || palettes[0] || DEFAULT_PALETTE
+    return palettes.find(p => p.isActive) || palettes[0] || { id: 'default', name: 'Default', colors: [], isActive: true, isDefault: true }
   }, [palettes])
-
-  // Persistence
-  useEffect(() => {
-    const saved = localStorage.getItem('colorwizard_pinned_colors')
-    if (saved) {
-      try {
-        setPinnedColors(JSON.parse(saved))
-      } catch (e) {
-        console.error('Failed to load pinned colors', e)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem('colorwizard_pinned_colors', JSON.stringify(pinnedColors))
-  }, [pinnedColors])
-
-  // Palette persistence - load
-  useEffect(() => {
-    const saved = localStorage.getItem('colorwizard_palettes')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as Palette[]
-        // Ensure default palette exists
-        const hasDefault = parsed.some(p => p.isDefault)
-        if (!hasDefault) {
-          parsed.unshift(DEFAULT_PALETTE)
-        }
-        // Ensure at least one is active
-        const hasActive = parsed.some(p => p.isActive)
-        if (!hasActive && parsed.length > 0) {
-          parsed[0].isActive = true
-        }
-        setPalettes(parsed)
-      } catch (e) {
-        console.error('Failed to load palettes', e)
-      }
-    }
-  }, [])
-
-  // Palette persistence - save
-  useEffect(() => {
-    localStorage.setItem('colorwizard_palettes', JSON.stringify(palettes))
-  }, [palettes])
-
-  const handlePinColor = (newPin: PinnedColor) => {
-    setPinnedColors(prev => {
-      // Limit to 30 colors
-      const filtered = prev.filter(p => p.hex !== newPin.hex)
-      const next = [newPin, ...filtered]
-      if (next.length > 30) return next.slice(0, 30)
-      return next
-    })
-  }
-
-  const handleUnpinColor = (id: string) => {
-    setPinnedColors(prev => prev.filter(p => p.id !== id))
-  }
-
-  const handleClearPinned = () => {
-    if (confirm('Clear all pinned colors?')) {
-      setPinnedColors([])
-    }
-  }
 
   const handleExportPalette = () => {
     const data = JSON.stringify(pinnedColors, null, 2)
@@ -109,36 +42,6 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
-  // Palette CRUD handlers
-  const handleCreatePalette = (newPalette: Palette) => {
-    setPalettes(prev => [...prev, newPalette])
-  }
-
-  const handleUpdatePalette = (updatedPalette: Palette) => {
-    setPalettes(prev => prev.map(p =>
-      p.id === updatedPalette.id ? updatedPalette : p
-    ))
-  }
-
-  const handleDeletePalette = (paletteId: string) => {
-    setPalettes(prev => {
-      const filtered = prev.filter(p => p.id !== paletteId)
-      // If deleted palette was active, activate the first one
-      const hadActive = prev.find(p => p.id === paletteId)?.isActive
-      if (hadActive && filtered.length > 0) {
-        filtered[0].isActive = true
-      }
-      return filtered
-    })
-  }
-
-  const handleSetActivePalette = (paletteId: string) => {
-    setPalettes(prev => prev.map(p => ({
-      ...p,
-      isActive: p.id === paletteId
-    })))
-  }
-
   return (
     <main className="flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden">
       <div className="flex-1 lg:flex-[7] p-6 flex flex-col min-h-0 min-w-0">
@@ -147,7 +50,7 @@ export default function Home() {
           <PaletteSelector
             palettes={palettes}
             activePalette={activePalette}
-            onSelectPalette={handleSetActivePalette}
+            onSelectPalette={setActivePalette}
             onOpenManager={() => setShowPaletteManager(true)}
           />
           <Link
@@ -210,6 +113,9 @@ export default function Home() {
             highlightTolerance={highlightTolerance}
             highlightMode={highlightMode}
             valueScaleSettings={valueScaleSettings}
+            onValueScaleChange={setValueScaleSettings}
+            onHistogramComputed={setHistogramBins}
+            onValueScaleResult={setValueScaleResult}
           />
         </div>
       </div>
@@ -242,11 +148,13 @@ export default function Home() {
               <ColorPanel
                 sampledColor={sampledColor}
                 onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
-                onPin={handlePinColor}
+                onPin={pinColor}
                 isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
                 valueScaleSettings={valueScaleSettings}
                 onValueScaleChange={setValueScaleSettings}
                 activePalette={activePalette}
+                histogramBins={histogramBins}
+                valueScaleResult={valueScaleResult}
               />
             </div>
           ) : activeTab === 'shopping' ? (
@@ -258,8 +166,8 @@ export default function Home() {
               <PinnedColorsPanel
                 pinnedColors={pinnedColors}
                 activeHighlightColor={activeHighlightColor}
-                onUnpin={handleUnpinColor}
-                onClearAll={handleClearPinned}
+                onUnpin={unpinColor}
+                onClearAll={clearPinned}
                 onExport={handleExportPalette}
                 onSelect={(rgb: { r: number; g: number; b: number }) => setActiveHighlightColor(rgb)}
               />
@@ -273,9 +181,9 @@ export default function Home() {
         isOpen={showPaletteManager}
         onClose={() => setShowPaletteManager(false)}
         palettes={palettes}
-        onCreatePalette={handleCreatePalette}
-        onUpdatePalette={handleUpdatePalette}
-        onDeletePalette={handleDeletePalette}
+        onCreatePalette={createPalette}
+        onUpdatePalette={updatePalette}
+        onDeletePalette={deletePalette}
       />
     </main>
   )
