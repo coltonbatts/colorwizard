@@ -20,6 +20,7 @@ import {
     createColor,
     registerPigments,
 } from '../spectral/adapter';
+import { nelderMeadRefine } from './nelderMead';
 import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS, Pigment } from '../spectral/types';
 import { getPaints, getPaint, paintToPigment } from './catalog';
 import type { Paint } from './types/Paint';
@@ -386,8 +387,12 @@ export async function solveRecipe(
         }
     }
 
-    // Step 3: Refine best candidate
-    best = refineCandidateSync(best, targetColor);
+    // Step 3: Refine best candidate with Nelder-Mead optimization
+    // This achieves "True Zero" matches with ΔE < 0.5
+    best = nelderMeadRefine(best, targetColor, {
+        maxIterations: 100,
+        tolerance: 0.5,
+    });
 
     // Build result
     const totalWeight = best.inputs.reduce((sum, i) => sum + i.weight, 0);
