@@ -1,16 +1,17 @@
 'use client'
 
 import { useMemo, useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
-import PaletteSelector from '@/components/PaletteSelector'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import RulerOverlay from '@/components/RulerOverlay'
+import CollapsibleSidebar from '@/components/CollapsibleSidebar'
+import CompactToolbar from '@/components/CompactToolbar'
 import { useStore } from '@/lib/store/useStore'
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
 import {
   CalibrationData,
   loadCalibration,
@@ -34,6 +35,9 @@ export default function Home() {
     palettes, createPalette, updatePalette, deletePalette, setActivePalette,
     showPaletteManager, setShowPaletteManager
   } = useStore()
+
+  // Layout preferences
+  const { sidebarCollapsed, compactMode, toggleSidebar, toggleCompactMode } = useLayoutPreferences()
 
   // Screen Calibration State
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
@@ -83,6 +87,17 @@ export default function Home() {
     setMeasurePointB(b)
   }
 
+  // Handle measure toggle with point reset
+  const handleToggleMeasure = () => {
+    if (calibration) {
+      if (!measureMode) {
+        setMeasurePointA(null)
+        setMeasurePointB(null)
+      }
+      setMeasureMode(!measureMode)
+    }
+  }
+
   // Derived active palette
   const activePalette = useMemo(() => {
     return palettes.find(p => p.isActive) || palettes[0] || { id: 'default', name: 'Default', colors: [], isActive: true, isDefault: true }
@@ -100,120 +115,30 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden">
-      <div className="flex-1 lg:flex-[7] p-6 flex flex-col min-h-0 min-w-0">
-        {/* Header with Palette Selector and Color Theory Lab */}
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <PaletteSelector
+    <main className={`flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-3' : 'p-6'}`}>
+        {/* Compact Toolbar with all controls */}
+        <div className="mb-4">
+          <CompactToolbar
+            calibration={calibration}
+            calibrationStale={calibrationStale}
+            onOpenCalibration={() => setShowCalibrationModal(true)}
+            onResetCalibration={handleCalibrationReset}
+            rulerGridEnabled={rulerGridEnabled}
+            rulerGridSpacing={rulerGridSpacing}
+            onToggleRulerGrid={() => calibration && setRulerGridEnabled(!rulerGridEnabled)}
+            onRulerGridSpacingChange={setRulerGridSpacing}
+            measureMode={measureMode}
+            measurePointA={measurePointA}
+            measurePointB={measurePointB}
+            onToggleMeasure={handleToggleMeasure}
             palettes={palettes}
             activePalette={activePalette}
             onSelectPalette={setActivePalette}
-            onOpenManager={() => setShowPaletteManager(true)}
+            onOpenPaletteManager={() => setShowPaletteManager(true)}
+            compactMode={compactMode}
+            onToggleCompactMode={toggleCompactMode}
           />
-          <Link
-            href="/color-theory"
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
-          >
-            <span>🎨</span>
-            Color Theory Lab
-          </Link>
-        </div>
-
-        {/* Calibration & Measurement Toolbar */}
-        <div className="mb-4 p-3 bg-gray-800/50 rounded-lg flex flex-wrap items-center gap-4 border border-gray-700">
-          {/* Calibrate Button */}
-          <button
-            onClick={() => setShowCalibrationModal(true)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${calibration
-              ? 'bg-green-600/20 text-green-400 border border-green-600/50 hover:bg-green-600/30'
-              : 'bg-blue-600 text-white hover:bg-blue-500'
-              }`}
-          >
-            {calibration ? '✓ Calibrated' : '📐 Calibrate'}
-          </button>
-
-          {/* Stale Warning */}
-          {calibration && calibrationStale && (
-            <span className="text-yellow-500 text-xs flex items-center gap-1">
-              ⚠️ Zoom changed - recalibrate
-            </span>
-          )}
-
-          {/* Reset Calibration */}
-          {calibration && (
-            <button
-              onClick={handleCalibrationReset}
-              className="px-2 py-1 text-xs text-gray-400 hover:text-red-400 transition-colors"
-            >
-              Reset
-            </button>
-          )}
-
-          <div className="w-px h-6 bg-gray-700" />
-
-          {/* Ruler Grid Toggle */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => calibration && setRulerGridEnabled(!rulerGridEnabled)}
-              disabled={!calibration}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${rulerGridEnabled && calibration
-                ? 'bg-blue-600 text-white'
-                : calibration
-                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                }`}
-            >
-              📏 Ruler Grid
-            </button>
-
-            {rulerGridEnabled && calibration && (
-              <select
-                value={rulerGridSpacing}
-                onChange={(e) => setRulerGridSpacing(Number(e.target.value) as 0.25 | 0.5 | 1 | 2)}
-                className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 text-sm focus:border-blue-500 outline-none"
-              >
-                <option value={0.25}>0.25&quot;</option>
-                <option value={0.5}>0.5&quot;</option>
-                <option value={1}>1&quot;</option>
-                <option value={2}>2&quot;</option>
-              </select>
-            )}
-          </div>
-
-          {/* Measure Toggle */}
-          <button
-            onClick={() => {
-              if (calibration) {
-                setMeasureMode(!measureMode)
-                if (!measureMode) {
-                  // Clear previous measurement when entering measure mode
-                  setMeasurePointA(null)
-                  setMeasurePointB(null)
-                }
-              }
-            }}
-            disabled={!calibration}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${measureMode && calibration
-              ? 'bg-orange-600 text-white'
-              : calibration
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-              }`}
-          >
-            📍 Measure
-          </button>
-
-          {measureMode && (
-            <span className="text-gray-400 text-xs">
-              {!measurePointA ? 'Click first point' : !measurePointB ? 'Click second point' : 'Click to remeasure'}
-            </span>
-          )}
-
-          {!calibration && (
-            <span className="text-gray-500 text-xs ml-auto">
-              Calibrate first to use ruler & measure
-            </span>
-          )}
         </div>
 
         {/* Highlight Controls - Only show active if a color is selected */}
@@ -306,8 +231,14 @@ export default function Home() {
           />
         </div>
       </div>
-      <div className="w-full lg:w-[30%] lg:min-w-[400px] border-l border-gray-700 flex flex-col h-1/2 lg:h-full bg-gray-950 shadow-2xl z-10">
-        {/* Simple Tab Switcher */}
+      <CollapsibleSidebar
+        collapsed={sidebarCollapsed}
+        onToggle={toggleSidebar}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        pinnedCount={pinnedColors.length}
+      >
+        {/* Simple Tab Switcher - only shown when expanded */}
         <div className="flex border-b border-gray-700">
           <button
             className={`flex-1 py-3 text-sm font-medium transition-colors ${!activeTab || activeTab === 'inspect' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
@@ -361,7 +292,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
+      </CollapsibleSidebar>
 
       {/* Palette Manager Modal */}
       <PaletteManager

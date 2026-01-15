@@ -29,6 +29,10 @@ interface ColorState {
     palettes: Palette[]
     showPaletteManager: boolean
 
+    // Layout preferences
+    sidebarCollapsed: boolean
+    compactMode: boolean
+
     // Actions
     setSampledColor: (color: ColorState['sampledColor']) => void
     setActiveHighlightColor: (color: ColorState['activeHighlightColor']) => void
@@ -42,6 +46,12 @@ interface ColorState {
     setValueScaleResult: (result: ValueScaleResult | null) => void
     setPalettes: (palettes: Palette[]) => void
     setShowPaletteManager: (show: boolean) => void
+
+    // Layout actions
+    setSidebarCollapsed: (collapsed: boolean) => void
+    setCompactMode: (compact: boolean) => void
+    toggleSidebar: () => void
+    toggleCompactMode: () => void
 
     // Derived / Complex Actions
     pinColor: (newPin: PinnedColor) => void
@@ -69,6 +79,10 @@ export const useStore = create<ColorState>()(
             palettes: [DEFAULT_PALETTE],
             showPaletteManager: false,
 
+            // Layout preferences
+            sidebarCollapsed: false,
+            compactMode: false,
+
             setSampledColor: (sampledColor) => set({ sampledColor }),
             setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
@@ -81,6 +95,12 @@ export const useStore = create<ColorState>()(
             setValueScaleResult: (valueScaleResult) => set({ valueScaleResult }),
             setPalettes: (palettes) => set({ palettes }),
             setShowPaletteManager: (showPaletteManager) => set({ showPaletteManager }),
+
+            // Layout actions
+            setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+            setCompactMode: (compactMode) => set({ compactMode }),
+            toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+            toggleCompactMode: () => set((state) => ({ compactMode: !state.compactMode })),
 
             pinColor: (newPin) => set((state) => {
                 const filtered = state.pinnedColors.filter(p => p.hex !== newPin.hex)
@@ -122,7 +142,10 @@ export const useStore = create<ColorState>()(
             partialize: (state) => ({
                 pinnedColors: state.pinnedColors,
                 palettes: state.palettes,
-                valueScaleSettings: state.valueScaleSettings
+                valueScaleSettings: state.valueScaleSettings,
+                // Persist layout preferences
+                sidebarCollapsed: state.sidebarCollapsed,
+                compactMode: state.compactMode
             }),
         }
     )
