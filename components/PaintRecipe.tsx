@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { generatePaintRecipe } from '@/lib/colorMixer'
+import { getSolverWorker } from '@/lib/workers'
 import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
 import { SpectralRecipe } from '@/lib/spectral/types'
 import { Palette } from '@/lib/types/palette'
@@ -49,7 +50,6 @@ export default function PaintRecipe({
 
   useEffect(() => {
     let cancelled = false
-    let worker: Worker | null = null
 
     async function solve() {
       setIsLoading(true)
@@ -71,50 +71,30 @@ export default function PaintRecipe({
       }
 
       try {
-        // Try using Web Worker for performance
-        worker = new Worker(new URL('@/lib/paint/solver.worker.ts', import.meta.url))
+        // Use the type-safe worker wrapper
+        const worker = getSolverWorker()
+        const recipe = await worker.solveRecipe(targetHex, options)
 
-        worker.onmessage = (e) => {
-          if (cancelled) return
-          if (e.data.type === 'SUCCESS') {
-            setSpectralRecipe(e.data.recipe)
-            setIsFallback(false)
-            setIsLoading(false)
-          } else {
-            console.error('Worker failed:', e.data.error)
-            setSpectralRecipe(null)
-            setIsFallback(true)
-            setIsLoading(false)
-          }
+        if (!cancelled) {
+          setSpectralRecipe(recipe)
+          setIsFallback(false)
+          setIsLoading(false)
         }
-
-        worker.onerror = (e) => {
-          console.error('Worker error:', e)
-          if (!cancelled) {
-            setSpectralRecipe(null)
-            setIsFallback(true)
-            setIsLoading(false)
-          }
-        }
-
-        worker.postMessage({ targetHex, options })
-
       } catch (err) {
-        console.error('Spectral recipe failed:', err)
-        // Direct fallback if worker fails to start
-        try {
-          const recipe = await solveRecipe(targetHex, options)
-          if (!cancelled) {
+        console.error('Spectral recipe worker failed:', err)
+
+        // Fallback to direct call or heuristic if worker fails
+        if (!cancelled) {
+          try {
+            const recipe = await solveRecipe(targetHex, options)
             setSpectralRecipe(recipe)
             setIsFallback(false)
-            setIsLoading(false)
-          }
-        } catch (e) {
-          if (!cancelled) {
+          } catch (fallbackErr) {
+            console.error('Direct solveRecipe also failed:', fallbackErr)
             setSpectralRecipe(null)
             setIsFallback(true)
-            setIsLoading(false)
           }
+          setIsLoading(false)
         }
       }
     }
@@ -123,7 +103,6 @@ export default function PaintRecipe({
 
     return () => {
       cancelled = true
-      if (worker) worker.terminate()
     }
   }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
 
