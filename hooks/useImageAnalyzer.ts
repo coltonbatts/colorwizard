@@ -6,9 +6,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { wrap, Remote } from 'comlink';
-import type { ImageProcessorWorker, ImageBufferResult, ValueScaleResult as WorkerValueScaleResult } from '@/lib/workers/imageProcessor.worker';
+import type { ImageProcessorWorker } from '@/lib/workers/imageProcessor.worker';
 import { computeValueScale, ValueScaleResult } from '@/lib/valueScale';
 import { ValueScaleSettings } from '@/lib/types/valueScale';
+
 
 export interface LabBuffer {
     l: Float32Array;
@@ -41,6 +42,20 @@ export interface UseImageAnalyzerReturn {
     error: string | null;
     /** Recompute value scale with new settings */
     recomputeValueScale: () => void;
+    /** Generate value map overlay data (runs in worker) */
+    generateValueMapData: (thresholds: number[]) => Promise<Uint8ClampedArray | null>;
+    /** Generate highlight overlay data (runs in worker) */
+    generateHighlightOverlay: (
+        targetR: number,
+        targetG: number,
+        targetB: number,
+        tolerance: number,
+        mode: 'solid' | 'heatmap'
+    ) => Promise<Uint8ClampedArray | null>;
+    /** Whether value map generation is in progress */
+    isGeneratingValueMap: boolean;
+    /** Whether highlight overlay generation is in progress */
+    isGeneratingHighlight: boolean;
 }
 
 const MAX_PROCESS_DIM = 1000;
@@ -77,6 +92,8 @@ export function useImageAnalyzer(
     const [histogramBins, setHistogramBins] = useState<number[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isGeneratingValueMap, setIsGeneratingValueMap] = useState(false);
+    const [isGeneratingHighlight, setIsGeneratingHighlight] = useState(false);
 
     // Track current image to handle race conditions
     const currentImageRef = useRef<HTMLImageElement | null>(null);
@@ -189,6 +206,58 @@ export function useImageAnalyzer(
         setValueScaleResult(result);
     }, [valueBuffer, valueScaleSettings]);
 
+    // Generate value map overlay data in worker
+    const generateValueMapData = useCallback(async (thresholds: number[]): Promise<Uint8ClampedArray | null> => {
+        if (!valueBuffer) return null;
+
+        setIsGeneratingValueMap(true);
+        try {
+            const worker = await getWorker();
+            const data = await worker.generateValueMapData(
+                valueBuffer.y,
+                valueBuffer.width,
+                valueBuffer.height,
+                thresholds
+            );
+            return data;
+        } catch (err) {
+            console.error('Value map generation failed:', err);
+            return null;
+        } finally {
+            setIsGeneratingValueMap(false);
+        }
+    }, [valueBuffer]);
+
+    // Generate highlight overlay data in worker
+    const generateHighlightOverlay = useCallback(async (
+        targetR: number,
+        targetG: number,
+        targetB: number,
+        tolerance: number,
+        mode: 'solid' | 'heatmap'
+    ): Promise<Uint8ClampedArray | null> => {
+        if (!labBuffer) return null;
+
+        setIsGeneratingHighlight(true);
+        try {
+            const worker = await getWorker();
+            const data = await worker.generateHighlightOverlay(
+                labBuffer,
+                targetR,
+                targetG,
+                targetB,
+                tolerance,
+                mode
+            );
+            return data;
+        } catch (err) {
+            console.error('Highlight overlay generation failed:', err);
+            return null;
+        } finally {
+            setIsGeneratingHighlight(false);
+        }
+    }, [labBuffer]);
+
     return {
         labBuffer,
         valueBuffer,
@@ -198,5 +267,9 @@ export function useImageAnalyzer(
         isAnalyzing,
         error,
         recomputeValueScale,
+        generateValueMapData,
+        generateHighlightOverlay,
+        isGeneratingValueMap,
+        isGeneratingHighlight,
     };
 }

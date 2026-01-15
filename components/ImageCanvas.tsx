@@ -1,9 +1,16 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from 'react'
+/**
+ * ImageCanvas - Main canvas component for image display and color sampling.
+ * Refactored to use extracted sub-components and hooks for maintainability.
+ */
+
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
+import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/canvas'
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
+import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 
 interface ColorData {
   hex: string
@@ -19,7 +26,7 @@ interface ColorData {
 
 import { rgbToLab, deltaE, rgbToHsl } from '@/lib/colorUtils'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
-import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray, computeHistogram } from '@/lib/valueScale'
+import { getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
 import { TransformState, screenToImage } from '@/lib/calibration'
 import { CanvasSettings } from '@/lib/types/canvas'
 
@@ -66,12 +73,6 @@ const MAX_ZOOM = 10
 const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
 
-// HUD overlay dimensions
-const HUD_X = 10
-const HUD_Y = 10
-const HUD_WIDTH = 180
-const HUD_HEIGHT = 70
-
 // Drag detection threshold (pixels)
 const DRAG_THRESHOLD = 3
 
@@ -79,30 +80,45 @@ const DRAG_THRESHOLD = 3
 const HIGHLIGHT_ALPHA_SOLID = 180
 const HIGHLIGHT_ALPHA_MAX = 255
 
-// Image processing max dimension
-const MAX_PROCESS_DIM = 1000
-
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
-  // Internal image state removed in favor of prop
-  const [isDragging, setIsDragging] = useState(false)
-
-  // Highlight system state
-  const [labBuffer, setLabBuffer] = useState<{ l: Float32Array; a: Float32Array; b: Float32Array; width: number; height: number } | null>(null)
-  const [valueBuffer, setValueBuffer] = useState<{ y: Float32Array; width: number; height: number } | null>(null)
-  const [sortedLuminances, setSortedLuminances] = useState<Float32Array | null>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
 
+  // Use the image analyzer hook for worker-based processing
+  const {
+    labBuffer,
+    valueBuffer,
+    sortedLuminances,
+    valueScaleResult: analyzerValueScaleResult,
+    histogramBins,
+    isAnalyzing,
+  } = useImageAnalyzer(image, valueScaleSettings)
+
+  // Use the hook's value scale result, but allow local override for settings changes
+  const [localValueScaleResult, setLocalValueScaleResult] = useState<ValueScaleResult | null>(null)
+  const valueScaleResult = localValueScaleResult ?? analyzerValueScaleResult
+
+  // Report histogram and value scale to parent when they change
+  useEffect(() => {
+    if (histogramBins.length > 0 && props.onHistogramComputed) {
+      props.onHistogramComputed(histogramBins)
+    }
+  }, [histogramBins, props.onHistogramComputed])
+
+  useEffect(() => {
+    if (valueScaleResult && props.onValueScaleResult) {
+      props.onValueScaleResult(valueScaleResult)
+    }
+  }, [valueScaleResult, props.onValueScaleResult])
+
   // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
-  // Value Map state
-  const [valueScaleResult, setValueScaleResult] = useState<ValueScaleResult | null>(null)
-  const [rangeHighlightMin, setRangeHighlightMin] = useState(0)
-  const [rangeHighlightMax, setRangeHighlightMax] = useState(100)
+
+  // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
 
@@ -126,10 +142,13 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   } | null>(null)
 
   // Grid system state
-  const [gridEnabled, setGridEnabled] = useState(false)
+  const [internalGridEnabled, setInternalGridEnabled] = useState(false)
   const [gridPhysicalWidth, setGridPhysicalWidth] = useState(20)
   const [gridPhysicalHeight, setGridPhysicalHeight] = useState(16)
   const [gridSquareSize, setGridSquareSize] = useState(1)
+
+  // Use external or internal grid enabled state
+  const gridEnabled = props.gridEnabled ?? internalGridEnabled
 
   // Load grid settings from localStorage
   useEffect(() => {
@@ -137,7 +156,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        setGridEnabled(parsed.enabled ?? false)
+        setInternalGridEnabled(parsed.enabled ?? false)
         setGridPhysicalWidth(parsed.physicalWidth ?? 20)
         setGridPhysicalHeight(parsed.physicalHeight ?? 16)
         setGridSquareSize(parsed.squareSize ?? 1)
@@ -150,12 +169,12 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   // Save grid settings to localStorage
   useEffect(() => {
     localStorage.setItem('colorwizard_grid_settings', JSON.stringify({
-      enabled: gridEnabled,
+      enabled: internalGridEnabled,
       physicalWidth: gridPhysicalWidth,
       physicalHeight: gridPhysicalHeight,
       squareSize: gridSquareSize
     }))
-  }, [gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize])
+  }, [internalGridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize])
 
   // Calculate initial image fit
   const calculateImageFit = useCallback(
@@ -187,70 +206,56 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.save()
 
     // Apply pan and zoom transforms
-    // First translate to pan offset, then scale for zoom
     ctx.translate(panOffset.x, panOffset.y)
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
-    // Always draw original image first, then overlay value map with opacity if enabled
-    const renderImage = () => {
-      const { x, y, width, height } = imageDrawInfo
+    const { x, y, width, height } = imageDrawInfo
 
-      if (splitMode && valueMapCanvasRef.current) {
-        const splitX = width / 2
+    if (splitMode && valueMapCanvasRef.current) {
+      const splitX = width / 2
 
-        // Left half: Original
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x, y, splitX, height)
-        ctx.clip()
-        if (isGrayscale) ctx.filter = 'grayscale(100%)'
-        ctx.drawImage(image, x, y, width, height)
-        ctx.restore()
+      // Left half: Original
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(x, y, splitX, height)
+      ctx.clip()
+      if (isGrayscale) ctx.filter = 'grayscale(100%)'
+      ctx.drawImage(image, x, y, width, height)
+      ctx.restore()
 
-        // Right half: Value Map
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x + splitX, y, splitX, height)
-        ctx.clip()
+      // Right half: Value Map
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(x + splitX, y, splitX, height)
+      ctx.clip()
+      ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
+      ctx.restore()
+
+      // Divider
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+      ctx.lineWidth = 2 / zoomLevel
+      ctx.beginPath()
+      ctx.moveTo(x + splitX, y)
+      ctx.lineTo(x + splitX, y + height)
+      ctx.stroke()
+    } else {
+      // Normal rendering
+      if (isGrayscale) ctx.filter = 'grayscale(100%)'
+      ctx.drawImage(image, x, y, width, height)
+      if (isGrayscale) ctx.filter = 'none'
+
+      // Blend value map overlay on top with opacity
+      if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+        const opacity = valueScaleSettings.opacity ?? 0.45
+        ctx.globalAlpha = opacity
         ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-        ctx.restore()
-
-        // Divider
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-        ctx.lineWidth = 2 / zoomLevel
-        ctx.beginPath()
-        ctx.moveTo(x + splitX, y)
-        ctx.lineTo(x + splitX, y + height)
-        ctx.stroke()
-      } else {
-        // Normal rendering
-        if (isGrayscale) ctx.filter = 'grayscale(100%)'
-        ctx.drawImage(image, x, y, width, height)
-        if (isGrayscale) ctx.filter = 'none'
-
-        // Blend value map overlay on top with opacity
-        if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
-          const opacity = valueScaleSettings.opacity ?? 0.45
-          ctx.globalAlpha = opacity
-          ctx.drawImage(
-            valueMapCanvasRef.current,
-            x,
-            y,
-            width,
-            height
-          )
-          ctx.globalAlpha = 1.0
-        }
+        ctx.globalAlpha = 1.0
       }
     }
-    renderImage()
 
     // Draw Highlight Overlay if available
     if (overlayCanvasRef.current && labBuffer?.width) {
-      // We draw the overlay canvas (which is at buffer resolution)
-      // onto the main canvas at the same screen coordinates as the image.
-      // Context is already transformed for zoom/pan.
       ctx.drawImage(
         overlayCanvasRef.current,
         imageDrawInfo.x,
@@ -261,11 +266,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
 
     // Draw Grid
-    if (gridEnabled) {
+    if (gridEnabled && image) {
       const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
       const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
 
-      const ppi = image.width / activeWidth
       const ppiDraw = imageDrawInfo.width / activeWidth
 
       ctx.save()
@@ -281,31 +285,31 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       ctx.textBaseline = 'middle'
 
       // Vertical lines (Columns)
-      for (let x = 0; x <= activeWidth; x += gridSquareSize) {
-        const xPos = x * ppiDraw
+      for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
+        const xPos = gridX * ppiDraw
         ctx.beginPath()
         ctx.moveTo(xPos, 0)
         ctx.lineTo(xPos, imageDrawInfo.height)
         ctx.stroke()
 
         // Column label (A, B, C...)
-        if (x < activeWidth) {
-          const colLabel = String.fromCharCode(65 + Math.floor(x / gridSquareSize))
+        if (gridX < activeWidth) {
+          const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
           ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
         }
       }
 
       // Horizontal lines (Rows)
-      for (let y = 0; y <= activeHeight; y += gridSquareSize) {
-        const yPos = y * ppiDraw
+      for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
+        const yPos = gridY * ppiDraw
         ctx.beginPath()
         ctx.moveTo(0, yPos)
         ctx.lineTo(imageDrawInfo.width, yPos)
         ctx.stroke()
 
         // Row label (1, 2, 3...)
-        if (y < activeHeight) {
-          const rowLabel = (Math.floor(y / gridSquareSize) + 1).toString()
+        if (gridY < activeHeight) {
+          const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
           ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
         }
       }
@@ -316,6 +320,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Draw HUD
     ctx.save()
     ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset transforms for HUD
+    const HUD_X = 10, HUD_Y = 10, HUD_WIDTH = 180, HUD_HEIGHT = 70
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
     ctx.fillRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
@@ -338,7 +343,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult, splitMode]) // Updated deps
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult, splitMode, props.canvasSettings])
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -348,7 +353,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
-        // Update canvas dimensions based on container size
         setCanvasDimensions({
           width: Math.floor(width),
           height: Math.floor(height),
@@ -413,11 +417,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       const scaleX = canvas.width / rect.width
       const scaleY = canvas.height / rect.height
 
-      // Get cursor position in canvas coordinates
       const cursorX = (e.clientX - rect.left) * scaleX
       const cursorY = (e.clientY - rect.top) * scaleY
 
-      // Calculate zoom delta
       const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
       const newZoom = zoomLevel * (1 + delta)
 
@@ -426,7 +428,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     [image, zoomLevel, zoomAtPoint]
   )
 
-  // Add wheel event listener (passive: false required for preventDefault)
+  // Add wheel event listener
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -435,46 +437,37 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     return () => canvas.removeEventListener('wheel', handleWheel)
   }, [handleWheel])
 
-  // Handle keyboard events for pan mode and zoom shortcuts
+  // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!image) return
 
-      // Spacebar for pan mode
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
         setIsSpaceDown(true)
       }
 
-      // + / = for zoom in
       if (e.key === '+' || e.key === '=') {
         e.preventDefault()
         const canvas = canvasRef.current
         if (canvas) {
-          const centerX = canvas.width / 2
-          const centerY = canvas.height / 2
-          zoomAtPoint(zoomLevel + ZOOM_STEP, centerX, centerY)
+          zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
         }
       }
 
-      // - for zoom out
       if (e.key === '-') {
         e.preventDefault()
         const canvas = canvasRef.current
         if (canvas) {
-          const centerX = canvas.width / 2
-          const centerY = canvas.height / 2
-          zoomAtPoint(zoomLevel - ZOOM_STEP, centerX, centerY)
+          zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
         }
       }
 
-      // 0 to reset view
       if (e.key === '0') {
         e.preventDefault()
         resetView()
       }
 
-      // V for Value Scale Toggle
       if (e.key.toLowerCase() === 'v' && !e.repeat) {
         if (props.onValueScaleChange && props.valueScaleSettings) {
           props.onValueScaleChange({
@@ -484,14 +477,12 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         }
       }
 
-      // S for Split Mode Toggle
       if (e.key.toLowerCase() === 's' && !e.repeat) {
         setSplitMode(prev => !prev)
       }
 
-      // G for Grid Toggle
       if (e.key.toLowerCase() === 'g' && !e.repeat) {
-        setGridEnabled(prev => !prev)
+        setInternalGridEnabled(prev => !prev)
       }
     }
 
@@ -517,11 +508,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setPanOffset({ x: 0, y: 0 })
   }, [])
 
-  // Fit to view
-  const fitToView = useCallback(() => {
-    resetView()
-  }, [resetView])
-
   const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !image) return
 
@@ -533,31 +519,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
 
-    // Convert screen coordinates to canvas coordinates
     const canvasX = (e.clientX - rect.left) * scaleX
     const canvasY = (e.clientY - rect.top) * scaleY
 
-    // Get pixel data from the transformed canvas
-    const pixelData = ctx.getImageData(
-      Math.floor(canvasX),
-      Math.floor(canvasY),
-      1,
-      1
-    ).data
+    const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
     const r = pixelData[0]
     const g = pixelData[1]
     const b = pixelData[2]
 
-    // Check if we clicked on the image (not the background)
     if (pixelData[3] === 0) return
 
-    // Convert to hex
     const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
-
-    // Convert to HSL
     const hsl = rgbToHsl(r, g, b)
 
-    // Value Metadata
     let valueMetadata = undefined
     if (valueScaleResult) {
       const y = getRelativeLuminance(r, g, b)
@@ -566,7 +540,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
       let percentile = 0
       if (sortedLuminances) {
-        // Binary search for approximate percentile rank
         let low = 0
         let high = sortedLuminances.length - 1
         while (low <= high) {
@@ -596,7 +569,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     })
   }, [image, valueScaleResult, sortedLuminances, onColorSample])
 
-  // Handle mouse down for panning or measurement
+  // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!image) return
 
@@ -616,7 +589,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       if (imagePoint && props.onMeasurePointsChange) {
         setIsMeasuring(true)
         measureStartPointRef.current = imagePoint
-        props.onMeasurePointsChange(imagePoint, imagePoint) // Start with both points at same position
+        props.onMeasurePointsChange(imagePoint, imagePoint)
       }
       return
     }
@@ -631,7 +604,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  // Handle mouse move for panning or measurement preview
+  // Handle mouse move
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!image) return
 
@@ -655,7 +628,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
 
     if (isPanning) {
-      // Check for drag threshold
       if (!hasDraggedRef.current) {
         const dist = Math.hypot(
           e.clientX - dragStartRef.current.x,
@@ -676,7 +648,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  // Handle mouse up to stop panning or measurement
+  // Handle mouse up
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isMeasuring) {
       setIsMeasuring(false)
@@ -685,7 +657,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     setIsPanning(false)
     if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
-      // Check if measurement mode is active (single click fallback)
       if (props.measureMode && props.onMeasureClick) {
         const canvas = canvasRef.current
         if (!canvas || !image) return
@@ -707,145 +678,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  // Handle mouse leave to stop panning
+  // Handle mouse leave
   const handleMouseLeave = () => {
     setIsPanning(false)
   }
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
-
-  const handleDragLeave = useCallback(() => {
-    setIsDragging(false)
-  }, [])
-
-  const loadImage = useCallback((file: File) => {
-    const reader = new FileReader()
-
-    reader.onerror = () => {
-      console.error('Failed to read file:', reader.error)
-    }
-
-    reader.onload = (event) => {
-      const img = new Image()
-
-      img.onerror = () => {
-        console.error('Failed to load image from file')
-      }
-
-      img.onload = () => {
-        onImageLoad(img)
-      }
-
-      img.src = event.target?.result as string
-    }
-
-    reader.readAsDataURL(file)
-  }, [onImageLoad])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-
-    const file = e.dataTransfer.files[0]
-    if (file && file.type.startsWith('image/')) {
-      loadImage(file)
-    }
-  }, [loadImage])
-
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      loadImage(file)
-    }
-  }, [loadImage])
-
-  // Pre-calculate Lab and Value values for the image for fast comparison
-  useEffect(() => {
-    if (!image) {
-      setLabBuffer(null)
-      setValueBuffer(null)
-      return
-    }
-
-    // Create a temporary canvas to read pixel data
-    const canvas = document.createElement('canvas')
-    // Limit processing resolution for performance
-    let width = image.width
-    let height = image.height
-
-    if (width > MAX_PROCESS_DIM || height > MAX_PROCESS_DIM) {
-      const ratio = Math.min(MAX_PROCESS_DIM / width, MAX_PROCESS_DIM / height)
-      width = Math.round(width * ratio)
-      height = Math.round(height * ratio)
-    }
-
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    ctx.drawImage(image, 0, 0, width, height)
-    const imageData = ctx.getImageData(0, 0, width, height)
-    const data = imageData.data
-    const pixelCount = width * height
-
-    const lBuffer = new Float32Array(pixelCount)
-    const aBuffer = new Float32Array(pixelCount)
-    const bBuffer = new Float32Array(pixelCount)
-    const yBuffer = new Float32Array(pixelCount)
-
-    // Process pixels
-    // NOTE: This could be moved to a Web Worker if it blocks the UI too much
-    for (let i = 0; i < pixelCount; i++) {
-      const r = data[i * 4]
-      const g = data[i * 4 + 1]
-      const b = data[i * 4 + 2]
-
-      const lab = rgbToLab(r, g, b)
-      lBuffer[i] = lab.l
-      aBuffer[i] = lab.a
-      bBuffer[i] = lab.b
-
-      yBuffer[i] = getRelativeLuminance(r, g, b)
-    }
-
-    setLabBuffer({
-      l: lBuffer,
-      a: aBuffer,
-      b: bBuffer,
-      width,
-      height
-    })
-
-    setValueBuffer({
-      y: yBuffer,
-      width,
-      height
-    })
-
-    const sorted = new Float32Array(yBuffer).sort()
-    setSortedLuminances(sorted)
-
-    // Compute histogram
-    const bins = computeHistogram(yBuffer)
-    if (props.onHistogramComputed) props.onHistogramComputed(bins)
-
-    // Compute initial value scale
-    const result = computeValueScale(yBuffer, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
-    setValueScaleResult(result)
-    if (props.onValueScaleResult) props.onValueScaleResult(result)
-  }, [image, valueScaleSettings])
-
-  // Re-compute value scale result when settings change
-  useEffect(() => {
-    if (!valueBuffer) return
-    const result = computeValueScale(valueBuffer.y, valueScaleSettings?.steps || 5, valueScaleSettings?.mode || 'Even', valueScaleSettings?.clip || 0)
-    setValueScaleResult(result)
-    if (props.onValueScaleResult) props.onValueScaleResult(result)
-  }, [valueScaleSettings, valueBuffer])
 
   // Draw value map overlay
   useEffect(() => {
@@ -872,8 +708,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     for (let i = 0; i < pixelCount; i++) {
       const y = yBuffer[i]
       const stepIdx = getStepIndex(y, thresholds)
-
-      // Use stepToGray for consistent quantization across overlay and hero readout
       const val = stepToGray(stepIdx, numSteps)
 
       const idx = i * 4
@@ -891,7 +725,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const { highlightColor, highlightTolerance = 20, highlightMode = 'solid' } = props
     const canvas = overlayCanvasRef.current
     if (!canvas || !labBuffer || !highlightColor) {
-      // Clear overlay if no highlight
       if (canvas) {
         const ctx = canvas.getContext('2d')
         ctx?.clearRect(0, 0, canvas.width, canvas.height)
@@ -902,7 +735,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Resize overlay canvas to match the buffer dimensions
     if (canvas.width !== labBuffer.width || canvas.height !== labBuffer.height) {
       canvas.width = labBuffer.width
       canvas.height = labBuffer.height
@@ -918,31 +750,23 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const pixelCount = lBuffer.length
 
     for (let i = 0; i < pixelCount; i++) {
-      // Culori's Lab type requires mode: 'lab' literal; use assertion for pre-computed buffer values
       const currentLab = { mode: 'lab' as const, l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] }
       const dist = deltaE(currentLab, targetLab)
 
       if (dist <= highlightTolerance) {
         const idx = i * 4
-        // Color overlay based on mode
         if (highlightMode === 'solid') {
-          // Vivid pink/magenta for high visibility default
-          data[idx] = 255     // R
-          data[idx + 1] = 0   // G
-          data[idx + 2] = 255 // B
-          data[idx + 3] = HIGHLIGHT_ALPHA_SOLID // Alpha
+          data[idx] = 255
+          data[idx + 1] = 0
+          data[idx + 2] = 255
+          data[idx + 3] = HIGHLIGHT_ALPHA_SOLID
         } else {
-          // Heatmap: Closer match = more opaque / intense
-          // Scale alpha from 255 (dist=0) to 0 (dist=tolerance)
           const strength = 1 - (dist / highlightTolerance)
           data[idx] = 255
-          data[idx + 1] = Math.floor(255 * (1 - strength)) // G goes 0->255 (Red -> White/Yellowish)
+          data[idx + 1] = Math.floor(255 * (1 - strength))
           data[idx + 2] = 0
           data[idx + 3] = Math.min(HIGHLIGHT_ALPHA_MAX, Math.floor(HIGHLIGHT_ALPHA_MAX * strength * 1.5))
         }
-      } else {
-        // Optional: Dim non-matching areas? 
-        // For now, transparent. User can see original image underneath.
       }
     }
 
@@ -950,23 +774,18 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode])
 
-
   // Zoom control handlers
   const handleZoomIn = () => {
     const canvas = canvasRef.current
     if (canvas) {
-      const centerX = canvas.width / 2
-      const centerY = canvas.height / 2
-      zoomAtPoint(zoomLevel + ZOOM_STEP, centerX, centerY)
+      zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
     }
   }
 
   const handleZoomOut = () => {
     const canvas = canvasRef.current
     if (canvas) {
-      const centerX = canvas.width / 2
-      const centerY = canvas.height / 2
-      zoomAtPoint(zoomLevel - ZOOM_STEP, centerX, centerY)
+      zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
     }
   }
 
@@ -982,134 +801,48 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       <h1 className="text-3xl font-bold mb-6 text-gray-100">Color Wizard</h1>
 
       {!image ? (
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`flex-1 border-2 border-dashed rounded-lg flex items-center justify-center transition-colors ${isDragging
-            ? 'border-blue-500 bg-blue-500/10'
-            : 'border-gray-600 bg-gray-800/50'
-            }`}
-        >
-          <div className="text-center">
-            <p className="text-xl text-gray-400 mb-4">
-              Drop an image here or click to browse
-            </p>
-            <label className="cursor-pointer">
-              <span className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white inline-block transition-colors">
-                Choose Image
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                className="hidden"
-              />
-            </label>
-          </div>
-        </div>
+        <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
         <div className="flex-1 flex flex-col">
           {/* Zoom Controls Bar */}
-          <div className="flex items-center justify-between mb-2 px-2">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleZoomOut}
-                disabled={zoomLevel <= MIN_ZOOM}
-                className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
-                title="Zoom Out (-)"
-              >
-                −
-              </button>
-              <div className="w-20 text-center text-gray-300 text-sm font-mono">
-                {Math.round(zoomLevel * 100)}%
-              </div>
-              <button
-                onClick={handleZoomIn}
-                disabled={zoomLevel >= MAX_ZOOM}
-                className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
-                title="Zoom In (+)"
-              >
-                +
-              </button>
-              <button
-                onClick={fitToView}
-                className="px-3 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors"
-                title="Reset View (0)"
-              >
-                Fit
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsGrayscale(!isGrayscale)}
-                className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isGrayscale
-                  ? 'bg-blue-600 text-white hover:bg-blue-600/80'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                title="Toggle Grayscale"
-              >
-                Gray
-              </button>
-            </div>
-            <div className="text-gray-500 text-xs">
-              Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • Click to Sample
-            </div>
-          </div>
+          <ZoomControlsBar
+            zoomLevel={zoomLevel}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFit={resetView}
+            isGrayscale={isGrayscale}
+            onToggleGrayscale={() => setIsGrayscale(!isGrayscale)}
+            minZoom={MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+          />
 
           {/* Grid Controls */}
-          <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 mb-4 flex flex-wrap items-center gap-4 text-sm">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={gridEnabled}
-                onChange={(e) => setGridEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-gray-200 font-medium">Grid Overlay</span>
-            </label>
-
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">Canvas:</span>
-              <input
-                type="number"
-                value={gridPhysicalWidth}
-                onChange={(e) => setGridPhysicalWidth(Number(e.target.value))}
-                className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
-                min="1"
-              />
-              <span className="text-gray-500">×</span>
-              <input
-                type="number"
-                value={gridPhysicalHeight}
-                onChange={(e) => setGridPhysicalHeight(Number(e.target.value))}
-                className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
-                min="1"
-              />
-              <span className="text-gray-500">in</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">Size:</span>
-              <select
-                value={gridSquareSize}
-                onChange={(e) => setGridSquareSize(Number(e.target.value))}
-                className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
-              >
-                <option value="0.25">0.25"</option>
-                <option value="0.5">0.5"</option>
-                <option value="1">1"</option>
-                <option value="2">2"</option>
-                <option value="3">3"</option>
-              </select>
-            </div>
-          </div>
+          <GridControlsPanel
+            gridEnabled={internalGridEnabled}
+            onToggleGrid={setInternalGridEnabled}
+            physicalWidth={gridPhysicalWidth}
+            physicalHeight={gridPhysicalHeight}
+            onDimensionsChange={(w, h) => {
+              setGridPhysicalWidth(w)
+              setGridPhysicalHeight(h)
+            }}
+            squareSize={gridSquareSize}
+            onSquareSizeChange={setGridSquareSize}
+          />
 
           {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
             className="flex-1 relative overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
           >
+            {/* Loading indicator */}
+            {isAnalyzing && (
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-xs text-white/70 bg-gray-900/80 px-2 py-1 rounded">
+                <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </div>
+            )}
+
             <canvas
               ref={canvasRef}
               width={canvasDimensions.width}
@@ -1127,31 +860,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             <canvas
               ref={overlayCanvasRef}
               className="absolute top-0 left-0 pointer-events-none"
-              style={{
-                // We need to apply the same transform as the main image
-                // But since the overlay is generated at buffer size (potentially diff from image.naturalSize), 
-                // we need to be careful.
-                // Actually easier strategy: Render overlay at 'buffer' size, but use CSS transform to align?
-                // Or better: Draw the overlay INTO the main canvas context?
-                // No, separate canvas is better for performance (don't redraw base image constantly).
-
-                // Let's position it exactly like the main image using the same `imageDrawInfo`
-                // logic, simply drawing it with CSS width/height?
-                // The overlayCanvas has resolution `labBuffer.width` x `labBuffer.height`.
-                // We want it to occupy `imageDrawInfo.x`, `imageDrawInfo.y` with size `imageDrawInfo.width` x `imageDrawInfo.height`
-                // AND be affected by the parent zoom/pan which is on the context?
-
-                // Wait, the main canvas uses context transforms (ctx.translate/scale).
-                // The main canvas is full size of container.
-                // We should probably draw the overlay onto the MAIN canvas in `drawCanvas`?
-                // Pros: Perfect sync with zoom/pan. Cons: Re-uploading texture every frame?
-                // Actually `putImageData` is slow. Creating an ImageBitmap from the overlay canvas and drawing that is fast.
-                display: 'none' // We will draw this separate canvas onto the main canvas
-              }}
+              style={{ display: 'none' }}
             />
             <canvas ref={valueMapCanvasRef} id="value-map-canvas" style={{ display: 'none' }} />
 
-            {/* Ruler Grid & Measurement Overlay - Moved inside container for perfect coordinate alignment */}
+            {/* Ruler Grid & Measurement Overlay */}
             <RulerOverlay
               gridEnabled={props.gridEnabled || false}
               gridSpacing={props.gridSpacing || 1}
@@ -1180,9 +893,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
             </div>
           </div>
-        </div >
-      )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   )
 }

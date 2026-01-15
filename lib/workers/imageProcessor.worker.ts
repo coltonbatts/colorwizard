@@ -35,6 +35,19 @@ function rgbToLab(r: number, g: number, b: number): { l: number; a: number; b: n
 }
 
 /**
+ * Calculate Delta E (CIE76) between two Lab colors.
+ */
+function deltaE(
+    lab1: { l: number; a: number; b: number },
+    lab2: { l: number; a: number; b: number }
+): number {
+    const dL = lab1.l - lab2.l;
+    const dA = lab1.a - lab2.a;
+    const dB = lab1.b - lab2.b;
+    return Math.sqrt(dL * dL + dA * dA + dB * dB);
+}
+
+/**
  * Get relative luminance (Y value) for value scale computation.
  */
 function getRelativeLuminance(r: number, g: number, b: number): number {
@@ -47,6 +60,25 @@ function getRelativeLuminance(r: number, g: number, b: number): number {
     const bLinear = bb <= 0.03928 ? bb / 12.92 : Math.pow((bb + 0.055) / 1.055, 2.4);
 
     return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+}
+
+/**
+ * Get step index for a luminance value given thresholds.
+ */
+function getStepIndex(y: number, thresholds: number[]): number {
+    for (let i = 0; i < thresholds.length - 1; i++) {
+        if (y >= thresholds[i] && y < thresholds[i + 1]) {
+            return i;
+        }
+    }
+    return thresholds.length - 2;
+}
+
+/**
+ * Convert step index to grayscale value.
+ */
+function stepToGray(stepIdx: number, numSteps: number): number {
+    return Math.round(255 * (stepIdx / (numSteps - 1)));
 }
 
 export interface ImageBufferResult {
@@ -176,10 +208,98 @@ function computeValueScale(
     return { thresholds, steps };
 }
 
+/**
+ * Generate value map overlay image data.
+ * Returns Uint8ClampedArray for direct use with ImageData.
+ */
+function generateValueMapData(
+    yBuffer: Float32Array,
+    width: number,
+    height: number,
+    thresholds: number[]
+): Uint8ClampedArray {
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+    const numSteps = thresholds.length - 1;
+
+    for (let i = 0; i < pixelCount; i++) {
+        const y = yBuffer[i];
+        const stepIdx = getStepIndex(y, thresholds);
+        const val = stepToGray(stepIdx, numSteps);
+
+        const idx = i * 4;
+        data[idx] = val;
+        data[idx + 1] = val;
+        data[idx + 2] = val;
+        data[idx + 3] = 255;
+    }
+
+    return data;
+}
+
+// Highlight overlay constants
+const HIGHLIGHT_ALPHA_SOLID = 180;
+const HIGHLIGHT_ALPHA_MAX = 255;
+
+export interface LabBuffer {
+    l: Float32Array;
+    a: Float32Array;
+    b: Float32Array;
+    width: number;
+    height: number;
+}
+
+/**
+ * Generate highlight overlay image data.
+ * Finds pixels matching the target color within tolerance and creates an overlay.
+ */
+function generateHighlightOverlay(
+    labBuffer: LabBuffer,
+    targetR: number,
+    targetG: number,
+    targetB: number,
+    tolerance: number,
+    mode: 'solid' | 'heatmap'
+): Uint8ClampedArray {
+    const { l: lBuffer, a: aBuffer, b: bBuffer, width, height } = labBuffer;
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    const targetLab = rgbToLab(targetR, targetG, targetB);
+
+    for (let i = 0; i < pixelCount; i++) {
+        const currentLab = { l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] };
+        const dist = deltaE(currentLab, targetLab);
+
+        if (dist <= tolerance) {
+            const idx = i * 4;
+            if (mode === 'solid') {
+                // Vivid pink/magenta for high visibility
+                data[idx] = 255;     // R
+                data[idx + 1] = 0;   // G
+                data[idx + 2] = 255; // B
+                data[idx + 3] = HIGHLIGHT_ALPHA_SOLID;
+            } else {
+                // Heatmap: Closer match = more opaque / intense
+                const strength = 1 - (dist / tolerance);
+                data[idx] = 255;
+                data[idx + 1] = Math.floor(255 * (1 - strength));
+                data[idx + 2] = 0;
+                data[idx + 3] = Math.min(HIGHLIGHT_ALPHA_MAX, Math.floor(HIGHLIGHT_ALPHA_MAX * strength * 1.5));
+            }
+        }
+        // Non-matching pixels remain transparent (default 0)
+    }
+
+    return data;
+}
+
 // Expose API to main thread via Comlink
 const workerAPI = {
     processImageData,
     computeValueScale,
+    generateValueMapData,
+    generateHighlightOverlay,
 };
 
 export type ImageProcessorWorker = typeof workerAPI;

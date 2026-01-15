@@ -1,30 +1,26 @@
 'use client'
 
-import { useMemo, useState, useEffect, useRef } from 'react'
+/**
+ * Home page - Main application entry point.
+ * Refactored to use Zustand store for centralized state management.
+ */
+
+import { useMemo, useEffect, useRef } from 'react'
 import ImageCanvas from '@/components/ImageCanvas'
 import ColorPanel from '@/components/ColorPanel'
 import ShoppingListPanel from '@/components/ShoppingListPanel'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
-import RulerOverlay from '@/components/RulerOverlay'
 import CollapsibleSidebar from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import { useStore } from '@/lib/store/useStore'
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
-import {
-  CalibrationData,
-  loadCalibration,
-  saveCalibration,
-  clearCalibration,
-  isCalibrationStale,
-  TransformState
-} from '@/lib/calibration'
-import { MeasurementLayer } from '@/lib/types/measurement'
 
 export default function Home() {
   const {
+    // Core color state
     sampledColor, setSampledColor,
     activeHighlightColor, setActiveHighlightColor,
     highlightTolerance, setHighlightTolerance,
@@ -37,75 +33,38 @@ export default function Home() {
     valueScaleResult, setValueScaleResult,
     palettes, createPalette, updatePalette, deletePalette, setActivePalette,
     showPaletteManager, setShowPaletteManager,
-    canvasSettings, setCanvasSettings
+    canvasSettings, setCanvasSettings,
+
+    // Calibration state
+    calibration, calibrationStale,
+    showCalibrationModal, setShowCalibrationModal,
+    saveCalibration, resetCalibration, loadCalibrationFromStorage,
+
+    // Measurement state
+    measureMode, measurePointA, measurePointB, measurementLayer,
+    setMeasurePoints, toggleMeasureMode, toggleMeasurementLayer,
+
+    // Grid/Ruler state
+    rulerGridEnabled, rulerGridSpacing,
+    toggleRulerGrid, setRulerGridSpacing,
+
+    // Transform state
+    setTransformState,
+
+    // Modal state
+    showCanvasSettingsModal, setShowCanvasSettingsModal,
   } = useStore()
 
   // Layout preferences
   const { sidebarCollapsed, compactMode, toggleSidebar, toggleCompactMode } = useLayoutPreferences()
 
-  // Screen Calibration State
-  const [showCalibrationModal, setShowCalibrationModal] = useState(false)
-  const [calibration, setCalibration] = useState<CalibrationData | null>(null)
-  const [calibrationStale, setCalibrationStale] = useState(false)
-  const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
-
-  // Ruler Grid State
-  const [rulerGridEnabled, setRulerGridEnabled] = useState(false)
-  const [rulerGridSpacing, setRulerGridSpacing] = useState<0.25 | 0.5 | 1 | 2>(1)
-
-  // Measurement State
-  const [measureMode, setMeasureMode] = useState(false)
-  const [measurePointA, setMeasurePointA] = useState<{ x: number; y: number } | null>(null)
-  const [measurePointB, setMeasurePointB] = useState<{ x: number; y: number } | null>(null)
-  const [measurementLayer, setMeasurementLayer] = useState<MeasurementLayer>('reference')
-
-  // Transform state (zoom/pan) from ImageCanvas for RulerOverlay
-  const [transformState, setTransformState] = useState<TransformState>({ zoomLevel: 1, panOffset: { x: 0, y: 0 } })
-
   // Canvas container ref for RulerOverlay
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
-  // Load calibration on mount and check for staleness
+  // Load calibration on mount
   useEffect(() => {
-    const saved = loadCalibration()
-    if (saved) {
-      setCalibration(saved)
-      setCalibrationStale(isCalibrationStale(saved))
-    }
-  }, [])
-
-  // Handle calibration save
-  const handleCalibrationSave = (data: CalibrationData) => {
-    saveCalibration(data)
-    setCalibration(data)
-    setCalibrationStale(false)
-  }
-
-  // Handle calibration reset
-  const handleCalibrationReset = () => {
-    clearCalibration()
-    setCalibration(null)
-    setCalibrationStale(false)
-    setRulerGridEnabled(false)
-    setMeasureMode(false)
-  }
-
-  // Handle measurement point updates from RulerOverlay
-  const handleMeasurePointsChange = (a: { x: number; y: number } | null, b: { x: number; y: number } | null) => {
-    setMeasurePointA(a)
-    setMeasurePointB(b)
-  }
-
-  // Handle measure toggle with point reset
-  const handleToggleMeasure = () => {
-    if (calibration) {
-      if (!measureMode) {
-        setMeasurePointA(null)
-        setMeasurePointB(null)
-      }
-      setMeasureMode(!measureMode)
-    }
-  }
+    loadCalibrationFromStorage()
+  }, [loadCalibrationFromStorage])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -132,17 +91,17 @@ export default function Home() {
             calibration={calibration}
             calibrationStale={calibrationStale}
             onOpenCalibration={() => setShowCalibrationModal(true)}
-            onResetCalibration={handleCalibrationReset}
+            onResetCalibration={resetCalibration}
             rulerGridEnabled={rulerGridEnabled}
             rulerGridSpacing={rulerGridSpacing}
-            onToggleRulerGrid={() => calibration && setRulerGridEnabled(!rulerGridEnabled)}
+            onToggleRulerGrid={toggleRulerGrid}
             onRulerGridSpacingChange={setRulerGridSpacing}
             measureMode={measureMode}
             measurePointA={measurePointA}
             measurePointB={measurePointB}
-            onToggleMeasure={handleToggleMeasure}
+            onToggleMeasure={toggleMeasureMode}
             measurementLayer={measurementLayer}
-            onToggleMeasurementLayer={() => setMeasurementLayer(prev => prev === 'reference' ? 'painting' : 'reference')}
+            onToggleMeasurementLayer={toggleMeasurementLayer}
             palettes={palettes}
             activePalette={activePalette}
             onSelectPalette={setActivePalette}
@@ -217,7 +176,7 @@ export default function Home() {
             onHistogramComputed={setHistogramBins}
             onValueScaleResult={setValueScaleResult}
             measureMode={measureMode}
-            onMeasurePointsChange={handleMeasurePointsChange}
+            onMeasurePointsChange={setMeasurePoints}
             onTransformChange={setTransformState}
             calibration={calibration}
             gridEnabled={rulerGridEnabled}
@@ -306,7 +265,7 @@ export default function Home() {
       <CalibrationModal
         isOpen={showCalibrationModal}
         onClose={() => setShowCalibrationModal(false)}
-        onSave={handleCalibrationSave}
+        onSave={saveCalibration}
         initialCalibration={calibration}
       />
 
