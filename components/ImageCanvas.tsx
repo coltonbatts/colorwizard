@@ -17,8 +17,7 @@ interface ColorData {
   }
 }
 
-import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
-import { getLuminance } from '@/lib/paintingMath'
+import { rgbToLab, deltaE, rgbToHsl } from '@/lib/colorUtils'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray, computeHistogram } from '@/lib/valueScale'
 import { TransformState, screenToImage } from '@/lib/calibration'
@@ -61,10 +60,27 @@ interface ImageCanvasProps {
   measurementLayer?: MeasurementLayer
 }
 
+// Zoom constraints
 const MIN_ZOOM = 0.1
 const MAX_ZOOM = 10
 const ZOOM_STEP = 0.1
 const ZOOM_WHEEL_SENSITIVITY = 0.001
+
+// HUD overlay dimensions
+const HUD_X = 10
+const HUD_Y = 10
+const HUD_WIDTH = 180
+const HUD_HEIGHT = 70
+
+// Drag detection threshold (pixels)
+const DRAG_THRESHOLD = 3
+
+// Highlight overlay alpha values
+const HIGHLIGHT_ALPHA_SOLID = 180
+const HIGHLIGHT_ALPHA_MAX = 255
+
+// Image processing max dimension
+const MAX_PROCESS_DIM = 1000
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
@@ -301,9 +317,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.save()
     ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset transforms for HUD
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-    ctx.fillRect(10, 10, 180, 70)
+    ctx.fillRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
-    ctx.strokeRect(10, 10, 180, 70)
+    ctx.strokeRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT)
 
     ctx.fillStyle = 'white'
     ctx.font = 'bold 10px sans-serif'
@@ -493,7 +509,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [image, zoomLevel, zoomAtPoint])
+  }, [image, zoomLevel, zoomAtPoint, props.onValueScaleChange, props.valueScaleSettings])
 
   // Reset view to initial state
   const resetView = useCallback(() => {
@@ -506,7 +522,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     resetView()
   }, [resetView])
 
-  const sampleColor = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !image) return
 
     const canvas = canvasRef.current
@@ -578,7 +594,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       hsl,
       valueMetadata
     })
-  }
+  }, [image, valueScaleResult, sortedLuminances, onColorSample])
 
   // Handle mouse down for panning or measurement
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -645,7 +661,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           e.clientX - dragStartRef.current.x,
           e.clientY - dragStartRef.current.y
         )
-        if (dist > 3) hasDraggedRef.current = true
+        if (dist > DRAG_THRESHOLD) hasDraggedRef.current = true
       }
 
       const deltaX = (e.clientX - lastPanPoint.current.x) * scaleX
@@ -696,16 +712,40 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setIsPanning(false)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }
+  }, [])
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setIsDragging(false)
-  }
+  }, [])
 
-  const handleDrop = (e: React.DragEvent) => {
+  const loadImage = useCallback((file: File) => {
+    const reader = new FileReader()
+
+    reader.onerror = () => {
+      console.error('Failed to read file:', reader.error)
+    }
+
+    reader.onload = (event) => {
+      const img = new Image()
+
+      img.onerror = () => {
+        console.error('Failed to load image from file')
+      }
+
+      img.onload = () => {
+        onImageLoad(img)
+      }
+
+      img.src = event.target?.result as string
+    }
+
+    reader.readAsDataURL(file)
+  }, [onImageLoad])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
 
@@ -713,26 +753,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     if (file && file.type.startsWith('image/')) {
       loadImage(file)
     }
-  }
+  }, [loadImage])
 
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       loadImage(file)
     }
-  }
-
-  const loadImage = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const img = new Image()
-      img.onload = () => {
-        onImageLoad(img)
-      }
-      img.src = event.target?.result as string
-    }
-    reader.readAsDataURL(file)
-  }
+  }, [loadImage])
 
   // Pre-calculate Lab and Value values for the image for fast comparison
   useEffect(() => {
@@ -744,8 +772,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Create a temporary canvas to read pixel data
     const canvas = document.createElement('canvas')
-    // Limit processing resolution for performance (max 1000px longest side)
-    const MAX_PROCESS_DIM = 1000
+    // Limit processing resolution for performance
     let width = image.width
     let height = image.height
 
@@ -891,8 +918,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const pixelCount = lBuffer.length
 
     for (let i = 0; i < pixelCount; i++) {
-      // Must match culori Lab interface with mode property
-      const currentLab = { mode: 'lab', l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] } as unknown as Lab
+      // Culori's Lab type requires mode: 'lab' literal; use assertion for pre-computed buffer values
+      const currentLab = { mode: 'lab' as const, l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] }
       const dist = deltaE(currentLab, targetLab)
 
       if (dist <= highlightTolerance) {
@@ -903,7 +930,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           data[idx] = 255     // R
           data[idx + 1] = 0   // G
           data[idx + 2] = 255 // B
-          data[idx + 3] = 180 // Alpha
+          data[idx + 3] = HIGHLIGHT_ALPHA_SOLID // Alpha
         } else {
           // Heatmap: Closer match = more opaque / intense
           // Scale alpha from 255 (dist=0) to 0 (dist=tolerance)
@@ -911,7 +938,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           data[idx] = 255
           data[idx + 1] = Math.floor(255 * (1 - strength)) // G goes 0->255 (Red -> White/Yellowish)
           data[idx + 2] = 0
-          data[idx + 3] = Math.min(255, Math.floor(255 * strength * 1.5))
+          data[idx + 3] = Math.min(HIGHLIGHT_ALPHA_MAX, Math.floor(HIGHLIGHT_ALPHA_MAX * strength * 1.5))
         }
       } else {
         // Optional: Dim non-matching areas? 
@@ -922,84 +949,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.putImageData(imageData, 0, 0)
 
   }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode])
-
-  /**
-   * Converts RGB color values to HSL (Hue, Saturation, Lightness) color space.
-   *
-   * RGB (Red, Green, Blue) represents colors as combinations of red, green, and blue light,
-   * with values ranging from 0-255. HSL represents colors in terms of:
-   * - Hue: The color type (red, yellow, green, blue, etc.) as a degree on the color wheel (0-360)
-   * - Saturation: The intensity/purity of the color as a percentage (0-100)
-   * - Lightness: How light or dark the color is as a percentage (0-100)
-   *
-   * HSL is often more intuitive for color manipulation and analysis because it separates
-   * the color information (hue) from the brightness (lightness) and intensity (saturation).
-   *
-   * @param {number} r - Red component (0-255)
-   * @param {number} g - Green component (0-255)
-   * @param {number} b - Blue component (0-255)
-   *
-   * @returns {Object} HSL color representation
-   * @returns {number} returns.h - Hue in degrees (0-360)
-   * @returns {number} returns.s - Saturation percentage (0-100)
-   * @returns {number} returns.l - Lightness percentage (0-100)
-   *
-   * @example
-   * // Convert pure red to HSL
-   * const hsl = rgbToHsl(255, 0, 0)
-   * // Returns: { h: 0, s: 100, l: 50 }
-   *
-   * @example
-   * // Convert a gray color to HSL
-   * const hsl = rgbToHsl(128, 128, 128)
-   * // Returns: { h: 0, s: 0, l: 50 }
-   *
-   * @example
-   * // Convert a sky blue to HSL
-   * const hsl = rgbToHsl(135, 206, 235)
-   * // Returns: { h: 197, s: 71, l: 73 }
-   *
-   * @remarks
-   * - This implementation uses the standard HSL conversion algorithm
-   * - All return values are rounded to the nearest integer for practical use
-   * - When saturation is 0 (achromatic/gray), the hue value is meaningless and set to 0
-   * - The algorithm normalizes RGB values to 0-1 range before calculation
-   */
-  const rgbToHsl = (r: number, g: number, b: number) => {
-    r /= 255
-    g /= 255
-    b /= 255
-
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    let h = 0
-    let s = 0
-    const l = (max + min) / 2
-
-    if (max !== min) {
-      const d = max - min
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-
-      switch (max) {
-        case r:
-          h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-          break
-        case g:
-          h = ((b - r) / d + 2) / 6
-          break
-        case b:
-          h = ((r - g) / d + 4) / 6
-          break
-      }
-    }
-
-    return {
-      h: Math.round(h * 360),
-      s: Math.round(s * 100),
-      l: Math.round(l * 100),
-    }
-  }
-
 
 
   // Zoom control handlers

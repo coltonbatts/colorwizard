@@ -1,12 +1,13 @@
 /**
  * useImageAnalyzer - High-performance buffer management for image analysis.
- * Handles Lab/Value buffer computation using Web Worker.
+ * Handles Lab/Value buffer computation using Web Worker for non-blocking processing.
  */
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { rgbToLab } from '@/lib/colorUtils';
-import { getRelativeLuminance, computeValueScale, getStepIndex, ValueScaleResult, computeHistogram } from '@/lib/valueScale';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { wrap, Remote } from 'comlink';
+import type { ImageProcessorWorker, ImageBufferResult, ValueScaleResult as WorkerValueScaleResult } from '@/lib/workers/imageProcessor.worker';
+import { computeValueScale, ValueScaleResult } from '@/lib/valueScale';
 import { ValueScaleSettings } from '@/lib/types/valueScale';
 
 export interface LabBuffer {
@@ -36,11 +37,34 @@ export interface UseImageAnalyzerReturn {
     histogramBins: number[];
     /** Whether analysis is in progress */
     isAnalyzing: boolean;
+    /** Error message if worker failed */
+    error: string | null;
     /** Recompute value scale with new settings */
     recomputeValueScale: () => void;
 }
 
 const MAX_PROCESS_DIM = 1000;
+
+// Singleton worker instance to avoid recreating it
+let workerInstance: Remote<ImageProcessorWorker> | null = null;
+let workerPromise: Promise<Remote<ImageProcessorWorker>> | null = null;
+
+async function getWorker(): Promise<Remote<ImageProcessorWorker>> {
+    if (workerInstance) return workerInstance;
+
+    if (workerPromise) return workerPromise;
+
+    workerPromise = (async () => {
+        const worker = new Worker(
+            new URL('@/lib/workers/imageProcessor.worker.ts', import.meta.url),
+            { type: 'module' }
+        );
+        workerInstance = wrap<ImageProcessorWorker>(worker);
+        return workerInstance;
+    })();
+
+    return workerPromise;
+}
 
 export function useImageAnalyzer(
     image: HTMLImageElement | null,
@@ -52,6 +76,10 @@ export function useImageAnalyzer(
     const [valueScaleResult, setValueScaleResult] = useState<ValueScaleResult | null>(null);
     const [histogramBins, setHistogramBins] = useState<number[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Track current image to handle race conditions
+    const currentImageRef = useRef<HTMLImageElement | null>(null);
 
     // Process image when it changes
     useEffect(() => {
@@ -61,10 +89,15 @@ export function useImageAnalyzer(
             setSortedLuminances(null);
             setValueScaleResult(null);
             setHistogramBins([]);
+            setError(null);
+            currentImageRef.current = null;
             return;
         }
 
+        // Track current image for race condition handling
+        currentImageRef.current = image;
         setIsAnalyzing(true);
+        setError(null);
 
         // Create a temporary canvas to read pixel data
         const canvas = document.createElement('canvas');
@@ -83,64 +116,52 @@ export function useImageAnalyzer(
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             setIsAnalyzing(false);
+            setError('Failed to get canvas context');
             return;
         }
 
         ctx.drawImage(image, 0, 0, width, height);
         const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        const pixelCount = width * height;
 
-        // Process pixels (could be moved to worker for larger images)
-        const lBuffer = new Float32Array(pixelCount);
-        const aBuffer = new Float32Array(pixelCount);
-        const bBuffer = new Float32Array(pixelCount);
-        const yBuffer = new Float32Array(pixelCount);
+        // Process in Web Worker
+        (async () => {
+            try {
+                const worker = await getWorker();
+                const result = await worker.processImageData(
+                    imageData.data,
+                    width,
+                    height
+                );
 
-        for (let i = 0; i < pixelCount; i++) {
-            const r = data[i * 4];
-            const g = data[i * 4 + 1];
-            const b = data[i * 4 + 2];
+                // Check if this is still the current image (handle race conditions)
+                if (currentImageRef.current !== image) {
+                    return;
+                }
 
-            const lab = rgbToLab(r, g, b);
-            lBuffer[i] = lab.l;
-            aBuffer[i] = lab.a;
-            bBuffer[i] = lab.b;
+                setLabBuffer(result.labBuffer);
+                setValueBuffer(result.valueBuffer);
+                setSortedLuminances(result.sortedLuminances);
+                setHistogramBins(result.histogram);
 
-            yBuffer[i] = getRelativeLuminance(r, g, b);
-        }
+                // Compute value scale from worker result
+                const valueScale = computeValueScale(
+                    result.valueBuffer.y,
+                    valueScaleSettings?.steps || 5,
+                    valueScaleSettings?.mode || 'Even',
+                    valueScaleSettings?.clip || 0
+                );
+                setValueScaleResult(valueScale);
 
-        setLabBuffer({
-            l: lBuffer,
-            a: aBuffer,
-            b: bBuffer,
-            width,
-            height,
-        });
+            } catch (err) {
+                console.error('Worker processing failed:', err);
+                setError(err instanceof Error ? err.message : 'Image processing failed');
+            } finally {
+                if (currentImageRef.current === image) {
+                    setIsAnalyzing(false);
+                }
+            }
+        })();
 
-        setValueBuffer({
-            y: yBuffer,
-            width,
-            height,
-        });
-
-        const sorted = new Float32Array(yBuffer).sort();
-        setSortedLuminances(sorted);
-
-        // Compute histogram
-        const bins = computeHistogram(yBuffer);
-        setHistogramBins(bins);
-
-        // Compute initial value scale
-        const result = computeValueScale(
-            yBuffer,
-            valueScaleSettings?.steps || 5,
-            valueScaleSettings?.mode || 'Even',
-            valueScaleSettings?.clip || 0
-        );
-        setValueScaleResult(result);
-
-        setIsAnalyzing(false);
     }, [image]);
 
     // Recompute value scale when settings change
@@ -175,6 +196,7 @@ export function useImageAnalyzer(
         valueScaleResult,
         histogramBins,
         isAnalyzing,
+        error,
         recomputeValueScale,
     };
 }

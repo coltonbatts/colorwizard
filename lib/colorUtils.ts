@@ -62,6 +62,49 @@ export function rgbToLab(r: number, g: number, b: number): Lab {
 }
 
 /**
+ * Converts RGB (0-255) to HSL color space.
+ * 
+ * @param r - Red component (0-255)
+ * @param g - Green component (0-255)
+ * @param b - Blue component (0-255)
+ * @returns HSL object with h (0-360), s (0-100), l (0-100)
+ */
+export function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case rNorm:
+        h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6;
+        break;
+      case gNorm:
+        h = ((bNorm - rNorm) / d + 2) / 6;
+        break;
+      case bNorm:
+        h = ((rNorm - gNorm) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100),
+  };
+}
+
+/**
  * Helper to get a strict match confidence label
  */
 export function getMatchConfidence(dE: number): { label: string; color: string; bgColor: string } {
