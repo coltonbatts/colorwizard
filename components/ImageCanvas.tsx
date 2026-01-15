@@ -18,6 +18,7 @@ import { rgbToLab, deltaE, Lab } from '@/lib/colorUtils'
 import { getLuminance } from '@/lib/paintingMath'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray, computeHistogram } from '@/lib/valueScale'
+import { TransformState, screenToImage } from '@/lib/calibration'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -43,7 +44,9 @@ interface ImageCanvasProps {
   /** Callback when a measurement click occurs (canvas-space coordinates for transform-invariant storage) */
   onMeasureClick?: (point: { x: number; y: number }) => void
   /** Callback to report current transform state (zoom and pan) for RulerOverlay */
-  onTransformChange?: (transform: { zoomLevel: number; panOffset: { x: number; y: number } }) => void
+  onTransformChange?: (transform: TransformState) => void
+  /** Callback to report measurement points in IMAGE-SPACE coordinates */
+  onMeasurePointsChange?: (pointA: { x: number; y: number } | null, pointB: { x: number; y: number } | null) => void
 }
 
 const MIN_ZOOM = 0.1
@@ -79,9 +82,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [zoomLevel, setZoomLevel] = useState(1)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
+  const [isMeasuring, setIsMeasuring] = useState(false)
   const [isSpaceDown, setIsSpaceDown] = useState(false)
   const lastPanPoint = useRef({ x: 0, y: 0 })
   const dragStartRef = useRef({ x: 0, y: 0 })
+  const measureStartPointRef = useRef<{ x: number; y: number } | null>(null)
   const hasDraggedRef = useRef(false)
 
   // Image dimensions after initial fit
@@ -343,10 +348,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   // Report transform state changes to parent for RulerOverlay
   useEffect(() => {
-    if (props.onTransformChange) {
-      props.onTransformChange({ zoomLevel, panOffset })
+    if (props.onTransformChange && imageDrawInfo) {
+      props.onTransformChange({ zoomLevel, panOffset, imageDrawInfo })
     }
-  }, [zoomLevel, panOffset, props.onTransformChange])
+  }, [zoomLevel, panOffset, imageDrawInfo, props.onTransformChange])
 
   // Zoom function centered on a point
   const zoomAtPoint = useCallback(
@@ -560,9 +565,32 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     })
   }
 
-  // Handle mouse down for panning
+  // Handle mouse down for panning or measurement
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    // Left click, Middle mouse button or spacebar held
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+
+    // Measurement Mode
+    if (props.measureMode && e.button === 0 && !isSpaceDown) {
+      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+      if (imagePoint && props.onMeasurePointsChange) {
+        setIsMeasuring(true)
+        measureStartPointRef.current = imagePoint
+        props.onMeasurePointsChange(imagePoint, imagePoint) // Start with both points at same position
+      }
+      return
+    }
+
+    // Panning Mode
     if (e.button === 0 || e.button === 1 || isSpaceDown) {
       e.preventDefault()
       setIsPanning(true)
@@ -572,8 +600,29 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  // Handle mouse move for panning
+  // Handle mouse move for panning or measurement preview
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+
+    // Measurement Drag Preview
+    if (isMeasuring && props.onMeasurePointsChange && measureStartPointRef.current) {
+      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+      if (imagePoint) {
+        props.onMeasurePointsChange(measureStartPointRef.current, imagePoint)
+      }
+      return
+    }
+
     if (isPanning) {
       // Check for drag threshold
       if (!hasDraggedRef.current) {
@@ -583,13 +632,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         )
         if (dist > 3) hasDraggedRef.current = true
       }
-
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const rect = canvas.getBoundingClientRect()
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
 
       const deltaX = (e.clientX - lastPanPoint.current.x) * scaleX
       const deltaY = (e.clientY - lastPanPoint.current.y) * scaleY
@@ -603,29 +645,31 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
-  // Handle mouse up to stop panning
+  // Handle mouse up to stop panning or measurement
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isMeasuring) {
+      setIsMeasuring(false)
+      return
+    }
+
     setIsPanning(false)
     if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
-      // Check if measurement mode is active
+      // Check if measurement mode is active (single click fallback)
       if (props.measureMode && props.onMeasureClick) {
         const canvas = canvasRef.current
-        if (!canvas) return
+        if (!canvas || !image) return
 
         const rect = canvas.getBoundingClientRect()
         const scaleX = canvas.width / rect.width
         const scaleY = canvas.height / rect.height
 
-        // Get click position in canvas pixel coordinates (screen-space)
         const screenX = (e.clientX - rect.left) * scaleX
         const screenY = (e.clientY - rect.top) * scaleY
 
-        // Convert to canvas-space (accounts for zoom and pan)
-        // Formula: canvasCoord = (screenCoord - panOffset) / zoomLevel
-        const canvasX = (screenX - panOffset.x) / zoomLevel
-        const canvasY = (screenY - panOffset.y) / zoomLevel
-
-        props.onMeasureClick({ x: canvasX, y: canvasY })
+        const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+        if (imagePoint) {
+          props.onMeasureClick(imagePoint)
+        }
       } else {
         sampleColor(e)
       }

@@ -199,7 +199,7 @@ export default function Home() {
             onColorSample={(color) => {
               // If measure mode is on, handle measurement instead of color sampling
               if (measureMode && calibration) {
-                // Measurement is handled separately via onMeasureClick
+                // Measurement is handled separately via onMeasurePointsChange
                 return
               }
               setSampledColor(color)
@@ -212,18 +212,7 @@ export default function Home() {
             onHistogramComputed={setHistogramBins}
             onValueScaleResult={setValueScaleResult}
             measureMode={measureMode}
-            onMeasureClick={(point) => {
-              if (!calibration) return
-              if (!measurePointA) {
-                setMeasurePointA(point)
-              } else if (!measurePointB) {
-                setMeasurePointB(point)
-              } else {
-                // Reset and start new measurement
-                setMeasurePointA(point)
-                setMeasurePointB(null)
-              }
-            }}
+            onMeasurePointsChange={handleMeasurePointsChange}
             onTransformChange={setTransformState}
           />
 
@@ -239,6 +228,7 @@ export default function Home() {
             onMeasurePointsChange={handleMeasurePointsChange}
             transformState={transformState}
             measurementLayer={measurementLayer}
+            image={image}
           />
         </div>
       </div>

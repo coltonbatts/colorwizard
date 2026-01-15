@@ -172,12 +172,17 @@ export function inchesToCm(inches: number): number {
 export interface TransformState {
     zoomLevel: number
     panOffset: { x: number; y: number }
+    /** Offset and dimensions of the image relative to the canvas (pre-transform) */
+    imageDrawInfo?: {
+        x: number
+        y: number
+        width: number
+        height: number
+    }
 }
 
 /**
  * Convert screen-space coordinates to canvas-space coordinates.
- * Use this when storing measurement points.
- * 
  * Formula: canvasCoord = (screenCoord - panOffset) / zoomLevel
  */
 export function screenToCanvas(
@@ -193,8 +198,6 @@ export function screenToCanvas(
 
 /**
  * Convert canvas-space coordinates to screen-space coordinates.
- * Use this when rendering measurement points on screen.
- * 
  * Formula: screenCoord = (canvasCoord × zoomLevel) + panOffset
  */
 export function canvasToScreen(
@@ -206,6 +209,64 @@ export function canvasToScreen(
         x: (canvasX * transform.zoomLevel) + transform.panOffset.x,
         y: (canvasY * transform.zoomLevel) + transform.panOffset.y
     }
+}
+
+/**
+ * Convert screen-space coordinates to image-relative coordinates (pixels).
+ * This is invariant to zoom, pan, and canvas resizing.
+ */
+export function screenToImage(
+    screenX: number,
+    screenY: number,
+    transform: TransformState,
+    imageOriginalWidth: number,
+    imageOriginalHeight: number
+): { x: number; y: number } | null {
+    if (!transform.imageDrawInfo) return null
+
+    // 1. Get canvas-space coordinate
+    const canvasPoint = screenToCanvas(screenX, screenY, transform)
+
+    // 2. Adjust for image offset relative to canvas
+    const xInFittedImage = canvasPoint.x - transform.imageDrawInfo.x
+    const yInFittedImage = canvasPoint.y - transform.imageDrawInfo.y
+
+    // 3. Scale to original image dimensions
+    // The fitted image dimensions (width/height) are the "fit-to-canvas" base dimensions
+    const scaleX = imageOriginalWidth / transform.imageDrawInfo.width
+    const scaleY = imageOriginalHeight / transform.imageDrawInfo.height
+
+    return {
+        x: xInFittedImage * scaleX,
+        y: yInFittedImage * scaleY
+    }
+}
+
+/**
+ * Convert image-relative coordinates (pixels) to screen-space coordinates.
+ */
+export function imageToScreen(
+    imageX: number,
+    imageY: number,
+    transform: TransformState,
+    imageOriginalWidth: number,
+    imageOriginalHeight: number
+): { x: number; y: number } | null {
+    if (!transform.imageDrawInfo) return null
+
+    // 1. Scale from original image dimensions to fitted dimensions
+    const scaleX = transform.imageDrawInfo.width / imageOriginalWidth
+    const scaleY = transform.imageDrawInfo.height / imageOriginalHeight
+
+    const xInFittedImage = imageX * scaleX
+    const yInFittedImage = imageY * scaleY
+
+    // 2. Adjust for image offset relative to canvas
+    const canvasX = xInFittedImage + transform.imageDrawInfo.x
+    const canvasY = yInFittedImage + transform.imageDrawInfo.y
+
+    // 3. Apply zoom and pan
+    return canvasToScreen(canvasX, canvasY, transform)
 }
 
 /**

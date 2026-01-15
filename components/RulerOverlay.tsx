@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CalibrationData, pxToInches, inchesToCm, canvasToScreen, TransformState } from '@/lib/calibration'
+import { CalibrationData, pxToInches, inchesToCm, imageToScreen, TransformState } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 
 interface Point {
@@ -22,13 +22,15 @@ interface RulerOverlayProps {
     containerRef: React.RefObject<HTMLDivElement>
     /** Callback when measurement points change (for external state management) */
     onMeasurePointsChange?: (pointA: Point | null, pointB: Point | null) => void
-    /** External measurement points in CANVAS-SPACE (controlled mode) */
+    /** External measurement points in IMAGE-SPACE (controlled mode) */
     measurePointA?: Point | null
     measurePointB?: Point | null
     /** Current transform state (zoom and pan) for rendering canvas-space points to screen */
     transformState?: TransformState
     /** Current measurement layer (reference or painting) */
     measurementLayer?: MeasurementLayer
+    /** The image being measured (for original dimensions) */
+    image?: HTMLImageElement | null
 }
 
 /** Get color based on measurement layer */
@@ -58,29 +60,30 @@ export default function RulerOverlay({
     measurePointB: externalPointB,
     onMeasurePointsChange,
     transformState,
-    measurementLayer
+    measurementLayer,
+    image
 }: RulerOverlayProps) {
     // Internal state for uncontrolled mode
     const [internalPointA, setInternalPointA] = useState<Point | null>(null)
     const [internalPointB, setInternalPointB] = useState<Point | null>(null)
 
-    // Use external or internal state (canvas-space coordinates)
+    // Use external or internal state (image-space coordinates)
     const pointA = externalPointA !== undefined ? externalPointA : internalPointA
     const pointB = externalPointB !== undefined ? externalPointB : internalPointB
 
     // Default transform state (no zoom/pan)
     const transform: TransformState = transformState || { zoomLevel: 1, panOffset: { x: 0, y: 0 } }
 
-    // Convert canvas-space points to screen-space for rendering
+    // Convert image-space points to screen-space for rendering
     const screenPointA = useMemo(() => {
-        if (!pointA) return null
-        return canvasToScreen(pointA.x, pointA.y, transform)
-    }, [pointA, transform])
+        if (!pointA || !image) return null
+        return imageToScreen(pointA.x, pointA.y, transform, image.width, image.height)
+    }, [pointA, transform, image])
 
     const screenPointB = useMemo(() => {
-        if (!pointB) return null
-        return canvasToScreen(pointB.x, pointB.y, transform)
-    }, [pointB, transform])
+        if (!pointB || !image) return null
+        return imageToScreen(pointB.x, pointB.y, transform, image.width, image.height)
+    }, [pointB, transform, image])
 
     const setPointA = (p: Point | null) => {
         if (onMeasurePointsChange) {
@@ -100,9 +103,14 @@ export default function RulerOverlay({
 
     // Calculate grid pattern
     const gridStyle = useMemo(() => {
-        if (!gridEnabled || !calibration) return {}
+        if (!gridEnabled || !calibration || !transform.imageDrawInfo || !image) return {}
 
+        // Scale grid spacing to current image fit scale
         const spacingPx = gridSpacing * calibration.pxPerInch
+
+        // The grid should be aligned with the image's top-left corner
+        const gridX = (transform.imageDrawInfo.x * transform.zoomLevel) + transform.panOffset.x
+        const gridY = (transform.imageDrawInfo.y * transform.zoomLevel) + transform.panOffset.y
 
         return {
             backgroundImage: `
@@ -121,20 +129,25 @@ export default function RulerOverlay({
           transparent ${spacingPx}px
         )
       `.replace(/\s+/g, ' '),
-            backgroundSize: `${spacingPx}px ${spacingPx}px`
+            backgroundSize: `${spacingPx}px ${spacingPx}px`,
+            backgroundPosition: `${gridX}px ${gridY}px`
         }
-    }, [gridEnabled, calibration, gridSpacing])
+    }, [gridEnabled, calibration, gridSpacing, transform, image])
 
-    // Calculate distance between points (in canvas-space for accurate measurement)
+    // Calculate distance between points (in image-space for accurate measurement)
     const measurementInfo = useMemo(() => {
-        if (!pointA || !pointB || !calibration) return null
+        if (!pointA || !pointB || !calibration || !image || !transform.imageDrawInfo) return null
 
-        // Distance is calculated in canvas-space (transform-invariant)
-        const distancePx = Math.sqrt(
+        // Distance in image pixels
+        const distanceImagePx = Math.sqrt(
             Math.pow(pointB.x - pointA.x, 2) + Math.pow(pointB.y - pointA.y, 2)
         )
 
-        const distanceInches = pxToInches(distancePx, calibration)
+        // Convert image pixels to fitted canvas pixels
+        const fitScale = transform.imageDrawInfo.width / image.width
+        const distanceFittedPx = distanceImagePx * fitScale
+
+        const distanceInches = pxToInches(distanceFittedPx, calibration)
         const distanceCm = inchesToCm(distanceInches)
 
         // Midpoint in screen-space (for label positioning)
@@ -145,14 +158,14 @@ export default function RulerOverlay({
         const angle = Math.atan2(pointB.y - pointA.y, pointB.x - pointA.x) * (180 / Math.PI)
 
         return {
-            distancePx,
+            distanceImagePx,
             distanceInches,
             distanceCm,
             midX,
             midY,
             angle
         }
-    }, [pointA, pointB, calibration, screenPointA, screenPointB])
+    }, [pointA, pointB, calibration, screenPointA, screenPointB, image, transform.imageDrawInfo])
 
     const clearMeasurement = () => {
         if (onMeasurePointsChange) {
