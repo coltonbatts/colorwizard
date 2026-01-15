@@ -17,8 +17,10 @@ import {
   loadCalibration,
   saveCalibration,
   clearCalibration,
-  isCalibrationStale
+  isCalibrationStale,
+  TransformState
 } from '@/lib/calibration'
+import { MeasurementLayer } from '@/lib/types/measurement'
 
 export default function Home() {
   const {
@@ -52,6 +54,10 @@ export default function Home() {
   const [measureMode, setMeasureMode] = useState(false)
   const [measurePointA, setMeasurePointA] = useState<{ x: number; y: number } | null>(null)
   const [measurePointB, setMeasurePointB] = useState<{ x: number; y: number } | null>(null)
+  const [measurementLayer, setMeasurementLayer] = useState<MeasurementLayer>('reference')
+
+  // Transform state (zoom/pan) from ImageCanvas for RulerOverlay
+  const [transformState, setTransformState] = useState<TransformState>({ zoomLevel: 1, panOffset: { x: 0, y: 0 } })
 
   // Canvas container ref for RulerOverlay
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -132,6 +138,8 @@ export default function Home() {
             measurePointA={measurePointA}
             measurePointB={measurePointB}
             onToggleMeasure={handleToggleMeasure}
+            measurementLayer={measurementLayer}
+            onToggleMeasurementLayer={() => setMeasurementLayer(prev => prev === 'reference' ? 'painting' : 'reference')}
             palettes={palettes}
             activePalette={activePalette}
             onSelectPalette={setActivePalette}
@@ -216,6 +224,7 @@ export default function Home() {
                 setMeasurePointB(null)
               }
             }}
+            onTransformChange={setTransformState}
           />
 
           {/* Ruler Grid & Measurement Overlay */}
@@ -228,6 +237,8 @@ export default function Home() {
             measurePointB={measurePointB}
             containerRef={canvasContainerRef}
             onMeasurePointsChange={handleMeasurePointsChange}
+            transformState={transformState}
+            measurementLayer={measurementLayer}
           />
         </div>
       </div>

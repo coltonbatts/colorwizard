@@ -18,6 +18,14 @@ export interface CalibrationData {
     devicePixelRatio: number
     /** Viewport scale at time of calibration (for pinch-zoom detection) */
     viewportScale: number | null
+    /** Physical canvas width in inches (optional) */
+    canvasWidthInches?: number
+    /** Physical canvas height in inches (optional) */
+    canvasHeightInches?: number
+    /** Whether calibration is locked from changes */
+    isLocked?: boolean
+    /** ISO timestamp when calibration was locked */
+    lockedAtISO?: string
 }
 
 export interface ZoomFingerprint {
@@ -158,4 +166,66 @@ export function inchesToPx(inches: number, calibration: CalibrationData): number
  */
 export function inchesToCm(inches: number): number {
     return inches * 2.54
+}
+
+/** Transform state for coordinate conversions */
+export interface TransformState {
+    zoomLevel: number
+    panOffset: { x: number; y: number }
+}
+
+/**
+ * Convert screen-space coordinates to canvas-space coordinates.
+ * Use this when storing measurement points.
+ * 
+ * Formula: canvasCoord = (screenCoord - panOffset) / zoomLevel
+ */
+export function screenToCanvas(
+    screenX: number,
+    screenY: number,
+    transform: TransformState
+): { x: number; y: number } {
+    return {
+        x: (screenX - transform.panOffset.x) / transform.zoomLevel,
+        y: (screenY - transform.panOffset.y) / transform.zoomLevel
+    }
+}
+
+/**
+ * Convert canvas-space coordinates to screen-space coordinates.
+ * Use this when rendering measurement points on screen.
+ * 
+ * Formula: screenCoord = (canvasCoord × zoomLevel) + panOffset
+ */
+export function canvasToScreen(
+    canvasX: number,
+    canvasY: number,
+    transform: TransformState
+): { x: number; y: number } {
+    return {
+        x: (canvasX * transform.zoomLevel) + transform.panOffset.x,
+        y: (canvasY * transform.zoomLevel) + transform.panOffset.y
+    }
+}
+
+/**
+ * Lock calibration to prevent accidental changes
+ */
+export function lockCalibration(data: CalibrationData): CalibrationData {
+    return {
+        ...data,
+        isLocked: true,
+        lockedAtISO: new Date().toISOString()
+    }
+}
+
+/**
+ * Unlock calibration to allow changes
+ */
+export function unlockCalibration(data: CalibrationData): CalibrationData {
+    return {
+        ...data,
+        isLocked: false,
+        lockedAtISO: undefined
+    }
 }

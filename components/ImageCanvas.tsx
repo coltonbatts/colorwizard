@@ -38,10 +38,12 @@ interface ImageCanvasProps {
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: ValueScaleResult) => void
-  /** Enable measurement mode - when true, clicks report screen-space coordinates */
+  /** Enable measurement mode - when true, clicks report canvas-space coordinates */
   measureMode?: boolean
-  /** Callback when a measurement click occurs (screen-space coordinates) */
+  /** Callback when a measurement click occurs (canvas-space coordinates for transform-invariant storage) */
   onMeasureClick?: (point: { x: number; y: number }) => void
+  /** Callback to report current transform state (zoom and pan) for RulerOverlay */
+  onTransformChange?: (transform: { zoomLevel: number; panOffset: { x: number; y: number } }) => void
 }
 
 const MIN_ZOOM = 0.1
@@ -339,6 +341,13 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     drawCanvas()
   }, [drawCanvas, props.highlightMode, props.highlightColor, props.highlightTolerance])
 
+  // Report transform state changes to parent for RulerOverlay
+  useEffect(() => {
+    if (props.onTransformChange) {
+      props.onTransformChange({ zoomLevel, panOffset })
+    }
+  }, [zoomLevel, panOffset, props.onTransformChange])
+
   // Zoom function centered on a point
   const zoomAtPoint = useCallback(
     (newZoom: number, centerX: number, centerY: number) => {
@@ -604,11 +613,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         if (!canvas) return
 
         const rect = canvas.getBoundingClientRect()
-        // Get click position relative to the canvas container (screen-space)
-        const x = e.clientX - rect.left
-        const y = e.clientY - rect.top
+        const scaleX = canvas.width / rect.width
+        const scaleY = canvas.height / rect.height
 
-        props.onMeasureClick({ x, y })
+        // Get click position in canvas pixel coordinates (screen-space)
+        const screenX = (e.clientX - rect.left) * scaleX
+        const screenY = (e.clientY - rect.top) * scaleY
+
+        // Convert to canvas-space (accounts for zoom and pan)
+        // Formula: canvasCoord = (screenCoord - panOffset) / zoomLevel
+        const canvasX = (screenX - panOffset.x) / zoomLevel
+        const canvasY = (screenY - panOffset.y) / zoomLevel
+
+        props.onMeasureClick({ x: canvasX, y: canvasY })
       } else {
         sampleColor(e)
       }

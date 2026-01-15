@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Palette } from '@/lib/types/palette'
 import { CalibrationData } from '@/lib/calibration'
+import { MeasurementLayer } from '@/lib/types/measurement'
 
 interface CompactToolbarProps {
     // Calibration
@@ -23,6 +24,8 @@ interface CompactToolbarProps {
     measurePointA: { x: number; y: number } | null
     measurePointB: { x: number; y: number } | null
     onToggleMeasure: () => void
+    measurementLayer: MeasurementLayer
+    onToggleMeasurementLayer: () => void
 
     // Palette
     palettes: Palette[]
@@ -48,6 +51,8 @@ export default function CompactToolbar({
     measurePointA,
     measurePointB,
     onToggleMeasure,
+    measurementLayer,
+    onToggleMeasurementLayer,
     palettes,
     activePalette,
     onSelectPalette,
@@ -154,9 +159,25 @@ export default function CompactToolbar({
             </button>
 
             {measureMode && (
-                <span className="text-gray-400 text-xs responsive-hide-compact">
-                    {!measurePointA ? 'Click first point' : !measurePointB ? 'Click second point' : 'Click to remeasure'}
-                </span>
+                <>
+                    {/* Layer Toggle Button */}
+                    <button
+                        onClick={onToggleMeasurementLayer}
+                        className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${measurementLayer === 'reference'
+                                ? 'bg-blue-600/30 text-blue-400 border border-blue-600/50'
+                                : 'bg-red-600/30 text-red-400 border border-red-600/50'
+                            }`}
+                        title="Toggle measurement layer (Reference/Painting)"
+                    >
+                        <span>{measurementLayer === 'reference' ? '🖼️' : '🎨'}</span>
+                        <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>
+                            {measurementLayer === 'reference' ? 'Reference' : 'Painting'}
+                        </span>
+                    </button>
+                    <span className="text-gray-400 text-xs responsive-hide-compact">
+                        {!measurePointA ? 'Click first point' : !measurePointB ? 'Click second point' : 'Click to remeasure'}
+                    </span>
+                </>
             )}
 
             {!calibration && (
