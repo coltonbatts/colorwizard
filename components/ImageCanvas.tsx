@@ -1,6 +1,9 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
+import RulerOverlay from '@/components/RulerOverlay'
+import { CalibrationData } from '@/lib/calibration'
+import { MeasurementLayer } from '@/lib/types/measurement'
 
 interface ColorData {
   hex: string
@@ -49,6 +52,13 @@ interface ImageCanvasProps {
   onTransformChange?: (transform: TransformState) => void
   /** Callback to report measurement points in IMAGE-SPACE coordinates */
   onMeasurePointsChange?: (pointA: { x: number; y: number } | null, pointB: { x: number; y: number } | null) => void
+  /** Measurement specifics for RulerOverlay */
+  calibration?: CalibrationData | null
+  gridEnabled?: boolean
+  gridSpacing?: 0.25 | 0.5 | 1 | 2
+  measurePointA?: { x: number; y: number } | null
+  measurePointB?: { x: number; y: number } | null
+  measurementLayer?: MeasurementLayer
 }
 
 const MIN_ZOOM = 0.1
@@ -1191,6 +1201,22 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               }}
             />
             <canvas ref={valueMapCanvasRef} id="value-map-canvas" style={{ display: 'none' }} />
+
+            {/* Ruler Grid & Measurement Overlay - Moved inside container for perfect coordinate alignment */}
+            <RulerOverlay
+              gridEnabled={props.gridEnabled || false}
+              gridSpacing={props.gridSpacing || 1}
+              calibration={props.calibration || null}
+              measureEnabled={props.measureMode || false}
+              measurePointA={props.measurePointA}
+              measurePointB={props.measurePointB}
+              containerRef={canvasContainerRef}
+              onMeasurePointsChange={props.onMeasurePointsChange}
+              transformState={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
+              measurementLayer={props.measurementLayer}
+              image={image}
+              canvasSettings={props.canvasSettings}
+            />
           </div>
 
           {/* Bottom Controls */}

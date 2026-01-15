@@ -219,21 +219,12 @@ export default function Home() {
             measureMode={measureMode}
             onMeasurePointsChange={handleMeasurePointsChange}
             onTransformChange={setTransformState}
-          />
-
-          {/* Ruler Grid & Measurement Overlay */}
-          <RulerOverlay
+            calibration={calibration}
             gridEnabled={rulerGridEnabled}
             gridSpacing={rulerGridSpacing}
-            calibration={calibration}
-            measureEnabled={measureMode}
             measurePointA={measurePointA}
             measurePointB={measurePointB}
-            containerRef={canvasContainerRef}
-            onMeasurePointsChange={handleMeasurePointsChange}
-            transformState={transformState}
             measurementLayer={measurementLayer}
-            image={image}
             canvasSettings={canvasSettings}
           />
         </div>
