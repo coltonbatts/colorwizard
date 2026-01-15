@@ -4,6 +4,7 @@ import { PinnedColor } from '../types/pinnedColor'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
 import { Palette, DEFAULT_PALETTE } from '../types/palette'
 import { ValueScaleResult } from '../valueScale'
+import { CanvasSettings, DEFAULT_CANVAS_SETTINGS } from '../types/canvas'
 
 interface ColorState {
     sampledColor: {
@@ -28,6 +29,7 @@ interface ColorState {
     valueScaleResult: ValueScaleResult | null
     palettes: Palette[]
     showPaletteManager: boolean
+    canvasSettings: CanvasSettings
 
     // Layout preferences
     sidebarCollapsed: boolean
@@ -46,6 +48,7 @@ interface ColorState {
     setValueScaleResult: (result: ValueScaleResult | null) => void
     setPalettes: (palettes: Palette[]) => void
     setShowPaletteManager: (show: boolean) => void
+    setCanvasSettings: (settings: CanvasSettings) => void
 
     // Layout actions
     setSidebarCollapsed: (collapsed: boolean) => void
@@ -78,6 +81,7 @@ export const useStore = create<ColorState>()(
             valueScaleResult: null,
             palettes: [DEFAULT_PALETTE],
             showPaletteManager: false,
+            canvasSettings: DEFAULT_CANVAS_SETTINGS,
 
             // Layout preferences
             sidebarCollapsed: false,
@@ -95,6 +99,7 @@ export const useStore = create<ColorState>()(
             setValueScaleResult: (valueScaleResult) => set({ valueScaleResult }),
             setPalettes: (palettes) => set({ palettes }),
             setShowPaletteManager: (showPaletteManager) => set({ showPaletteManager }),
+            setCanvasSettings: (canvasSettings) => set({ canvasSettings }),
 
             // Layout actions
             setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
@@ -145,7 +150,8 @@ export const useStore = create<ColorState>()(
                 valueScaleSettings: state.valueScaleSettings,
                 // Persist layout preferences
                 sidebarCollapsed: state.sidebarCollapsed,
-                compactMode: state.compactMode
+                compactMode: state.compactMode,
+                canvasSettings: state.canvasSettings
             }),
         }
     )

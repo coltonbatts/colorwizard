@@ -10,6 +10,7 @@ import CalibrationModal from '@/components/CalibrationModal'
 import RulerOverlay from '@/components/RulerOverlay'
 import CollapsibleSidebar from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
+import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import { useStore } from '@/lib/store/useStore'
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
 import {
@@ -35,7 +36,8 @@ export default function Home() {
     histogramBins, setHistogramBins,
     valueScaleResult, setValueScaleResult,
     palettes, createPalette, updatePalette, deletePalette, setActivePalette,
-    showPaletteManager, setShowPaletteManager
+    showPaletteManager, setShowPaletteManager,
+    canvasSettings, setCanvasSettings
   } = useStore()
 
   // Layout preferences
@@ -45,6 +47,7 @@ export default function Home() {
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [calibration, setCalibration] = useState<CalibrationData | null>(null)
   const [calibrationStale, setCalibrationStale] = useState(false)
+  const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
 
   // Ruler Grid State
   const [rulerGridEnabled, setRulerGridEnabled] = useState(false)
@@ -146,6 +149,8 @@ export default function Home() {
             onOpenPaletteManager={() => setShowPaletteManager(true)}
             compactMode={compactMode}
             onToggleCompactMode={toggleCompactMode}
+            canvasSettings={canvasSettings}
+            onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
           />
         </div>
 
@@ -229,6 +234,7 @@ export default function Home() {
             transformState={transformState}
             measurementLayer={measurementLayer}
             image={image}
+            canvasSettings={canvasSettings}
           />
         </div>
       </div>
@@ -311,6 +317,14 @@ export default function Home() {
         onClose={() => setShowCalibrationModal(false)}
         onSave={handleCalibrationSave}
         initialCalibration={calibration}
+      />
+
+      {/* Canvas Settings Modal */}
+      <CanvasSettingsModal
+        isOpen={showCanvasSettingsModal}
+        onClose={() => setShowCanvasSettingsModal(false)}
+        onSave={setCanvasSettings}
+        initialSettings={canvasSettings}
       />
     </main>
   )

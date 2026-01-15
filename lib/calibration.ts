@@ -270,6 +270,28 @@ export function imageToScreen(
 }
 
 /**
+ * Convert image pixels to real-world units based on canvas dimensions
+ */
+export function imageToCanvasUnits(
+    pixels: number,
+    imageTotalPixels: number,
+    canvasTotalUnits: number
+): number {
+    return (pixels / imageTotalPixels) * canvasTotalUnits
+}
+
+/**
+ * Convert canvas units to image pixels
+ */
+export function canvasUnitsToImagePixels(
+    units: number,
+    canvasTotalUnits: number,
+    imageTotalPixels: number
+): number {
+    return (units / canvasTotalUnits) * imageTotalPixels
+}
+
+/**
  * Lock calibration to prevent accidental changes
  */
 export function lockCalibration(data: CalibrationData): CalibrationData {

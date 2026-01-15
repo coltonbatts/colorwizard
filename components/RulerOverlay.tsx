@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CalibrationData, pxToInches, inchesToCm, imageToScreen, TransformState } from '@/lib/calibration'
+import { CalibrationData, pxToInches, inchesToCm, imageToScreen, TransformState, imageToCanvasUnits } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
+import { CanvasSettings } from '@/lib/types/canvas'
 
 interface Point {
     x: number
@@ -31,6 +32,8 @@ interface RulerOverlayProps {
     measurementLayer?: MeasurementLayer
     /** The image being measured (for original dimensions) */
     image?: HTMLImageElement | null
+    /** Canvas settings for real-world scaling */
+    canvasSettings?: CanvasSettings
 }
 
 /** Get color based on measurement layer */
@@ -61,7 +64,8 @@ export default function RulerOverlay({
     onMeasurePointsChange,
     transformState,
     measurementLayer,
-    image
+    image,
+    canvasSettings
 }: RulerOverlayProps) {
     // Internal state for uncontrolled mode
     const [internalPointA, setInternalPointA] = useState<Point | null>(null)
@@ -147,7 +151,22 @@ export default function RulerOverlay({
         const fitScale = transform.imageDrawInfo.width / image.width
         const distanceFittedPx = distanceImagePx * fitScale
 
-        const distanceInches = pxToInches(distanceFittedPx, calibration)
+        let distanceInches = pxToInches(distanceFittedPx, calibration)
+
+        // Override with canvas-relative measurement if enabled
+        if (canvasSettings?.enabled) {
+            // We use the width as the reference for scaling
+            // Units can be inches or cm
+            const distanceUnits = imageToCanvasUnits(distanceImagePx, image.width, canvasSettings.width)
+
+            if (canvasSettings.unit === 'in') {
+                distanceInches = distanceUnits
+            } else {
+                // Convert cm to inches internally for the rest of the logic
+                distanceInches = distanceUnits / 2.54
+            }
+        }
+
         const distanceCm = inchesToCm(distanceInches)
 
         // Midpoint in screen-space (for label positioning)

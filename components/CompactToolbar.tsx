@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Palette } from '@/lib/types/palette'
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
+import { CanvasSettings } from '@/lib/types/canvas'
 
 interface CompactToolbarProps {
     // Calibration
@@ -18,6 +19,10 @@ interface CompactToolbarProps {
     rulerGridSpacing: 0.25 | 0.5 | 1 | 2
     onToggleRulerGrid: () => void
     onRulerGridSpacingChange: (spacing: 0.25 | 0.5 | 1 | 2) => void
+
+    // Canvas Settings
+    canvasSettings: CanvasSettings
+    onOpenCanvasSettings: () => void
 
     // Measure
     measureMode: boolean
@@ -58,7 +63,9 @@ export default function CompactToolbar({
     onSelectPalette,
     onOpenPaletteManager,
     compactMode,
-    onToggleCompactMode
+    onToggleCompactMode,
+    canvasSettings,
+    onOpenCanvasSettings
 }: CompactToolbarProps) {
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
@@ -88,6 +95,21 @@ export default function CompactToolbar({
                 <span>📐</span>
                 <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>
                     {calibration ? 'Calibrated' : 'Calibrate'}
+                </span>
+            </button>
+
+            {/* Canvas Settings Button */}
+            <button
+                onClick={onOpenCanvasSettings}
+                className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${canvasSettings.enabled
+                    ? 'bg-purple-600/20 text-purple-400 border border-purple-600/50 hover:bg-purple-600/30'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                title="Canvas Settings (Set physical dimensions)"
+            >
+                <span>🖼️</span>
+                <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>
+                    {canvasSettings.enabled ? `${canvasSettings.width}x${canvasSettings.height}${canvasSettings.unit}` : 'Canvas'}
                 </span>
             </button>
 
@@ -164,8 +186,8 @@ export default function CompactToolbar({
                     <button
                         onClick={onToggleMeasurementLayer}
                         className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${measurementLayer === 'reference'
-                                ? 'bg-blue-600/30 text-blue-400 border border-blue-600/50'
-                                : 'bg-red-600/30 text-red-400 border border-red-600/50'
+                            ? 'bg-blue-600/30 text-blue-400 border border-blue-600/50'
+                            : 'bg-red-600/30 text-red-400 border border-red-600/50'
                             }`}
                         title="Toggle measurement layer (Reference/Painting)"
                     >

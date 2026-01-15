@@ -19,6 +19,7 @@ import { getLuminance } from '@/lib/paintingMath'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { computeValueScale, getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray, computeHistogram } from '@/lib/valueScale'
 import { TransformState, screenToImage } from '@/lib/calibration'
+import { CanvasSettings } from '@/lib/types/canvas'
 
 // Define RGB interface locally if not exported
 interface RGB {
@@ -39,6 +40,7 @@ interface ImageCanvasProps {
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: ValueScaleResult) => void
+  canvasSettings?: CanvasSettings
   /** Enable measurement mode - when true, clicks report canvas-space coordinates */
   measureMode?: boolean
   /** Callback when a measurement click occurs (canvas-space coordinates for transform-invariant storage) */
@@ -234,8 +236,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Draw Grid
     if (gridEnabled) {
-      const ppi = image.width / gridPhysicalWidth
-      const ppiDraw = imageDrawInfo.width / gridPhysicalWidth
+      const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
+      const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
+
+      const ppi = image.width / activeWidth
+      const ppiDraw = imageDrawInfo.width / activeWidth
 
       ctx.save()
       ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
@@ -250,7 +255,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       ctx.textBaseline = 'middle'
 
       // Vertical lines (Columns)
-      for (let x = 0; x <= gridPhysicalWidth; x += gridSquareSize) {
+      for (let x = 0; x <= activeWidth; x += gridSquareSize) {
         const xPos = x * ppiDraw
         ctx.beginPath()
         ctx.moveTo(xPos, 0)
@@ -258,14 +263,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         ctx.stroke()
 
         // Column label (A, B, C...)
-        if (x < gridPhysicalWidth) {
+        if (x < activeWidth) {
           const colLabel = String.fromCharCode(65 + Math.floor(x / gridSquareSize))
           ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
         }
       }
 
       // Horizontal lines (Rows)
-      for (let y = 0; y <= gridPhysicalHeight; y += gridSquareSize) {
+      for (let y = 0; y <= activeHeight; y += gridSquareSize) {
         const yPos = y * ppiDraw
         ctx.beginPath()
         ctx.moveTo(0, yPos)
@@ -273,7 +278,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         ctx.stroke()
 
         // Row label (1, 2, 3...)
-        if (y < gridPhysicalHeight) {
+        if (y < activeHeight) {
           const rowLabel = (Math.floor(y / gridSquareSize) + 1).toString()
           ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
         }
