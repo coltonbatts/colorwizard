@@ -789,6 +789,30 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }
 
+  const handleActualSize = useCallback(() => {
+    if (!props.calibration || !props.canvasSettings?.enabled || !image || !imageDrawInfo) return
+
+    const { pxPerInch } = props.calibration
+    const { width: physicalWidth, unit } = props.canvasSettings
+
+    // Convert physical width to inches if it's in cm
+    const widthInInches = unit === 'cm' ? physicalWidth / 2.54 : physicalWidth
+
+    // To get actual size: targetScale * baseImageWidth (px) = physicalWidth (inches) * pxPerInch
+    // targetScale = (physicalWidth (inches) * pxPerInch) / baseImageWidth
+    // Note: imageDrawInfo.width is the "fit-to-canvas" width (base width before zoom)
+
+    const targetZoom = (widthInInches * pxPerInch) / imageDrawInfo.width
+
+    const canvas = canvasRef.current
+    if (canvas) {
+      // Zoom centered on the middle of the canvas
+      zoomAtPoint(targetZoom, canvas.width / 2, canvas.height / 2)
+    }
+  }, [props.calibration, props.canvasSettings, image, imageDrawInfo, zoomAtPoint])
+
+  const isActualSizeEnabled = !!(props.calibration?.pxPerInch && props.canvasSettings?.enabled && imageDrawInfo)
+
   // Get cursor style based on current mode
   const getCursorStyle = () => {
     if (isPanning) return 'grabbing'
@@ -810,6 +834,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onFit={resetView}
+            onActualSize={handleActualSize}
+            isActualSizeEnabled={isActualSizeEnabled}
             isGrayscale={isGrayscale}
             onToggleGrayscale={() => setIsGrayscale(!isGrayscale)}
             minZoom={MIN_ZOOM}

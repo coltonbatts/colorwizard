@@ -18,6 +18,10 @@ interface ZoomControlsBarProps {
     isGrayscale: boolean;
     /** Toggle grayscale mode */
     onToggleGrayscale: () => void;
+    /** Called when actual size button is clicked */
+    onActualSize: () => void;
+    /** Whether actual size button is enabled */
+    isActualSizeEnabled: boolean;
     /** Minimum zoom level */
     minZoom?: number;
     /** Maximum zoom level */
@@ -29,6 +33,8 @@ export default function ZoomControlsBar({
     onZoomIn,
     onZoomOut,
     onFit,
+    onActualSize,
+    isActualSizeEnabled,
     isGrayscale,
     onToggleGrayscale,
     minZoom = 0.1,
@@ -63,13 +69,24 @@ export default function ZoomControlsBar({
                 >
                     Fit
                 </button>
+                <button
+                    onClick={onActualSize}
+                    disabled={!isActualSizeEnabled}
+                    className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isActualSizeEnabled
+                            ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+                            : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                        }`}
+                    title={isActualSizeEnabled ? 'Recalibrate to Actual Size' : 'Calibration or Canvas Settings required'}
+                >
+                    Actual Size
+                </button>
             </div>
             <div className="flex items-center gap-2">
                 <button
                     onClick={onToggleGrayscale}
                     className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isGrayscale
-                            ? 'bg-blue-600 text-white hover:bg-blue-600/80'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-blue-600 text-white hover:bg-blue-600/80'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                         }`}
                     title="Toggle Grayscale"
                 >
