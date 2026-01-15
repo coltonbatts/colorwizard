@@ -56,6 +56,17 @@ export interface UseImageAnalyzerReturn {
     isGeneratingValueMap: boolean;
     /** Whether highlight overlay generation is in progress */
     isGeneratingHighlight: boolean;
+    /** Current breakdown buffers */
+    breakdownBuffers: {
+        imprimatura: Uint8ClampedArray | null;
+        deadColor: Uint8ClampedArray | null;
+        localColor: Uint8ClampedArray | null;
+        spectralGlaze: Uint8ClampedArray | null;
+    };
+    /** Combined method to generate all breakdown layers */
+    generateBreakdown: () => Promise<void>;
+    /** Whether breakdown generation is in progress */
+    isGeneratingBreakdown: boolean;
 }
 
 const MAX_PROCESS_DIM = 1000;
@@ -94,6 +105,18 @@ export function useImageAnalyzer(
     const [error, setError] = useState<string | null>(null);
     const [isGeneratingValueMap, setIsGeneratingValueMap] = useState(false);
     const [isGeneratingHighlight, setIsGeneratingHighlight] = useState(false);
+    const [isGeneratingBreakdown, setIsGeneratingBreakdown] = useState(false);
+    const [breakdownBuffers, setBreakdownBuffers] = useState<{
+        imprimatura: Uint8ClampedArray | null;
+        deadColor: Uint8ClampedArray | null;
+        localColor: Uint8ClampedArray | null;
+        spectralGlaze: Uint8ClampedArray | null;
+    }>({
+        imprimatura: null,
+        deadColor: null,
+        localColor: null,
+        spectralGlaze: null,
+    });
 
     // Track current image to handle race conditions
     const currentImageRef = useRef<HTMLImageElement | null>(null);
@@ -106,6 +129,12 @@ export function useImageAnalyzer(
             setSortedLuminances(null);
             setValueScaleResult(null);
             setHistogramBins([]);
+            setBreakdownBuffers({
+                imprimatura: null,
+                deadColor: null,
+                localColor: null,
+                spectralGlaze: null,
+            });
             setError(null);
             currentImageRef.current = null;
             return;
@@ -258,6 +287,45 @@ export function useImageAnalyzer(
         }
     }, [labBuffer]);
 
+    // Generate all breakdown layers
+    const generateBreakdown = useCallback(async () => {
+        if (!image || !valueBuffer) return;
+
+        setIsGeneratingBreakdown(true);
+        try {
+            const worker = await getWorker();
+
+            // Create a temporary canvas for raw image data needed by some breakdown steps
+            const canvas = document.createElement('canvas');
+            canvas.width = valueBuffer.width;
+            canvas.height = valueBuffer.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Failed to get canvas context');
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+            // Generate layers in parallel
+            const [imprimatura, deadColor, localColor, spectralGlaze] = await Promise.all([
+                worker.generateImprimatura(imageData, valueBuffer.width, valueBuffer.height),
+                worker.generateValueBlockIn(valueBuffer.y, valueBuffer.width, valueBuffer.height),
+                worker.generateLocalColor(imageData, valueBuffer.width, valueBuffer.height),
+                worker.generateSpectralGlaze(imageData, valueBuffer.width, valueBuffer.height),
+            ]);
+
+            setBreakdownBuffers({
+                imprimatura: imprimatura as Uint8ClampedArray,
+                deadColor: deadColor as Uint8ClampedArray,
+                localColor: localColor as Uint8ClampedArray,
+                spectralGlaze: spectralGlaze as Uint8ClampedArray,
+            });
+        } catch (err) {
+            console.error('Breakdown generation failed:', err);
+            setError('Failed to generate breakdown layers');
+        } finally {
+            setIsGeneratingBreakdown(false);
+        }
+    }, [image, valueBuffer]);
+
     return {
         labBuffer,
         valueBuffer,
@@ -271,5 +339,8 @@ export function useImageAnalyzer(
         generateHighlightOverlay,
         isGeneratingValueMap,
         isGeneratingHighlight,
+        breakdownBuffers,
+        generateBreakdown,
+        isGeneratingBreakdown,
     };
 }

@@ -294,12 +294,175 @@ function generateHighlightOverlay(
     return data;
 }
 
+/**
+ * Breakdown Step 1: The Imprimatura (Ground)
+ * A simplified, low-opacity 'stain' layer representing the dominant undertone.
+ */
+function generateImprimatura(
+    imageData: Uint8ClampedArray,
+    width: number,
+    height: number
+): Uint8ClampedArray {
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    // Calculate dominant/average color
+    let rSum = 0, gSum = 0, bSum = 0;
+    for (let i = 0; i < pixelCount; i++) {
+        rSum += imageData[i * 4];
+        gSum += imageData[i * 4 + 1];
+        bSum += imageData[i * 4 + 2];
+    }
+    const rAvg = Math.round(rSum / pixelCount);
+    const gAvg = Math.round(gSum / pixelCount);
+    const bAvg = Math.round(bSum / pixelCount);
+
+    // Fill with average color at 40% opacity (the 'stain')
+    for (let i = 0; i < pixelCount; i++) {
+        const idx = i * 4;
+        data[idx] = rAvg;
+        data[idx + 1] = gAvg;
+        data[idx + 2] = bAvg;
+        data[idx + 3] = 100; // ~40% opacity
+    }
+
+    return data;
+}
+
+/**
+ * Breakdown Step 2: The Dead Color (Value Block-in)
+ * A grayscale version posterized into 4 discrete values.
+ */
+function generateValueBlockIn(
+    yBuffer: Float32Array,
+    width: number,
+    height: number
+): Uint8ClampedArray {
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    // 4 levels: Dark, Mid-Dark, Mid-Light, High-Light
+    const levels = [0, 85, 170, 255];
+
+    for (let i = 0; i < pixelCount; i++) {
+        const y = yBuffer[i] * 255;
+        // Simple quantization
+        let val = levels[0];
+        if (y > 192) val = levels[3];
+        else if (y > 128) val = levels[2];
+        else if (y > 64) val = levels[1];
+
+        const idx = i * 4;
+        data[idx] = val;
+        data[idx + 1] = val;
+        data[idx + 2] = val;
+        data[idx + 3] = 255;
+    }
+
+    return data;
+}
+
+/**
+ * Breakdown Step 3: The Local Color (Blocking)
+ * A simplified color map (Median filter style / Mosaic).
+ */
+function generateLocalColor(
+    imageData: Uint8ClampedArray,
+    width: number,
+    height: number
+): Uint8ClampedArray {
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    // Simplified "Median-ish" filter using a grid-based pooling
+    const size = 8; // Grid size for simplification
+    for (let y = 0; y < height; y += size) {
+        for (let x = 0; x < width; x += size) {
+            let r = 0, g = 0, b = 0, count = 0;
+
+            // Pool colors in the grid
+            for (let gy = 0; gy < size && y + gy < height; gy++) {
+                for (let gx = 0; gx < size && x + gx < width; gx++) {
+                    const idx = ((y + gy) * width + (x + gx)) * 4;
+                    r += imageData[idx];
+                    g += imageData[idx + 1];
+                    b += imageData[idx + 2];
+                    count++;
+                }
+            }
+
+            const rAvg = Math.round(r / count);
+            const gAvg = Math.round(g / count);
+            const bAvg = Math.round(b / count);
+
+            // Fill grid with average
+            for (let gy = 0; gy < size && y + gy < height; gy++) {
+                for (let gx = 0; gx < size && x + gx < width; gx++) {
+                    const idx = ((y + gy) * width + (x + gx)) * 4;
+                    data[idx] = rAvg;
+                    data[idx + 1] = gAvg;
+                    data[idx + 2] = bAvg;
+                    data[idx + 3] = 255;
+                }
+            }
+        }
+    }
+
+    return data;
+}
+
+/**
+ * Breakdown Step 4: The Spectral Glaze (Details)
+ * A high-pass filter revealing vibrant highlights and details.
+ */
+function generateSpectralGlaze(
+    imageData: Uint8ClampedArray,
+    width: number,
+    height: number
+): Uint8ClampedArray {
+    const pixelCount = width * height;
+    const data = new Uint8ClampedArray(pixelCount * 4);
+
+    // Simple edge detection / high pass
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const idx = (y * width + x) * 4;
+
+            // Compare current pixel to neighbors
+            const up = ((y - 1) * width + x) * 4;
+            const left = (y * width + (x - 1)) * 4;
+
+            const rDiff = Math.abs(imageData[idx] - imageData[up]) + Math.abs(imageData[idx] - imageData[left]);
+            const gDiff = Math.abs(imageData[idx + 1] - imageData[up + 1]) + Math.abs(imageData[idx + 1] - imageData[left + 1]);
+            const bDiff = Math.abs(imageData[idx + 2] - imageData[up + 2]) + Math.abs(imageData[idx + 2] - imageData[left + 2]);
+
+            const totalDiff = (rDiff + gDiff + bDiff) / 3;
+
+            // Threshold for detail visibility
+            if (totalDiff > 30) {
+                data[idx] = imageData[idx];
+                data[idx + 1] = imageData[idx + 1];
+                data[idx + 2] = imageData[idx + 2];
+                data[idx + 3] = 255;
+            } else {
+                data[idx + 3] = 0; // Transparent
+            }
+        }
+    }
+
+    return data;
+}
+
 // Expose API to main thread via Comlink
 const workerAPI = {
     processImageData,
     computeValueScale,
     generateValueMapData,
     generateHighlightOverlay,
+    generateImprimatura,
+    generateValueBlockIn,
+    generateLocalColor,
+    generateSpectralGlaze,
 };
 
 export type ImageProcessorWorker = typeof workerAPI;

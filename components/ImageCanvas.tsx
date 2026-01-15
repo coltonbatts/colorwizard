@@ -11,6 +11,7 @@ import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
+import ProcessSlider, { BreakdownStep } from '@/components/ProcessSlider'
 
 interface ColorData {
   hex: string
@@ -87,6 +88,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
+  const breakdownCanvasRef = useRef<HTMLCanvasElement>(null)
 
   // Use the image analyzer hook for worker-based processing
   const {
@@ -96,6 +98,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     valueScaleResult: analyzerValueScaleResult,
     histogramBins,
     isAnalyzing,
+    breakdownBuffers,
+    generateBreakdown,
+    isGeneratingBreakdown,
   } = useImageAnalyzer(image, valueScaleSettings)
 
   // Use the hook's value scale result, but allow local override for settings changes
@@ -121,6 +126,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
+  const [breakdownValue, setBreakdownValue] = useState(0)
+
+  const activeBreakdownStep = useMemo<BreakdownStep>(() => {
+    if (breakdownValue <= 10) return 'Original'
+    if (breakdownValue <= 35) return 'Imprimatura'
+    if (breakdownValue <= 60) return 'Dead Color'
+    if (breakdownValue <= 85) return 'Local Color'
+    return 'Spectral Glaze'
+  }, [breakdownValue])
 
   // Zoom and pan state
   const [zoomLevel, setZoomLevel] = useState(1)
@@ -210,6 +224,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
+    // Draw image at the calculated fit position
     const { x, y, width, height } = imageDrawInfo
 
     if (splitMode && valueMapCanvasRef.current) {
@@ -240,17 +255,40 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       ctx.lineTo(x + splitX, y + height)
       ctx.stroke()
     } else {
-      // Normal rendering
-      if (isGrayscale) ctx.filter = 'grayscale(100%)'
-      ctx.drawImage(image, x, y, width, height)
-      if (isGrayscale) ctx.filter = 'none'
+      // Normal rendering or breakdown
+      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
 
-      // Blend value map overlay on top with opacity
-      if (valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+      // Always draw the base image as a fallback if the breakdown is not ready
+      // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
+      const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
+        'Imprimatura': 'imprimatura',
+        'Dead Color': 'deadColor',
+        'Local Color': 'localColor',
+        'Spectral Glaze': 'spectralGlaze'
+      };
+
+      const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+
+      const showBaseUnderneath = activeBreakdownStep === 'Original' ||
+        activeBreakdownStep === 'Spectral Glaze' ||
+        !currentBuffer;
+
+      if (showBaseUnderneath) {
+        ctx.drawImage(image, x, y, width, height)
+      }
+
+      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
+
+      // Blend value map overlay if enabled and we are in original view
+      if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
         const opacity = valueScaleSettings.opacity ?? 0.45
         ctx.globalAlpha = opacity
         ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
         ctx.globalAlpha = 1.0
+      } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
+        // Draw Breakdown Layer on top
+        // If it's Imprimatura, it already has some transparency from the worker
+        ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
       }
     }
 
@@ -343,7 +381,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings?.enabled, valueScaleSettings?.opacity, valueScaleResult, splitMode, props.canvasSettings])
+  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings, valueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep])
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -774,6 +812,50 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode])
 
+  // Draw breakdown layers to offscreen canvas
+  useEffect(() => {
+    const canvas = breakdownCanvasRef.current
+    if (!canvas || !breakdownBuffers || !labBuffer) return
+
+    const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
+      'Imprimatura': 'imprimatura',
+      'Dead Color': 'deadColor',
+      'Local Color': 'localColor',
+      'Spectral Glaze': 'spectralGlaze'
+    };
+
+    const buffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+
+    if (!buffer) {
+      const ctx = canvas.getContext('2d')
+      ctx?.clearRect(0, 0, canvas.width, canvas.height)
+      drawCanvas()
+      return
+    }
+
+    const { width, height } = labBuffer
+
+    // Ensure canvas is large enough
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width
+      canvas.height = height
+    }
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return
+
+    const imageData = new ImageData(new Uint8ClampedArray(buffer), width, height)
+    ctx.putImageData(imageData, 0, 0)
+    drawCanvas()
+  }, [breakdownBuffers, activeBreakdownStep, drawCanvas, labBuffer])
+
+  // Trigger breakdown generation when image is loaded
+  useEffect(() => {
+    if (image && !isGeneratingBreakdown && !breakdownBuffers.imprimatura) {
+      generateBreakdown()
+    }
+  }, [image, breakdownBuffers.imprimatura, isGeneratingBreakdown, generateBreakdown])
+
   // Zoom control handlers
   const handleZoomIn = () => {
     const canvas = canvasRef.current
@@ -889,6 +971,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               style={{ display: 'none' }}
             />
             <canvas ref={valueMapCanvasRef} id="value-map-canvas" style={{ display: 'none' }} />
+            <canvas ref={breakdownCanvasRef} id="breakdown-canvas" style={{ display: 'none' }} />
 
             {/* Ruler Grid & Measurement Overlay */}
             <RulerOverlay
@@ -904,6 +987,16 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               measurementLayer={props.measurementLayer}
               image={image}
               canvasSettings={props.canvasSettings}
+            />
+          </div>
+
+          {/* Process Slider for Breakdown */}
+          <div className="mt-4">
+            <ProcessSlider
+              value={breakdownValue}
+              onChange={setBreakdownValue}
+              activeStep={activeBreakdownStep}
+              isGenerating={isGeneratingBreakdown}
             />
           </div>
 

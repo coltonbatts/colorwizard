@@ -47,6 +47,12 @@ export const PALETTE: Pigment[] = [
         hex: '#0F2E53',
         tintingStrength: 10.0, // Extremely strong
     },
+    {
+        id: 'raw-umber',
+        name: 'Raw Umber',
+        hex: '#735C44',
+        tintingStrength: 1.2, // Earth color, standard
+    },
 ];
 
 /**

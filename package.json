@@ -12,6 +12,7 @@
   "dependencies": {
     "comlink": "^4.4.2",
     "culori": "^4.0.2",
+    "firebase": "^12.8.0",
     "framer-motion": "^12.26.2",
     "next": "^15",
     "react": "^18",
