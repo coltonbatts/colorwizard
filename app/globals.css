@@ -1,35 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================
-   Studio Dark Mode - Color Wizard 2.0
-   ============================================ */
-
 :root {
-    /* Core Studio Colors */
-    --studio-bg: #0f0f14;
-    --studio-surface: #1a1a24;
-    --studio-surface-elevated: #22222e;
-    --studio-border: rgba(255, 255, 255, 0.08);
-    --studio-border-light: rgba(255, 255, 255, 0.12);
-    
-    /* Glass Effect */
-    --studio-glass: rgba(26, 26, 36, 0.85);
-    --studio-glass-border: rgba(255, 255, 255, 0.1);
-    
+    /* Core Studio Colors - Apple Light Theme */
+    --studio-bg: #fbfbfd;
+    --studio-surface: #ffffff;
+    --studio-surface-elevated: #ffffff;
+    --studio-border: rgba(0, 0, 0, 0.08);
+    --studio-border-light: rgba(0, 0, 0, 0.05);
+
+    /* Studio Shadows */
+    --studio-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --studio-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --studio-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+
+    /* Radius */
+    --studio-radius-lg: 1.5rem;
+    --studio-radius-xl: 2rem;
+
     /* Accent Colors */
-    --studio-accent: #6366f1;
-    --studio-accent-light: #818cf8;
-    --studio-success: #10b981;
-    --studio-warning: #f59e0b;
-    --studio-error: #ef4444;
-    
+    --studio-accent: #0071e3;
+    --studio-accent-light: #47a1ff;
+    --studio-success: #28cd41;
+    --studio-warning: #ffb340;
+    --studio-error: #ff3b30;
+
     /* Text */
-    --studio-text: #f5f5f7;
-    --studio-text-secondary: rgba(245, 245, 247, 0.7);
-    --studio-text-muted: rgba(245, 245, 247, 0.5);
-    --studio-text-dim: rgba(245, 245, 247, 0.3);
+    --studio-text: #1d1d1f;
+    --studio-text-secondary: rgba(29, 29, 31, 0.7);
+    --studio-text-muted: rgba(29, 29, 31, 0.5);
+    --studio-text-dim: rgba(29, 29, 31, 0.3);
+
+    /* Font for wordmark */
+    --font-wordmark: 'UnifrakturMaguntia', cursive;
 }
 
 body {
@@ -38,6 +44,33 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(circle at 70% 30%, rgba(0, 113, 227, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 30% 70%, rgba(99, 102, 241, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 1) 0%, transparent 100%);
+    z-index: -1;
+    animation: mesh-float 20s ease-in-out infinite alternate;
+}
+
+@keyframes mesh-float {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(5%, 5%) rotate(5deg);
+    }
 }
 
 /* ============================================
@@ -46,53 +79,49 @@ body {
 
 @layer components {
     .glass-panel {
-        background: var(--studio-glass);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--studio-glass-border);
-        box-shadow: 
-            0 4px 6px -1px rgba(0, 0, 0, 0.3),
-            0 2px 4px -2px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
-    }
-    
-    .glass-panel-elevated {
-        background: rgba(34, 34, 46, 0.9);
+        background: rgba(255, 255, 255, 0.8);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 
-            0 10px 25px -5px rgba(0, 0, 0, 0.4),
-            0 5px 10px -5px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: var(--studio-radius-lg);
+        box-shadow: var(--studio-shadow-md);
     }
-    
+
+    .glass-panel-elevated {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: var(--studio-radius-xl);
+        box-shadow: var(--studio-shadow-lg);
+    }
+
     .glass-button {
         background: rgba(255, 255, 255, 0.06);
         backdrop-filter: blur(4px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         transition: all 0.2s ease;
     }
-    
+
     .glass-button:hover {
         background: rgba(255, 255, 255, 0.1);
         border-color: rgba(255, 255, 255, 0.15);
         transform: translateY(-1px);
     }
-    
+
     .studio-input {
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid var(--studio-border);
         color: var(--studio-text);
         transition: all 0.2s ease;
     }
-    
+
     .studio-input:focus {
         outline: none;
         border-color: var(--studio-accent);
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
-    
+
     .studio-input::placeholder {
         color: var(--studio-text-dim);
     }
@@ -106,19 +135,23 @@ body {
     .text-studio {
         color: var(--studio-text);
     }
-    
+
     .text-studio-secondary {
         color: var(--studio-text-secondary);
     }
-    
+
     .text-studio-muted {
         color: var(--studio-text-muted);
     }
-    
+
     .font-display {
-        font-family: 'Outfit', 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, sans-serif;
         font-weight: 600;
         letter-spacing: -0.02em;
+    }
+
+    .font-wordmark {
+        font-family: var(--font-wordmark);
     }
 }
 
@@ -152,11 +185,12 @@ body {
     .animate-glow {
         animation: glow 2s ease-in-out infinite alternate;
     }
-    
+
     @keyframes glow {
         from {
             box-shadow: 0 0 10px -5px var(--studio-accent);
         }
+
         to {
             box-shadow: 0 0 20px -5px var(--studio-accent);
         }
@@ -177,7 +211,7 @@ body {
 }
 
 .color-swatch-ring {
-    box-shadow: 
+    box-shadow:
         inset 0 2px 4px 0 rgba(0, 0, 0, 0.2),
         0 0 0 1px rgba(255, 255, 255, 0.1);
 }
@@ -220,7 +254,7 @@ body {
 /* Collapsible Sidebar */
 .sidebar-collapsible {
     transition: width var(--transition-speed) ease-in-out,
-                min-width var(--transition-speed) ease-in-out;
+        min-width var(--transition-speed) ease-in-out;
     overflow: hidden;
 }
 
@@ -309,7 +343,7 @@ body {
     :root {
         --sidebar-width: 340px;
     }
-    
+
     .responsive-hide-laptop {
         display: none !important;
     }
@@ -319,16 +353,16 @@ body {
     :root {
         --sidebar-width: 320px;
     }
-    
+
     .responsive-hide-compact {
         display: none !important;
     }
-    
+
     /* Force compact styling at this breakpoint */
     .auto-compact .compact-padding {
         padding: 0.5rem !important;
     }
-    
+
     .auto-compact .compact-gap {
         gap: 0.5rem !important;
     }

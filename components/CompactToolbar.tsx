@@ -41,6 +41,9 @@ interface CompactToolbarProps {
     // Layout
     compactMode: boolean
     onToggleCompactMode: () => void
+
+    // Context
+    hasImage: boolean
 }
 
 export default function CompactToolbar({
@@ -65,7 +68,8 @@ export default function CompactToolbar({
     compactMode,
     onToggleCompactMode,
     canvasSettings,
-    onOpenCanvasSettings
+    onOpenCanvasSettings,
+    hasImage
 }: CompactToolbarProps) {
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
@@ -82,13 +86,21 @@ export default function CompactToolbar({
     }, [])
 
     return (
-        <div className={`p-3 bg-gray-800/50 rounded-lg flex flex-wrap items-center gap-3 border border-gray-700 ${compactMode ? 'toolbar-compact' : ''}`}>
+        <div className={`p-4 bg-white/80 backdrop-blur-md rounded-2xl flex flex-wrap items-center gap-4 shadow-sm border border-gray-100 transition-all duration-500 ${compactMode ? 'toolbar-compact' : ''}`}>
+            {/* Wordmark - Only show when image is loaded */}
+            <div className={`mr-4 pointer-events-none transition-all duration-500 overflow-hidden ${(!hasImage || compactMode) ? 'w-0 opacity-0' : 'w-auto opacity-100 scale-100'}`}>
+                <h1 className="text-2xl font-wordmark text-studio leading-none tracking-tight whitespace-nowrap">
+                    Color Wizard
+                </h1>
+            </div>
+
+            <div className="h-8 w-px bg-gray-100 mx-2 hidden lg:block" />
             {/* Calibrate Button */}
             <button
                 onClick={onOpenCalibration}
-                className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${calibration
-                    ? 'bg-green-600/20 text-green-400 border border-green-600/50 hover:bg-green-600/30'
-                    : 'bg-blue-600 text-white hover:bg-blue-500'
+                className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${calibration
+                    ? 'bg-green-50 text-green-600 border border-green-100 hover:bg-green-100'
+                    : 'bg-studio text-white hover:bg-studio/90 active:scale-95'
                     }`}
                 title="Calibrate screen for measurements"
             >
@@ -101,9 +113,9 @@ export default function CompactToolbar({
             {/* Canvas Settings Button */}
             <button
                 onClick={onOpenCanvasSettings}
-                className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${canvasSettings.enabled
-                    ? 'bg-purple-600/20 text-purple-400 border border-purple-600/50 hover:bg-purple-600/30'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${canvasSettings.enabled
+                    ? 'bg-purple-50 text-purple-600 border border-purple-100 hover:bg-purple-100'
+                    : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100'
                     }`}
                 title="Canvas Settings (Set physical dimensions)"
             >
@@ -131,18 +143,18 @@ export default function CompactToolbar({
                 </button>
             )}
 
-            <div className="w-px h-6 bg-gray-700" />
+            <div className="w-px h-6 bg-gray-100" />
 
             {/* Ruler Grid Toggle */}
             <div className="flex items-center gap-2">
                 <button
                     onClick={onToggleRulerGrid}
                     disabled={!calibration}
-                    className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${rulerGridEnabled && calibration
-                        ? 'bg-blue-600 text-white'
+                    className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${rulerGridEnabled && calibration
+                        ? 'bg-studio text-white shadow-lg'
                         : calibration
-                            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                            ? 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100'
+                            : 'bg-gray-50 text-studio-dim cursor-not-allowed border border-gray-50 opacity-50'
                         }`}
                     title="Toggle ruler grid"
                 >
@@ -154,7 +166,7 @@ export default function CompactToolbar({
                     <select
                         value={rulerGridSpacing}
                         onChange={(e) => onRulerGridSpacingChange(Number(e.target.value) as 0.25 | 0.5 | 1 | 2)}
-                        className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 text-sm focus:border-blue-500 outline-none"
+                        className="px-2 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-studio text-xs font-bold focus:border-blue-500 outline-none shadow-inner"
                     >
                         <option value={0.25}>0.25&quot;</option>
                         <option value={0.5}>0.5&quot;</option>
@@ -168,11 +180,11 @@ export default function CompactToolbar({
             <button
                 onClick={onToggleMeasure}
                 disabled={!calibration}
-                className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${measureMode && calibration
-                    ? 'bg-orange-600 text-white'
+                className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${measureMode && calibration
+                    ? 'bg-orange-500 text-white shadow-lg'
                     : calibration
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100'
+                        : 'bg-gray-50 text-studio-dim cursor-not-allowed border border-gray-50 opacity-50'
                     }`}
                 title="Toggle measure mode"
             >
@@ -185,9 +197,9 @@ export default function CompactToolbar({
                     {/* Layer Toggle Button */}
                     <button
                         onClick={onToggleMeasurementLayer}
-                        className={`toolbar-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${measurementLayer === 'reference'
-                            ? 'bg-blue-600/30 text-blue-400 border border-blue-600/50'
-                            : 'bg-red-600/30 text-red-400 border border-red-600/50'
+                        className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${measurementLayer === 'reference'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                            : 'bg-red-50 text-red-600 border border-red-100'
                             }`}
                         title="Toggle measurement layer (Reference/Painting)"
                     >
@@ -214,43 +226,43 @@ export default function CompactToolbar({
             {/* Compact Mode Toggle */}
             <button
                 onClick={onToggleCompactMode}
-                className={`toolbar-btn flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors ${compactMode
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                className={`toolbar-btn flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${compactMode
+                    ? 'bg-purple-600 text-white shadow-lg'
+                    : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100'
                     }`}
                 title={`${compactMode ? 'Disable' : 'Enable'} compact mode (Ctrl+\\)`}
             >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <rect x="3" y="3" width="18" height="18" rx="4" />
                     <path d="M9 3v18" />
                     <path d="M3 9h6" />
                     <path d="M3 15h6" />
                 </svg>
-                <span className="responsive-hide-compact">{compactMode ? 'Compact' : 'Normal'}</span>
+                <span className="responsive-hide-compact uppercase tracking-widest">{compactMode ? 'Compact' : 'Normal'}</span>
             </button>
 
             {/* Hamburger Menu */}
             <div ref={menuRef} className={`hamburger-menu ${menuOpen ? 'open' : ''}`}>
                 <button
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="toolbar-btn flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                    className="toolbar-btn flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100 transition-all shadow-sm"
                     title="More options"
                 >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="19" cy="12" r="1" />
-                        <circle cx="5" cy="12" r="1" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="12" cy="5" r="1.5" />
+                        <circle cx="12" cy="19" r="1.5" />
                     </svg>
                 </button>
 
                 <div className="hamburger-dropdown">
                     {/* Palette Selector */}
-                    <div className="px-3 py-2 border-b border-gray-700">
-                        <span className="text-[10px] text-gray-500 uppercase font-bold">Palette</span>
+                    <div className="px-4 py-3 border-b border-gray-100">
+                        <span className="text-[10px] text-studio-dim uppercase font-black tracking-widest">Active Palette</span>
                         <select
                             value={activePalette.id}
                             onChange={(e) => onSelectPalette(e.target.value)}
-                            className="w-full mt-1 px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-gray-200 text-sm focus:border-blue-500 outline-none"
+                            className="w-full mt-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-studio text-xs font-bold focus:border-blue-500 outline-none shadow-inner"
                         >
                             {palettes.map(p => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -278,15 +290,15 @@ export default function CompactToolbar({
                         Color Theory Lab
                     </Link>
 
-                    <div className="border-t border-gray-700 mt-1 pt-1">
-                        <div className="px-3 py-2 text-[10px] text-gray-500">
+                    <div className="border-t border-gray-100 mt-1 pt-1">
+                        <div className="px-4 py-3 text-[10px] text-studio-dim font-bold uppercase tracking-widest">
                             <div className="flex justify-between">
                                 <span>Toggle Panel</span>
-                                <span className="text-gray-600">Ctrl+P</span>
+                                <span className="font-mono">Ctrl+P</span>
                             </div>
-                            <div className="flex justify-between mt-1">
+                            <div className="flex justify-between mt-2">
                                 <span>Compact Mode</span>
-                                <span className="text-gray-600">Ctrl+\</span>
+                                <span className="font-mono">Ctrl+\</span>
                             </div>
                         </div>
                     </div>

@@ -358,25 +358,37 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Draw HUD
     ctx.save()
     ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset transforms for HUD
-    const HUD_X = 10, HUD_Y = 10, HUD_WIDTH = 180, HUD_HEIGHT = 70
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-    ctx.fillRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
-    ctx.strokeRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT)
+    const HUD_X = 15, HUD_Y = 15, HUD_WIDTH = 190, HUD_HEIGHT = 80
+    const cornerRadius = 16
 
-    ctx.fillStyle = 'white'
-    ctx.font = 'bold 10px sans-serif'
-    ctx.fillText('VIEW MODES', 20, 25)
+    // HUD Background (Light Glass)
+    ctx.beginPath()
+    ctx.roundRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT, cornerRadius)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+    ctx.fill()
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
+    ctx.lineWidth = 1
+    ctx.stroke()
 
-    ctx.font = '9px sans-serif'
-    ctx.fillStyle = valueScaleSettings?.enabled ? '#3b82f6' : '#9ca3af'
-    ctx.fillText(`[V] Value Overlay: ${valueScaleSettings?.enabled ? 'ON' : 'OFF'}`, 20, 40)
+    ctx.fillStyle = '#1d1d1f' // Apple black
+    ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    ctx.letterSpacing = '1px'
+    ctx.fillText('VIEW MODES', HUD_X + 15, HUD_Y + 20)
 
-    ctx.fillStyle = splitMode ? '#3b82f6' : '#9ca3af'
-    ctx.fillText(`[S] Split View: ${splitMode ? 'ON' : 'OFF'}`, 20, 52)
+    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif'
+    ctx.letterSpacing = '0px'
 
-    ctx.fillStyle = gridEnabled ? '#3b82f6' : '#9ca3af'
-    ctx.fillText(`[G] Grid: ${gridEnabled ? 'ON' : 'OFF'}`, 20, 64)
+    // Value Overlay line
+    ctx.fillStyle = valueScaleSettings?.enabled ? '#0071e3' : '#86868b'
+    ctx.fillText(`${valueScaleSettings?.enabled ? '●' : '○'} VALUE OVERLAY [V]`, HUD_X + 15, HUD_Y + 38)
+
+    // Split View line
+    ctx.fillStyle = splitMode ? '#0071e3' : '#86868b'
+    ctx.fillText(`${splitMode ? '●' : '○'} SPLIT VIEW [S]`, HUD_X + 15, HUD_Y + 52)
+
+    // Grid line
+    ctx.fillStyle = gridEnabled ? '#0071e3' : '#86868b'
+    ctx.fillText(`${gridEnabled ? '●' : '○'} GRID OVERLAY [G]`, HUD_X + 15, HUD_Y + 66)
     ctx.restore()
 
     // Restore context state
@@ -904,8 +916,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
-      <h1 className="text-3xl font-bold mb-6 text-gray-100">Color Wizard</h1>
-
       {!image ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (

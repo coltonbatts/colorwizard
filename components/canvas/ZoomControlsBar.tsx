@@ -46,25 +46,25 @@ export default function ZoomControlsBar({
                 <button
                     onClick={onZoomOut}
                     disabled={zoomLevel <= minZoom}
-                    className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-300 rounded-xl text-studio transition-all text-lg font-bold shadow-sm border border-gray-100"
                     title="Zoom Out (-)"
                 >
                     −
                 </button>
-                <div className="w-20 text-center text-gray-300 text-sm font-mono">
+                <div className="w-20 text-center text-studio font-black font-mono text-sm tracking-tighter">
                     {Math.round(zoomLevel * 100)}%
                 </div>
                 <button
                     onClick={onZoomIn}
                     disabled={zoomLevel >= maxZoom}
-                    className="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 rounded text-white transition-colors text-lg font-bold"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-300 rounded-xl text-studio transition-all text-lg font-bold shadow-sm border border-gray-100"
                     title="Zoom In (+)"
                 >
                     +
                 </button>
                 <button
                     onClick={onFit}
-                    className="px-3 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors"
+                    className="px-3 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-xl text-studio text-sm font-bold transition-all shadow-sm border border-gray-100"
                     title="Reset View (0)"
                 >
                     Fit
@@ -72,9 +72,9 @@ export default function ZoomControlsBar({
                 <button
                     onClick={onActualSize}
                     disabled={!isActualSizeEnabled}
-                    className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isActualSizeEnabled
-                            ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
-                            : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    className={`px-3 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${isActualSizeEnabled
+                        ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 shadow-sm'
+                        : 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-50'
                         }`}
                     title={isActualSizeEnabled ? 'Recalibrate to Actual Size' : 'Calibration or Canvas Settings required'}
                 >
@@ -84,17 +84,17 @@ export default function ZoomControlsBar({
             <div className="flex items-center gap-2">
                 <button
                     onClick={onToggleGrayscale}
-                    className={`px-3 h-8 flex items-center justify-center rounded text-sm transition-colors ${isGrayscale
-                        ? 'bg-blue-600 text-white hover:bg-blue-600/80'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    className={`px-3 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${isGrayscale
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100 shadow-sm'
                         }`}
                     title="Toggle Grayscale"
                 >
                     Gray
                 </button>
             </div>
-            <div className="text-gray-500 text-xs">
-                Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • Click to Sample
+            <div className="text-studio-dim text-[10px] font-bold uppercase tracking-widest hidden md:block">
+                Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit
             </div>
         </div>
     );

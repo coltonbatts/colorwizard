@@ -50,12 +50,12 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
 
   if (!sampledColor) {
     return (
-      <div className="h-full p-6 flex flex-col items-center justify-center bg-gray-950 text-gray-400">
-        <div className="w-16 h-16 rounded-full border-2 border-gray-800 flex items-center justify-center mb-4">
-          <span className="text-2xl">?</span>
+      <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
+        <div className="w-16 h-16 rounded-full border-2 border-gray-100 flex items-center justify-center mb-4">
+          <span className="text-2xl text-studio-dim">?</span>
         </div>
-        <p className="text-center font-medium">Click image to sample</p>
-        <p className="text-sm text-gray-600 mt-2">Pick a color to analyze</p>
+        <p className="text-center font-semibold text-studio">Click image to sample</p>
+        <p className="text-sm text-studio-muted mt-2">Pick a color to analyze</p>
       </div>
     )
   }
@@ -71,24 +71,24 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
   return (
-    <div className="bg-gray-950 text-gray-100 font-sans min-h-full">
+    <div className="bg-white text-studio font-sans min-h-full">
 
       {/* HERO SWATCH AREA - Always Visible */}
-      <div className="p-4 lg:p-6 border-b border-gray-800 bg-gray-950">
+      <div className="p-4 lg:p-6 border-b border-gray-100 bg-[#fbfbfd]">
         <div className="flex flex-col lg:gap-4 gap-2">
 
           {/* Giant Hero Swatch */}
-          <div className="w-full aspect-[2/1] lg:aspect-video rounded-2xl lg:rounded-3xl shadow-2xl border border-gray-800 relative overflow-hidden group transition-all duration-500 hover:shadow-gray-900/50"
+          <div className="w-full aspect-[2/1] lg:aspect-video rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-all duration-500"
             style={{ backgroundColor: hex }}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent pointer-events-none"></div>
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl lg:rounded-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
+            <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-3xl"></div>
           </div>
 
           {/* Hero Info - Now below the swatch for max width */}
           <div className="flex flex-col items-center justify-center pt-1 lg:pt-2">
             <div className="flex items-center gap-4 mb-2">
-              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter font-mono text-white tabular-nums">{hex}</h2>
+              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter font-mono text-studio tabular-nums">{hex}</h2>
               <button
                 onClick={async () => {
                   if (isPinned) return
@@ -141,39 +141,39 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 placeholder="Add a label/note..."
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs text-studio focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
               />
             </div>
 
             {/* Value First Readout */}
             <div className="w-full grid grid-cols-2 gap-4 lg:gap-6 items-center justify-center px-2 lg:px-4 mt-2">
-              <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
-                <span className="text-blue-500 text-[10px] lg:text-[11px] uppercase font-black tracking-widest mb-1">Value</span>
+              <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                <span className="text-blue-600 text-[10px] lg:text-[11px] uppercase font-black tracking-widest mb-1">Value</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-4xl lg:text-5xl text-white font-black tabular-nums">{sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent}%</span>
+                  <span className="font-mono text-4xl lg:text-5xl text-studio font-black tabular-nums">{sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent}%</span>
                 </div>
                 {sampledColor.valueMetadata ? (
                   <div className="flex flex-col items-center gap-1 mt-1">
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-sm border border-gray-700 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
-                      <span className="text-yellow-400 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step} / {valueScaleSettings?.steps || 7}</span>
+                      <div className="w-4 h-4 rounded-sm border border-gray-100 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
+                      <span className="text-yellow-600 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step} / {valueScaleSettings?.steps || 7}</span>
                     </div>
-                    <span className="text-[9px] text-gray-500 font-mono uppercase">Range: {sampledColor.valueMetadata.range[0].toFixed(2)}-{sampledColor.valueMetadata.range[1].toFixed(2)}</span>
-                    <span className="text-[9px] text-blue-400 font-mono font-bold uppercase">Rank: {(sampledColor.valueMetadata.percentile * 100).toFixed(1)}%</span>
+                    <span className="text-[9px] text-studio-muted font-mono uppercase">Range: {sampledColor.valueMetadata.range[0].toFixed(2)}-{sampledColor.valueMetadata.range[1].toFixed(2)}</span>
+                    <span className="text-[9px] text-blue-500 font-mono font-bold uppercase">Rank: {(sampledColor.valueMetadata.percentile * 100).toFixed(1)}%</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-500 font-mono text-sm">Value Step: —</span>
+                    <span className="text-studio-muted font-mono text-sm">Value Step: —</span>
                   </div>
                 )}
-                {!sampledColor.valueMetadata && <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight mt-1">{valueBand}</span>}
+                {!sampledColor.valueMetadata && <span className="text-[10px] text-studio-muted font-bold uppercase tracking-tight mt-1">{valueBand}</span>}
               </div>
 
-              <div className="flex flex-col items-center bg-gray-900/50 p-3 rounded-xl border border-gray-800/50">
-                <span className="text-gray-500 text-[10px] lg:text-[11px] uppercase font-bold tracking-widest mb-1">Chroma</span>
-                <span className="font-mono text-2xl lg:text-3xl text-gray-200 font-black">{chroma.label}</span>
-                <div className="w-px h-2 bg-gray-800 my-1"></div>
-                <span className="text-[10px] text-gray-600 font-mono uppercase tracking-tight">{hex}</span>
+              <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                <span className="text-studio-dim text-[10px] lg:text-[11px] uppercase font-bold tracking-widest mb-1">Chroma</span>
+                <span className="font-mono text-2xl lg:text-3xl text-studio font-black">{chroma.label}</span>
+                <div className="w-px h-2 bg-gray-100 my-1"></div>
+                <span className="text-[10px] text-studio-muted font-mono uppercase tracking-tight">{hex}</span>
               </div>
             </div>
           </div>
@@ -185,8 +185,8 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         <button
           onClick={() => setActiveTab('painter')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'painter'
-            ? 'text-white border-b-2 border-blue-500 bg-gray-800/50'
-            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
+            ? 'text-studio border-b-2 border-blue-600 bg-white'
+            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
             }`}
         >
           Painter
@@ -194,8 +194,8 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         <button
           onClick={() => setActiveTab('thread')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'thread'
-            ? 'text-white border-b-2 border-pink-500 bg-gray-800/50'
-            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/30'
+            ? 'text-studio border-b-2 border-pink-600 bg-white'
+            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
             }`}
         >
           Threads
@@ -207,36 +207,36 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         <div className="flex border-b border-gray-800 bg-gray-900/20">
           <button
             onClick={() => setPainterSubTab('recipe')}
-            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'recipe'
-              ? 'text-blue-400 border-b border-blue-500/50 bg-gray-800/30'
-              : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'recipe'
+              ? 'text-blue-600 border-b border-blue-500 bg-blue-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
           >
             Recipe
           </button>
           <button
             onClick={() => setPainterSubTab('mixlab')}
-            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'mixlab'
-              ? 'text-purple-400 border-b border-purple-500/50 bg-gray-800/30'
-              : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'mixlab'
+              ? 'text-purple-600 border-b border-purple-500 bg-purple-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
           >
             Mix Lab
           </button>
           <button
             onClick={() => setPainterSubTab('harmonies')}
-            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'harmonies'
-              ? 'text-teal-400 border-b border-teal-500/50 bg-gray-800/30'
-              : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'harmonies'
+              ? 'text-teal-600 border-b border-teal-500 bg-teal-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
           >
             Harmonies
           </button>
           <button
             onClick={() => setPainterSubTab('valueScale')}
-            className={`flex-1 py-2 text-xs font-medium uppercase tracking-wide transition-colors ${painterSubTab === 'valueScale'
-              ? 'text-yellow-400 border-b border-yellow-500/50 bg-gray-800/30'
-              : 'text-gray-500 hover:text-gray-300'
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'valueScale'
+              ? 'text-yellow-600 border-b border-yellow-500 bg-yellow-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
           >
             Value
@@ -432,16 +432,16 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             </section>
 
             {/* Tech Specs */}
-            <section className="p-3 lg:p-4 bg-gray-900 rounded-lg border border-gray-800">
-              <h3 className="text-[10px] lg:text-xs font-bold text-gray-400 mb-2 lg:mb-3 uppercase">Technical Data</h3>
+            <section className="p-3 lg:p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <h3 className="text-[10px] lg:text-xs font-bold text-studio-dim mb-2 lg:mb-3 uppercase tracking-widest">Technical Data</h3>
               <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm font-mono">
                 <div>
-                  <span className="text-gray-600 block text-[9px] lg:text-xs">RGB</span>
-                  <span>{rgb.r}, {rgb.g}, {rgb.b}</span>
+                  <span className="text-studio-muted block text-[9px] lg:text-xs">RGB</span>
+                  <span className="text-studio">{rgb.r}, {rgb.g}, {rgb.b}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 block text-[9px] lg:text-xs">HSL</span>
-                  <span>{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
+                  <span className="text-studio-muted block text-[9px] lg:text-xs">HSL</span>
+                  <span className="text-studio">{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
                 </div>
               </div>
             </section>

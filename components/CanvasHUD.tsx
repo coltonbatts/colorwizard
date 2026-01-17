@@ -40,7 +40,7 @@ export default function CanvasHUD({
                 animate={{ opacity: 1, y: 0 }}
                 className="glass-panel rounded-lg px-3 py-2.5 text-xs"
             >
-                <div className="text-[10px] font-semibold text-white/70 tracking-wider mb-1.5">
+                <div className="text-[10px] font-semibold text-studio-secondary tracking-wider mb-1.5">
                     VIEW MODES
                 </div>
                 <div className="space-y-0.5">
@@ -57,7 +57,7 @@ export default function CanvasHUD({
                         active={gridEnabled}
                     />
                 </div>
-                <div className="mt-2 pt-2 border-t border-white/10 text-[10px] text-white/50">
+                <div className="mt-2 pt-2 border-t border-gray-100 text-[10px] text-studio-muted">
                     Zoom: {Math.round(zoomLevel * 100)}%
                 </div>
             </motion.div>
@@ -72,7 +72,7 @@ export default function CanvasHUD({
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         className="glass-panel rounded-lg p-2.5 mt-2"
                     >
-                        <div className="text-[10px] font-semibold text-white/70 tracking-wider mb-1.5">
+                        <div className="text-[10px] font-semibold text-studio-secondary tracking-wider mb-1.5">
                             SAMPLED COLOR
                         </div>
                         <div className="flex items-center gap-2">
@@ -81,14 +81,14 @@ export default function CanvasHUD({
                                 className="w-8 h-8 rounded-md ring-1 ring-white/20"
                                 style={{ backgroundColor: liveColorHex }}
                             />
-                            <div className="text-[11px] text-white/80 font-mono">
+                            <div className="text-[11px] text-studio font-mono">
                                 {liveColorHex.toUpperCase()}
                             </div>
                         </div>
 
                         {livePaintMixHex && (
                             <div className="mt-2 pt-2 border-t border-white/10">
-                                <div className="text-[10px] text-white/50 mb-1">
+                                <div className="text-[10px] text-studio-muted mb-1">
                                     Paint Mix Match
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export default function CanvasHUD({
                                         className="w-6 h-6 rounded ring-1 ring-white/20"
                                         style={{ backgroundColor: livePaintMixHex }}
                                     />
-                                    <div className="text-[10px] text-white/60">
+                                    <div className="text-[10px] text-studio-secondary">
                                         ΔE: {livePaintMixError !== null ? livePaintMixError.toFixed(2) : '—'}
                                     </div>
                                 </div>
@@ -120,7 +120,7 @@ function ModeIndicator({
     return (
         <motion.div
             animate={{ opacity: active ? 1 : 0.5 }}
-            className={`flex items-center gap-1.5 text-[11px] ${active ? 'text-indigo-400' : 'text-white/50'
+            className={`flex items-center gap-1.5 text-[11px] ${active ? 'text-blue-600 font-medium' : 'text-studio-dim'
                 }`}
         >
             <motion.div

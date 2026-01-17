@@ -25,7 +25,7 @@ export default function CollapsibleSidebar({
     return (
         <div
             className={`
-                relative flex flex-col h-full bg-gray-950 border-l border-gray-700 shadow-2xl z-10
+                relative flex flex-col h-full bg-white border-l border-gray-100 shadow-xl z-10
                 sidebar-collapsible
                 ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}
             `}
@@ -101,13 +101,13 @@ export default function CollapsibleSidebar({
                             <path d="M12 10v12" />
                         </svg>
                         {pinnedCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                                 {pinnedCount > 9 ? '9+' : pinnedCount}
                             </span>
                         )}
                     </button>
 
-                    <div className="w-6 h-px bg-gray-700 my-2" />
+                    <div className="w-6 h-px bg-gray-100 my-2" />
 
                     {/* Compact mode toggle in collapsed state */}
                     <button

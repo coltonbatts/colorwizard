@@ -83,7 +83,7 @@ export default function Home() {
   }
 
   return (
-    <main className={`flex flex-col lg:flex-row h-screen bg-[#1a1a1a] overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
+    <main className={`flex flex-col lg:flex-row h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-3' : 'p-6'}`}>
         {/* Compact Toolbar with all controls */}
         <div className="mb-4">
@@ -110,47 +110,48 @@ export default function Home() {
             onToggleCompactMode={toggleCompactMode}
             canvasSettings={canvasSettings}
             onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+            hasImage={!!image}
           />
         </div>
 
         {/* Highlight Controls - Only show active if a color is selected */}
         {activeHighlightColor && (
-          <div className="mb-4 p-3 bg-gray-800 rounded-lg flex items-center gap-6 border border-gray-700 animate-in fade-in slide-in-from-top-2">
+          <div className="mb-4 p-4 bg-white rounded-2xl flex items-center gap-6 border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-300">Highlight Mode:</span>
-              <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-700">
+              <span className="text-[10px] font-black text-studio-dim uppercase tracking-widest">Highlight Mode</span>
+              <div className="flex bg-gray-50 rounded-xl p-1 border border-gray-100 shadow-inner">
                 <button
                   onClick={() => setHighlightMode('solid')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${highlightMode === 'solid' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${highlightMode === 'solid' ? 'bg-white text-blue-600 shadow-sm' : 'text-studio-dim hover:text-studio-secondary'}`}
                 >
                   Solid
                 </button>
                 <button
                   onClick={() => setHighlightMode('heatmap')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${highlightMode === 'heatmap' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${highlightMode === 'heatmap' ? 'bg-white text-blue-600 shadow-sm' : 'text-studio-dim hover:text-studio-secondary'}`}
                 >
                   Heatmap
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 flex-1">
-              <span className="text-sm font-medium text-gray-300 whitespace-nowrap">Tolerance ({highlightTolerance}):</span>
+            <div className="flex items-center gap-4 flex-1">
+              <span className="text-[10px] font-black text-studio-dim uppercase tracking-widest whitespace-nowrap">Tolerance ({highlightTolerance})</span>
               <input
                 type="range"
                 min="1"
                 max="60"
                 value={highlightTolerance}
                 onChange={(e) => setHighlightTolerance(Number(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
             </div>
 
             <button
               onClick={() => setActiveHighlightColor(null)}
-              className="ml-auto px-3 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
+              className="ml-auto px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all"
             >
-              Clear Highlight
+              Clear
             </button>
           </div>
         )}
@@ -196,24 +197,24 @@ export default function Home() {
         pinnedCount={pinnedColors.length}
       >
         {/* Simple Tab Switcher - only shown when expanded */}
-        <div className="flex border-b border-gray-700">
+        <div className="flex border-b border-gray-100 bg-white">
           <button
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${!activeTab || activeTab === 'inspect' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${!activeTab || activeTab === 'inspect' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
             onClick={() => setActiveTab('inspect')}
           >
             Inspect
           </button>
           <button
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'shopping' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'shopping' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
             onClick={() => setActiveTab('shopping')}
           >
             List
           </button>
           <button
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${activeTab === 'pinned' ? 'text-blue-400 border-b-2 border-blue-500 bg-gray-800/50' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pinned' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
             onClick={() => setActiveTab('pinned')}
           >
-            Pinned <span className="text-[10px] bg-gray-700 px-1 rounded ml-1">{pinnedColors.length}</span>
+            Pinned <span className="text-[10px] bg-studio text-white px-1.5 py-0.5 rounded-md ml-1 font-mono">{pinnedColors.length}</span>
           </button>
         </div>
 

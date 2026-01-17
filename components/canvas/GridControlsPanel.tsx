@@ -32,43 +32,43 @@ export default function GridControlsPanel({
     onSquareSizeChange,
 }: GridControlsPanelProps) {
     return (
-        <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 mb-4 flex flex-wrap items-center gap-4 text-sm">
+        <div className="bg-white/80 backdrop-blur-md p-3 rounded-2xl border border-gray-100 mb-4 flex flex-wrap items-center gap-4 text-sm shadow-sm">
             <label className="flex items-center gap-2 cursor-pointer">
                 <input
                     type="checkbox"
                     checked={gridEnabled}
                     onChange={(e) => onToggleGrid(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded-md border-gray-200 bg-gray-50 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-gray-200 font-medium">Grid Overlay</span>
+                <span className="text-studio font-bold">Grid Overlay</span>
             </label>
 
             <div className="flex items-center gap-2">
-                <span className="text-gray-400">Canvas:</span>
+                <span className="text-studio-dim font-black text-[10px] uppercase tracking-widest">Canvas:</span>
                 <input
                     type="number"
                     value={physicalWidth}
                     onChange={(e) => onDimensionsChange(Number(e.target.value), physicalHeight)}
-                    className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+                    className="w-16 px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-inner"
                     min="1"
                 />
-                <span className="text-gray-500">×</span>
+                <span className="text-gray-300">×</span>
                 <input
                     type="number"
                     value={physicalHeight}
                     onChange={(e) => onDimensionsChange(physicalWidth, Number(e.target.value))}
-                    className="w-16 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+                    className="w-16 px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-inner"
                     min="1"
                 />
-                <span className="text-gray-500">in</span>
+                <span className="text-studio-dim font-bold">in</span>
             </div>
 
             <div className="flex items-center gap-2">
-                <span className="text-gray-400">Size:</span>
+                <span className="text-studio-dim font-black text-[10px] uppercase tracking-widest">Size:</span>
                 <select
                     value={squareSize}
                     onChange={(e) => onSquareSizeChange(Number(e.target.value))}
-                    className="px-2 py-1 bg-gray-900 border border-gray-600 rounded text-gray-200 focus:border-blue-500 outline-none"
+                    className="px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-sm"
                 >
                     <option value="0.25">0.25"</option>
                     <option value="0.5">0.5"</option>
