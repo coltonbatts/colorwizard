@@ -15,8 +15,10 @@ import CalibrationModal from '@/components/CalibrationModal'
 import CollapsibleSidebar from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
+import ProcessSlider from '@/components/ProcessSlider'
 import { useStore } from '@/lib/store/useStore'
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
+import { useCallback } from 'react'
 
 export default function Home() {
   const {
@@ -51,12 +53,53 @@ export default function Home() {
     // Transform state
     setTransformState,
 
+    // Layout state
+    sidebarCollapsed, toggleSidebar,
+    sidebarWidth, setSidebarWidth,
+    compactMode, toggleCompactMode,
+
+    // Breakdown state
+    breakdownValue, setBreakdownValue,
+
     // Modal state
     showCanvasSettingsModal, setShowCanvasSettingsModal,
   } = useStore()
 
-  // Layout preferences
-  const { sidebarCollapsed, compactMode, toggleSidebar, toggleCompactMode } = useLayoutPreferences()
+  // Breakdown step derived for ProcessSlider
+  const activeBreakdownStep = useMemo(() => {
+    if (breakdownValue <= 10) return 'Original'
+    if (breakdownValue <= 35) return 'Imprimatura'
+    if (breakdownValue <= 60) return 'Dead Color'
+    if (breakdownValue <= 85) return 'Local Color'
+    return 'Spectral Glaze'
+  }, [breakdownValue])
+
+  // Resize logic
+  const isResizing = useRef(false)
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'default'
+    document.body.style.userSelect = 'auto'
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return
+    const newWidth = window.innerWidth - e.clientX
+    if (newWidth >= 300 && newWidth <= 800) {
+      setSidebarWidth(newWidth)
+    }
+  }, [setSidebarWidth])
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    isResizing.current = true
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [handleMouseMove, stopResizing])
 
   // Canvas container ref for RulerOverlay
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -189,12 +232,23 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {/* Resize Handle */}
+      {!sidebarCollapsed && (
+        <div
+          onMouseDown={startResizing}
+          className="w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 cursor-col-resize transition-all z-20"
+          title="Drag to resize"
+        />
+      )}
+
       <CollapsibleSidebar
         collapsed={sidebarCollapsed}
         onToggle={toggleSidebar}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         pinnedCount={pinnedColors.length}
+        width={sidebarWidth}
       >
         {/* Simple Tab Switcher - only shown when expanded */}
         <div className="flex border-b border-gray-100 bg-white">
@@ -209,6 +263,12 @@ export default function Home() {
             onClick={() => setActiveTab('shopping')}
           >
             List
+          </button>
+          <button
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stages' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
+            onClick={() => setActiveTab('stages')}
+          >
+            Stages
           </button>
           <button
             className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pinned' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
@@ -236,6 +296,28 @@ export default function Home() {
           ) : activeTab === 'shopping' ? (
             <div className="absolute inset-0">
               <ShoppingListPanel image={image} />
+            </div>
+          ) : activeTab === 'stages' ? (
+            <div className="absolute inset-0 p-6 overflow-y-auto">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">Painting Stages</h2>
+                  <p className="text-sm text-gray-500 mb-6">Explore the visual breakdown of the painting process.</p>
+
+                  <ProcessSlider
+                    value={breakdownValue}
+                    onChange={setBreakdownValue}
+                    activeStep={activeBreakdownStep as any}
+                  />
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                  <h4 className="text-xs font-black text-blue-800 uppercase tracking-widest mb-2">Pro Tip</h4>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    Use these stages to plan your physical painting layers. Start with the Imprimatura wash and build up to Spectral Glazes.
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="absolute inset-0 overflow-y-auto">

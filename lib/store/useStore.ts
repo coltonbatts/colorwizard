@@ -37,7 +37,7 @@ interface ColorState {
     highlightTolerance: number
     highlightMode: 'solid' | 'heatmap'
     image: HTMLImageElement | null
-    activeTab: 'inspect' | 'shopping' | 'pinned'
+    activeTab: 'inspect' | 'shopping' | 'pinned' | 'stages'
     pinnedColors: PinnedColor[]
     valueScaleSettings: ValueScaleSettings
     histogramBins: number[]
@@ -49,6 +49,10 @@ interface ColorState {
     // Layout preferences
     sidebarCollapsed: boolean
     compactMode: boolean
+    sidebarWidth: number
+
+    // Breakdown state
+    breakdownValue: number
 
     // Calibration State
     calibration: CalibrationData | null
@@ -89,6 +93,8 @@ interface ColorState {
     // Layout actions
     setSidebarCollapsed: (collapsed: boolean) => void
     setCompactMode: (compact: boolean) => void
+    setSidebarWidth: (width: number) => void
+    setBreakdownValue: (value: number) => void
     toggleSidebar: () => void
     toggleCompactMode: () => void
 
@@ -154,6 +160,10 @@ export const useStore = create<ColorState>()(
             // Layout preferences
             sidebarCollapsed: false,
             compactMode: false,
+            sidebarWidth: 400,
+
+            // Breakdown state
+            breakdownValue: 0,
 
             // Calibration State
             calibration: null,
@@ -193,6 +203,8 @@ export const useStore = create<ColorState>()(
             // Layout actions
             setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
             setCompactMode: (compactMode) => set({ compactMode }),
+            setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
+            setBreakdownValue: (breakdownValue) => set({ breakdownValue }),
             toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
             toggleCompactMode: () => set((state) => ({ compactMode: !state.compactMode })),
 
@@ -311,10 +323,13 @@ export const useStore = create<ColorState>()(
                 // Persist layout preferences
                 sidebarCollapsed: state.sidebarCollapsed,
                 compactMode: state.compactMode,
+                sidebarWidth: state.sidebarWidth,
                 canvasSettings: state.canvasSettings,
                 // Persist grid settings
                 rulerGridEnabled: state.rulerGridEnabled,
                 rulerGridSpacing: state.rulerGridSpacing,
+                // Persist breakdown value
+                breakdownValue: state.breakdownValue,
             }),
         }
     )

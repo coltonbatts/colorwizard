@@ -11,7 +11,9 @@ import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
-import ProcessSlider, { BreakdownStep } from '@/components/ProcessSlider'
+import ProcessSlider from '@/components/ProcessSlider'
+import type { BreakdownStep } from '@/components/ProcessSlider'
+import { useStore } from '@/lib/store/useStore'
 
 interface ColorData {
   hex: string
@@ -83,6 +85,7 @@ const HIGHLIGHT_ALPHA_MAX = 255
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
+  const { breakdownValue, setBreakdownValue } = useStore()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -126,7 +129,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
-  const [breakdownValue, setBreakdownValue] = useState(0)
 
   const activeBreakdownStep = useMemo<BreakdownStep>(() => {
     if (breakdownValue <= 10) return 'Original'
@@ -997,16 +999,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               measurementLayer={props.measurementLayer}
               image={image}
               canvasSettings={props.canvasSettings}
-            />
-          </div>
-
-          {/* Process Slider for Breakdown */}
-          <div className="mt-4">
-            <ProcessSlider
-              value={breakdownValue}
-              onChange={setBreakdownValue}
-              activeStep={activeBreakdownStep}
-              isGenerating={isGeneratingBreakdown}
             />
           </div>
 

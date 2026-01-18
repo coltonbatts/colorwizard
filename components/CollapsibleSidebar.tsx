@@ -6,9 +6,10 @@ interface CollapsibleSidebarProps {
     collapsed: boolean
     onToggle: () => void
     children: ReactNode
-    activeTab?: 'inspect' | 'shopping' | 'pinned'
-    onTabChange?: (tab: 'inspect' | 'shopping' | 'pinned') => void
+    activeTab?: 'inspect' | 'shopping' | 'pinned' | 'stages'
+    onTabChange?: (tab: 'inspect' | 'shopping' | 'pinned' | 'stages') => void
     pinnedCount?: number
+    width?: number
 }
 
 /**
@@ -20,7 +21,8 @@ export default function CollapsibleSidebar({
     children,
     activeTab = 'inspect',
     onTabChange,
-    pinnedCount = 0
+    pinnedCount = 0,
+    width = 400
 }: CollapsibleSidebarProps) {
     return (
         <div
@@ -30,8 +32,8 @@ export default function CollapsibleSidebar({
                 ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}
             `}
             style={{
-                width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
-                minWidth: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'
+                width: collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`,
+                minWidth: collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`
             }}
         >
             {/* Toggle Button */}
@@ -80,6 +82,18 @@ export default function CollapsibleSidebar({
                             <rect x="9" y="3" width="6" height="4" rx="1" />
                             <path d="M9 12h6" />
                             <path d="M9 16h6" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => {
+                            onTabChange?.('stages')
+                            onToggle()
+                        }}
+                        className={`sidebar-icon-btn tooltip-wrapper ${activeTab === 'stages' ? 'active' : ''}`}
+                        data-tooltip="Breakdown Stages"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
                         </svg>
                     </button>
                     <button
