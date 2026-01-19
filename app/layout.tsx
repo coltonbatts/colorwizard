@@ -17,6 +17,9 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: 'Color Wizard 2.0',
   description: 'Professional oil paint color mixing assistant with spectral accuracy',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({
