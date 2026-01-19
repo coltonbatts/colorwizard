@@ -32,9 +32,10 @@ export default function CollapsibleSidebar({
                 ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}
             `}
             style={{
-                width: collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`,
-                minWidth: collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`
-            }}
+                // On desktop, we use the specific width from the store. 
+                // On mobile, the CSS !important overrides this to be 100% or 0.
+                '--computed-sidebar-width': `${width}px`
+            } as any}
         >
             {/* Toggle Button */}
             <button

@@ -127,7 +127,7 @@ export default function Home() {
 
   return (
     <main className={`flex flex-col lg:flex-row h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-3' : 'p-6'}`}>
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 lg:p-3' : 'p-0 lg:p-6'}`}>
         {/* Compact Toolbar with all controls */}
         <div className="mb-4">
           <CompactToolbar

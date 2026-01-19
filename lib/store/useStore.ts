@@ -186,7 +186,14 @@ export const useStore = create<ColorState>()(
             // Modal State
             showCanvasSettingsModal: false,
 
-            setSampledColor: (sampledColor) => set({ sampledColor }),
+            setSampledColor: (sampledColor) => {
+                const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
+                if (isMobile && sampledColor) {
+                    set({ sampledColor, sidebarCollapsed: false })
+                } else {
+                    set({ sampledColor })
+                }
+            },
             setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
             setHighlightMode: (highlightMode) => set({ highlightMode }),
