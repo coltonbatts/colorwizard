@@ -2,24 +2,28 @@
 
 /**
  * Home page - Main application entry point.
- * Refactored to use Zustand store for centralized state management.
+ * Refactored UI with calm progressive disclosure.
  */
 
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
 import ImageCanvas from '@/components/ImageCanvas'
-import ColorPanel from '@/components/ColorPanel'
-import ShoppingListPanel from '@/components/ShoppingListPanel'
-import PinnedColorsPanel from '@/components/PinnedColorsPanel'
+import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
+import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
-import CollapsibleSidebar from '@/components/CollapsibleSidebar'
-import CompactToolbar from '@/components/CompactToolbar'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
-import ProcessSlider from '@/components/ProcessSlider'
+import SessionPaletteStrip, { SessionColor, useSessionPalette } from '@/components/SessionPaletteStrip'
+
+// Tab content components
+import SampleTab from '@/components/tabs/SampleTab'
+import OilMixTab from '@/components/tabs/OilMixTab'
+import PaletteTab from '@/components/tabs/PaletteTab'
+import MatchesTab from '@/components/tabs/MatchesTab'
+import AdvancedTab from '@/components/tabs/AdvancedTab'
+import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
+
 import { useStore } from '@/lib/store/useStore'
-import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
-import { useCallback } from 'react'
 
 export default function Home() {
   const {
@@ -67,14 +71,17 @@ export default function Home() {
     lastSampleTime
   } = useStore()
 
-  // Breakdown step derived for ProcessSlider
-  const activeBreakdownStep = useMemo(() => {
-    if (breakdownValue <= 10) return 'Original'
-    if (breakdownValue <= 35) return 'Imprimatura'
-    if (breakdownValue <= 60) return 'Dead Color'
-    if (breakdownValue <= 85) return 'Local Color'
-    return 'Spectral Glaze'
-  }, [breakdownValue])
+  // Session palette integration
+  const { addColor: addToSession } = useSessionPalette()
+  const [sessionColors, setSessionColors] = useState<SessionColor[]>([])
+
+  // Load session colors from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('colorwizard-session-palette')
+      if (saved) setSessionColors(JSON.parse(saved))
+    } catch { }
+  }, [])
 
   // Resize logic
   const isResizing = useRef(false)
@@ -103,7 +110,7 @@ export default function Home() {
     document.body.style.userSelect = 'none'
   }, [handleMouseMove, stopResizing])
 
-  // Canvas container ref for RulerOverlay
+  // Canvas container ref
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
   // Load calibration on mount
@@ -111,11 +118,51 @@ export default function Home() {
     loadCalibrationFromStorage()
   }, [loadCalibrationFromStorage])
 
+  // Keyboard shortcuts for tabs
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
+      // [ and ] for collapse/expand
+      if (e.key === '[') {
+        e.preventDefault()
+        if (!sidebarCollapsed) toggleSidebar()
+      }
+      if (e.key === ']') {
+        e.preventDefault()
+        if (sidebarCollapsed) toggleSidebar()
+      }
+
+      // 1-7 for tab switching
+      const tabKeys: { [key: string]: TabType } = {
+        '1': 'sample',
+        '2': 'oilmix',
+        '3': 'palette',
+        '4': 'matches',
+        '5': 'advanced',
+        '6': 'pinned',
+        '7': 'cards',
+      }
+      if (tabKeys[e.key]) {
+        e.preventDefault()
+        setActiveTab(tabKeys[e.key])
+        if (sidebarCollapsed) toggleSidebar()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sidebarCollapsed, toggleSidebar, setActiveTab])
+
   // Derived active palette
   const activePalette = useMemo(() => {
     return palettes.find(p => p.isActive) || palettes[0] || { id: 'default', name: 'Default', colors: [], isActive: true, isDefault: true }
   }, [palettes])
 
+  // Export palette handler
   const handleExportPalette = () => {
     const data = JSON.stringify(pinnedColors, null, 2)
     const blob = new Blob([data], { type: 'application/json' })
@@ -127,10 +174,95 @@ export default function Home() {
     URL.revokeObjectURL(url)
   }
 
+  // Session palette add handler
+  const handleAddToSession = (color: { hex: string; rgb: { r: number; g: number; b: number } }) => {
+    addToSession(color.hex, color.rgb)
+    // Force refresh session colors display
+    setTimeout(() => {
+      try {
+        const saved = localStorage.getItem('colorwizard-session-palette')
+        if (saved) setSessionColors(JSON.parse(saved))
+      } catch { }
+    }, 100)
+  }
+
+  // Session color select handler
+  const handleSessionColorSelect = (color: SessionColor) => {
+    // Convert session color to sampled color format
+    setSampledColor({
+      hex: color.hex,
+      rgb: color.rgb,
+      hsl: { h: 0, s: 0, l: 0 } // Will be recalculated
+    })
+    setActiveTab('sample')
+  }
+
+  // Render tab content
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'sample':
+        return (
+          <SampleTab
+            sampledColor={sampledColor}
+            onPin={pinColor}
+            isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
+            valueScaleSettings={valueScaleSettings}
+            lastSampleTime={lastSampleTime}
+            onAddToSession={handleAddToSession}
+          />
+        )
+      case 'oilmix':
+        return (
+          <OilMixTab
+            sampledColor={sampledColor}
+            activePalette={activePalette}
+            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+          />
+        )
+      case 'palette':
+        return <PaletteTab />
+      case 'matches':
+        return (
+          <MatchesTab
+            sampledColor={sampledColor}
+            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+          />
+        )
+      case 'advanced':
+        return (
+          <AdvancedTab
+            sampledColor={sampledColor}
+            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+            valueScaleSettings={valueScaleSettings}
+            onValueScaleChange={setValueScaleSettings}
+            histogramBins={histogramBins}
+            valueScaleResult={valueScaleResult}
+            breakdownValue={breakdownValue}
+            onBreakdownChange={setBreakdownValue}
+          />
+        )
+      case 'pinned':
+        return (
+          <PinnedColorsPanel
+            pinnedColors={pinnedColors}
+            activeHighlightColor={activeHighlightColor}
+            onUnpin={unpinColor}
+            onClearAll={clearPinned}
+            onExport={handleExportPalette}
+            onSelect={(rgb) => setActiveHighlightColor(rgb)}
+          />
+        )
+      case 'cards':
+        return <MyCardsPanel />
+      default:
+        return null
+    }
+  }
+
   return (
     <main className={`flex flex-col lg:flex-row h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 lg:p-3' : 'p-0 lg:p-6'}`}>
-        {/* Compact Toolbar with all controls */}
+        {/* Compact Toolbar */}
         <div className="mb-4">
           <CompactToolbar
             calibration={calibration}
@@ -159,7 +291,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Highlight Controls - Only show active if a color is selected */}
+        {/* Highlight Controls - contextual */}
         {activeHighlightColor && (
           <div className="mb-4 p-4 bg-white rounded-2xl flex items-center gap-6 border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
@@ -201,15 +333,14 @@ export default function Home() {
           </div>
         )}
 
+        {/* Main Canvas Area */}
         <div className="flex-1 min-h-0 relative" ref={canvasContainerRef}>
           <ImageCanvas
             image={image}
             onImageLoad={setImage}
             onReset={() => setImage(null)}
             onColorSample={(color) => {
-              // If measure mode is on, handle measurement instead of color sampling
               if (measureMode && calibration) {
-                // Measurement is handled separately via onMeasurePointsChange
                 return
               }
               setSampledColor(color)
@@ -244,6 +375,7 @@ export default function Home() {
         />
       )}
 
+      {/* Sidebar */}
       <CollapsibleSidebar
         collapsed={sidebarCollapsed}
         onToggle={toggleSidebar}
@@ -252,102 +384,51 @@ export default function Home() {
         pinnedCount={pinnedColors.length}
         width={sidebarWidth}
       >
-        {/* Simple Tab Switcher - only shown when expanded */}
-        <div className="flex border-b border-gray-100 bg-white">
+        {/* Tab Bar - only shown when expanded */}
+        <div className="flex border-b border-gray-100 bg-white overflow-x-auto">
+          {TABS.map((tab, index) => (
+            <button
+              key={tab.id}
+              className={`flex-1 min-w-0 py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-2 ${activeTab === tab.id
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
+                  : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                }`}
+              onClick={() => setActiveTab(tab.id)}
+              title={`${tab.tooltip} (${index + 1})`}
+            >
+              {tab.label}
+            </button>
+          ))}
           <button
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${!activeTab || activeTab === 'inspect' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
-            onClick={() => setActiveTab('inspect')}
-          >
-            Inspect
-          </button>
-          <button
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'shopping' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
-            onClick={() => setActiveTab('shopping')}
-          >
-            List
-          </button>
-          <button
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stages' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
-            onClick={() => setActiveTab('stages')}
-          >
-            Stages
-          </button>
-          <button
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pinned' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
+            className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-3 ${activeTab === 'pinned'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
+                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+              }`}
             onClick={() => setActiveTab('pinned')}
           >
-            Pinned <span className="text-[10px] bg-studio text-white px-1.5 py-0.5 rounded-md ml-1 font-mono">{pinnedColors.length}</span>
+            📌 {pinnedColors.length}
           </button>
           <button
-            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'cards' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
+            className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-3 ${activeTab === 'cards'
+                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/30'
+                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+              }`}
             onClick={() => setActiveTab('cards')}
           >
-            Cards
+            🎴
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden relative">
-          {(!activeTab || activeTab === 'inspect') ? (
-            <div className="absolute inset-0 overflow-y-auto">
-              <ColorPanel
-                sampledColor={sampledColor}
-                onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
-                onPin={pinColor}
-                isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
-                valueScaleSettings={valueScaleSettings}
-                onValueScaleChange={setValueScaleSettings}
-                activePalette={activePalette}
-                histogramBins={histogramBins}
-                valueScaleResult={valueScaleResult}
-                lastSampleTime={lastSampleTime}
-              />
-            </div>
-          ) : activeTab === 'shopping' ? (
-            <div className="absolute inset-0">
-              <ShoppingListPanel image={image} />
-            </div>
-          ) : activeTab === 'stages' ? (
-            <div className="absolute inset-0 p-6 overflow-y-auto">
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-1">Painting Stages</h2>
-                  <p className="text-sm text-gray-500 mb-6">Explore the visual breakdown of the painting process.</p>
-
-                  <ProcessSlider
-                    value={breakdownValue}
-                    onChange={setBreakdownValue}
-                    activeStep={activeBreakdownStep as any}
-                  />
-                </div>
-
-                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                  <h4 className="text-xs font-black text-blue-800 uppercase tracking-widest mb-2">Pro Tip</h4>
-                  <p className="text-xs text-blue-700 leading-relaxed">
-                    Use these stages to plan your physical painting layers. Start with the Imprimatura wash and build up to Spectral Glazes.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : activeTab === 'pinned' ? (
-            <div className="absolute inset-0 overflow-y-auto">
-              <PinnedColorsPanel
-                pinnedColors={pinnedColors}
-                activeHighlightColor={activeHighlightColor}
-                onUnpin={unpinColor}
-                onClearAll={clearPinned}
-                onExport={handleExportPalette}
-                onSelect={(rgb: { r: number; g: number; b: number }) => setActiveHighlightColor(rgb)}
-              />
-            </div>
-          ) : activeTab === 'cards' ? (
-            <div className="absolute inset-0 overflow-y-auto">
-              <MyCardsPanel />
-            </div>
-          ) : null}
+        {/* Tab Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {renderTabContent()}
         </div>
       </CollapsibleSidebar>
 
-      {/* Palette Manager Modal */}
+      {/* Session Palette Strip */}
+      <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />
+
+      {/* Modals */}
       <PaletteManager
         isOpen={showPaletteManager}
         onClose={() => setShowPaletteManager(false)}
@@ -357,7 +438,6 @@ export default function Home() {
         onDeletePalette={deletePalette}
       />
 
-      {/* Calibration Modal */}
       <CalibrationModal
         isOpen={showCalibrationModal}
         onClose={() => setShowCalibrationModal(false)}
@@ -365,7 +445,6 @@ export default function Home() {
         initialCalibration={calibration}
       />
 
-      {/* Canvas Settings Modal */}
       <CanvasSettingsModal
         isOpen={showCanvasSettingsModal}
         onClose={() => setShowCanvasSettingsModal(false)}

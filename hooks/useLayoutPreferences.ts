@@ -23,14 +23,11 @@ export function useLayoutPreferences() {
         const handleMediaChange = (e: MediaQueryListEvent | MediaQueryList) => {
             if (e.matches && !sidebarCollapsed) {
                 // Don't auto-collapse if user has explicitly expanded
-                // This is controlled by checking localStorage in future iterations
             }
         }
 
-        // Initial check
         handleMediaChange(mediaQuery)
 
-        // Listen for changes
         mediaQuery.addEventListener('change', handleMediaChange)
         return () => mediaQuery.removeEventListener('change', handleMediaChange)
     }, [sidebarCollapsed])
@@ -38,7 +35,6 @@ export function useLayoutPreferences() {
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if user is typing in an input
             const target = e.target as HTMLElement
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
                 return

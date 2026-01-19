@@ -37,7 +37,7 @@ interface ColorState {
     highlightTolerance: number
     highlightMode: 'solid' | 'heatmap'
     image: HTMLImageElement | null
-    activeTab: 'inspect' | 'shopping' | 'pinned' | 'stages' | 'cards'
+    activeTab: 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards'
     pinnedColors: PinnedColor[]
     valueScaleSettings: ValueScaleSettings
     histogramBins: number[]
@@ -150,7 +150,7 @@ export const useStore = create<ColorState>()(
             highlightTolerance: 20,
             highlightMode: 'solid',
             image: null,
-            activeTab: 'inspect',
+            activeTab: 'sample',
             pinnedColors: [],
             valueScaleSettings: DEFAULT_VALUE_SCALE_SETTINGS,
             histogramBins: [],
