@@ -14,6 +14,7 @@ import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import ProcessSlider from '@/components/ProcessSlider'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import { useStore } from '@/lib/store/useStore'
+import FullScreenOverlay from '@/components/FullScreenOverlay'
 
 interface ColorData {
   hex: string
@@ -129,6 +130,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
+  const [showImageFullScreen, setShowImageFullScreen] = useState(false)
 
   const activeBreakdownStep = useMemo<BreakdownStep>(() => {
     if (breakdownValue <= 10) return 'Original'
@@ -963,6 +965,16 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               </div>
             )}
 
+            {/* Full-screen expand button */}
+            <button
+              onClick={() => setShowImageFullScreen(true)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white/70 hover:text-white rounded-lg transition-all duration-200 backdrop-blur-sm"
+              style={{ right: isAnalyzing ? '90px' : '16px' }}
+              title="View full screen (click or ESC to close)"
+            >
+              <span className="text-lg">⛶</span>
+            </button>
+
             <canvas
               ref={canvasRef}
               width={canvasDimensions.width}
@@ -1016,6 +1028,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           </div>
         </div>
       )}
+
+      {/* Full Screen Image Overlay */}
+      <FullScreenOverlay
+        isOpen={showImageFullScreen}
+        onClose={() => setShowImageFullScreen(false)}
+      >
+        {image && (
+          <img
+            src={image.src}
+            alt="Full screen reference"
+            className="max-w-full max-h-full object-contain pointer-events-none"
+          />
+        )}
+      </FullScreenOverlay>
     </div>
   )
 }

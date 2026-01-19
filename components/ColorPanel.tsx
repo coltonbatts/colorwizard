@@ -5,6 +5,7 @@ import { rgb as culoriRgb } from 'culori'
 import PaintRecipe from './PaintRecipe'
 import MixLab from './MixLab'
 import DMCFlossMatch from './DMCFlossMatch'
+import FullScreenOverlay from './FullScreenOverlay'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
 import ValueHistogram from './ValueHistogram'
@@ -47,6 +48,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
   const [label, setLabel] = useState('')
   const [isPinning, setIsPinning] = useState(false)
+  const [showColorFullScreen, setShowColorFullScreen] = useState(false)
 
   if (!sampledColor) {
     return (
@@ -83,6 +85,14 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
             <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-3xl"></div>
+            {/* Expand button */}
+            <button
+              onClick={() => setShowColorFullScreen(true)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white/70 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
+              title="View full screen (click or ESC to close)"
+            >
+              <span className="text-lg">⛶</span>
+            </button>
           </div>
 
           {/* Hero Info - Now below the swatch for max width */}
@@ -455,6 +465,13 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         )}
 
       </div>
+
+      {/* Full Screen Color Overlay */}
+      <FullScreenOverlay
+        isOpen={showColorFullScreen}
+        onClose={() => setShowColorFullScreen(false)}
+        backgroundColor={hex}
+      />
     </div>
   )
 }
