@@ -52,7 +52,7 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                 <div className="flex flex-col flex-1 min-w-0">
                     <span className="text-[9px] text-studio-dim uppercase font-black tracking-[0.2em] mb-1 opacity-50">Perceptual Name</span>
                     <div className="flex items-center gap-3">
-                        <h3 className={`text-3xl lg:text-4xl font-black text-studio tracking-tighter ${loading ? 'opacity-30' : 'opacity-100'} transition-all duration-500 truncate max-w-[320px] leading-tight`}>
+                        <h3 className={`text-2xl lg:text-3xl font-black text-studio tracking-tighter ${loading ? 'opacity-30' : 'opacity-100'} transition-all duration-500 leading-tight`}>
                             {loading ? 'Analyzing...' : match?.name || 'Unknown'}
                         </h3>
                         {match && !loading && (

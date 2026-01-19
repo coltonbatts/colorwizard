@@ -156,7 +156,7 @@ export default function ShoppingListPanel({ image }: ShoppingListPanelProps) {
                                 <span className="font-bold text-studio text-sm">DMC {item.dmcCode}</span>
                                 <span className="text-[10px] font-black text-blue-600 font-mono tracking-tighter bg-blue-50 px-1.5 py-0.5 rounded-md">{Math.round(item.coveragePct)}%</span>
                             </div>
-                            <div className="text-xs text-studio-muted truncate font-medium mt-0.5">{item.dmcName}</div>
+                            <div className="text-xs text-studio-muted break-words font-medium mt-0.5">{item.dmcName}</div>
                         </div>
                     </div>
                 ))}

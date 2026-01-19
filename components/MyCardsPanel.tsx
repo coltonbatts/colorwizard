@@ -65,9 +65,9 @@ export default function MyCardsPanel() {
                                 />
                                 {/* Info */}
                                 <div className="p-3">
-                                    <p className="text-xs font-bold text-gray-900 truncate leading-tight">{card.name}</p>
+                                    <p className="text-xs font-bold text-gray-900 leading-tight break-words">{card.name}</p>
                                     {card.colorName && card.colorName !== card.name && (
-                                        <p className="text-[10px] text-studio font-medium opacity-60 truncate mt-0.5">{card.colorName}</p>
+                                        <p className="text-[10px] text-studio font-medium opacity-60 mt-0.5 break-words">{card.colorName}</p>
                                     )}
                                     <p className="text-[10px] font-mono text-gray-400 mt-1">{card.color.hex}</p>
                                 </div>

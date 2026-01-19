@@ -32,7 +32,7 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                     style={{ backgroundColor: color.hex }}
                 >
                     <h2
-                        className="text-2xl font-black truncate max-w-full leading-tight"
+                        className="text-2xl font-black leading-tight"
                         style={{ color: textColor }}
                     >
                         {name}

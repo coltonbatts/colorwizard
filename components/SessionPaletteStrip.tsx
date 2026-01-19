@@ -139,7 +139,7 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                             autoFocus
                                         />
                                     ) : (
-                                        <span className="text-white text-xs font-bold truncate px-1">{color.label}</span>
+                                        <span className="text-white text-xs font-bold px-1 whitespace-normal break-words">{color.label}</span>
                                     )}
                                     <span className="text-gray-400 text-[10px] font-mono px-1">{color.hex}</span>
 

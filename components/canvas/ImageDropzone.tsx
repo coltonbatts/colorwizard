@@ -31,6 +31,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                 };
 
                 img.onload = () => {
+                    console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
                     onImageLoad(img);
                 };
 
@@ -68,6 +69,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
             if (file) {
+                console.log('[ImageDropzone] File selected:', file.name, file.type, file.size, 'bytes');
                 loadImage(file);
             }
         },

@@ -167,14 +167,14 @@ export function TubeSelector({
 
                             {/* Paint info */}
                             <div className="min-w-0 flex-1">
-                                <div className="text-xs text-white truncate font-medium">
+                                <div className="text-xs text-white break-words font-medium">
                                     {paint.name}
                                 </div>
                                 <div className="flex items-center gap-1 mt-0.5">
                                     <span className={`text-[10px] px-1 rounded ${getOpacityColor(paint.opacity)}`}>
                                         {paint.opacity.charAt(0).toUpperCase()}
                                     </span>
-                                    <span className="text-[10px] text-gray-500 truncate">
+                                    <span className="text-[10px] text-gray-500 break-words">
                                         {paint.pigmentCodes.join(', ')}
                                     </span>
                                 </div>

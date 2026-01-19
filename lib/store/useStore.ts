@@ -203,7 +203,10 @@ export const useStore = create<ColorState>()(
             setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
             setHighlightMode: (highlightMode) => set({ highlightMode }),
-            setImage: (image) => set({ image }),
+            setImage: (image) => {
+                console.log('[useStore] setImage called with:', image ? `${image.width}x${image.height}` : 'null');
+                set({ image });
+            },
             setActiveTab: (activeTab) => set({ activeTab }),
             setPinnedColors: (pinnedColors) => set({ pinnedColors }),
             setValueScaleSettings: (valueScaleSettings) => set({ valueScaleSettings }),

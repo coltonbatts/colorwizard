@@ -40,7 +40,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
                 <span className="font-bold text-gray-100">
                   {match.number}
                 </span>
-                <span className="text-sm text-gray-400 truncate">
+                <span className="text-sm text-gray-400 break-words">
                   {match.name}
                 </span>
               </div>

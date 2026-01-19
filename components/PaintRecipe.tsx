@@ -253,7 +253,7 @@ export default function PaintRecipe({
                       className="w-4 h-4 rounded border border-gray-600 shrink-0"
                       style={{ backgroundColor: ingredient.pigment.hex }}
                     />
-                    <span className="font-medium text-gray-200 text-xs lg:text-sm flex-1 truncate">
+                    <span className="font-medium text-gray-200 text-xs lg:text-sm flex-1 break-words">
                       {ingredient.pigment.name}
                     </span>
                     {/* Percentage bar - hide on narrow screens if needed, or keep small */}

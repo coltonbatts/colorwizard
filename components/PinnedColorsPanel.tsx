@@ -102,7 +102,7 @@ export default function PinnedColorsPanel({
                                 className="flex-1 min-w-0 cursor-pointer"
                                 onClick={() => setExpandedId(expandedId === color.id ? null : color.id)}
                             >
-                                <h3 className="text-sm font-bold text-studio truncate leading-tight">
+                                <h3 className="text-sm font-bold text-studio leading-tight break-words">
                                     {color.label}
                                 </h3>
                                 <div className="flex items-center gap-2 text-[10px] font-mono text-studio-dim mt-0.5">

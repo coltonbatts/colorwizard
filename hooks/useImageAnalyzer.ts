@@ -5,7 +5,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { wrap, Remote } from 'comlink';
+import { type Remote } from 'comlink';
+import { getImageProcessorWorker } from '@/lib/workers';
 import type { ImageProcessorWorker } from '@/lib/workers/imageProcessor.worker';
 import { computeValueScale, ValueScaleResult } from '@/lib/valueScale';
 import { ValueScaleSettings } from '@/lib/types/valueScale';
@@ -71,25 +72,8 @@ export interface UseImageAnalyzerReturn {
 
 const MAX_PROCESS_DIM = 1000;
 
-// Singleton worker instance to avoid recreating it
-let workerInstance: Remote<ImageProcessorWorker> | null = null;
-let workerPromise: Promise<Remote<ImageProcessorWorker>> | null = null;
-
 async function getWorker(): Promise<Remote<ImageProcessorWorker>> {
-    if (workerInstance) return workerInstance;
-
-    if (workerPromise) return workerPromise;
-
-    workerPromise = (async () => {
-        const worker = new Worker(
-            new URL('@/lib/workers/imageProcessor.worker.ts', import.meta.url),
-            { type: 'module' }
-        );
-        workerInstance = wrap<ImageProcessorWorker>(worker);
-        return workerInstance;
-    })();
-
-    return workerPromise;
+    return getImageProcessorWorker();
 }
 
 export function useImageAnalyzer(
@@ -144,6 +128,7 @@ export function useImageAnalyzer(
         currentImageRef.current = image;
         setIsAnalyzing(true);
         setError(null);
+        console.log('[useImageAnalyzer] Starting analysis for image:', image.width, 'x', image.height);
 
         // Create a temporary canvas to read pixel data
         const canvas = document.createElement('canvas');
@@ -173,11 +158,13 @@ export function useImageAnalyzer(
         (async () => {
             try {
                 const worker = await getWorker();
+                console.log('[useImageAnalyzer] Got worker, sending image data...');
                 const result = await worker.processImageData(
                     imageData.data,
                     width,
                     height
                 );
+                console.log('[useImageAnalyzer] Worker processing complete');
 
                 // Check if this is still the current image (handle race conditions)
                 if (currentImageRef.current !== image) {
