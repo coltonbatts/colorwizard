@@ -15,7 +15,7 @@ export async function getColorName(
     hex: string,
     options: GetColorNameOptions = {}
 ): Promise<ColorNameMatch> {
-    const source = options.source || 'css';
+    const source = options.source || 'extended';
 
     // 1. Check Cache
     const cached = getCachedMatch(hex, source);
@@ -28,15 +28,15 @@ export async function getColorName(
         case 'xkcd':
             dataset = xkcdColors;
             break;
+        case 'css':
+            dataset = cssColors;
+            break;
         case 'extended':
+        default:
             if (!extendedColorsCache) {
                 extendedColorsCache = await loadExtendedColors();
             }
             dataset = extendedColorsCache;
-            break;
-        case 'css':
-        default:
-            dataset = cssColors;
             break;
     }
 

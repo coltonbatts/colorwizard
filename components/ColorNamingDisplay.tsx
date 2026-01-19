@@ -10,7 +10,7 @@ interface ColorNamingDisplayProps {
 }
 
 export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
-    const [source, setSource] = useState<ColorSource>('css');
+    const [source, setSource] = useState<ColorSource>('extended');
     const [match, setMatch] = useState<ColorNameMatch | null>(null);
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState<'name' | 'hex' | null>(null);
@@ -73,21 +73,10 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                 </div>
 
                 <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-studio-dim uppercase font-black tracking-widest mb-1">Source</span>
-                    <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
-                        {(['css', 'xkcd', 'extended'] as ColorSource[]).map((s) => (
-                            <button
-                                key={s}
-                                onClick={() => setSource(s)}
-                                className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${source === s
-                                    ? 'bg-white text-blue-600 shadow-sm scale-105'
-                                    : 'text-studio-muted hover:text-studio'
-                                    }`}
-                            >
-                                {s}
-                            </button>
-                        ))}
-                    </div>
+                    <span className="text-[10px] text-studio-dim uppercase font-black tracking-widest mb-1">Database</span>
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">
+                        Extended
+                    </span>
                 </div>
             </div>
 
