@@ -359,42 +359,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       ctx.restore()
     }
 
-    // Draw HUD
-    ctx.save()
-    ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset transforms for HUD
-    const HUD_X = 15, HUD_Y = 15, HUD_WIDTH = 190, HUD_HEIGHT = 80
-    const cornerRadius = 16
-
-    // HUD Background (Light Glass)
-    ctx.beginPath()
-    ctx.roundRect(HUD_X, HUD_Y, HUD_WIDTH, HUD_HEIGHT, cornerRadius)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)'
-    ctx.lineWidth = 1
-    ctx.stroke()
-
-    ctx.fillStyle = '#1d1d1f' // Apple black
-    ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    ctx.letterSpacing = '1px'
-    ctx.fillText('VIEW MODES', HUD_X + 15, HUD_Y + 20)
-
-    ctx.font = '500 10px -apple-system, BlinkMacSystemFont, sans-serif'
-    ctx.letterSpacing = '0px'
-
-    // Value Overlay line
-    ctx.fillStyle = valueScaleSettings?.enabled ? '#0071e3' : '#86868b'
-    ctx.fillText(`${valueScaleSettings?.enabled ? '●' : '○'} VALUE OVERLAY [V]`, HUD_X + 15, HUD_Y + 38)
-
-    // Split View line
-    ctx.fillStyle = splitMode ? '#0071e3' : '#86868b'
-    ctx.fillText(`${splitMode ? '●' : '○'} SPLIT VIEW [S]`, HUD_X + 15, HUD_Y + 52)
-
-    // Grid line
-    ctx.fillStyle = gridEnabled ? '#0071e3' : '#86868b'
-    ctx.fillText(`${gridEnabled ? '●' : '○'} GRID OVERLAY [G]`, HUD_X + 15, HUD_Y + 66)
-    ctx.restore()
-
     // Restore context state
     ctx.restore()
   }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings, valueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep])
@@ -934,6 +898,17 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             isActualSizeEnabled={isActualSizeEnabled}
             isGrayscale={isGrayscale}
             onToggleGrayscale={() => setIsGrayscale(!isGrayscale)}
+            valueOverlayEnabled={valueScaleSettings?.enabled || false}
+            onToggleValueOverlay={() => {
+              if (props.onValueScaleChange && props.valueScaleSettings) {
+                props.onValueScaleChange({
+                  ...props.valueScaleSettings,
+                  enabled: !props.valueScaleSettings.enabled
+                })
+              }
+            }}
+            splitViewEnabled={splitMode}
+            onToggleSplitView={() => setSplitMode(!splitMode)}
             minZoom={MIN_ZOOM}
             maxZoom={MAX_ZOOM}
           />
@@ -1012,6 +987,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               image={image}
               canvasSettings={props.canvasSettings}
             />
+          </div>
+
+          <div className="mt-2 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+            Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • V: Value • S: Split • G: Grid
           </div>
 
           {/* Bottom Controls */}

@@ -22,6 +22,14 @@ interface ZoomControlsBarProps {
     onActualSize: () => void;
     /** Whether actual size button is enabled */
     isActualSizeEnabled: boolean;
+    /** Whether value overlay is enabled */
+    valueOverlayEnabled: boolean;
+    /** Toggle value overlay */
+    onToggleValueOverlay: () => void;
+    /** Whether split view is enabled */
+    splitViewEnabled: boolean;
+    /** Toggle split view */
+    onToggleSplitView: () => void;
     /** Minimum zoom level */
     minZoom?: number;
     /** Maximum zoom level */
@@ -37,6 +45,10 @@ export default function ZoomControlsBar({
     isActualSizeEnabled,
     isGrayscale,
     onToggleGrayscale,
+    valueOverlayEnabled,
+    onToggleValueOverlay,
+    splitViewEnabled,
+    onToggleSplitView,
     minZoom = 0.1,
     maxZoom = 10,
 }: ZoomControlsBarProps) {
@@ -83,6 +95,26 @@ export default function ZoomControlsBar({
             </div>
             <div className="flex items-center gap-2">
                 <button
+                    onClick={onToggleValueOverlay}
+                    className={`px-3 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${valueOverlayEnabled
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100 shadow-sm'
+                        }`}
+                    title="Toggle Value Overlay (V)"
+                >
+                    Value
+                </button>
+                <button
+                    onClick={onToggleSplitView}
+                    className={`px-3 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${splitViewEnabled
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100 shadow-sm'
+                        }`}
+                    title="Toggle Split View (S)"
+                >
+                    Split
+                </button>
+                <button
                     onClick={onToggleGrayscale}
                     className={`px-3 h-8 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${isGrayscale
                         ? 'bg-blue-600 text-white shadow-lg'
@@ -92,9 +124,6 @@ export default function ZoomControlsBar({
                 >
                     Gray
                 </button>
-            </div>
-            <div className="text-studio-dim text-[10px] font-bold uppercase tracking-widest hidden md:block">
-                Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit
             </div>
         </div>
     );
