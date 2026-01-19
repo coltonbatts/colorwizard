@@ -19,6 +19,7 @@ import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { ValueScaleResult } from '@/lib/valueScale'
+import ColorNamingDisplay from './ColorNamingDisplay'
 
 
 interface ColorPanelProps {
@@ -99,6 +100,11 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             >
               <span className="text-lg">⛶</span>
             </button>
+          </div>
+
+          {/* Color Naming Display */}
+          <div className="w-full">
+            <ColorNamingDisplay hex={hex} />
           </div>
 
           {/* Hero Info - Now below the swatch for max width */}

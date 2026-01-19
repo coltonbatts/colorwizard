@@ -80,6 +80,10 @@ Find the perfect embroidery thread colors with our comprehensive DMC floss datab
 - **Top 5 Matches**: Displays the closest matching floss colors with similarity percentages
 - **Detailed Information**: Shows DMC number, color name, hex code, and visual swatch
 - **Instant Results**: Real-time color matching as you sample colors from your image
+- **Color Naming [NEW]**:
+  - Tiered dataset strategy: CSS, XKCD, and Extended datasets
+  - Perceptual matching in CIELAB space using Delta E
+  - Lazy loading for the extended (30k+) color dataset
 
 Perfect for:
 
@@ -353,6 +357,10 @@ This project is licensed under the MIT License.
 - Limited palette approach based on the Zorn palette concept
 - Canvas interaction patterns from modern image editing applications
 - DMC color data sourced from the [CrossStitchCreator](https://github.com/adrianj/CrossStitchCreator) project
+- Color names:
+  - CSS standard colors
+  - XKCD color survey dataset
+  - Extended names from [meodai/color-names](https://github.com/meodai/color-names)
 
 ## Roadmap
 
