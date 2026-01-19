@@ -13,10 +13,44 @@ interface PaletteTabProps {
     onPaletteChange?: (brandId: string, lineId: string, paintIds: string[]) => void
 }
 
+const TAB_STORAGE_KEY = 'colorwizard-palette-tab-state'
+
 export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
-    const [selectedBrandId, setSelectedBrandId] = useState<string>()
-    const [selectedLineId, setSelectedLineId] = useState<string>()
-    const [selectedPaintIds, setSelectedPaintIds] = useState<string[]>([])
+    // Load state from localStorage on mount
+    const [selectedBrandId, setSelectedBrandId] = useState<string | undefined>(() => {
+        if (typeof window === 'undefined') return undefined
+        try {
+            const saved = localStorage.getItem(TAB_STORAGE_KEY)
+            return saved ? JSON.parse(saved).brandId : undefined
+        } catch { return undefined }
+    })
+    const [selectedLineId, setSelectedLineId] = useState<string | undefined>(() => {
+        if (typeof window === 'undefined') return undefined
+        try {
+            const saved = localStorage.getItem(TAB_STORAGE_KEY)
+            return saved ? JSON.parse(saved).lineId : undefined
+        } catch { return undefined }
+    })
+    const [selectedPaintIds, setSelectedPaintIds] = useState<string[]>(() => {
+        if (typeof window === 'undefined') return []
+        try {
+            const saved = localStorage.getItem(TAB_STORAGE_KEY)
+            return saved ? JSON.parse(saved).paintIds || [] : []
+        } catch { return [] }
+    })
+
+    // Save to localStorage when selection changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify({
+                brandId: selectedBrandId,
+                lineId: selectedLineId,
+                paintIds: selectedPaintIds
+            }))
+        } catch (e) {
+            console.error('Failed to save palette tab state', e)
+        }
+    }, [selectedBrandId, selectedLineId, selectedPaintIds])
 
     useEffect(() => {
         if (selectedBrandId && selectedLineId && onPaletteChange) {
@@ -70,8 +104,12 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
             {/* Quick Actions */}
             <div className="flex gap-2">
                 <button
-                    onClick={() => setSelectedPaintIds([])}
-                    disabled={selectedPaintIds.length === 0}
+                    onClick={() => {
+                        setSelectedBrandId(undefined)
+                        setSelectedLineId(undefined)
+                        setSelectedPaintIds([])
+                    }}
+                    disabled={!selectedBrandId && !selectedLineId && selectedPaintIds.length === 0}
                     className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-studio-dim hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     Clear Selection

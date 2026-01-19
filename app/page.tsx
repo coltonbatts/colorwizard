@@ -73,15 +73,6 @@ export default function Home() {
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
-  const [sessionColors, setSessionColors] = useState<SessionColor[]>([])
-
-  // Load session colors from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('colorwizard-session-palette')
-      if (saved) setSessionColors(JSON.parse(saved))
-    } catch { }
-  }, [])
 
   // Resize logic
   const isResizing = useRef(false)
@@ -177,13 +168,6 @@ export default function Home() {
   // Session palette add handler
   const handleAddToSession = (color: { hex: string; rgb: { r: number; g: number; b: number } }) => {
     addToSession(color.hex, color.rgb)
-    // Force refresh session colors display
-    setTimeout(() => {
-      try {
-        const saved = localStorage.getItem('colorwizard-session-palette')
-        if (saved) setSessionColors(JSON.parse(saved))
-      } catch { }
-    }, 100)
   }
 
   // Session color select handler
@@ -390,8 +374,8 @@ export default function Home() {
             <button
               key={tab.id}
               className={`flex-1 min-w-0 py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-2 ${activeTab === tab.id
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
-                  : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
+                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
                 }`}
               onClick={() => setActiveTab(tab.id)}
               title={`${tab.tooltip} (${index + 1})`}
@@ -401,8 +385,8 @@ export default function Home() {
           ))}
           <button
             className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-3 ${activeTab === 'pinned'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
-                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
             onClick={() => setActiveTab('pinned')}
           >
@@ -410,8 +394,8 @@ export default function Home() {
           </button>
           <button
             className={`py-3 text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap px-3 ${activeTab === 'cards'
-                ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/30'
-                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+              ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/30'
+              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
               }`}
             onClick={() => setActiveTab('cards')}
           >
