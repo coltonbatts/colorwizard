@@ -476,6 +476,33 @@ body::before {
         --sidebar-collapsed-width: 0;
     }
 
+    /* ========== MOBILE HERO DROPZONE ========== */
+    /* When showing the initial dropzone (no image), expand to fill screen */
+
+    .mobile-hero-dropzone {
+        /* Override parent constraints for hero state */
+        min-height: 70vh;
+        min-height: 70dvh;
+        flex: 1 1 auto !important;
+    }
+
+    /* When dropzone is visible, let its parent container expand */
+    main.flex>div:first-child:has(.mobile-hero-dropzone) {
+        flex: 1 1 auto !important;
+        max-height: none !important;
+    }
+
+    /* Hide the sidebar/controls area when dropzone is showing */
+    main.flex:has(.mobile-hero-dropzone)>div:last-child {
+        display: none !important;
+    }
+
+    /* Hide toolbar on mobile when dropzone is visible */
+    /* Target only the direct toolbar container, not descendant elements */
+    main.flex>div:first-child>.mb-4:first-child {
+        display: none !important;
+    }
+
     /* Prevent body scroll when interacting with controls */
     body {
         overflow: hidden;
