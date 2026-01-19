@@ -16,6 +16,7 @@ import CollapsibleSidebar from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import ProcessSlider from '@/components/ProcessSlider'
+import MyCardsPanel from '@/components/MyCardsPanel'
 import { useStore } from '@/lib/store/useStore'
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences'
 import { useCallback } from 'react'
@@ -276,6 +277,12 @@ export default function Home() {
           >
             Pinned <span className="text-[10px] bg-studio text-white px-1.5 py-0.5 rounded-md ml-1 font-mono">{pinnedColors.length}</span>
           </button>
+          <button
+            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'cards' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50/30' : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'}`}
+            onClick={() => setActiveTab('cards')}
+          >
+            Cards
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden relative">
@@ -319,7 +326,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'pinned' ? (
             <div className="absolute inset-0 overflow-y-auto">
               <PinnedColorsPanel
                 pinnedColors={pinnedColors}
@@ -330,7 +337,11 @@ export default function Home() {
                 onSelect={(rgb: { r: number; g: number; b: number }) => setActiveHighlightColor(rgb)}
               />
             </div>
-          )}
+          ) : activeTab === 'cards' ? (
+            <div className="absolute inset-0 overflow-y-auto">
+              <MyCardsPanel />
+            </div>
+          ) : null}
         </div>
       </CollapsibleSidebar>
 

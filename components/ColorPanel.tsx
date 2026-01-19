@@ -9,14 +9,17 @@ import FullScreenOverlay from './FullScreenOverlay'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
 import ValueHistogram from './ValueHistogram'
+import ColorCardModal from './ColorCardModal'
 import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
+import { ColorCard } from '@/lib/types/colorCard'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { Palette } from '@/lib/types/palette'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { ValueScaleResult } from '@/lib/valueScale'
+
 
 interface ColorPanelProps {
   sampledColor: {
@@ -49,6 +52,9 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const [label, setLabel] = useState('')
   const [isPinning, setIsPinning] = useState(false)
   const [showColorFullScreen, setShowColorFullScreen] = useState(false)
+  const [showCardModal, setShowCardModal] = useState(false)
+  const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
+
 
   if (!sampledColor) {
     return (
@@ -142,6 +148,26 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 ) : (
                   <><span>📌</span> Pin Color</>
                 )}
+              </button>
+              <button
+                onClick={() => {
+                  const dmc = findClosestDMCColors(rgb, 5)
+                  const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
+                  const newCard: ColorCard = {
+                    id: crypto.randomUUID(),
+                    name: label.trim() || `Color ${hex}`,
+                    createdAt: Date.now(),
+                    color: { hex, rgb, hsl, luminance },
+                    valueStep: sampledColor.valueMetadata?.step,
+                    dmcMatches: dmc,
+                    paintMatches: [], // Paint matches not computed at this point for MVP
+                  }
+                  setPendingCard(newCard)
+                  setShowCardModal(true)
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg"
+              >
+                <span>🎴</span> Make Card
               </button>
             </div>
 
@@ -471,6 +497,18 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         isOpen={showColorFullScreen}
         onClose={() => setShowColorFullScreen(false)}
         backgroundColor={hex}
+      />
+
+      {/* Color Card Modal */}
+      <ColorCardModal
+        isOpen={showCardModal}
+        onClose={() => {
+          setShowCardModal(false)
+          setPendingCard(null)
+        }}
+        card={pendingCard}
+        isNewCard={true}
+        onCardSaved={() => setLabel('')}
       />
     </div>
   )

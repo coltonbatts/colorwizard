@@ -6,8 +6,8 @@ interface CollapsibleSidebarProps {
     collapsed: boolean
     onToggle: () => void
     children: ReactNode
-    activeTab?: 'inspect' | 'shopping' | 'pinned' | 'stages'
-    onTabChange?: (tab: 'inspect' | 'shopping' | 'pinned' | 'stages') => void
+    activeTab?: 'inspect' | 'shopping' | 'pinned' | 'stages' | 'cards'
+    onTabChange?: (tab: 'inspect' | 'shopping' | 'pinned' | 'stages' | 'cards') => void
     pinnedCount?: number
     width?: number
 }

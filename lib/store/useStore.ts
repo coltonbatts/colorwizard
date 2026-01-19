@@ -37,7 +37,7 @@ interface ColorState {
     highlightTolerance: number
     highlightMode: 'solid' | 'heatmap'
     image: HTMLImageElement | null
-    activeTab: 'inspect' | 'shopping' | 'pinned' | 'stages'
+    activeTab: 'inspect' | 'shopping' | 'pinned' | 'stages' | 'cards'
     pinnedColors: PinnedColor[]
     valueScaleSettings: ValueScaleSettings
     histogramBins: number[]
