@@ -18,6 +18,7 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
     useEffect(() => {
         let active = true;
         const fetchName = async () => {
+            setMatch(null);
             setLoading(true);
             try {
                 const result = await getColorName(hex, { source });
@@ -79,8 +80,8 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                                 key={s}
                                 onClick={() => setSource(s)}
                                 className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${source === s
-                                        ? 'bg-white text-blue-600 shadow-sm scale-105'
-                                        : 'text-studio-muted hover:text-studio'
+                                    ? 'bg-white text-blue-600 shadow-sm scale-105'
+                                    : 'text-studio-muted hover:text-studio'
                                     }`}
                             >
                                 {s}

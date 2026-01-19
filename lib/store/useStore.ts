@@ -71,12 +71,14 @@ interface ColorState {
 
     // Transform State (zoom/pan)
     transformState: TransformState
+    lastSampleTime: number
 
     // Modal State
     showCanvasSettingsModal: boolean
 
     // Actions
     setSampledColor: (color: ColorState['sampledColor']) => void
+    setLastSampleTime: (time: number) => void
     setActiveHighlightColor: (color: ColorState['activeHighlightColor']) => void
     setHighlightTolerance: (tolerance: number) => void
     setHighlightMode: (mode: ColorState['highlightMode']) => void
@@ -182,6 +184,7 @@ export const useStore = create<ColorState>()(
 
             // Transform State
             transformState: DEFAULT_TRANSFORM_STATE,
+            lastSampleTime: 0,
 
             // Modal State
             showCanvasSettingsModal: false,
@@ -189,11 +192,14 @@ export const useStore = create<ColorState>()(
             setSampledColor: (sampledColor) => {
                 const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
                 if (isMobile && sampledColor) {
-                    set({ sampledColor, sidebarCollapsed: false })
+                    set({ sampledColor, sidebarCollapsed: false, lastSampleTime: Date.now() })
+                } else if (sampledColor) {
+                    set({ sampledColor, lastSampleTime: Date.now() })
                 } else {
                     set({ sampledColor })
                 }
             },
+            setLastSampleTime: (lastSampleTime) => set({ lastSampleTime }),
             setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
             setHighlightMode: (highlightMode) => set({ highlightMode }),

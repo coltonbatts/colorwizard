@@ -64,6 +64,7 @@ export default function Home() {
 
     // Modal state
     showCanvasSettingsModal, setShowCanvasSettingsModal,
+    lastSampleTime
   } = useStore()
 
   // Breakdown step derived for ProcessSlider
@@ -298,6 +299,7 @@ export default function Home() {
                 activePalette={activePalette}
                 histogramBins={histogramBins}
                 valueScaleResult={valueScaleResult}
+                lastSampleTime={lastSampleTime}
               />
             </div>
           ) : activeTab === 'shopping' ? (

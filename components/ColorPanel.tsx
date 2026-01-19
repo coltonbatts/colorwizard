@@ -42,12 +42,13 @@ interface ColorPanelProps {
   activePalette?: Palette
   histogramBins?: number[]
   valueScaleResult?: ValueScaleResult | null
+  lastSampleTime?: number
 }
 
 type Tab = 'painter' | 'thread'
 type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies' | 'valueScale'
 
-export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette, histogramBins, valueScaleResult }: ColorPanelProps) {
+export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette, histogramBins, valueScaleResult, lastSampleTime }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
   const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
   const [label, setLabel] = useState('')
@@ -104,7 +105,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
 
           {/* Color Naming Display */}
           <div className="w-full">
-            <ColorNamingDisplay hex={hex} />
+            <ColorNamingDisplay hex={hex} key={lastSampleTime} />
           </div>
 
           {/* Hero Info - Now below the swatch for max width */}

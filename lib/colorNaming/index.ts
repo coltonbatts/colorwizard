@@ -19,7 +19,7 @@ export async function getColorName(
 
     // 1. Check Cache
     const cached = getCachedMatch(hex, source);
-    if (cached) return cached;
+    if (cached) return { ...cached };
 
     // 2. Select Dataset
     let dataset: Record<string, string>;
