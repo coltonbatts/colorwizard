@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 
 // New tab type matching the store
-type TabType = 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards'
+type TabType = 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -76,6 +76,16 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
                 <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
                 <path d="M8.5 2h7" />
                 <path d="M7 16h10" />
+            </svg>
+        )
+    },
+    {
+        id: 'library',
+        label: 'Library',
+        tooltip: 'Paint Library',
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
             </svg>
         )
     },

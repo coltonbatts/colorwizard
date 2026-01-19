@@ -20,6 +20,7 @@ import OilMixTab from '@/components/tabs/OilMixTab'
 import PaletteTab from '@/components/tabs/PaletteTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
 import AdvancedTab from '@/components/tabs/AdvancedTab'
+import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
 
@@ -127,7 +128,7 @@ export default function Home() {
         if (sidebarCollapsed) toggleSidebar()
       }
 
-      // 1-7 for tab switching
+      // 1-8 for tab switching
       const tabKeys: { [key: string]: TabType } = {
         '1': 'sample',
         '2': 'oilmix',
@@ -136,6 +137,7 @@ export default function Home() {
         '5': 'advanced',
         '6': 'pinned',
         '7': 'cards',
+        '8': 'library',
       }
       if (tabKeys[e.key]) {
         e.preventDefault()
@@ -238,6 +240,12 @@ export default function Home() {
         )
       case 'cards':
         return <MyCardsPanel />
+      case 'library':
+        return (
+          <PaintLibraryTab
+            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+          />
+        )
       default:
         return null
     }

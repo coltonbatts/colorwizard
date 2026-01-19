@@ -33,6 +33,11 @@ export type Permanence =
  */
 export type Series = 1 | 2 | 3 | 4 | 5 | 6;
 
+/**
+ * Paint medium type.
+ */
+export type Medium = 'oil' | 'acrylic' | 'watercolor' | 'gouache' | 'casein' | 'encaustic';
+
 // ============================================================================
 // Spectral / Behavior Data (for future accuracy improvements)
 // ============================================================================
@@ -154,6 +159,12 @@ export interface Paint {
      * Most paints will NOT have this until measured.
      */
     behavior?: PaintBehavior;
+
+    /**
+     * Paint medium (oil, acrylic, etc.).
+     * Optional - inferred from line if not specified.
+     */
+    medium?: Medium;
 }
 
 /**

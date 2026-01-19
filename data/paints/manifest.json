@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2026-01-19",
+    "description": "Paint data catalog manifest. Lists all paint data sources with version tracking and checksums.",
+    "sources": [
+        {
+            "path": "winsor-newton/winton.json",
+            "brand": "winsor-newton",
+            "line": "winton",
+            "medium": "oil",
+            "checksum": "sha256:750b63e1ead12b0ac69d09a271584fe9ab3a1e8ddee905b22cc797756b38cf91",
+            "paintCount": 31,
+            "addedAt": "2026-01-19",
+            "source": "manual"
+        }
+    ]
+}

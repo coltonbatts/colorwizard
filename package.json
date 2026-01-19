@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest"
+    "test": "vitest",
+    "validate:paints": "npx ts-node --esm scripts/validate-paints.ts"
   },
   "dependencies": {
     "comlink": "^4.4.2",
