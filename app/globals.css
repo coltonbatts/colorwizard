@@ -470,7 +470,7 @@ body::before {
 
     /* Mobile CSS Variables */
     :root {
-        --mobile-preview-height: 38vh;
+        --mobile-preview-height: 50vh;
         --mobile-touch-target: 44px;
         --sidebar-width: 100%;
         --sidebar-collapsed-width: 0;
@@ -484,12 +484,14 @@ body::before {
         min-height: 70vh;
         min-height: 70dvh;
         flex: 1 1 auto !important;
+        width: 100%;
     }
 
     /* When dropzone is visible, let its parent container expand */
     main.flex>div:first-child:has(.mobile-hero-dropzone) {
         flex: 1 1 auto !important;
         max-height: none !important;
+        padding: 0 !important;
     }
 
     /* Hide the sidebar/controls area when dropzone is showing */
@@ -497,9 +499,13 @@ body::before {
         display: none !important;
     }
 
-    /* Hide toolbar on mobile when dropzone is visible */
-    /* Target only the direct toolbar container, not descendant elements */
-    main.flex>div:first-child>.mb-4:first-child {
+    /* Hide resize handle when dropzone is visible */
+    main.flex:has(.mobile-hero-dropzone)>.w-1\.5 {
+        display: none !important;
+    }
+
+    /* Hide toolbar on mobile ONLY when dropzone is visible */
+    main.flex:has(.mobile-hero-dropzone)>div:first-child>.mb-4:first-child {
         display: none !important;
     }
 
@@ -516,15 +522,17 @@ body::before {
         flex-direction: column !important;
         height: 100vh;
         height: 100dvh;
+        width: 100% !important;
         /* Dynamic viewport for mobile Safari */
     }
 
-    /* Preview area: fixed at top ~38% */
+    /* Preview area: fixed at top ~50% for better image visibility */
     main.flex>div:first-child {
         flex: 0 0 var(--mobile-preview-height) !important;
         max-height: var(--mobile-preview-height);
-        padding: 0.75rem !important;
+        padding: 0.5rem !important;
         overflow: hidden;
+        width: 100% !important;
     }
 
     /* Toolbar margin reduction on mobile */
@@ -637,7 +645,7 @@ body::before {
         display: none !important;
     }
 
-    /* Wordmark always hidden on mobile */
+    /* Wordmark always hidden on mobile (in toolbar) */
     main .mr-4.pointer-events-none {
         display: none !important;
     }
@@ -645,6 +653,49 @@ body::before {
     /* Divider lines hidden on mobile */
     main .h-8.w-px,
     main .w-px.h-6 {
+        display: none !important;
+    }
+
+    /* ========== CANVAS CONTROLS MOBILE ========== */
+    /* Hide GridControlsPanel completely on mobile - too much space */
+    [class*="backdrop-blur-md"][class*="p-3"][class*="rounded-2xl"][class*="mb-4"] {
+        display: none !important;
+    }
+
+    /* Make ZoomControlsBar more compact on mobile */
+    [class*="justify-between"][class*="mb-2"][class*="px-2"] {
+        flex-wrap: wrap !important;
+        gap: 0.25rem !important;
+        margin-bottom: 0.25rem !important;
+        padding: 0.25rem !important;
+    }
+
+    /* Smaller zoom buttons on mobile */
+    [class*="justify-between"][class*="mb-2"][class*="px-2"] button {
+        height: 28px !important;
+        min-height: 28px !important;
+        padding: 0 0.5rem !important;
+        font-size: 11px !important;
+    }
+
+    /* Smaller zoom display on mobile */
+    [class*="justify-between"][class*="mb-2"][class*="px-2"] .w-20 {
+        width: 50px !important;
+        font-size: 11px !important;
+    }
+
+    /* Hide extra canvas controls on mobile - just keep zoom in/out and fit */
+    [class*="justify-between"][class*="mb-2"][class*="px-2"]>div:last-child {
+        display: none !important;
+    }
+
+    /* Hide keyboard shortcut hints on mobile */
+    [class*="text-center"][class*="text-gray-500"][class*="uppercase"] {
+        display: none !important;
+    }
+
+    /* Hide bottom controls (Load New Image, zoom stats) on mobile */
+    [class*="justify-between"][class*="mt-4"] {
         display: none !important;
     }
 
