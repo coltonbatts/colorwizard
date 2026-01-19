@@ -20,6 +20,7 @@ import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { ValueScaleResult } from '@/lib/valueScale'
 import ColorNamingDisplay from './ColorNamingDisplay'
+import { getColorName } from '@/lib/colorNaming'
 
 
 interface ColorPanelProps {
@@ -157,12 +158,23 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 )}
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const dmc = findClosestDMCColors(rgb, 5)
                   const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
+
+                  // Fetch descriptive name
+                  let descriptiveName = ''
+                  try {
+                    const nameMatch = await getColorName(hex)
+                    descriptiveName = nameMatch.name
+                  } catch (e) {
+                    console.error('Failed to get color name for card', e)
+                  }
+
                   const newCard: ColorCard = {
                     id: crypto.randomUUID(),
-                    name: label.trim() || `Color ${hex}`,
+                    name: label.trim() || descriptiveName || `Color ${hex}`,
+                    colorName: descriptiveName,
                     createdAt: Date.now(),
                     color: { hex, rgb, hsl, luminance },
                     valueStep: sampledColor.valueMetadata?.step,

@@ -25,6 +25,7 @@ export interface ColorCard {
         luminance: number
     }
     valueStep?: number
+    colorName?: string
     dmcMatches: DMCMatch[]
     paintMatches: PaintCardMatch[]
 }

@@ -13,7 +13,7 @@ interface ColorCardPreviewProps {
  */
 const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
     function ColorCardPreview({ card }, ref) {
-        const { color, name, dmcMatches, paintMatches, valueStep } = card
+        const { color, name, colorName, dmcMatches, paintMatches, valueStep } = card
 
         // Calculate contrast color for text
         const isDark = color.luminance < 0.5
@@ -28,15 +28,23 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
             >
                 {/* Large Color Swatch */}
                 <div
-                    className="w-full h-48 flex items-end p-6"
+                    className="w-full h-48 flex flex-col justify-end p-6"
                     style={{ backgroundColor: color.hex }}
                 >
                     <h2
-                        className="text-2xl font-black truncate max-w-full"
+                        className="text-2xl font-black truncate max-w-full leading-tight"
                         style={{ color: textColor }}
                     >
                         {name}
                     </h2>
+                    {colorName && (
+                        <p
+                            className="text-xs font-bold uppercase tracking-[0.2em] opacity-70 mt-1"
+                            style={{ color: textColor }}
+                        >
+                            {colorName}
+                        </p>
+                    )}
                 </div>
 
                 {/* Color Data Section */}
