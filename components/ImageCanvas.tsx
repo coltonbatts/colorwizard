@@ -151,6 +151,16 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const measureStartPointRef = useRef<{ x: number; y: number } | null>(null)
   const hasDraggedRef = useRef(false)
 
+  // Touch gesture state refs
+  const touchStateRef = useRef({
+    lastDistance: 0,
+    lastCenter: { x: 0, y: 0 },
+    isPinching: false,
+    touchStartTime: 0,
+    lastTapTime: 0,
+    touchStartPos: { x: 0, y: 0 },
+  })
+
   // Image dimensions after initial fit
   const [imageDrawInfo, setImageDrawInfo] = useState<{
     x: number
@@ -701,6 +711,208 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setIsPanning(false)
   }
 
+  // ============================================
+  // TOUCH EVENT HANDLERS (Mobile Support)
+  // ============================================
+
+  // Helper: Get distance between two touch points
+  const getTouchDistance = (t1: React.Touch, t2: React.Touch) => {
+    return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
+  }
+
+  // Helper: Get center point between two touches
+  const getTouchCenter = (t1: React.Touch, t2: React.Touch, rect: DOMRect, scaleX: number, scaleY: number) => {
+    return {
+      x: ((t1.clientX + t2.clientX) / 2 - rect.left) * scaleX,
+      y: ((t1.clientY + t2.clientY) / 2 - rect.top) * scaleY,
+    }
+  }
+
+  // Sample color from touch position (similar to sampleColor but for touch events)
+  const sampleColorFromTouch = useCallback((touch: React.Touch) => {
+    if (!canvasRef.current || !image) return
+
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const canvasX = (touch.clientX - rect.left) * scaleX
+    const canvasY = (touch.clientY - rect.top) * scaleY
+
+    const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
+    const r = pixelData[0]
+    const g = pixelData[1]
+    const b = pixelData[2]
+
+    if (pixelData[3] === 0) return
+
+    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+    const hsl = rgbToHsl(r, g, b)
+
+    let valueMetadata = undefined
+    if (valueScaleResult) {
+      const y = getRelativeLuminance(r, g, b)
+      const stepIdx = getStepIndex(y, valueScaleResult.thresholds)
+      const step = valueScaleResult.steps[stepIdx]
+
+      let percentile = 0
+      if (sortedLuminances) {
+        let low = 0
+        let high = sortedLuminances.length - 1
+        while (low <= high) {
+          const mid = (low + high) >> 1
+          if (sortedLuminances[mid] < y) {
+            low = mid + 1
+          } else {
+            high = mid - 1
+          }
+        }
+        percentile = low / sortedLuminances.length
+      }
+
+      valueMetadata = {
+        y,
+        step: stepIdx + 1,
+        range: [step.min, step.max] as [number, number],
+        percentile
+      }
+    }
+
+    onColorSample({
+      hex,
+      rgb: { r, g, b },
+      hsl,
+      valueMetadata
+    })
+  }, [image, valueScaleResult, sortedLuminances, onColorSample])
+
+  // Handle touch start
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const now = Date.now()
+    const touch = e.touches[0]
+
+    // Store touch start info
+    touchStateRef.current.touchStartTime = now
+    touchStateRef.current.touchStartPos = { x: touch.clientX, y: touch.clientY }
+
+    if (e.touches.length === 2) {
+      // Two fingers: init pinch/pan
+      e.preventDefault()
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width
+      const scaleY = canvas.height / rect.height
+
+      touchStateRef.current.isPinching = true
+      touchStateRef.current.lastDistance = getTouchDistance(e.touches[0], e.touches[1])
+      touchStateRef.current.lastCenter = getTouchCenter(e.touches[0], e.touches[1], rect, scaleX, scaleY)
+    } else if (e.touches.length === 1) {
+      // Single finger: potential tap or pan
+      touchStateRef.current.isPinching = false
+      hasDraggedRef.current = false
+      dragStartRef.current = { x: touch.clientX, y: touch.clientY }
+    }
+  }, [image])
+
+  // Handle touch move  
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    if (e.touches.length === 2) {
+      // Two-finger gesture: pinch-to-zoom and pan
+      e.preventDefault()
+
+      const newDistance = getTouchDistance(e.touches[0], e.touches[1])
+      const newCenter = getTouchCenter(e.touches[0], e.touches[1], rect, scaleX, scaleY)
+
+      if (touchStateRef.current.isPinching && touchStateRef.current.lastDistance > 0) {
+        // Calculate zoom
+        const zoomDelta = newDistance / touchStateRef.current.lastDistance
+        const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * zoomDelta))
+
+        // Apply zoom centered on pinch point
+        const zoomRatio = targetZoom / zoomLevel
+        const newPanX = newCenter.x - (newCenter.x - panOffset.x) * zoomRatio
+        const newPanY = newCenter.y - (newCenter.y - panOffset.y) * zoomRatio
+
+        // Apply pan
+        const panDeltaX = newCenter.x - touchStateRef.current.lastCenter.x
+        const panDeltaY = newCenter.y - touchStateRef.current.lastCenter.y
+
+        setZoomLevel(targetZoom)
+        setPanOffset({ x: newPanX + panDeltaX, y: newPanY + panDeltaY })
+      }
+
+      touchStateRef.current.lastDistance = newDistance
+      touchStateRef.current.lastCenter = newCenter
+    } else if (e.touches.length === 1 && !touchStateRef.current.isPinching) {
+      // Single finger drag: check if we've moved enough to consider it a pan
+      const touch = e.touches[0]
+      const dist = Math.hypot(
+        touch.clientX - dragStartRef.current.x,
+        touch.clientY - dragStartRef.current.y
+      )
+
+      if (dist > DRAG_THRESHOLD) {
+        hasDraggedRef.current = true
+        // Pan the canvas
+        const deltaX = (touch.clientX - (lastPanPoint.current.x || touch.clientX)) * scaleX
+        const deltaY = (touch.clientY - (lastPanPoint.current.y || touch.clientY)) * scaleY
+        setPanOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }))
+      }
+      lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
+    }
+  }, [image, zoomLevel, panOffset])
+
+  // Handle touch end
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const now = Date.now()
+    const touchDuration = now - touchStateRef.current.touchStartTime
+
+    // Reset pinching state if all fingers lifted
+    if (e.touches.length === 0) {
+      touchStateRef.current.isPinching = false
+
+      // Check for taps (short duration, no significant drag)
+      if (touchDuration < 300 && !hasDraggedRef.current) {
+        const timeSinceLastTap = now - touchStateRef.current.lastTapTime
+
+        if (timeSinceLastTap < 300) {
+          // Double-tap: reset view
+          resetView()
+          touchStateRef.current.lastTapTime = 0
+        } else {
+          // Single tap: sample color (if not in measure mode)
+          if (!props.measureMode && e.changedTouches.length > 0) {
+            sampleColorFromTouch(e.changedTouches[0])
+          }
+          touchStateRef.current.lastTapTime = now
+        }
+      }
+    }
+
+    // Reset drag state
+    hasDraggedRef.current = false
+    lastPanPoint.current = { x: 0, y: 0 }
+  }, [image, props.measureMode, sampleColorFromTouch, resetView])
+
   // Draw value map overlay
   useEffect(() => {
     const canvas = valueMapCanvasRef.current
@@ -958,8 +1170,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               onContextMenu={(e) => e.preventDefault()}
-              className="absolute top-0 left-0 w-full h-full"
+              className="absolute top-0 left-0 w-full h-full touch-none"
               style={{ cursor: getCursorStyle() }}
             />
 

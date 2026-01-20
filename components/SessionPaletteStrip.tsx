@@ -36,6 +36,7 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editLabel, setEditLabel] = useState('')
     const [copied, setCopied] = useState<string | null>(null)
+    const [activePopup, setActivePopup] = useState<string | null>(null)
 
     // Save to localStorage when colors change
     useEffect(() => {
@@ -110,18 +111,31 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                     {colors.map((color) => (
                         <div
                             key={color.id}
-                            className="relative group shrink-0"
+                            className="relative shrink-0"
                         >
-                            {/* Swatch */}
+                            {/* Swatch - tap to toggle menu, double-tap to select */}
                             <button
-                                onClick={() => onColorSelect?.(color)}
-                                className="w-10 h-10 rounded-lg shadow-md border border-gray-200 hover:scale-110 transition-transform"
+                                onClick={() => {
+                                    // Toggle popup on single tap
+                                    setActivePopup(activePopup === color.id ? null : color.id)
+                                }}
+                                onDoubleClick={() => {
+                                    setActivePopup(null)
+                                    onColorSelect?.(color)
+                                }}
+                                className={`w-10 h-10 rounded-lg shadow-md border transition-all ${activePopup === color.id
+                                    ? 'border-blue-500 ring-2 ring-blue-300 scale-110'
+                                    : 'border-gray-200 hover:scale-110'
+                                    }`}
                                 style={{ backgroundColor: color.hex }}
-                                title={`${color.label}\n${color.hex}`}
+                                title="Tap for options, double-tap to select"
                             />
 
-                            {/* Hover menu */}
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity">
+                            {/* Action menu - visible when activePopup matches OR on hover (desktop) */}
+                            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 transition-opacity z-50 ${activePopup === color.id
+                                ? 'opacity-100 pointer-events-auto'
+                                : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+                                }`}>
                                 <div className="bg-gray-900 rounded-lg shadow-xl p-2 flex flex-col gap-1 min-w-[100px]">
                                     {/* Label */}
                                     {editingId === color.id ? (
@@ -194,4 +208,37 @@ export function useSessionPalette() {
         }
     }
     return { addColor }
+}
+
+// Hook to check if session colors exist (for parent layout padding)
+export function useHasSessionColors() {
+    const [hasColors, setHasColors] = useState(false)
+
+    useEffect(() => {
+        const checkColors = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY)
+                const colors = saved ? JSON.parse(saved) : []
+                setHasColors(colors.length > 0)
+            } catch {
+                setHasColors(false)
+            }
+        }
+
+        checkColors()
+
+        // Listen for storage changes (in case colors are updated)
+        const handleStorageChange = () => checkColors()
+        window.addEventListener('storage', handleStorageChange)
+
+        // Poll briefly to sync with component updates
+        const interval = setInterval(checkColors, 1000)
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange)
+            clearInterval(interval)
+        }
+    }, [])
+
+    return hasColors
 }

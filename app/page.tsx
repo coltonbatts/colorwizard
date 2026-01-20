@@ -12,7 +12,7 @@ import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
-import SessionPaletteStrip, { SessionColor, useSessionPalette } from '@/components/SessionPaletteStrip'
+import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
 
 // Tab content components
 import SampleTab from '@/components/tabs/SampleTab'
@@ -254,8 +254,11 @@ export default function Home() {
     }
   }
 
+  // Session palette check for layout padding
+  const hasSessionColors = useHasSessionColors()
+
   return (
-    <main className={`flex flex-col lg:flex-row h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''}`}>
+    <main className={`flex flex-col lg:flex-row h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 lg:pb-0' : ''}`}>
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 lg:p-3' : 'p-0 lg:p-6'}`}>
         {/* Compact Toolbar */}
         <div className="mb-4">
