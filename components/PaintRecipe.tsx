@@ -35,6 +35,25 @@ const QUALITY_COLORS = {
   Poor: { text: 'text-red-400', bg: 'bg-red-500' },
 }
 
+const HEURISTIC_WEIGHT_MAP: Record<string, number> = {
+  'mostly': 0.7,
+  'base': 0.6,
+  'moderate': 0.3,
+  'small amount': 0.15,
+  'touch': 0.05,
+  'tiny touch': 0.02,
+  'none': 0,
+}
+
+const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
+  'Titanium White': { hex: '#FDFDFD', id: 'titanium-white' },
+  'Ivory Black': { hex: '#0B0B0B', id: 'ivory-black' },
+  'Yellow Ochre': { hex: '#CC8E35', id: 'yellow-ochre' },
+  'Cadmium Red': { hex: '#E52B21', id: 'cadmium-red' },
+  'Phthalo Green': { hex: '#123524', id: 'phthalo-green' },
+  'Phthalo Blue': { hex: '#0F2E53', id: 'phthalo-blue' },
+}
+
 export default function PaintRecipe({
   hsl,
   targetHex,
@@ -52,12 +71,20 @@ export default function PaintRecipe({
   const showLoading = useDebouncedLoading(isLoading, 100)
 
   // Fallback recipe from HSL heuristics
-  const fallbackRecipe = generatePaintRecipe(hsl)
+  const heuristicRecipe = generatePaintRecipe(hsl)
 
   useEffect(() => {
     let cancelled = false
 
     async function solve() {
+      // If we're using catalog but no paints are selected, don't even try to solve
+      if (useCatalog && (!paintIds || paintIds.length === 0)) {
+        setIsLoading(false)
+        setSpectralRecipe(null)
+        setIsFallback(false)
+        return
+      }
+
       setIsLoading(true)
 
       // Build options based on mode
@@ -112,112 +139,102 @@ export default function PaintRecipe({
     }
   }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
 
-  // Use spectral recipe if available, otherwise use fallback
-  const recipe = spectralRecipe
-  const qualityColor = recipe ? QUALITY_COLORS[recipe.matchQuality] : null
+  // Map heuristic recipe to spectral format for high-fidelity rendering
+  const getMappedHeuristic = (): SpectralRecipe => {
+    const rawIngredients = heuristicRecipe.colors.map(c => {
+      const pigmentInfo = HEURISTIC_PIGMENT_MAP[c.name] || { hex: '#888888', id: 'unknown' }
+      const weight = HEURISTIC_WEIGHT_MAP[c.amount] || 0.1
+      return {
+        pigment: {
+          id: pigmentInfo.id,
+          name: c.name,
+          hex: pigmentInfo.hex,
+          tintingStrength: 1.0,
+        },
+        weight,
+        percentage: c.amount,
+      }
+    })
+
+    const totalWeight = rawIngredients.reduce((sum, ing) => sum + ing.weight, 0)
+
+    return {
+      ingredients: rawIngredients.map(ing => ({
+        ...ing,
+        weight: ing.weight / totalWeight,
+        percentage: ing.percentage === 'none' ? '0%' : ing.percentage,
+      })).filter(ing => ing.weight > 0),
+      predictedHex: targetHex, // We assume heuristic is a reasonable match for UI purposes
+      error: 5.0, // Arbitrary "Fair" error
+      matchQuality: 'Fair',
+      steps: heuristicRecipe.steps,
+    }
+  }
+
+  // Determine which recipe to show
+  const recipe = spectralRecipe || getMappedHeuristic()
+
+  // Handle empty catalog state separately
+  const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
 
   return (
     <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700">
       <div className="flex items-center justify-between mb-3 lg:mb-4">
         <h3 className="text-lg lg:text-xl font-bold text-gray-100">Oil Paint Recipe</h3>
-        {isFallback && (
-          <span className="text-[10px] lg:text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 lg:py-1 rounded border border-yellow-500/30">
-            Basic Mode
+        {isFallback && !isEmptyCatalog && (
+          <span className="text-[10px] lg:text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 lg:py-1 rounded border border-blue-500/30">
+            Heuristic Match
           </span>
         )}
       </div>
 
-
-
       {showLoading ? (
         <SkeletonPaintRecipe />
-      ) : isFallback ? (
-        // Fallback to original HSL-based recipe
-        <>
-          <p className="text-sm text-gray-400 mb-6 italic border-l-2 border-gray-700 pl-3">
-            {fallbackRecipe.description}
+      ) : isEmptyCatalog ? (
+        <div className="py-8 px-4 text-center border-2 border-dashed border-gray-700 rounded-lg bg-gray-800/20">
+          <div className="text-3xl mb-3 opacity-50">🎨</div>
+          <p className="text-sm font-medium text-gray-300">No Paints Selected</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">
+            Select some paints from the Library tab to see a custom recipe.
           </p>
+        </div>
+      ) : (
+        // Always show the high-fidelity visualization
+        <>
+          <PuddleRecipeDisplay
+            ingredients={recipe.ingredients}
+            predictedHex={recipe.predictedHex}
+            targetHex={targetHex}
+            matchQuality={recipe.matchQuality}
+            error={recipe.error}
+          />
 
-          <div className="mb-4 lg:mb-6">
+          {/* Mixing Steps */}
+          <div className="mt-6 mb-4 lg:mb-6">
             <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
               Mixing Steps
             </h4>
             <ol className="list-decimal list-outside ml-4 space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm text-gray-300">
-              {fallbackRecipe.steps.map((step, i) => (
+              {recipe.steps.map((step, i) => (
                 <li
                   key={i}
                   dangerouslySetInnerHTML={{
-                    __html: step.replace(
-                      /\*\*(.*?)\*\*/g,
-                      '<strong class="text-white">$1</strong>'
-                    ),
+                    __html: step
+                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
                   }}
                 />
               ))}
             </ol>
           </div>
-
-          <div className="space-y-2 mb-4 lg:mb-6">
-            <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
-              Ingredients
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-              {fallbackRecipe.colors.map((color, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-gray-800/30 rounded border border-gray-800"
-                >
-                  <span className="font-medium text-gray-200 text-xs lg:text-sm">{color.name}</span>
-                  <span className="text-[10px] lg:text-xs text-gray-400 capitalize">{color.amount}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {fallbackRecipe.notes && (
-            <div className="p-3 bg-blue-900/20 border border-blue-800/50 rounded mb-4">
-              <p className="text-xs text-blue-200">
-                <strong>Note:</strong> {fallbackRecipe.notes}
-              </p>
-            </div>
-          )}
         </>
-      ) : (
-        // Spectral recipe with puddle visualization
-        recipe && (
-          <>
-            {/* Puddle Recipe Display */}
-            <PuddleRecipeDisplay
-              ingredients={recipe.ingredients}
-              predictedHex={recipe.predictedHex}
-              targetHex={targetHex}
-              matchQuality={recipe.matchQuality}
-              error={recipe.error}
-            />
-
-            {/* Mixing Steps */}
-            <div className="mt-6 mb-4 lg:mb-6">
-              <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
-                Mixing Steps
-              </h4>
-              <ol className="list-decimal list-outside ml-4 space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm text-gray-300">
-                {recipe.steps.map((step, i) => (
-                  <li
-                    key={i}
-                    dangerouslySetInnerHTML={{
-                      __html: step
-                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                    }}
-                  />
-                ))}
-              </ol>
-            </div>
-          </>
-        )
       )}
 
       <div className="mt-4 pt-4 border-t border-gray-700">
-        {useCatalog && paintIds && paintIds.length > 0 ? (
+        {isEmptyCatalog ? (
+          <p className="text-[10px] text-gray-500 italic">
+            Add paints to build your active palette.
+          </p>
+        ) : useCatalog && paintIds && paintIds.length > 0 ? (
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Paint Library:</span>
             <span className="text-xs text-blue-400 font-medium">
@@ -235,14 +252,16 @@ export default function PaintRecipe({
             )}
           </div>
         )}
-        <p className="text-xs text-gray-500">
-          {useCatalog && paintIds && paintIds.length > 0
-            ? 'Recipe uses only paints from your Paint Library selection'
-            : activePalette && !activePalette.isDefault
-              ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
-              : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
-          }
-        </p>
+        {!isEmptyCatalog && (
+          <p className="text-xs text-gray-500">
+            {useCatalog && paintIds && paintIds.length > 0
+              ? 'Recipe uses only paints from your Paint Library selection'
+              : activePalette && !activePalette.isDefault
+                ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
+                : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
+            }
+          </p>
+        )}
       </div>
     </div>
   )
