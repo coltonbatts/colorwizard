@@ -11,6 +11,7 @@ import PhotoshopColorWheel from '../PhotoshopColorWheel'
 import { Palette } from '@/lib/types/palette'
 import ErrorBoundary from '../ErrorBoundary'
 import { RecipeSolverErrorFallback } from '../errors/RecipeSolverErrorFallback'
+import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 
 interface OilMixTabProps {
     sampledColor: {
@@ -23,6 +24,11 @@ interface OilMixTabProps {
 }
 
 export default function OilMixTab({ sampledColor, activePalette, onColorSelect }: OilMixTabProps) {
+    // Get paint palette selection
+    const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
+    const selectedPaintIds = getSelectedPaintIds()
+    const hasPaintPalette = isUsingPaintPalette()
+
     if (!sampledColor) {
         return (
             <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
@@ -70,7 +76,13 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
                         />
                     )}
                 >
-                    <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
+                    <PaintRecipe
+                        hsl={hsl}
+                        targetHex={hex}
+                        activePalette={activePalette}
+                        useCatalog={hasPaintPalette}
+                        paintIds={hasPaintPalette ? selectedPaintIds : undefined}
+                    />
                 </ErrorBoundary>
             </section>
         </div>

@@ -9,6 +9,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { getCatalog, getPaints, getBrands } from '@/lib/paint/catalog'
 import type { Paint, PaintBrand, PaintLine, Opacity, Permanence, Medium } from '@/lib/paint/types/Paint'
+import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
+import PaletteIndicator from '../paint/PaletteIndicator'
+import PaletteSwitcher from '../paint/PaletteSwitcher'
+import SavePaletteModal from '../paint/SavePaletteModal'
 
 // ============================================================================
 // Types
@@ -21,6 +25,7 @@ interface FilterState {
     medium: Medium | null
     opacity: Opacity | null
     minPermanence: Permanence | null
+    showOnlySelected: boolean
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -29,7 +34,8 @@ const DEFAULT_FILTERS: FilterState = {
     lineId: null,
     medium: null,
     opacity: null,
-    minPermanence: null
+    minPermanence: null,
+    showOnlySelected: false
 }
 
 // ============================================================================
@@ -40,28 +46,46 @@ interface PaintCardProps {
     paint: Paint
     onSelect: (paint: Paint) => void
     isSelected: boolean
+    isInPalette: boolean
+    onTogglePalette: () => void
 }
 
-function PaintCard({ paint, onSelect, isSelected }: PaintCardProps) {
+function PaintCard({ paint, onSelect, isSelected, isInPalette, onTogglePalette }: PaintCardProps) {
     return (
         <button
-            onClick={() => onSelect(paint)}
+            onClick={(e) => {
+                // Toggle palette selection
+                onTogglePalette()
+                onSelect(paint)
+            }}
             className={`
-                group flex items-center gap-3 p-3 rounded-xl border transition-all text-left w-full
-                ${isSelected
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm'}
+                group flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full
+                ${isInPalette
+                    ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-200'
+                    : isSelected
+                        ? 'border-gray-300 bg-gray-50'
+                        : 'border-transparent bg-white hover:border-gray-200 hover:shadow-sm'}
             `}
         >
             {/* Color Swatch */}
-            <div
-                className="w-10 h-10 rounded-lg shadow-inner flex-shrink-0 border border-black/10"
-                style={{ backgroundColor: paint.hex }}
-            />
+            <div className="relative">
+                <div
+                    className={`w-10 h-10 rounded-lg shadow-inner flex-shrink-0 border transition-all ${isInPalette ? 'border-blue-400 ring-2 ring-blue-300' : 'border-black/10'}`}
+                    style={{ backgroundColor: paint.hex }}
+                />
+                {/* Selection checkmark */}
+                {isInPalette && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                            <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                    </div>
+                )}
+            </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">
+                <div className={`text-sm font-semibold truncate ${isInPalette ? 'text-blue-900' : 'text-gray-900'}`}>
                     {paint.name}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
@@ -209,6 +233,13 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
     const [selectedPaint, setSelectedPaint] = useState<Paint | null>(null)
     const [showFilters, setShowFilters] = useState(false)
 
+    // Palette modal states
+    const [showSaveModal, setShowSaveModal] = useState(false)
+    const [showSwitcher, setShowSwitcher] = useState(false)
+
+    // Paint palette store
+    const { selectedPaintIds, togglePaint, isPaintSelected } = usePaintPaletteStore()
+
     // Load catalog on mount
     useEffect(() => {
         async function load() {
@@ -239,6 +270,9 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
     // Filter paints
     const filteredPaints = useMemo(() => {
         return paints.filter(paint => {
+            // Show only selected filter
+            if (filters.showOnlySelected && !selectedPaintIds.includes(paint.id)) return false
+
             // Brand filter
             if (filters.brandId && paint.brandId !== filters.brandId) return false
 
@@ -270,7 +304,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
             return true
         })
-    }, [paints, filters])
+    }, [paints, filters, selectedPaintIds])
 
     // Update filter
     const updateFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -317,7 +351,36 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-white">
+            {/* Palette Indicator */}
+            <div className="relative">
+                <PaletteIndicator
+                    onSave={() => setShowSaveModal(true)}
+                    onSwitchClick={() => setShowSwitcher(!showSwitcher)}
+                />
+                <PaletteSwitcher
+                    isOpen={showSwitcher}
+                    onClose={() => setShowSwitcher(false)}
+                    onNewPalette={() => setShowSaveModal(true)}
+                />
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex border-b border-gray-100">
+                <button
+                    onClick={() => updateFilter('showOnlySelected', false)}
+                    className={`flex-1 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${!filters.showOnlySelected ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    All Paints ({paints.length})
+                </button>
+                <button
+                    onClick={() => updateFilter('showOnlySelected', true)}
+                    className={`flex-1 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${filters.showOnlySelected ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    My Palette ({selectedPaintIds.length})
+                </button>
+            </div>
+
             {/* Search Bar */}
             <div className="p-4 border-b border-gray-100 bg-gray-50/50">
                 <div className="relative">
@@ -470,6 +533,8 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                             paint={paint}
                             onSelect={setSelectedPaint}
                             isSelected={selectedPaint?.id === paint.id}
+                            isInPalette={isPaintSelected(paint.id)}
+                            onTogglePalette={() => togglePaint(paint.id)}
                         />
                     ))
                 )}
@@ -486,6 +551,12 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                     />
                 </div>
             )}
+
+            {/* Save Palette Modal */}
+            <SavePaletteModal
+                isOpen={showSaveModal}
+                onClose={() => setShowSaveModal(false)}
+            />
         </div>
     )
 }

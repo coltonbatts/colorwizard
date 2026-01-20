@@ -217,7 +217,14 @@ export default function PaintRecipe({
       )}
 
       <div className="mt-4 pt-4 border-t border-gray-700">
-        {activePalette && (
+        {useCatalog && paintIds && paintIds.length > 0 ? (
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Paint Library:</span>
+            <span className="text-xs text-blue-400 font-medium">
+              {paintIds.length} paint{paintIds.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+        ) : activePalette && (
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Palette:</span>
             <span className="text-xs text-blue-400 font-medium">{activePalette.name}</span>
@@ -229,9 +236,11 @@ export default function PaintRecipe({
           </div>
         )}
         <p className="text-xs text-gray-500">
-          {activePalette && !activePalette.isDefault
-            ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
-            : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
+          {useCatalog && paintIds && paintIds.length > 0
+            ? 'Recipe uses only paints from your Paint Library selection'
+            : activePalette && !activePalette.isDefault
+              ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
+              : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
           }
         </p>
       </div>
