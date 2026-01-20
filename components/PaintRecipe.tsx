@@ -6,6 +6,8 @@ import { getSolverWorker } from '@/lib/workers'
 import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
 import { SpectralRecipe } from '@/lib/spectral/types'
 import { Palette } from '@/lib/types/palette'
+import { SkeletonPaintRecipe } from '@/components/ui/SkeletonLoader'
+import { useDebouncedLoading } from '@/hooks/useDebounce'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
@@ -44,6 +46,9 @@ export default function PaintRecipe({
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isFallback, setIsFallback] = useState(false)
+
+  // Debounce loading state to prevent flicker on fast operations
+  const showLoading = useDebouncedLoading(isLoading, 100)
 
   // Fallback recipe from HSL heuristics
   const fallbackRecipe = generatePaintRecipe(hsl)
@@ -160,10 +165,8 @@ export default function PaintRecipe({
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-        </div>
+      {showLoading ? (
+        <SkeletonPaintRecipe />
       ) : isFallback ? (
         // Fallback to original HSL-based recipe
         <>

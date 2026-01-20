@@ -10,6 +10,8 @@ import { useCallback, useState } from 'react';
 export interface UseFileLoaderReturn {
     /** Whether a file is currently being dragged over */
     isDragging: boolean;
+    /** Whether an image is currently loading */
+    isLoading: boolean;
     /** Load an image from a File object */
     loadImage: (file: File) => void;
     /** Handle drag over event */
@@ -26,13 +28,16 @@ export function useFileLoader(
     onImageLoad: (img: HTMLImageElement) => void
 ): UseFileLoaderReturn {
     const [isDragging, setIsDragging] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const loadImage = useCallback(
         (file: File) => {
+            setIsLoading(true);
             const reader = new FileReader();
 
             reader.onerror = () => {
                 console.error('Failed to read file:', reader.error);
+                setIsLoading(false);
             };
 
             reader.onload = (event) => {
@@ -40,10 +45,12 @@ export function useFileLoader(
 
                 img.onerror = () => {
                     console.error('Failed to load image from file');
+                    setIsLoading(false);
                 };
 
                 img.onload = () => {
                     onImageLoad(img);
+                    setIsLoading(false);
                 };
 
                 img.src = event.target?.result as string;
@@ -88,6 +95,7 @@ export function useFileLoader(
 
     return {
         isDragging,
+        isLoading,
         loadImage,
         handleDragOver,
         handleDragLeave,

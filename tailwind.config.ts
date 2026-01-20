@@ -17,7 +17,16 @@ const config: Config = {
           dim: 'rgba(29, 29, 31, 1)', // Increased opacity for better contrast
           accent: '#0071e3',
         }
-      }
+      },
+      animation: {
+        'indeterminate-progress': 'indeterminate-progress 1.5s ease-in-out infinite',
+      },
+      keyframes: {
+        'indeterminate-progress': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(400%)' },
+        },
+      },
     },
   },
   plugins: [],
