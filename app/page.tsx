@@ -23,6 +23,9 @@ import AdvancedTab from '@/components/tabs/AdvancedTab'
 import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
+import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
 import { useStore } from '@/lib/store/useStore'
 
@@ -327,34 +330,43 @@ export default function Home() {
 
         {/* Main Canvas Area */}
         <div className="flex-1 min-h-0 relative" ref={canvasContainerRef}>
-          <ImageCanvas
-            image={image}
-            onImageLoad={setImage}
-            onReset={() => setImage(null)}
-            onColorSample={(color) => {
-              if (measureMode && calibration) {
-                return
-              }
-              setSampledColor(color)
-            }}
-            highlightColor={activeHighlightColor}
-            highlightTolerance={highlightTolerance}
-            highlightMode={highlightMode}
-            valueScaleSettings={valueScaleSettings}
-            onValueScaleChange={setValueScaleSettings}
-            onHistogramComputed={setHistogramBins}
-            onValueScaleResult={setValueScaleResult}
-            measureMode={measureMode}
-            onMeasurePointsChange={setMeasurePoints}
-            onTransformChange={setTransformState}
-            calibration={calibration}
-            gridEnabled={rulerGridEnabled}
-            gridSpacing={rulerGridSpacing}
-            measurePointA={measurePointA}
-            measurePointB={measurePointB}
-            measurementLayer={measurementLayer}
-            canvasSettings={canvasSettings}
-          />
+          <ErrorBoundary
+            fallback={({ resetError }) => (
+              <CanvasErrorFallback
+                resetError={resetError}
+                onReset={() => setImage(null)}
+              />
+            )}
+          >
+            <ImageCanvas
+              image={image}
+              onImageLoad={setImage}
+              onReset={() => setImage(null)}
+              onColorSample={(color) => {
+                if (measureMode && calibration) {
+                  return
+                }
+                setSampledColor(color)
+              }}
+              highlightColor={activeHighlightColor}
+              highlightTolerance={highlightTolerance}
+              highlightMode={highlightMode}
+              valueScaleSettings={valueScaleSettings}
+              onValueScaleChange={setValueScaleSettings}
+              onHistogramComputed={setHistogramBins}
+              onValueScaleResult={setValueScaleResult}
+              measureMode={measureMode}
+              onMeasurePointsChange={setMeasurePoints}
+              onTransformChange={setTransformState}
+              calibration={calibration}
+              gridEnabled={rulerGridEnabled}
+              gridSpacing={rulerGridSpacing}
+              measurePointA={measurePointA}
+              measurePointB={measurePointB}
+              measurementLayer={measurementLayer}
+              canvasSettings={canvasSettings}
+            />
+          </ErrorBoundary>
         </div>
       </div>
 
@@ -413,7 +425,14 @@ export default function Home() {
 
         {/* Tab Content */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {renderTabContent()}
+          <ErrorBoundary
+            fallback={({ error, resetError }) => (
+              <SidebarErrorFallback error={error} resetError={resetError} />
+            )}
+            key={activeTab}
+          >
+            {renderTabContent()}
+          </ErrorBoundary>
         </div>
       </CollapsibleSidebar>
 

@@ -9,6 +9,8 @@ import { rgb as culoriRgb } from 'culori'
 import PaintRecipe from '../PaintRecipe'
 import PhotoshopColorWheel from '../PhotoshopColorWheel'
 import { Palette } from '@/lib/types/palette'
+import ErrorBoundary from '../ErrorBoundary'
+import { RecipeSolverErrorFallback } from '../errors/RecipeSolverErrorFallback'
 
 interface OilMixTabProps {
     sampledColor: {
@@ -57,9 +59,19 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
                 />
             </section>
 
-            {/* Paint Recipe */}
+            {/* Paint Recipe - Wrapped in ErrorBoundary */}
             <section>
-                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
+                <ErrorBoundary
+                    fallback={({ error, resetError }) => (
+                        <RecipeSolverErrorFallback
+                            error={error}
+                            resetError={resetError}
+                            targetHex={hex}
+                        />
+                    )}
+                >
+                    <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
+                </ErrorBoundary>
             </section>
         </div>
     )

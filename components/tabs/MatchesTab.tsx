@@ -6,6 +6,8 @@
  */
 
 import DMCFlossMatch from '../DMCFlossMatch'
+import ErrorBoundary from '../ErrorBoundary'
+import { SidebarErrorFallback } from '../errors/SidebarErrorFallback'
 
 interface MatchesTabProps {
     sampledColor: {
@@ -31,7 +33,13 @@ export default function MatchesTab({ sampledColor, onColorSelect }: MatchesTabPr
 
     return (
         <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6">
-            <DMCFlossMatch rgb={sampledColor.rgb} onColorSelect={onColorSelect || (() => { })} />
+            <ErrorBoundary
+                fallback={({ error, resetError }) => (
+                    <SidebarErrorFallback error={error} resetError={resetError} />
+                )}
+            >
+                <DMCFlossMatch rgb={sampledColor.rgb} onColorSelect={onColorSelect || (() => { })} />
+            </ErrorBoundary>
         </div>
     )
 }
