@@ -17,6 +17,19 @@ export interface PaintColor {
 }
 
 /**
+ * Maps heuristic amounts to rough weights.
+ */
+export const HEURISTIC_WEIGHT_MAP: Record<string, number> = {
+  'mostly': 0.7,
+  'base': 0.6,
+  'moderate': 0.3,
+  'small amount': 0.15,
+  'touch': 0.05,
+  'tiny touch': 0.02,
+  'none': 0,
+}
+
+/**
  * Represents a complete oil paint mixing recipe for achieving a target color.
  *
  * @property {string} description - A brief description of the resulting color
@@ -64,41 +77,55 @@ export function generatePaintRecipe(hsl: { h: number; s: number; l: number }): M
 function generateMixingSteps(colors: PaintColor[], notes?: string): string[] {
   const steps: string[] = [];
 
-  // Sort colors by amount roughly (though input should be sorted)
-  // Importance: base/mostly > moderate > small amount > touch > tiny touch > none
-  // We assume the received 'colors' array is substantially ordered by logic.
+  // 1. Sort colors by weight based on the weight map
+  const sorted = [...colors].sort((a, b) => (HEURISTIC_WEIGHT_MAP[b.amount] || 0) - (HEURISTIC_WEIGHT_MAP[a.amount] || 0));
+  const activeColors = sorted.filter(c => c.amount !== 'none');
 
-  const base = colors.find(c => c.amount === 'base' || c.amount === 'mostly');
-  const others = colors.filter(c => c !== base && c.amount !== 'none');
+  if (activeColors.length === 0) return ['Mix thoroughly.'];
 
-  if (base) {
-    steps.push(`Start with a generous amount of **${base.name}** as your base.`);
-  } else if (colors.length > 0) {
-    steps.push(`Start with **${colors[0].name}**.`);
-  }
+  // 2. Determine base color.
+  // Tip: Avoid starting with high-tinting pigments if possible (Phthalo, Black)
+  // but if it's the only large component, we have to.
+  const strongPigments = ['Phthalo Green', 'Phthalo Blue', 'Ivory Black'];
+  const baseIndex = activeColors.findIndex(c => !strongPigments.includes(c.name)) === -1
+    ? 0
+    : activeColors.findIndex(c => !strongPigments.includes(c.name));
 
-  // Group adjustments
-  const tinting = others.filter(c => ['Titanium White', 'Ivory Black'].includes(c.name));
+  const base = activeColors[baseIndex];
+  const others = activeColors.filter((_, i) => i !== baseIndex);
+
+  steps.push(`Start with **${base.name}** as your base.`);
+
+  // 3. Separate value adjusters from chromatic
+  const valueAdjusters = others.filter(c => ['Titanium White', 'Ivory Black'].includes(c.name));
   const chromatic = others.filter(c => !['Titanium White', 'Ivory Black'].includes(c.name));
 
-  // Chromatic adjustments first
-  if (chromatic.length > 0) {
-    chromatic.forEach(c => {
-      steps.push(`Mix in ${c.amount === 'moderate' ? '' : 'a'} **${c.amount}** of **${c.name}** to shift the hue.`);
+  // Step 1: Lock the value (Oil painting best practice: Value First)
+  if (valueAdjusters.length > 0) {
+    valueAdjusters.forEach(c => {
+      const action = c.name === 'Titanium White' ? 'lighten' : 'darken';
+      steps.push(`Adjust value with a **${c.amount}** of **${c.name}** to ${action}.`);
     });
   }
 
-  // Value adjustments
-  if (tinting.length > 0) {
-    tinting.forEach(c => {
-      steps.push(`Adjust value with a **${c.amount}** of **${c.name}**.`);
+  // Step 2: Find the hue
+  if (chromatic.length > 0) {
+    chromatic.forEach(c => {
+      steps.push(`Add a **${c.amount}** of **${c.name}** to shift the hue.`);
     });
   }
 
   steps.push('Mix thoroughly with your palette knife.');
 
+  // Add warnings for strong pigments
+  const foundStrong = activeColors.filter(c => strongPigments.includes(c.name) && (HEURISTIC_WEIGHT_MAP[c.amount] || 0) > 0.05);
+  if (foundStrong.length > 0) {
+    const names = foundStrong.map(c => c.name).join(' and ');
+    steps.push(`**Tip:** ${names} is very strong—add gradually.`);
+  }
+
   if (notes) {
-    steps.push(`Tip: ${notes}`);
+    steps.push(`Note: ${notes}`);
   }
 
   return steps;

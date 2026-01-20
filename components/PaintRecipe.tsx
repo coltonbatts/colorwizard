@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { generatePaintRecipe } from '@/lib/colorMixer'
+import { generatePaintRecipe, HEURISTIC_WEIGHT_MAP } from '@/lib/colorMixer'
 import { getSolverWorker } from '@/lib/workers'
 import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
 import { SpectralRecipe } from '@/lib/spectral/types'
@@ -35,15 +35,6 @@ const QUALITY_COLORS = {
   Poor: { text: 'text-red-400', bg: 'bg-red-500' },
 }
 
-const HEURISTIC_WEIGHT_MAP: Record<string, number> = {
-  'mostly': 0.7,
-  'base': 0.6,
-  'moderate': 0.3,
-  'small amount': 0.15,
-  'touch': 0.05,
-  'tiny touch': 0.02,
-  'none': 0,
-}
 
 const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
   'Titanium White': { hex: '#FDFDFD', id: 'titanium-white' },

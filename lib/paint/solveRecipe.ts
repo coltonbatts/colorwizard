@@ -262,19 +262,27 @@ function generateSteps(
     ingredients: SpectralRecipe['ingredients']
 ): string[] {
     const steps: string[] = [];
+
+    // Sort by weight
     const sorted = [...ingredients].sort((a, b) => b.weight - a.weight);
+    if (sorted.length === 0) return ['No pigments selected.'];
 
-    // Find base color
-    const base = sorted[0];
-    const others = sorted.slice(1).filter((i) => i.weight >= CONFIG.MIN_WEIGHT);
+    // 1. Find base color - avoid starting with tiny amounts or strong adjusters if possible
+    const strongIds = ['phthalo-green', 'phthalo-blue', 'ivory-black', 'titanium-white'];
 
-    // Separate value adjusters from chromatic
+    // Try to find a chromatic pigment that isn't super strong as base
+    let base = sorted.find(i => !strongIds.includes(i.pigment.id));
+    if (!base) base = sorted[0]; // Fallback to most abundant
+
+    const others = sorted.filter((i) => i !== base && i.weight >= CONFIG.MIN_WEIGHT);
+
+    // Filter value vs chromatic for the remainder
     const chromatic = others.filter((i) => !i.pigment.isValueAdjuster);
     const valueAdj = others.filter((i) => i.pigment.isValueAdjuster);
 
     steps.push(`Start with **${base.pigment.name}** as your base (${base.percentage}).`);
 
-    // 1. Value Adjusters first - IMPORTANT: Value First
+    // 2. Value Adjusters first - IMPORTANT: Value First
     if (valueAdj.length > 0) {
         steps.push(`**Step 1: Lock the value.** Adjust your base to the target lightness/darkness.`);
         for (const ing of valueAdj) {
@@ -283,16 +291,18 @@ function generateSteps(
         }
     }
 
-    // 2. Chromatic adjustments second
+    // 3. Chromatic adjustments second
     if (chromatic.length > 0) {
-        steps.push(`**Step 2: Find the hue.** Now that value is locked, shift the color.`);
+        if (valueAdj.length > 0) {
+            steps.push(`**Step 2: Find the hue.** Now that value is locked, shift the color.`);
+        }
         for (const ing of chromatic) {
             const amount = ing.weight < 0.1 ? 'a small amount' : 'a moderate amount';
             steps.push(`Add ${amount} of **${ing.pigment.name}** (${ing.percentage}).`);
         }
     }
 
-    steps.push('Mix thoroughly until uniform.');
+    steps.push('Mix thoroughly with your palette knife until uniform.');
 
     // Add warnings for strong pigments
     const strongPigments = ingredients.filter(
