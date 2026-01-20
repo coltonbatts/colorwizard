@@ -8,6 +8,7 @@ import { SpectralRecipe } from '@/lib/spectral/types'
 import { Palette } from '@/lib/types/palette'
 import { SkeletonPaintRecipe } from '@/components/ui/SkeletonLoader'
 import { useDebouncedLoading } from '@/hooks/useDebounce'
+import PuddleRecipeDisplay from './paint/PuddleRecipeDisplay'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
@@ -126,44 +127,7 @@ export default function PaintRecipe({
         )}
       </div>
 
-      {/* Swatch Comparison */}
-      {!isFallback && recipe && (
-        <div className="flex gap-3 mb-6">
-          {/* Predicted Mix */}
-          <div className="flex-1">
-            <div className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-bold">
-              Predicted Mix
-            </div>
-            <div
-              className="h-16 rounded-lg border border-gray-600 shadow-lg"
-              style={{ backgroundColor: recipe.predictedHex }}
-            />
-          </div>
-          {/* Target */}
-          <div className="w-16">
-            <div className="text-xs text-gray-400 mb-1 uppercase tracking-wider font-bold">
-              Target
-            </div>
-            <div
-              className="h-16 rounded-lg border border-gray-600 shadow-lg"
-              style={{ backgroundColor: targetHex }}
-            />
-          </div>
-        </div>
-      )}
 
-      {/* Match Quality */}
-      {!isFallback && recipe && qualityColor && (
-        <div className="flex items-center gap-2 mb-4">
-          <div className={`w-2 h-2 rounded-full ${qualityColor.bg}`} />
-          <span className={`text-sm font-medium ${qualityColor.text}`}>
-            {recipe.matchQuality} Match
-          </span>
-          <span className="text-xs text-gray-500">
-            (ΔE: {recipe.error.toFixed(1)})
-          </span>
-        </div>
-      )}
 
       {showLoading ? (
         <SkeletonPaintRecipe />
@@ -219,11 +183,20 @@ export default function PaintRecipe({
           )}
         </>
       ) : (
-        // Spectral recipe
+        // Spectral recipe with puddle visualization
         recipe && (
           <>
-            {/* Steps */}
-            <div className="mb-4 lg:mb-6">
+            {/* Puddle Recipe Display */}
+            <PuddleRecipeDisplay
+              ingredients={recipe.ingredients}
+              predictedHex={recipe.predictedHex}
+              targetHex={targetHex}
+              matchQuality={recipe.matchQuality}
+              error={recipe.error}
+            />
+
+            {/* Mixing Steps */}
+            <div className="mt-6 mb-4 lg:mb-6">
               <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
                 Mixing Steps
               </h4>
@@ -238,40 +211,6 @@ export default function PaintRecipe({
                   />
                 ))}
               </ol>
-            </div>
-
-            {/* Ingredients with Percentages */}
-            <div className="space-y-2 mb-4 lg:mb-6">
-              <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">
-                Ingredients
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                {recipe.ingredients.map((ingredient, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-2 bg-gray-800/30 rounded border border-gray-800"
-                  >
-                    {/* Color swatch */}
-                    <div
-                      className="w-4 h-4 rounded border border-gray-600 shrink-0"
-                      style={{ backgroundColor: ingredient.pigment.hex }}
-                    />
-                    <span className="font-medium text-gray-200 text-xs lg:text-sm flex-1 break-words">
-                      {ingredient.pigment.name}
-                    </span>
-                    {/* Percentage bar - hide on narrow screens if needed, or keep small */}
-                    <div className="w-12 xl:w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden shrink-0 hidden sm:block">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${Math.round(ingredient.weight * 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-[11px] lg:text-xs text-gray-300 font-mono w-8 text-right shrink-0">
-                      {ingredient.percentage}
-                    </span>
-                  </div>
-                ))}
-              </div>
             </div>
           </>
         )

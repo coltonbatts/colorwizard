@@ -862,3 +862,55 @@ body::before {
         gap: 1rem;
     }
 }
+
+/* ============================================
+   Paint Puddle Components - RPG Style
+   ============================================ */
+
+.paint-puddle {
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+    transition: transform 0.15s ease;
+}
+
+.paint-puddle:hover {
+    transform: scale(1.08);
+}
+
+.puddle-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(30, 30, 35, 0.5);
+    border: 1px solid rgba(75, 75, 85, 0.4);
+    transition: all 0.2s ease;
+}
+
+.puddle-card:hover {
+    background: rgba(40, 40, 50, 0.6);
+    border-color: rgba(100, 100, 120, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.puddle-recipe {
+    padding: 0;
+}
+
+/* Responsive puddle grid adjustments */
+@media (max-width: 768px) {
+    .puddle-card {
+        padding: 0.5rem;
+    }
+    
+    .puddle-recipe .grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .puddle-recipe .grid {
+        grid-template-columns: 1fr !important;
+    }
+}
