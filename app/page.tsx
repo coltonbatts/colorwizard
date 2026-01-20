@@ -13,6 +13,8 @@ import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
+import MobileDashboard from '@/components/MobileDashboard'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 
 // Tab content components
 import SampleTab from '@/components/tabs/SampleTab'
@@ -30,6 +32,7 @@ import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 import { useStore } from '@/lib/store/useStore'
 
 export default function Home() {
+  const isMobile = useIsMobile()
   const {
     // Core color state
     sampledColor, setSampledColor,
@@ -286,6 +289,8 @@ export default function Home() {
             canvasSettings={canvasSettings}
             onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
             hasImage={!!image}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
         </div>
 
@@ -391,73 +396,83 @@ export default function Home() {
         pinnedCount={pinnedColors.length}
         width={sidebarWidth}
       >
-        {/* Tab Bar - only shown when expanded */}
-        <div className="flex border-b border-gray-100 bg-white items-stretch">
-          {TABS.map((tab, index) => (
+        {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
+        {!isMobile && (
+          <div className="flex border-b border-gray-100 bg-white items-stretch">
+            {TABS.map((tab, index) => (
+              <button
+                key={tab.id}
+                className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
+                  ? 'text-blue-600'
+                  : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                  }`}
+                onClick={() => setActiveTab(tab.id)}
+                title={`${tab.tooltip} (${index + 1})`}
+              >
+                {tab.icon}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
+                )}
+              </button>
+            ))}
+            {/* ... rest of the buttons ... */}
             <button
-              key={tab.id}
-              className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
+              className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
                 ? 'text-blue-600'
                 : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
                 }`}
-              onClick={() => setActiveTab(tab.id)}
-              title={`${tab.tooltip} (${index + 1})`}
+              onClick={() => setActiveTab('pinned')}
+              title={`Pinned Colors (${pinnedColors.length})`}
             >
-              {tab.icon}
-              {activeTab === tab.id && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 17v5" />
+                <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
+              </svg>
+              {pinnedColors.length > 0 && (
+                <span className="absolute top-2 right-2 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                  {pinnedColors.length > 9 ? '9+' : pinnedColors.length}
+                </span>
+              )}
+              {activeTab === 'pinned' && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
               )}
             </button>
-          ))}
-          <button
-            className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
-              ? 'text-blue-600'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-            onClick={() => setActiveTab('pinned')}
-            title={`Pinned Colors (${pinnedColors.length})`}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 17v5" />
-              <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
-            </svg>
-            {pinnedColors.length > 0 && (
-              <span className="absolute top-2 right-2 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                {pinnedColors.length > 9 ? '9+' : pinnedColors.length}
-              </span>
-            )}
-            {activeTab === 'pinned' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
-            )}
-          </button>
-          <button
-            className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
-              ? 'text-purple-600'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-            onClick={() => setActiveTab('cards')}
-            title="Color Cards"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <path d="M3 9h18" />
-            </svg>
-            {activeTab === 'cards' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 animate-in fade-in zoom-in-95" />
-            )}
-          </button>
-        </div>
+            <button
+              className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
+                ? 'text-purple-600'
+                : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                }`}
+              onClick={() => setActiveTab('cards')}
+              title="Color Cards"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <path d="M3 9h18" />
+              </svg>
+              {activeTab === 'cards' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 animate-in fade-in zoom-in-95" />
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Tab Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          <ErrorBoundary
-            fallback={({ error, resetError }) => (
-              <SidebarErrorFallback error={error} resetError={resetError} />
-            )}
-            key={activeTab}
-          >
-            {renderTabContent()}
-          </ErrorBoundary>
+        <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50/30">
+          {isMobile && image ? (
+            <MobileDashboard
+              sampledColor={sampledColor}
+              activePalette={palettes.find(p => p.id === activePalette.id)}
+            />
+          ) : (
+            <ErrorBoundary
+              fallback={({ error, resetError }) => (
+                <SidebarErrorFallback error={error} resetError={resetError} />
+              )}
+              key={activeTab}
+            >
+              {renderTabContent()}
+            </ErrorBoundary>
+          )}
         </div>
       </CollapsibleSidebar>
 

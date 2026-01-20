@@ -6,6 +6,8 @@ import { Palette } from '@/lib/types/palette'
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { CanvasSettings } from '@/lib/types/canvas'
+import { TABS, TabType } from './CollapsibleSidebar'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 
 interface CompactToolbarProps {
     // Calibration
@@ -44,6 +46,10 @@ interface CompactToolbarProps {
 
     // Context
     hasImage: boolean
+
+    // Tabs (Mobile only)
+    activeTab?: TabType
+    onTabChange?: (tab: TabType) => void
 }
 
 export default function CompactToolbar({
@@ -69,8 +75,11 @@ export default function CompactToolbar({
     onToggleCompactMode,
     canvasSettings,
     onOpenCanvasSettings,
-    hasImage
+    hasImage,
+    activeTab,
+    onTabChange
 }: CompactToolbarProps) {
+    const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
 
@@ -256,6 +265,46 @@ export default function CompactToolbar({
                 </button>
 
                 <div className="hamburger-dropdown">
+                    {/* Navigation Tabs - Mobile Only */}
+                    {isMobile && (
+                        <div className="border-b border-gray-100 pb-2 mb-2">
+                            <div className="px-4 py-2 text-[10px] text-studio-dim uppercase font-black tracking-widest">Navigation</div>
+                            {TABS.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        onTabChange?.(tab.id)
+                                        setMenuOpen(false)
+                                    }}
+                                    className={`hamburger-item ${activeTab === tab.id ? 'bg-blue-50 text-blue-600' : ''}`}
+                                >
+                                    <span className="w-5 h-5 flex items-center justify-center">{tab.icon}</span>
+                                    {tab.label}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => {
+                                    onTabChange?.('pinned')
+                                    setMenuOpen(false)
+                                }}
+                                className={`hamburger-item ${activeTab === 'pinned' ? 'bg-blue-50 text-blue-600' : ''}`}
+                            >
+                                <span className="w-5 h-5 flex items-center justify-center">📌</span>
+                                Pinned
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onTabChange?.('cards')
+                                    setMenuOpen(false)
+                                }}
+                                className={`hamburger-item ${activeTab === 'cards' ? 'bg-purple-50 text-purple-600' : ''}`}
+                            >
+                                <span className="w-5 h-5 flex items-center justify-center">🍱</span>
+                                Color Cards
+                            </button>
+                        </div>
+                    )}
+
                     {/* Palette Selector */}
                     <div className="px-4 py-3 border-b border-gray-100">
                         <span className="text-[10px] text-studio-dim uppercase font-black tracking-widest">Active Palette</span>

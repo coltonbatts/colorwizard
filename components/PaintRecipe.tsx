@@ -25,6 +25,8 @@ interface PaintRecipeProps {
   lineId?: string
   /** Specific paint IDs to use (overrides brandId/lineId filter) */
   paintIds?: string[]
+  /** Display variant */
+  variant?: 'standard' | 'dashboard'
 }
 
 // Match quality colors
@@ -53,6 +55,7 @@ export default function PaintRecipe({
   brandId,
   lineId,
   paintIds,
+  variant = 'standard',
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -198,6 +201,7 @@ export default function PaintRecipe({
             targetHex={targetHex}
             matchQuality={recipe.matchQuality}
             error={recipe.error}
+            variant={variant}
           />
 
           {/* Mixing Steps */}
