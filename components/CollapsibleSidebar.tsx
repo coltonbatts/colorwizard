@@ -59,8 +59,8 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
     },
     {
         id: 'matches',
-        label: 'Matches',
-        tooltip: 'Thread Matches',
+        label: 'Threads',
+        tooltip: 'DMC Floss Matches',
         icon: (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 {/* Needle */}

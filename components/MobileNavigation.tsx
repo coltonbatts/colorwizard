@@ -15,6 +15,9 @@ interface MobileNavigationProps {
     pinnedCount?: number
     onOpenCanvasSettings?: () => void
     onOpenCalibration?: () => void
+    showDashboard?: boolean
+    onReturnToDashboard?: () => void
+    hasImage?: boolean
 }
 
 export default function MobileNavigation({
@@ -22,7 +25,10 @@ export default function MobileNavigation({
     onTabChange,
     pinnedCount = 0,
     onOpenCanvasSettings,
-    onOpenCalibration
+    onOpenCalibration,
+    showDashboard = true,
+    onReturnToDashboard,
+    hasImage = false
 }: MobileNavigationProps) {
     const [isOpen, setIsOpen] = useState(false)
 
@@ -58,6 +64,13 @@ export default function MobileNavigation({
         action()
         setIsOpen(false)
     }, [])
+
+    const handleReturnToDashboard = useCallback(() => {
+        if (onReturnToDashboard) {
+            onReturnToDashboard()
+        }
+        setIsOpen(false)
+    }, [onReturnToDashboard])
 
     return (
         <>
@@ -113,6 +126,27 @@ export default function MobileNavigation({
 
                             {/* Navigation Items */}
                             <nav className="mobile-nav-items">
+                                {/* Dashboard Return - shown when browsing tabs */}
+                                {hasImage && !showDashboard && (
+                                    <div className="mobile-nav-section">
+                                        <button
+                                            onClick={handleReturnToDashboard}
+                                            className="mobile-nav-item mobile-nav-dashboard-btn"
+                                        >
+                                            <span className="mobile-nav-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="3" y="3" width="7" height="9" rx="1" />
+                                                    <rect x="14" y="3" width="7" height="5" rx="1" />
+                                                    <rect x="14" y="12" width="7" height="9" rx="1" />
+                                                    <rect x="3" y="16" width="7" height="5" rx="1" />
+                                                </svg>
+                                            </span>
+                                            <span className="mobile-nav-label">Dashboard</span>
+                                            <span className="text-xs text-studio-dim ml-auto">← Back</span>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Main Tabs */}
                                 <div className="mobile-nav-section">
                                     <span className="mobile-nav-section-label">Navigation</span>
@@ -120,11 +154,13 @@ export default function MobileNavigation({
                                         <button
                                             key={tab.id}
                                             onClick={() => handleTabSelect(tab.id)}
-                                            className={`mobile-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                                            className={`mobile-nav-item ${activeTab === tab.id && !showDashboard ? 'active' : ''}`}
                                         >
                                             <span className="mobile-nav-icon">{tab.icon}</span>
-                                            <span className="mobile-nav-label">{tab.label}</span>
-                                            {activeTab === tab.id && (
+                                            <span className="mobile-nav-label">
+                                                {tab.id === 'matches' ? 'Threads / DMC' : tab.label}
+                                            </span>
+                                            {activeTab === tab.id && !showDashboard && (
                                                 <span className="mobile-nav-active-indicator" />
                                             )}
                                         </button>

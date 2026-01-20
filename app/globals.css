@@ -1117,3 +1117,53 @@ body::before {
         width: 100%;
     }
 }
+
+/* ============================================
+   Mobile Quick Access Buttons
+   ============================================ */
+
+.mobile-quick-threads-btn {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-quick-threads-btn {
+        display: flex;
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        z-index: 40;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border: none;
+        border-radius: 24px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4),
+            0 2px 4px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-quick-threads-btn:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .mobile-quick-threads-btn svg {
+        flex-shrink: 0;
+    }
+}
+
+/* Mobile Nav Dashboard Return Button */
+.mobile-nav-dashboard-btn {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+.mobile-nav-dashboard-btn:active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%) !important;
+}

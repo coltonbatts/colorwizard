@@ -34,6 +34,8 @@ import { useStore } from '@/lib/store/useStore'
 
 export default function Home() {
   const isMobile = useIsMobile()
+  // Track whether mobile user is viewing dashboard vs browsing tabs
+  const [mobileShowDashboard, setMobileShowDashboard] = useState(true)
   const {
     // Core color state
     sampledColor, setSampledColor,
@@ -376,6 +378,25 @@ export default function Home() {
               canvasSettings={canvasSettings}
             />
           </ErrorBoundary>
+
+          {/* Quick Access: Threads Button - Mobile only */}
+          {isMobile && image && mobileShowDashboard && (
+            <button
+              onClick={() => {
+                setActiveTab('matches')
+                setMobileShowDashboard(false)
+              }}
+              className="mobile-quick-threads-btn"
+              aria-label="Open Threads / DMC Floss"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
+                <circle cx="20.5" cy="3.5" r="1.5" />
+                <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
+              </svg>
+              <span>Threads</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -459,7 +480,7 @@ export default function Home() {
 
         {/* Tab Content */}
         <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50/30">
-          {isMobile && image ? (
+          {isMobile && image && mobileShowDashboard ? (
             <MobileDashboard
               sampledColor={sampledColor}
               activePalette={palettes.find(p => p.id === activePalette.id)}
@@ -481,10 +502,16 @@ export default function Home() {
       {isMobile && (
         <MobileNavigation
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab)
+            setMobileShowDashboard(false) // Switch from dashboard to tab view
+          }}
           pinnedCount={pinnedColors.length}
           onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
           onOpenCalibration={() => setShowCalibrationModal(true)}
+          showDashboard={mobileShowDashboard}
+          onReturnToDashboard={() => setMobileShowDashboard(true)}
+          hasImage={!!image}
         />
       )}
 
