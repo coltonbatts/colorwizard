@@ -33,14 +33,21 @@ export default function CanvasSettingsModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md mx-4 overflow-hidden">
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md mx-4 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-white">Canvas Settings</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+                        aria-label="Close modal"
                     >
                         ×
                     </button>

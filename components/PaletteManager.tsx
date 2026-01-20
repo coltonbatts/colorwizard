@@ -121,8 +121,14 @@ export default function PaletteManager({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+        <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+            onClick={onClose}
+        >
+            <div
+                className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-700">
                     <div className="flex items-center gap-3">
@@ -148,7 +154,8 @@ export default function PaletteManager({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+                        aria-label="Close modal"
                     >
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -164,8 +171,8 @@ export default function PaletteManager({
                                 <div
                                     key={palette.id}
                                     className={`p-3 rounded-lg border ${palette.isActive
-                                            ? 'bg-blue-900/20 border-blue-700'
-                                            : 'bg-gray-800/50 border-gray-700'
+                                        ? 'bg-blue-900/20 border-blue-700'
+                                        : 'bg-gray-800/50 border-gray-700'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -272,8 +279,8 @@ export default function PaletteManager({
                                                 key={color.id}
                                                 onClick={() => handleToggleColor(color.id)}
                                                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${isSelected
-                                                        ? 'bg-blue-900/30 border-blue-600 ring-1 ring-blue-500'
-                                                        : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
+                                                    ? 'bg-blue-900/30 border-blue-600 ring-1 ring-blue-500'
+                                                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                                                     }`}
                                             >
                                                 <div

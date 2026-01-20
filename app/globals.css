@@ -864,6 +864,175 @@ body::before {
 }
 
 /* ============================================
+   Mobile Navigation Component
+   ============================================ */
+
+.mobile-nav-hamburger {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-nav-hamburger {
+        display: flex;
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 45;
+        width: 48px;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        color: var(--studio-text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-nav-hamburger:active {
+        transform: scale(0.95);
+        background: rgba(240, 240, 240, 0.95);
+    }
+}
+
+.mobile-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 48;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.mobile-nav-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    width: 85%;
+    max-width: 320px;
+    background: white;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: white;
+}
+
+.mobile-nav-close {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--studio-text-secondary);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.mobile-nav-close:active {
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(0.95);
+}
+
+.mobile-nav-items {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 0;
+}
+
+.mobile-nav-section {
+    padding: 8px 12px;
+}
+
+.mobile-nav-section-label {
+    display: block;
+    padding: 8px 12px 4px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--studio-text-muted);
+}
+
+.mobile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 12px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--studio-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.mobile-nav-item:active {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.mobile-nav-item.active {
+    background: rgba(0, 113, 227, 0.08);
+    color: var(--studio-accent);
+}
+
+.mobile-nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mobile-nav-label {
+    flex: 1;
+}
+
+.mobile-nav-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--studio-accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.mobile-nav-active-indicator {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--studio-accent);
+    border-radius: 0 2px 2px 0;
+}
+
+/* ============================================
    Paint Puddle Components - RPG Style
    ============================================ */
 

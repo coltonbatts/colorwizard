@@ -84,14 +84,21 @@ export default function CalibrationModal({
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-lg mx-4 overflow-hidden">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-900 z-10">
                     <h2 className="text-xl font-semibold text-white">Screen Calibration</h2>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors text-2xl leading-none"
+                        aria-label="Close modal"
                     >
                         ×
                     </button>
@@ -104,8 +111,8 @@ export default function CalibrationModal({
                         <button
                             onClick={() => setMethod('credit_card')}
                             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${method === 'credit_card'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-400 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-400 hover:text-white'
                                 }`}
                         >
                             💳 Credit Card
@@ -113,8 +120,8 @@ export default function CalibrationModal({
                         <button
                             onClick={() => setMethod('ruler')}
                             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${method === 'ruler'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-400 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-400 hover:text-white'
                                 }`}
                         >
                             📏 Ruler
@@ -171,8 +178,8 @@ export default function CalibrationModal({
                                             key={ref.label}
                                             onClick={() => setRulerReference(i)}
                                             className={`px-4 py-2 rounded-lg text-sm transition-colors ${rulerReference === i
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                                 }`}
                                         >
                                             {ref.label}

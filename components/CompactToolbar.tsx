@@ -94,6 +94,39 @@ export default function CompactToolbar({
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
+    // Mobile simplified toolbar - just shows wordmark and stays out of the way
+    // MobileNavigation component handles all navigation on mobile
+    if (isMobile) {
+        return (
+            <div className="p-3 bg-white/80 backdrop-blur-md rounded-2xl flex items-center gap-3 shadow-sm border border-gray-100">
+                {hasImage && (
+                    <>
+                        <h1 className="text-lg font-wordmark text-studio leading-none tracking-tight">
+                            Color Wizard
+                        </h1>
+                        <div className="flex-1" />
+                        {/* Status indicators */}
+                        {calibration && (
+                            <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-100">
+                                📐
+                            </span>
+                        )}
+                        {canvasSettings.enabled && (
+                            <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100">
+                                🖼️
+                            </span>
+                        )}
+                    </>
+                )}
+                {!hasImage && (
+                    <h1 className="text-xl font-wordmark text-studio leading-none tracking-tight mx-auto">
+                        Color Wizard
+                    </h1>
+                )}
+            </div>
+        )
+    }
+
     return (
         <div className={`p-4 bg-white/80 backdrop-blur-md rounded-2xl flex flex-wrap items-center gap-4 shadow-sm border border-gray-100 transition-all duration-500 ${compactMode ? 'toolbar-compact' : ''}`}>
             {/* Wordmark - Only show when image is loaded */}

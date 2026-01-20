@@ -14,6 +14,7 @@ import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
 import MobileDashboard from '@/components/MobileDashboard'
+import MobileNavigation from '@/components/MobileNavigation'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 
 // Tab content components
@@ -475,6 +476,17 @@ export default function Home() {
           )}
         </div>
       </CollapsibleSidebar>
+
+      {/* Mobile Navigation */}
+      {isMobile && (
+        <MobileNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          pinnedCount={pinnedColors.length}
+          onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+          onOpenCalibration={() => setShowCalibrationModal(true)}
+        />
+      )}
 
       {/* Session Palette Strip */}
       <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />
