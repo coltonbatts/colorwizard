@@ -92,7 +92,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
             <div className="w-full max-w-4xl mx-auto px-4 z-10 flex flex-col items-center">
                 <div className="text-center w-full">
                     {/* Wordmark - Responsive sizing for mobile */}
-                    <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-9xl font-wordmark text-studio mb-4 md:mb-8 select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
+                    <h1 className="font-wordmark-hero text-studio mb-4 md:mb-8 select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
                         Color Wizard
                     </h1>
 

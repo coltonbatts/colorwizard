@@ -152,10 +152,15 @@ body::before {
 
     .font-wordmark {
         font-family: var(--font-wordmark);
+    }
+
+    .font-wordmark-hero {
+        font-family: var(--font-wordmark);
         font-size: clamp(2.5rem, 10vw, 8rem);
         line-height: 1.1;
         max-width: 100%;
         overflow: visible;
+        text-align: center;
     }
 }
 
