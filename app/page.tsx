@@ -264,8 +264,8 @@ export default function Home() {
   const hasSessionColors = useHasSessionColors()
 
   return (
-    <main className={`flex flex-col ${image ? 'lg:flex-row' : ''} h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 lg:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 lg:p-3' : 'p-0 lg:p-6'}`}>
+    <main className={`flex flex-col ${image ? 'md:flex-row' : ''} h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
         <div className="mb-4">
           <CompactToolbar

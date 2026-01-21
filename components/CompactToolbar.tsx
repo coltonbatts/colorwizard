@@ -136,7 +136,7 @@ export default function CompactToolbar({
                 </h1>
             </div>
 
-            <div className="h-8 w-px bg-gray-100 mx-2 hidden lg:block" />
+            <div className="h-8 w-px bg-gray-100 mx-2 hidden md:block" />
             {/* Calibrate Button */}
             <button
                 onClick={onOpenCalibration}

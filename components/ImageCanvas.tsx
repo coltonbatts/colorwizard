@@ -1142,7 +1142,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
-            className="flex-1 relative overflow-hidden lg:rounded-lg lg:border border-gray-700 bg-white lg:bg-gray-900"
+            className="flex-1 relative overflow-hidden md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
           >
             {/* Loading indicator */}
             {isAnalyzing && (
