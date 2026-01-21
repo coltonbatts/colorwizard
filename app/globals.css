@@ -1167,3 +1167,561 @@ body::before {
 .mobile-nav-dashboard-btn:active {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%) !important;
 }
+
+/* ============================================
+   Upload Hero Component - Empty State
+   ============================================ */
+
+.upload-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--studio-bg) 0%, #f0f4ff 100%);
+    position: relative;
+}
+
+.upload-hero-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 500px;
+    min-height: 400px;
+    padding: 3rem 2rem;
+    background: white;
+    border: 2px dashed rgba(0, 113, 227, 0.3);
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0, 113, 227, 0.1);
+}
+
+.upload-hero-zone:hover {
+    border-color: var(--studio-accent);
+    box-shadow: 0 15px 50px rgba(0, 113, 227, 0.15);
+    transform: translateY(-2px);
+}
+
+.upload-hero-zone.dragging {
+    border-color: var(--studio-accent);
+    border-style: solid;
+    background: rgba(0, 113, 227, 0.05);
+    transform: scale(1.02);
+}
+
+.upload-hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.upload-hero-icon {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: var(--studio-accent);
+    opacity: 0.8;
+}
+
+.upload-hero-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--studio-text);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.upload-hero-subtitle {
+    font-size: 1rem;
+    color: var(--studio-text-muted);
+    margin-bottom: 2rem;
+}
+
+.upload-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.upload-hero-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.upload-hero-btn.primary {
+    background: var(--studio-accent);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
+}
+
+.upload-hero-btn.primary:hover {
+    background: #0062cc;
+    box-shadow: 0 6px 20px rgba(0, 113, 227, 0.4);
+    transform: translateY(-1px);
+}
+
+.upload-hero-btn.secondary {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--studio-text-secondary);
+}
+
+.upload-hero-btn.secondary:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.upload-hero-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(0, 113, 227, 0.2);
+    border-top-color: var(--studio-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.upload-hero-text {
+    font-size: 1rem;
+    color: var(--studio-text-muted);
+}
+
+.upload-hero-brand {
+    position: absolute;
+    bottom: 2rem;
+    opacity: 0.5;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile adjustments for upload hero */
+@media (max-width: 768px) {
+    .upload-hero {
+        padding: 1rem;
+    }
+
+    .upload-hero-zone {
+        min-height: 350px;
+        padding: 2rem 1.5rem;
+        border-radius: 1.5rem;
+    }
+
+    .upload-hero-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .upload-hero-icon svg {
+        width: 60px;
+        height: 60px;
+    }
+
+    .upload-hero-title {
+        font-size: 1.25rem;
+    }
+
+    .upload-hero-subtitle {
+        font-size: 0.875rem;
+    }
+
+    .upload-hero-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .upload-hero-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   Current Color Badge Component
+   ============================================ */
+
+.current-color-badge {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid var(--studio-border);
+    overflow: hidden;
+    box-shadow: var(--studio-shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.current-color-badge.empty {
+    opacity: 0.6;
+}
+
+.current-color-badge-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.current-color-badge-compact:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.current-color-badge-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 0.5rem;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.current-color-badge-swatch.empty {
+    background: linear-gradient(135deg, #e0e0e0 25%, transparent 25%),
+                linear-gradient(-135deg, #e0e0e0 25%, transparent 25%),
+                linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+                linear-gradient(-45deg, #e0e0e0 25%, transparent 25%);
+    background-size: 8px 8px;
+    background-position: 0 0, 4px 0, 4px -4px, 0 4px;
+    background-color: #f5f5f5;
+}
+
+.current-color-badge-swatch-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.current-color-badge-hex {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--studio-text);
+    letter-spacing: -0.01em;
+}
+
+.current-color-badge-text {
+    font-size: 0.875rem;
+    color: var(--studio-text-muted);
+}
+
+.current-color-badge-chevron {
+    color: var(--studio-text-muted);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.current-color-badge-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.current-color-badge-expanded {
+    padding: 0 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    border-top: 1px solid var(--studio-border-light);
+}
+
+.current-color-badge-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--studio-text-secondary);
+    font-style: italic;
+}
+
+.current-color-badge-values {
+    display: flex;
+    gap: 1rem;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 0.75rem;
+    color: var(--studio-text-muted);
+}
+
+.current-color-badge-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: var(--studio-accent);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.current-color-badge-pin:hover:not(:disabled) {
+    background: #0062cc;
+}
+
+.current-color-badge-pin:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.current-color-badge-pin.pinned {
+    background: var(--studio-success);
+}
+
+/* ============================================
+   Simplified Tab System
+   ============================================ */
+
+.tab-nav-simple {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid var(--studio-border);
+    padding: 0 0.5rem;
+    gap: 0.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tab-nav-simple-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+    background: transparent;
+    border: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--studio-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tab-nav-simple-btn:hover {
+    color: var(--studio-text-secondary);
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.tab-nav-simple-btn.active {
+    color: var(--studio-accent);
+}
+
+.tab-nav-simple-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0.5rem;
+    right: 0.5rem;
+    height: 2px;
+    background: var(--studio-accent);
+    border-radius: 1px 1px 0 0;
+}
+
+.tab-nav-simple-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Tab Content Styles */
+.tab-content-scroll {
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.tab-empty-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: var(--studio-text-dim);
+    opacity: 0.5;
+}
+
+.tab-empty-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--studio-text);
+    margin-bottom: 0.25rem;
+}
+
+.tab-empty-subtitle {
+    font-size: 0.875rem;
+    color: var(--studio-text-muted);
+}
+
+.tab-footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--studio-border-light);
+}
+
+.tab-footer-text {
+    font-size: 0.75rem;
+    color: var(--studio-text-muted);
+    text-align: center;
+}
+
+/* Color Wheel Tab Specifics */
+.color-wheel-harmonies {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 1rem;
+}
+
+/* ============================================
+   Canvas Tap Ripple Effect
+   ============================================ */
+
+.tap-ripple {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0);
+    animation: tapRipple 0.5s ease-out forwards;
+}
+
+@keyframes tapRipple {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
+}
+
+.sample-point-indicator {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.2s ease;
+}
+
+.sample-point-indicator::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Canvas crosshair cursor on desktop */
+@media (min-width: 769px) {
+    .canvas-sampling-active {
+        cursor: crosshair !important;
+    }
+}
+
+/* ============================================
+   Simplified Layout Overrides
+   ============================================ */
+
+/* When hero is showing, hide everything else */
+.layout-hero-mode .sidebar-collapsible,
+.layout-hero-mode .mobile-nav-hamburger,
+.layout-hero-mode .compact-toolbar {
+    display: none !important;
+}
+
+/* Primary canvas layout when image is loaded */
+.canvas-primary {
+    flex: 1 1 60%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.result-panel {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--studio-border);
+    background: white;
+    overflow: hidden;
+}
+
+/* Mobile: vertical stack */
+@media (max-width: 768px) {
+    .canvas-primary {
+        flex: 0 0 55%;
+        max-height: 55vh;
+        max-height: 55dvh;
+    }
+
+    .result-panel {
+        flex: 1 1 45%;
+        border-radius: 1.5rem 1.5rem 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-nav-simple {
+        border-radius: 1.5rem 1.5rem 0 0;
+    }
+}
+
+/* Desktop: can be side-by-side or vertical based on preference */
+@media (min-width: 1024px) {
+    .layout-desktop-row {
+        flex-direction: row !important;
+    }
+
+    .layout-desktop-row .canvas-primary {
+        flex: 1 1 65%;
+    }
+
+    .layout-desktop-row .result-panel {
+        flex: 0 0 400px;
+        border-top: none;
+        border-left: 1px solid var(--studio-border);
+    }
+}
