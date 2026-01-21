@@ -101,9 +101,11 @@ export default function CompactToolbar({
             <div className="p-3 bg-white/80 backdrop-blur-md rounded-2xl flex items-center gap-3 shadow-sm border border-gray-100">
                 {hasImage && (
                     <>
-                        <h1 className="text-lg font-wordmark text-studio leading-none tracking-tight">
-                            Color Wizard
-                        </h1>
+                        <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+                            <h1 className="text-lg font-wordmark text-studio leading-none tracking-tight">
+                                Color Wizard
+                            </h1>
+                        </Link>
                         <div className="flex-1" />
                         {/* Status indicators */}
                         {calibration && (
@@ -119,9 +121,11 @@ export default function CompactToolbar({
                     </>
                 )}
                 {!hasImage && (
-                    <h1 className="text-xl font-wordmark text-studio leading-none tracking-tight mx-auto">
-                        Color Wizard
-                    </h1>
+                    <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity mx-auto">
+                        <h1 className="text-xl font-wordmark text-studio leading-none tracking-tight">
+                            Color Wizard
+                        </h1>
+                    </Link>
                 )}
             </div>
         )
@@ -130,10 +134,12 @@ export default function CompactToolbar({
     return (
         <div className={`p-4 bg-white/80 backdrop-blur-md rounded-2xl flex flex-wrap items-center gap-4 shadow-sm border border-gray-100 transition-all duration-500 ${compactMode ? 'toolbar-compact' : ''}`}>
             {/* Wordmark - Only show when image is loaded */}
-            <div className={`mr-4 pointer-events-none transition-all duration-500 overflow-hidden ${(!hasImage || compactMode) ? 'w-0 opacity-0' : 'w-auto opacity-100 scale-100'}`}>
-                <h1 className="text-2xl font-wordmark text-studio leading-none tracking-tight whitespace-nowrap">
-                    Color Wizard
-                </h1>
+            <div className={`mr-4 transition-all duration-500 overflow-hidden ${(!hasImage || compactMode) ? 'w-0 opacity-0 pointer-events-none' : 'w-auto opacity-100 scale-100'}`}>
+                <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+                    <h1 className="text-2xl font-wordmark text-studio leading-none tracking-tight whitespace-nowrap">
+                        Color Wizard
+                    </h1>
+                </Link>
             </div>
 
             <div className="h-8 w-px bg-gray-100 mx-2 hidden md:block" />

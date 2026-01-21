@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 import { TABS, TabType } from './CollapsibleSidebar'
 
 interface MobileNavigationProps {
@@ -111,7 +112,13 @@ export default function MobileNavigation({
                         >
                             {/* Header */}
                             <div className="mobile-nav-header">
-                                <h2 className="text-xl font-bold text-studio">Color Wizard</h2>
+                                <Link
+                                    href="/"
+                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    <h2 className="text-xl font-bold text-studio">Color Wizard</h2>
+                                </Link>
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="mobile-nav-close"
