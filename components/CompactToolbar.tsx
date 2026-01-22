@@ -50,6 +50,9 @@ interface CompactToolbarProps {
     // Check My Values
     onOpenCheckValues?: () => void
 
+    // Check My Drawing
+    onOpenCheckDrawing?: () => void
+
     // Tabs (Mobile only)
     activeTab?: TabType
     onTabChange?: (tab: TabType) => void
@@ -81,7 +84,8 @@ export default function CompactToolbar({
     hasImage,
     activeTab,
     onTabChange,
-    onOpenCheckValues
+    onOpenCheckValues,
+    onOpenCheckDrawing
 }: CompactToolbarProps) {
     const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
@@ -277,7 +281,7 @@ export default function CompactToolbar({
                 <button
                     onClick={onOpenCheckValues}
                     className="toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100"
-                    title="Check My Values - Compare reference and WIP"
+                    title="Check My Values - Compare reference and WIP (9)"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 3v18" />
@@ -286,6 +290,22 @@ export default function CompactToolbar({
                         <path d="M19 8l-2 8h6l-2-8" />
                     </svg>
                     <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>Values</span>
+                </button>
+            )}
+
+            {/* Check My Drawing Button */}
+            {hasImage && onOpenCheckDrawing && (
+                <button
+                    onClick={onOpenCheckDrawing}
+                    className="toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm bg-teal-50 text-teal-600 hover:bg-teal-100 border border-teal-100"
+                    title="Check My Drawing - Overlay WIP with perspective warp (0)"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 3v18" />
+                    </svg>
+                    <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>Drawing</span>
                 </button>
             )}
 

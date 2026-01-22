@@ -25,6 +25,7 @@ import MatchesTab from '@/components/tabs/MatchesTab'
 import AdvancedTab from '@/components/tabs/AdvancedTab'
 import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
 import CheckMyValuesView from '@/components/CheckMyValuesView'
+import CheckMyDrawingView from '@/components/CheckMyDrawingView'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -39,6 +40,8 @@ export default function Home() {
   const [mobileShowDashboard, setMobileShowDashboard] = useState(true)
   // Track Check My Values full-screen view
   const [showCheckValues, setShowCheckValues] = useState(false)
+  // Track Check My Drawing full-screen view
+  const [showCheckDrawing, setShowCheckDrawing] = useState(false)
   const {
     // Core color state
     sampledColor, setSampledColor,
@@ -160,6 +163,11 @@ export default function Home() {
       if (e.key === '9' && image) {
         e.preventDefault()
         setShowCheckValues(true)
+      }
+      // 0 for Check My Drawing full-screen
+      if (e.key === '0' && image) {
+        e.preventDefault()
+        setShowCheckDrawing(true)
       }
     }
 
@@ -303,6 +311,7 @@ export default function Home() {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onOpenCheckValues={() => setShowCheckValues(true)}
+            onOpenCheckDrawing={() => setShowCheckDrawing(true)}
           />
         </div>
 
@@ -558,6 +567,14 @@ export default function Home() {
         <CheckMyValuesView
           referenceImage={image}
           onClose={() => setShowCheckValues(false)}
+        />
+      )}
+
+      {/* Check My Drawing Full-Screen View */}
+      {showCheckDrawing && (
+        <CheckMyDrawingView
+          referenceImage={image}
+          onClose={() => setShowCheckDrawing(false)}
         />
       )}
     </main>
