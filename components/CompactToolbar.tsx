@@ -47,6 +47,9 @@ interface CompactToolbarProps {
     // Context
     hasImage: boolean
 
+    // Check My Values
+    onOpenCheckValues?: () => void
+
     // Tabs (Mobile only)
     activeTab?: TabType
     onTabChange?: (tab: TabType) => void
@@ -77,7 +80,8 @@ export default function CompactToolbar({
     onOpenCanvasSettings,
     hasImage,
     activeTab,
-    onTabChange
+    onTabChange,
+    onOpenCheckValues
 }: CompactToolbarProps) {
     const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
@@ -266,6 +270,23 @@ export default function CompactToolbar({
                 <span className="text-gray-500 text-xs ml-auto responsive-hide-compact">
                     Calibrate to use ruler & measure
                 </span>
+            )}
+
+            {/* Check My Values Button */}
+            {hasImage && onOpenCheckValues && (
+                <button
+                    onClick={onOpenCheckValues}
+                    className="toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100"
+                    title="Check My Values - Compare reference and WIP"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 3v18" />
+                        <path d="M5 8h14" />
+                        <path d="M5 8l-2 8h6l-2-8" />
+                        <path d="M19 8l-2 8h6l-2-8" />
+                    </svg>
+                    <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>Values</span>
+                </button>
             )}
 
             {/* Spacer */}

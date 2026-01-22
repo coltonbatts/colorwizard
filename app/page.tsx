@@ -24,6 +24,7 @@ import PaletteTab from '@/components/tabs/PaletteTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
 import AdvancedTab from '@/components/tabs/AdvancedTab'
 import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
+import CheckMyValuesView from '@/components/CheckMyValuesView'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -36,6 +37,8 @@ export default function Home() {
   const isMobile = useIsMobile()
   // Track whether mobile user is viewing dashboard vs browsing tabs
   const [mobileShowDashboard, setMobileShowDashboard] = useState(true)
+  // Track Check My Values full-screen view
+  const [showCheckValues, setShowCheckValues] = useState(false)
   const {
     // Core color state
     sampledColor, setSampledColor,
@@ -152,6 +155,11 @@ export default function Home() {
         e.preventDefault()
         setActiveTab(tabKeys[e.key])
         if (sidebarCollapsed) toggleSidebar()
+      }
+      // 9 for Check My Values full-screen
+      if (e.key === '9' && image) {
+        e.preventDefault()
+        setShowCheckValues(true)
       }
     }
 
@@ -294,6 +302,7 @@ export default function Home() {
             hasImage={!!image}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            onOpenCheckValues={() => setShowCheckValues(true)}
           />
         </div>
 
@@ -543,6 +552,14 @@ export default function Home() {
         onSave={setCanvasSettings}
         initialSettings={canvasSettings}
       />
+
+      {/* Check My Values Full-Screen View */}
+      {showCheckValues && (
+        <CheckMyValuesView
+          referenceImage={image}
+          onClose={() => setShowCheckValues(false)}
+        />
+      )}
     </main>
   )
 }
