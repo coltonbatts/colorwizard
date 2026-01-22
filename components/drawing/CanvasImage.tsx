@@ -5,7 +5,7 @@
  * Handles rendering with scale, rotation, and perspective warp.
  */
 
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { computeMatrix3d } from '@/lib/perspectiveWarp'
 
 export interface CanvasImageProps {
@@ -37,7 +37,7 @@ export interface CanvasImageProps {
     onPointerDown?: (e: React.PointerEvent) => void
 }
 
-export default function CanvasImage({
+function CanvasImage({
     image,
     transform,
     isSelected,
@@ -68,15 +68,7 @@ export default function CanvasImage({
 
         if (perspectiveEnabled && perspectiveCorners && !isReference) {
             // Perspective warp uses matrix3d which defines the entire transform from source to quad
-            // However, we need to handle the base scale and position too if they aren't encoded in corners
-            // In our model, corners are in local image space if we don't scale the image, 
-            // but usually corners are in "canvas space" relative to position.
-            // Wait, let's look at how computeMatrix3d works. 
-            // It maps (0,0)-(W,H) to four target corners.
-
             const matrix = computeMatrix3d(perspectiveCorners, image.width, image.height)
-            // The matrix includes the projection. We still need to translate it by the base position.
-            // Actually, if perspectiveCorners are relative to (0,0) of the image, then:
             s.transform = `${transformStr} ${matrix}`
         } else {
             // Standard transform
@@ -105,3 +97,5 @@ export default function CanvasImage({
         </div>
     )
 }
+
+export default memo(CanvasImage)

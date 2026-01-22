@@ -5,7 +5,7 @@
  * Shows appropriate controls based on mode (basic, rotation, perspective).
  */
 
-import { useCallback, useState, useRef } from 'react'
+import { useCallback, useState, useRef, memo } from 'react'
 import RotationHandle from './RotationHandle'
 
 export type TransformMode = 'basic' | 'rotation' | 'perspective'
@@ -46,7 +46,7 @@ interface TransformHandlesProps {
 const CORNER_HANDLE_SIZE = 20
 const HIT_AREA_SIZE = 44
 
-export default function TransformHandles({
+function TransformHandles({
     imageType,
     imageDimensions,
     imagePosition,
@@ -178,8 +178,8 @@ export default function TransformHandles({
                         >
                             <div
                                 className={`absolute rounded-full transition-all duration-150 ${isActive
-                                        ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
-                                        : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
+                                    ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
+                                    : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
                                     }`}
                                 style={{
                                     left: (HIT_AREA_SIZE - CORNER_HANDLE_SIZE) / 2,
@@ -235,3 +235,5 @@ export default function TransformHandles({
         </div>
     )
 }
+
+export default memo(TransformHandles)

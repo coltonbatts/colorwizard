@@ -5,7 +5,7 @@
  * Renders both reference and WIP images as layers on a virtual canvas.
  */
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, memo } from 'react'
 import { useDrawingCanvasTransform, DrawingCanvasTransform } from '@/hooks/useDrawingCanvasTransform'
 import CanvasImage from './CanvasImage'
 import TransformHandles, { TransformMode } from './TransformHandles'
@@ -54,7 +54,7 @@ interface InfiniteCanvasProps {
     children?: React.ReactNode
 }
 
-export default function InfiniteCanvas({
+function InfiniteCanvas({
     referenceImage,
     wipImage,
     selectedImage,
@@ -366,3 +366,5 @@ export default function InfiniteCanvas({
         </div>
     )
 }
+
+export default memo(InfiniteCanvas)

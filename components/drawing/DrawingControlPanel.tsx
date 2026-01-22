@@ -5,7 +5,7 @@
  * Contains image selector, transform controls, quick actions, and canvas controls.
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState, useEffect, memo } from 'react'
 import type { SelectedImage } from './InfiniteCanvas'
 
 interface DrawingControlPanelProps {
@@ -71,7 +71,67 @@ interface DrawingControlPanelProps {
     isCompact?: boolean
 }
 
-export default function DrawingControlPanel({
+/**
+ * Internal Slider component with local state for immediate feedback.
+ * This prevents the "jank" felt when the slider waits for the entire 
+ * React tree to re-render before updating its own visual position.
+ */
+const Slider = memo(({
+    label,
+    value,
+    min,
+    max,
+    step = 0.01,
+    onChange,
+    displayValue,
+    disabled = false
+}: {
+    label: string
+    value: number
+    min: number
+    max: number
+    step?: number
+    onChange: (value: number) => void
+    displayValue?: string
+    disabled?: boolean
+}) => {
+    // Local state for buttery smooth dragging
+    const [localValue, setLocalValue] = useState(value)
+
+    // Keep local state in sync with external value (for resets/quick actions)
+    useEffect(() => {
+        setLocalValue(value)
+    }, [value])
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = parseFloat(e.target.value)
+        setLocalValue(newValue)
+        onChange(newValue)
+    }
+
+    return (
+        <div className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`}>
+            <span className="text-xs font-medium text-gray-400 w-16 shrink-0">{label}</span>
+            <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={localValue}
+                onChange={handleChange}
+                disabled={disabled}
+                className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:cursor-not-allowed"
+            />
+            <span className="text-xs font-mono text-gray-400 w-12 text-right">
+                {displayValue ?? localValue.toFixed(0)}
+            </span>
+        </div>
+    )
+})
+
+Slider.displayName = 'Slider'
+
+function DrawingControlPanel({
     selectedImage,
     onSelectImage,
     hasReferenceImage,
@@ -97,44 +157,6 @@ export default function DrawingControlPanel({
     onToggleGrayscale,
     isCompact = false
 }: DrawingControlPanelProps) {
-
-    // Slider component for consistency
-    const Slider = ({
-        label,
-        value,
-        min,
-        max,
-        step = 0.01,
-        onChange,
-        displayValue,
-        disabled = false
-    }: {
-        label: string
-        value: number
-        min: number
-        max: number
-        step?: number
-        onChange: (value: number) => void
-        displayValue?: string
-        disabled?: boolean
-    }) => (
-        <div className={`flex items-center gap-3 ${disabled ? 'opacity-50' : ''}`}>
-            <span className="text-xs font-medium text-gray-400 w-16 shrink-0">{label}</span>
-            <input
-                type="range"
-                min={min}
-                max={max}
-                step={step}
-                value={value}
-                onChange={(e) => onChange(parseFloat(e.target.value))}
-                disabled={disabled}
-                className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:cursor-not-allowed"
-            />
-            <span className="text-xs font-mono text-gray-400 w-12 text-right">
-                {displayValue ?? value.toFixed(0)}
-            </span>
-        </div>
-    )
 
     // Quick action button
     const QuickButton = ({
@@ -169,8 +191,8 @@ export default function DrawingControlPanel({
                         onClick={() => onSelectImage('reference')}
                         disabled={!hasReferenceImage}
                         className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'reference'
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                     >
                         Reference
@@ -179,8 +201,8 @@ export default function DrawingControlPanel({
                         onClick={() => onSelectImage('wip')}
                         disabled={!hasWipImage}
                         className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'wip'
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                     >
                         WIP
@@ -334,3 +356,5 @@ export default function DrawingControlPanel({
         </div>
     )
 }
+
+export default memo(DrawingControlPanel)

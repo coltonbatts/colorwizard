@@ -5,7 +5,7 @@
  * Drag in circular motion to rotate the image.
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, memo } from 'react'
 
 interface RotationHandleProps {
     /** Center position of the image in canvas coordinates */
@@ -25,7 +25,7 @@ interface RotationHandleProps {
 const HANDLE_SIZE = 24
 const HIT_AREA_SIZE = 44
 
-export default function RotationHandle({
+function RotationHandle({
     imageCenter,
     currentRotation,
     onRotationChange,
@@ -145,8 +145,8 @@ export default function RotationHandle({
                 {/* Visual handle */}
                 <div
                     className={`absolute rounded-full transition-all duration-150 flex items-center justify-center ${isActive
-                            ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
-                            : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
+                        ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
+                        : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
                         }`}
                     style={{
                         left: (HIT_AREA_SIZE - HANDLE_SIZE) / 2,
@@ -187,3 +187,5 @@ export default function RotationHandle({
         </>
     )
 }
+
+export default memo(RotationHandle)
