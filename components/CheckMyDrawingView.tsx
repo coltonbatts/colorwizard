@@ -1,16 +1,15 @@
 'use client'
 
 /**
- * CheckMyDrawingView - Full-screen view for comparing WIP drawing to reference.
- * Provides perspective warp overlay with draggable corner handles,
- * opacity control, grayscale toggle, and undo support for drawing accuracy checking.
+ * CheckMyDrawingView - Revised full-screen view for comparing WIP drawing to reference.
+ * Features an infinite canvas with pan/zoom and intuitive transform controls.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import CheckMyDrawingCanvas from '@/components/CheckMyDrawingCanvas'
-import PerspectiveHandles from '@/components/PerspectiveHandles'
-import OpacitySlider from '@/components/ui/OpacitySlider'
-import { CornerPoints, getDefaultCorners } from '@/lib/perspectiveWarp'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import InfiniteCanvas, { SelectedImage, CanvasImageData } from '@/components/drawing/InfiniteCanvas'
+import DrawingControlPanel from '@/components/drawing/DrawingControlPanel'
+import { useImageTransform } from '@/hooks/useImageTransform'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 
 interface CheckMyDrawingViewProps {
     /** The reference image from the main canvas */
@@ -19,186 +18,62 @@ interface CheckMyDrawingViewProps {
     onClose: () => void
 }
 
-// Maximum undo history size
-const MAX_HISTORY = 50
-
 export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyDrawingViewProps) {
+    const isMobile = useIsMobile()
+
     // WIP image state
     const [wipImage, setWipImage] = useState<HTMLImageElement | null>(null)
-
-    // Controls state
-    const [opacity, setOpacity] = useState(50)
-    const [isGrayscale, setIsGrayscale] = useState(false)
-
-    // Container size for responsive layout
-    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
-    const containerRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Corner positions for perspective warp
-    const [cornerPositions, setCornerPositions] = useState<CornerPoints>(() =>
-        getDefaultCorners(800, 600)
-    )
+    // Selection state
+    const [selectedImage, setSelectedImage] = useState<SelectedImage>(null)
 
-    // Undo history
-    const [history, setHistory] = useState<CornerPoints[]>([])
-    const [historyIndex, setHistoryIndex] = useState(-1)
+    // Grayscale state
+    const [isGrayscale, setIsGrayscale] = useState(false)
 
-    // Helper to get initial corners based on current container/image
-    const getInitialCorners = useCallback((): CornerPoints | null => {
-        if (!referenceImage || containerSize.width <= 0 || containerSize.height <= 0) return null
+    // Transform hooks
+    const refTransform = useImageTransform({
+        isReference: true,
+        imageDimensions: referenceImage ? { width: referenceImage.width, height: referenceImage.height } : undefined
+    })
 
-        const scaleX = containerSize.width / referenceImage.width
-        const scaleY = containerSize.height / referenceImage.height
-        const scale = Math.min(scaleX, scaleY, 1)
+    const wipTransform = useImageTransform({
+        isReference: false,
+        imageDimensions: wipImage ? { width: wipImage.width, height: wipImage.height } : undefined
+    })
 
-        const scaledWidth = referenceImage.width * scale
-        const scaledHeight = referenceImage.height * scale
-        const offsetX = (containerSize.width - scaledWidth) / 2
-        const offsetY = (containerSize.height - scaledHeight) / 2
-
-        return {
-            topLeft: { x: offsetX, y: offsetY },
-            topRight: { x: offsetX + scaledWidth, y: offsetY },
-            bottomLeft: { x: offsetX, y: offsetY + scaledHeight },
-            bottomRight: { x: offsetX + scaledWidth, y: offsetY + scaledHeight }
-        }
-    }, [referenceImage, containerSize])
-
-    // Update container size on resize
+    // Initialize positions
     useEffect(() => {
-        const updateSize = () => {
-            if (containerRef.current) {
-                const rect = containerRef.current.getBoundingClientRect()
-                setContainerSize({ width: rect.width, height: rect.height })
-            }
+        if (referenceImage && refTransform.transform.position.x === 0 && refTransform.transform.position.y === 0) {
+            // Initial center position for reference
+            refTransform.setPosition({ x: 100, y: 100 })
         }
+    }, [referenceImage, refTransform])
 
-        updateSize()
-        window.addEventListener('resize', updateSize)
-        return () => window.removeEventListener('resize', updateSize)
-    }, [])
-
-    // Initialize corner positions when reference image loads or container resizes
-    useEffect(() => {
-        const initial = getInitialCorners()
-        if (initial) {
-            setCornerPositions(initial)
-            // Initialize history with initial position
-            setHistory([initial])
-            setHistoryIndex(0)
-        }
-    }, [getInitialCorners])
-
-    // Handle corner change with optional history tracking
-    const handleCornerChange = useCallback((newCorners: CornerPoints, addToHistory: boolean = false) => {
-        setCornerPositions(newCorners)
-
-        if (addToHistory) {
-            setHistory(prev => {
-                // Remove any redo states if we're not at the end
-                const newHistory = prev.slice(0, historyIndex + 1)
-                // Add new state
-                newHistory.push(newCorners)
-                // Limit history size
-                if (newHistory.length > MAX_HISTORY) {
-                    newHistory.shift()
-                }
-                return newHistory
-            })
-            setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1))
-        }
-    }, [historyIndex])
-
-    // Undo function
-    const handleUndo = useCallback(() => {
-        if (historyIndex > 0) {
-            const newIndex = historyIndex - 1
-            setHistoryIndex(newIndex)
-            setCornerPositions(history[newIndex])
-        }
-    }, [history, historyIndex])
-
-    // Redo function
-    const handleRedo = useCallback(() => {
-        if (historyIndex < history.length - 1) {
-            const newIndex = historyIndex + 1
-            setHistoryIndex(newIndex)
-            setCornerPositions(history[newIndex])
-        }
-    }, [history, historyIndex])
-
-    // Handle keyboard shortcuts
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Close on Escape
-            if (e.key === 'Escape') {
-                onClose()
-                return
-            }
-
-            // Undo: Cmd+Z (Mac) or Ctrl+Z (Windows)
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-                e.preventDefault()
-                handleUndo()
-                return
-            }
-
-            // Redo: Cmd+Shift+Z (Mac) or Ctrl+Y (Windows)
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
-                e.preventDefault()
-                handleRedo()
-                return
-            }
-            if (e.ctrlKey && e.key.toLowerCase() === 'y') {
-                e.preventDefault()
-                handleRedo()
-                return
-            }
-
-            // Reset: R (without modifiers)
-            if (e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey) {
-                handleReset()
-                return
-            }
-
-            // Grayscale toggle: G (without modifiers)
-            if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey) {
-                setIsGrayscale(prev => !prev)
-                return
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [onClose, handleUndo, handleRedo])
-
-    // Reset corners to default position
-    const handleReset = useCallback(() => {
-        const initial = getInitialCorners()
-        if (initial) {
-            handleCornerChange(initial, true)
-        }
-    }, [getInitialCorners, handleCornerChange])
-
-    // Clear WIP image
-    const handleClearWip = useCallback(() => {
-        setWipImage(null)
-        handleReset()
-    }, [handleReset])
-
-    // File upload handlers
+    // WIP File Upload
     const handleFileSelect = useCallback((file: File) => {
         const reader = new FileReader()
         reader.onload = (e) => {
             const img = new Image()
             img.onload = () => {
                 setWipImage(img)
+                // Position WIP slightly offset from reference or matching size
+                if (referenceImage) {
+                    wipTransform.setPosition({
+                        x: refTransform.transform.position.x + 50,
+                        y: refTransform.transform.position.y + 50
+                    })
+                    // Auto-match size on upload
+                    const scaleX = referenceImage.width / img.width
+                    const scaleY = referenceImage.height / img.height
+                    wipTransform.setScale(Math.min(scaleX, scaleY))
+                }
+                setSelectedImage('wip')
             }
             img.src = e.target?.result as string
         }
         reader.readAsDataURL(file)
-    }, [])
+    }, [referenceImage, refTransform.transform.position, wipTransform])
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()
@@ -219,214 +94,188 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
         }
     }, [handleFileSelect])
 
-    const canUndo = historyIndex > 0
-    const canRedo = historyIndex < history.length - 1
+    // Quick Actions
+    const handleMatchSize = useCallback(() => {
+        if (referenceImage && wipImage) {
+            const scaleX = referenceImage.width / wipImage.width
+            const scaleY = referenceImage.height / wipImage.height
+            wipTransform.setScale(Math.min(scaleX, scaleY))
+            wipTransform.setPosition({ ...refTransform.transform.position })
+            wipTransform.setRotation(0)
+        }
+    }, [referenceImage, wipImage, refTransform.transform.position, wipTransform])
+
+    const handleCenterBoth = useCallback(() => {
+        // Since it's an infinite canvas, we just pick a "center"
+        const center = { x: 200, y: 200 }
+        refTransform.setPosition(center)
+        if (wipImage) {
+            wipTransform.setPosition(center)
+        }
+    }, [refTransform, wipTransform, wipImage])
+
+    const handleSideBySide = useCallback(() => {
+        if (referenceImage && wipImage) {
+            const refT = refTransform.transform
+            wipTransform.setPosition({
+                x: refT.position.x + (referenceImage.width * refT.scale) + 50,
+                y: refT.position.y
+            })
+            wipTransform.setRotation(0)
+        }
+    }, [referenceImage, wipImage, refTransform, wipTransform])
+
+    // State assembly for Canvas
+    const referenceImageData: CanvasImageData | null = useMemo(() => {
+        if (!referenceImage) return null
+        return {
+            image: referenceImage,
+            transform: {
+                ...refTransform.transform,
+                opacity: 1,
+                perspectiveEnabled: false,
+                perspectiveCorners: null
+            }
+        }
+    }, [referenceImage, refTransform.transform])
+
+    const wipImageData: CanvasImageData | null = useMemo(() => {
+        if (!wipImage) return null
+        return {
+            image: wipImage,
+            transform: wipTransform.transform
+        }
+    }, [wipImage, wipTransform.transform])
+
+    // Close on Escape
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose()
+            if (e.key.toLowerCase() === 'g') setIsGrayscale(prev => !prev)
+        }
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [onClose])
 
     return (
-        <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col">
-            {/* Header */}
-            <header className="flex flex-wrap items-center justify-between gap-4 px-4 md:px-6 py-4 bg-gray-800 border-b border-gray-700">
-                <div className="flex items-center gap-4">
+        <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col md:flex-row overflow-hidden font-sans">
+            {/* Main View Area */}
+            <div className="flex-1 relative flex flex-col min-w-0">
+                {/* Header */}
+                <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-4 bg-gradient-to-b from-black/50 to-transparent pointer-events-none">
                     <button
                         onClick={onClose}
-                        className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/80 hover:bg-gray-700 text-white rounded-lg transition-all pointer-events-auto shadow-lg backdrop-blur-sm"
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
-                        <span className="text-sm font-medium hidden sm:inline">Back to Canvas</span>
+                        <span className="text-sm font-bold">Close</span>
                     </button>
-                    <div className="w-px h-6 bg-gray-700 hidden sm:block" />
-                    <h1 className="text-lg font-bold text-white">Check My Drawing</h1>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3 md:gap-5">
-                    {/* Undo/Redo Buttons */}
+                    <h1 className="text-lg font-black text-white/90 uppercase tracking-tighter drop-shadow-md hidden sm:block">
+                        Check My Drawing
+                    </h1>
+
+                    <div className="w-10 h-10" /> {/* Spacer */}
+                </header>
+
+                {/* Canvas Workspace */}
+                <InfiniteCanvas
+                    referenceImage={referenceImageData}
+                    wipImage={wipImageData}
+                    selectedImage={selectedImage}
+                    onSelectImage={setSelectedImage}
+                    onReferenceTransformChange={(t) => {
+                        if (t.position) refTransform.setPosition(t.position)
+                    }}
+                    onWipTransformChange={(t) => {
+                        if (t.position) wipTransform.setPosition(t.position)
+                        if (t.rotation !== undefined) wipTransform.setRotation(t.rotation)
+                        if (t.perspectiveCorners) {
+                            // Manual update for individual corners if needed, 
+                            // but InfiniteCanvas handles the object spread.
+                            // We'll just proxy the whole corner set if it comes.
+                            Object.entries(t.perspectiveCorners).forEach(([key, val]) => {
+                                wipTransform.setPerspectiveCorner(key as any, val)
+                            })
+                        }
+                    }}
+                    isGrayscale={isGrayscale}
+                >
+                    {/* Instructions Overlay */}
                     {wipImage && (
-                        <>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={handleUndo}
-                                    disabled={!canUndo}
-                                    className={`p-2 rounded-lg transition-colors ${canUndo
-                                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                                            : 'text-gray-600 cursor-not-allowed'
-                                        }`}
-                                    title="Undo (⌘Z)"
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M3 7v6h6" />
-                                        <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={handleRedo}
-                                    disabled={!canRedo}
-                                    className={`p-2 rounded-lg transition-colors ${canRedo
-                                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                                            : 'text-gray-600 cursor-not-allowed'
-                                        }`}
-                                    title="Redo (⌘⇧Z)"
-                                >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M21 7v6h-6" />
-                                        <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="w-px h-6 bg-gray-700" />
-                        </>
-                    )}
-
-                    {/* Opacity Slider */}
-                    <OpacitySlider
-                        value={opacity}
-                        onChange={setOpacity}
-                        label="WIP Opacity"
-                    />
-
-                    {/* Grayscale Toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <div className="relative">
-                            <input
-                                type="checkbox"
-                                checked={isGrayscale}
-                                onChange={(e) => setIsGrayscale(e.target.checked)}
-                                className="sr-only"
-                            />
-                            <div className={`w-10 h-5 rounded-full transition-colors ${isGrayscale ? 'bg-blue-600' : 'bg-gray-600'
-                                }`}>
-                                <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isGrayscale ? 'translate-x-5' : ''
-                                    }`} />
-                            </div>
+                        <div className="absolute top-20 left-1/2 -translate-x-1/2 text-[10px] text-white/40 uppercase tracking-widest pointer-events-none text-center">
+                            Hold Space to pan • Scroll to zoom • Select image to move
                         </div>
-                        <span className="text-xs text-gray-300 font-medium">Grayscale</span>
-                    </label>
-
-                    {/* Reset Button */}
-                    {wipImage && (
-                        <>
-                            <div className="w-px h-6 bg-gray-700" />
-                            <button
-                                onClick={handleReset}
-                                className="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-                                title="Reset transform (R)"
-                            >
-                                Reset
-                            </button>
-                        </>
                     )}
+                </InfiniteCanvas>
 
-                    {/* Clear WIP Button */}
-                    {wipImage && (
-                        <button
-                            onClick={handleClearWip}
-                            className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                {/* Upload Trigger (when no WIP) */}
+                {!wipImage && referenceImage && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center p-8 z-20 pointer-events-none"
+                    >
+                        <div
+                            className="bg-gray-800/90 backdrop-blur-xl border-2 border-dashed border-gray-600 rounded-3xl p-12 max-w-sm w-full text-center shadow-2xl pointer-events-auto cursor-pointer hover:border-blue-500 hover:bg-gray-800 transition-all group"
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
+                            onClick={() => fileInputRef.current?.click()}
                         >
-                            Clear WIP
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <div className="flex-1 relative min-h-0" ref={containerRef}>
-                {!referenceImage ? (
-                    /* No reference image state */
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center p-8">
-                            <svg className="w-20 h-20 mx-auto text-gray-600 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                <polyline points="21 15 16 10 5 21" />
-                            </svg>
-                            <h2 className="text-xl font-semibold text-gray-400 mb-2">No Reference Image</h2>
-                            <p className="text-gray-500 mb-6">
-                                Upload an image in the main canvas first, then return here to check your drawing.
+                            <div className="w-20 h-20 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            </div>
+                            <h2 className="text-xl font-bold text-white mb-2">Check Your WIP</h2>
+                            <p className="text-gray-400 text-sm mb-6">
+                                Upload a photo of your drawing to overlay it on the reference and check accuracy.
                             </p>
-                            <button
-                                onClick={onClose}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors"
-                            >
-                                Go to Canvas
+                            <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20">
+                                Select Photo
                             </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleInputChange}
+                            />
                         </div>
                     </div>
-                ) : (
-                    <>
-                        {/* Canvas with both layers */}
-                        <CheckMyDrawingCanvas
-                            referenceImage={referenceImage}
-                            wipImage={wipImage}
-                            opacity={opacity}
-                            isGrayscale={isGrayscale}
-                            cornerPositions={cornerPositions}
-                            containerSize={containerSize}
-                        />
-
-                        {/* Perspective Handles (only when WIP is present) */}
-                        <PerspectiveHandles
-                            corners={cornerPositions}
-                            onChange={handleCornerChange}
-                            containerRef={containerRef}
-                            visible={!!wipImage}
-                        />
-
-                        {/* WIP Upload Dropzone (when no WIP) */}
-                        {!wipImage && (
-                            <div
-                                className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm"
-                                onDrop={handleDrop}
-                                onDragOver={handleDragOver}
-                            >
-                                <div
-                                    className="flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-600 rounded-2xl p-12 m-8 cursor-pointer hover:border-gray-400 hover:bg-gray-800/50 transition-all"
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="17 8 12 3 7 8" />
-                                        <line x1="12" y1="3" x2="12" y2="15" />
-                                    </svg>
-                                    <span className="mt-4 text-lg font-medium">Upload WIP Photo</span>
-                                    <span className="mt-2 text-sm text-gray-500">
-                                        Drag and drop or click to browse
-                                    </span>
-                                    <span className="mt-4 text-xs text-gray-600">
-                                        Photo will overlay on reference for comparison
-                                    </span>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </>
                 )}
             </div>
 
-            {/* Footer Instructions */}
-            {wipImage && (
-                <div className="flex items-center justify-center gap-6 py-3 px-4 bg-gray-800 border-t border-gray-700 text-xs text-gray-400 flex-wrap">
-                    <span>Drag corners for perspective • Center to move • Green handle to scale</span>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="hidden sm:inline">
-                        <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">⌘Z</kbd> Undo
-                    </span>
-                    <span className="hidden sm:inline">
-                        <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">R</kbd> Reset
-                    </span>
-                    <span className="hidden sm:inline">
-                        <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">G</kbd> Grayscale
-                    </span>
-                    <span className="hidden sm:inline">
-                        <kbd className="px-1.5 py-0.5 bg-gray-700 rounded text-gray-300">Esc</kbd> Close
-                    </span>
-                </div>
+            {/* Sidebar Controls */}
+            {referenceImage && (
+                <DrawingControlPanel
+                    selectedImage={selectedImage}
+                    onSelectImage={setSelectedImage}
+                    hasReferenceImage={true}
+                    referenceScale={refTransform.transform.scale}
+                    onReferenceScaleChange={refTransform.setScale}
+                    onResetReference={refTransform.reset}
+                    hasWipImage={!!wipImage}
+                    wipOpacity={wipTransform.transform.opacity}
+                    onWipOpacityChange={wipTransform.setOpacity}
+                    wipScale={wipTransform.transform.scale}
+                    onWipScaleChange={wipTransform.setScale}
+                    wipRotation={wipTransform.transform.rotation}
+                    perspectiveEnabled={wipTransform.transform.perspectiveEnabled}
+                    onTogglePerspective={wipTransform.togglePerspective}
+                    onResetWip={wipTransform.reset}
+                    onMatchSize={handleMatchSize}
+                    onCenterBoth={handleCenterBoth}
+                    onSideBySide={handleSideBySide}
+                    onFitToView={handleCenterBoth} // Reuse center for now
+                    canvasZoom={1.0} // This should be synced from InfiniteCanvas ideally
+                    onResetView={() => { }} // Hooked into InfiniteCanvas
+                    isGrayscale={isGrayscale}
+                    onToggleGrayscale={() => setIsGrayscale(prev => !prev)}
+                    isCompact={isMobile}
+                />
             )}
         </div>
     )

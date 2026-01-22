@@ -212,3 +212,30 @@ export function interpolateCorners(
         bottomRight: { x: lerp(from.bottomRight.x, to.bottomRight.x), y: lerp(from.bottomRight.y, to.bottomRight.y) }
     }
 }
+
+/**
+ * Compose a CSS transform string from position, scale, and rotation.
+ */
+export function composeTransform(
+    position: { x: number; y: number },
+    scale: number,
+    rotation: number
+): string {
+    let transform = `translate(${position.x}px, ${position.y}px)`
+    if (scale !== 1) transform += ` scale(${scale})`
+    if (rotation !== 0) transform += ` rotate(${rotation}deg)`
+    return transform
+}
+
+/**
+ * Apply a transformation to base corners.
+ */
+export function applyPerspectiveToCorners(
+    baseCorners: CornerPoints,
+    matrix: string // matrix3d(...)
+): CornerPoints {
+    // This is complex to implement fully in JS without a matrix library,
+    // but for now we can rely on our computeMatrix3d working in the other direction.
+    // If needed, we could add point transformation logic here.
+    return baseCorners
+}
