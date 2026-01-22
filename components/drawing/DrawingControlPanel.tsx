@@ -65,8 +65,10 @@ interface DrawingControlPanelProps {
     isGrayscale: boolean
     /** Toggle grayscale */
     onToggleGrayscale: () => void
-
-    // Layout
+    /** Whether the layout is locked */
+    isLocked: boolean
+    /** Toggle lock state */
+    onToggleLock: () => void
     /** Whether to show as compact (mobile) */
     isCompact?: boolean
 }
@@ -155,6 +157,8 @@ function DrawingControlPanel({
     onResetView,
     isGrayscale,
     onToggleGrayscale,
+    isLocked,
+    onToggleLock,
     isCompact = false
 }: DrawingControlPanelProps) {
 
@@ -189,7 +193,7 @@ function DrawingControlPanel({
                 <div className="flex bg-gray-700/50 rounded-lg p-1">
                     <button
                         onClick={() => onSelectImage('reference')}
-                        disabled={!hasReferenceImage}
+                        disabled={!hasReferenceImage || isLocked}
                         className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'reference'
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -199,7 +203,7 @@ function DrawingControlPanel({
                     </button>
                     <button
                         onClick={() => onSelectImage('wip')}
-                        disabled={!hasWipImage}
+                        disabled={!hasWipImage || isLocked}
                         className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'wip'
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -222,10 +226,12 @@ function DrawingControlPanel({
                         step={1}
                         onChange={(v) => onReferenceScaleChange(v / 100)}
                         displayValue={`${Math.round(referenceScale * 100)}%`}
+                        disabled={isLocked}
                     />
                     <button
                         onClick={onResetReference}
-                        className="w-full py-2 text-xs font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={isLocked}
+                        className="w-full py-2 text-xs font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                     >
                         Reset Reference
                     </button>
@@ -247,6 +253,7 @@ function DrawingControlPanel({
                             step={1}
                             onChange={(v) => onWipOpacityChange(v / 100)}
                             displayValue={`${Math.round(wipOpacity * 100)}%`}
+                            disabled={isLocked}
                         />
                     </div>
 
@@ -259,6 +266,7 @@ function DrawingControlPanel({
                         step={1}
                         onChange={(v) => onWipScaleChange(v / 100)}
                         displayValue={`${Math.round(wipScale * 100)}%`}
+                        disabled={isLocked}
                     />
 
                     {/* Rotation display */}
@@ -273,8 +281,9 @@ function DrawingControlPanel({
                         <span className="text-xs font-medium text-gray-400">Perspective Warp</span>
                         <button
                             onClick={onTogglePerspective}
+                            disabled={isLocked}
                             className={`relative w-10 h-5 rounded-full transition-colors ${perspectiveEnabled ? 'bg-blue-600' : 'bg-gray-600'
-                                }`}
+                                } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <div
                                 className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${perspectiveEnabled ? 'translate-x-5' : ''
@@ -288,7 +297,8 @@ function DrawingControlPanel({
 
                     <button
                         onClick={onResetWip}
-                        className="w-full py-2 text-xs font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={isLocked}
+                        className="w-full py-2 text-xs font-medium text-gray-300 bg-gray-700/50 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
                     >
                         Reset WIP Transform
                     </button>
@@ -299,16 +309,16 @@ function DrawingControlPanel({
             <div className="space-y-2">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2">
-                    <QuickButton onClick={onMatchSize} disabled={!hasWipImage || !hasReferenceImage}>
+                    <QuickButton onClick={onMatchSize} disabled={!hasWipImage || !hasReferenceImage || isLocked}>
                         Match Size
                     </QuickButton>
-                    <QuickButton onClick={onCenterBoth} disabled={!hasReferenceImage}>
+                    <QuickButton onClick={onCenterBoth} disabled={!hasReferenceImage || isLocked}>
                         Center Both
                     </QuickButton>
-                    <QuickButton onClick={onSideBySide} disabled={!hasWipImage || !hasReferenceImage}>
+                    <QuickButton onClick={onSideBySide} disabled={!hasWipImage || !hasReferenceImage || isLocked}>
                         Side by Side
                     </QuickButton>
-                    <QuickButton onClick={onFitToView} disabled={!hasReferenceImage}>
+                    <QuickButton onClick={onFitToView} disabled={!hasReferenceImage || isLocked}>
                         Fit to View
                     </QuickButton>
                 </div>
@@ -331,6 +341,20 @@ function DrawingControlPanel({
 
             {/* Grayscale Toggle */}
             <div className="pt-2 border-t border-gray-700">
+                <div className="flex items-center justify-between py-2">
+                    <span className="text-xs font-medium text-gray-400">Lock Layout</span>
+                    <button
+                        onClick={onToggleLock}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${isLocked ? 'bg-orange-500' : 'bg-gray-600'
+                            }`}
+                    >
+                        <div
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isLocked ? 'translate-x-5' : ''
+                                }`}
+                        />
+                    </button>
+                </div>
+
                 <div className="flex items-center justify-between py-2">
                     <span className="text-xs font-medium text-gray-400">Grayscale Mode</span>
                     <button

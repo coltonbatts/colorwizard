@@ -21,6 +21,8 @@ export interface ImageTransform {
     perspectiveEnabled: boolean
     /** Four corner positions for perspective warp */
     perspectiveCorners: CornerPoints | null
+    /** Whether the transform is locked */
+    isLocked: boolean
 }
 
 export interface UseImageTransformOptions {
@@ -63,6 +65,12 @@ export interface UseImageTransformReturn {
     reset: () => void
     /** Match another image's size */
     matchSize: (otherDimensions: { width: number; height: number }) => void
+    /** Set lock state */
+    setLocked: (locked: boolean) => void
+    /** Toggle lock state */
+    toggleLocked: () => void
+    /** Set entire transform state (for undo/redo) */
+    setFullTransform: (transform: ImageTransform) => void
     /** Get CSS transform string */
     getCssTransform: () => string
 }
@@ -74,7 +82,8 @@ function getDefaultTransform(isReference: boolean): ImageTransform {
         rotation: 0,
         opacity: isReference ? 1 : 0.5,
         perspectiveEnabled: false,
-        perspectiveCorners: null
+        perspectiveCorners: null,
+        isLocked: false
     }
 }
 
@@ -98,59 +107,78 @@ export function useImageTransform(
 
     // Set position
     const setPosition = useCallback((position: { x: number; y: number }) => {
-        setTransform(prev => ({ ...prev, position }))
+        setTransform(prev => {
+            if (prev.isLocked) return prev
+            return { ...prev, position }
+        })
     }, [])
 
     // Move by delta
     const moveBy = useCallback((deltaX: number, deltaY: number) => {
-        setTransform(prev => ({
-            ...prev,
-            position: {
-                x: prev.position.x + deltaX,
-                y: prev.position.y + deltaY
+        setTransform(prev => {
+            if (prev.isLocked) return prev
+            return {
+                ...prev,
+                position: {
+                    x: prev.position.x + deltaX,
+                    y: prev.position.y + deltaY
+                }
             }
-        }))
+        })
     }, [])
 
     // Set scale
     const setScale = useCallback((scale: number) => {
-        setTransform(prev => ({
-            ...prev,
-            scale: Math.max(minScale, Math.min(maxScale, scale))
-        }))
+        setTransform(prev => {
+            if (prev.isLocked) return prev
+            return {
+                ...prev,
+                scale: Math.max(minScale, Math.min(maxScale, scale))
+            }
+        })
     }, [minScale, maxScale])
 
     // Set rotation (WIP only)
     const setRotation = useCallback((rotation: number) => {
         if (isReference) return
-        setTransform(prev => ({
-            ...prev,
-            rotation: ((rotation % 360) + 360) % 360 // Normalize to 0-360
-        }))
+        setTransform(prev => {
+            if (prev.isLocked) return prev
+            return {
+                ...prev,
+                rotation: ((rotation % 360) + 360) % 360 // Normalize to 0-360
+            }
+        })
     }, [isReference])
 
     // Set opacity (WIP only)
     const setOpacity = useCallback((opacity: number) => {
         if (isReference) return
-        setTransform(prev => ({
-            ...prev,
-            opacity: Math.max(0, Math.min(1, opacity))
-        }))
+        setTransform(prev => {
+            // NOTE: Opacity is usually okay to change even when locked? 
+            // Better to respect the lock for all visual attributes for consistency.
+            if (prev.isLocked) return prev
+            return {
+                ...prev,
+                opacity: Math.max(0, Math.min(1, opacity))
+            }
+        })
     }, [isReference])
 
     // Toggle perspective mode
     const togglePerspective = useCallback(() => {
         if (isReference) return
         setTransform(prev => {
+            if (prev.isLocked) return prev
             const enabling = !prev.perspectiveEnabled
             if (enabling && !prev.perspectiveCorners && imageDimensions) {
-                // Initialize corners when enabling
+                // Initialize corners when enabling if they don't exist
                 return {
                     ...prev,
                     perspectiveEnabled: true,
                     perspectiveCorners: getDefaultCorners(imageDimensions.width, imageDimensions.height)
                 }
             }
+            // Just toggle enabled state, don't clear corners
             return {
                 ...prev,
                 perspectiveEnabled: enabling
@@ -164,7 +192,7 @@ export function useImageTransform(
         position: { x: number; y: number }
     ) => {
         setTransform(prev => {
-            if (!prev.perspectiveCorners) return prev
+            if (prev.isLocked || !prev.perspectiveCorners) return prev
 
             const newCorners: CornerPoints = {
                 ...prev.perspectiveCorners,
@@ -186,7 +214,7 @@ export function useImageTransform(
     // Move all perspective corners by delta
     const movePerspectiveBy = useCallback((deltaX: number, deltaY: number) => {
         setTransform(prev => {
-            if (!prev.perspectiveCorners) return prev
+            if (prev.isLocked || !prev.perspectiveCorners) return prev
 
             return {
                 ...prev,
@@ -218,7 +246,7 @@ export function useImageTransform(
         scaleFactor: number
     ) => {
         setTransform(prev => {
-            if (!prev.perspectiveCorners) return prev
+            if (prev.isLocked || !prev.perspectiveCorners) return prev
 
             const scalePoint = (p: { x: number; y: number }) => ({
                 x: center.x + (p.x - center.x) * scaleFactor,
@@ -266,6 +294,19 @@ export function useImageTransform(
         setScale(newScale)
     }, [imageDimensions, setScale])
 
+    // Set lock state
+    const setLocked = useCallback((isLocked: boolean) => {
+        setTransform(prev => ({ ...prev, isLocked }))
+    }, [])
+
+    const toggleLocked = useCallback(() => {
+        setTransform(prev => ({ ...prev, isLocked: !prev.isLocked }))
+    }, [])
+
+    const setFullTransform = useCallback((newTransform: ImageTransform) => {
+        setTransform(newTransform)
+    }, [])
+
     // Get CSS transform string
     const getCssTransform = useCallback((): string => {
         const transforms: string[] = []
@@ -300,6 +341,9 @@ export function useImageTransform(
         resetPerspective,
         reset,
         matchSize,
+        setLocked,
+        toggleLocked,
+        setFullTransform,
         getCssTransform
     }
 }

@@ -41,6 +41,10 @@ interface TransformHandlesProps {
         corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight',
         position: { x: number; y: number }
     ) => void
+    /** Callback when transform interaction finishes */
+    onInteractionEnd?: () => void
+    /** Whether the transform is locked */
+    isLocked?: boolean
 }
 
 const CORNER_HANDLE_SIZE = 20
@@ -57,7 +61,9 @@ function TransformHandles({
     canvasTransform,
     perspectiveCorners,
     onRotationChange,
-    onPerspectiveCornerChange
+    onPerspectiveCornerChange,
+    onInteractionEnd,
+    isLocked = false
 }: TransformHandlesProps) {
     const [activeCorner, setActiveCorner] = useState<string | null>(null)
     const dragStartRef = useRef<{
@@ -99,7 +105,7 @@ function TransformHandles({
         e.preventDefault()
         e.stopPropagation()
 
-        if (!perspectiveCorners) return
+        if (!perspectiveCorners || isLocked) return
 
         dragStartRef.current = {
             corner,
@@ -108,7 +114,7 @@ function TransformHandles({
         }
         setActiveCorner(corner)
             ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
-    }, [perspectiveCorners])
+    }, [perspectiveCorners, isLocked])
 
     const handleCornerPointerMove = useCallback((e: React.PointerEvent) => {
         if (!dragStartRef.current || !onPerspectiveCornerChange) return
@@ -128,10 +134,15 @@ function TransformHandles({
     }, [canvasTransform.zoom, onPerspectiveCornerChange])
 
     const handleCornerPointerUp = useCallback((e: React.PointerEvent) => {
-        ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        const wasDragging = !!dragStartRef.current
+            ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
         dragStartRef.current = null
         setActiveCorner(null)
-    }, [])
+
+        if (wasDragging && onInteractionEnd) {
+            onInteractionEnd()
+        }
+    }, [onInteractionEnd])
 
     // Render perspective corners
     const renderPerspectiveCorners = () => {
@@ -223,8 +234,10 @@ function TransformHandles({
                     imageCenter={imageCenter}
                     currentRotation={imageRotation}
                     onRotationChange={onRotationChange}
+                    onInteractionEnd={onInteractionEnd}
                     canvasTransform={canvasTransform}
                     visible={true}
+                    disabled={isLocked}
                 />
             )}
 

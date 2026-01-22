@@ -20,6 +20,10 @@ interface RotationHandleProps {
     canvasTransform: { pan: { x: number; y: number }; zoom: number }
     /** Whether the handle is visible */
     visible: boolean
+    /** Callback when transform interaction finishes */
+    onInteractionEnd?: () => void
+    /** Whether the handle is disabled (locked) */
+    disabled?: boolean
 }
 
 const HANDLE_SIZE = 24
@@ -31,7 +35,9 @@ function RotationHandle({
     onRotationChange,
     offsetY = -60,
     canvasTransform,
-    visible
+    visible,
+    onInteractionEnd,
+    disabled = false
 }: RotationHandleProps) {
     const [isActive, setIsActive] = useState(false)
     const [showAngle, setShowAngle] = useState(false)
@@ -62,6 +68,7 @@ function RotationHandle({
 
     // Handle pointer down
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
+        if (disabled) return
         e.preventDefault()
         e.stopPropagation()
 
@@ -74,7 +81,7 @@ function RotationHandle({
         setIsActive(true)
         setShowAngle(true)
             ; (e.target as HTMLElement).setPointerCapture(e.pointerId)
-    }, [getAngle, currentRotation])
+    }, [getAngle, currentRotation, disabled])
 
     // Handle pointer move
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -102,11 +109,16 @@ function RotationHandle({
 
     // Handle pointer up
     const handlePointerUp = useCallback((e: React.PointerEvent) => {
-        ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
+        const wasDragging = !!dragStartRef.current
+            ; (e.target as HTMLElement).releasePointerCapture(e.pointerId)
         dragStartRef.current = null
         setIsActive(false)
         setShowAngle(false)
-    }, [])
+
+        if (wasDragging && onInteractionEnd) {
+            onInteractionEnd()
+        }
+    }, [onInteractionEnd])
 
     if (!visible) return null
 
@@ -130,7 +142,7 @@ function RotationHandle({
 
             {/* Rotation handle */}
             <div
-                className="absolute pointer-events-auto cursor-grab active:cursor-grabbing touch-none"
+                className={`absolute pointer-events-auto touch-none ${disabled ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing'}`}
                 style={{
                     left: handlePosition.x - HIT_AREA_SIZE / 2,
                     top: handlePosition.y - HIT_AREA_SIZE / 2,

@@ -44,6 +44,10 @@ interface InfiniteCanvasProps {
     onWipTransformChange?: (transform: Partial<CanvasImageData['transform']>) => void
     /** Whether grayscale mode is enabled */
     isGrayscale: boolean
+    /** Callback when transform interaction finishes (drag release) */
+    onTransformInteractionEnd?: () => void
+    /** Whether the layout is locked */
+    isLocked?: boolean
     /** Callback when canvas transform changes */
     onCanvasTransformChange?: (transform: DrawingCanvasTransform) => void
     /** External canvas transform (for resetting) */
@@ -62,6 +66,8 @@ function InfiniteCanvas({
     onReferenceTransformChange,
     onWipTransformChange,
     isGrayscale,
+    onTransformInteractionEnd,
+    isLocked = false,
     onCanvasTransformChange,
     canvasTransform: externalTransform,
     className = '',
@@ -172,7 +178,7 @@ function InfiniteCanvas({
         const canvasPoint = clientToCanvas(e.clientX, e.clientY)
 
         // Check if clicking on WIP
-        if (isPointInImage(canvasPoint, wipImage)) {
+        if (!isLocked && isPointInImage(canvasPoint, wipImage)) {
             onSelectImage('wip')
             setIsDraggingImage(true)
             dragStartRef.current = { x: e.clientX, y: e.clientY }
@@ -180,7 +186,7 @@ function InfiniteCanvas({
         }
 
         // Check if clicking on reference
-        if (isPointInImage(canvasPoint, referenceImage)) {
+        if (!isLocked && isPointInImage(canvasPoint, referenceImage)) {
             onSelectImage('reference')
             setIsDraggingImage(true)
             dragStartRef.current = { x: e.clientX, y: e.clientY }
@@ -188,7 +194,7 @@ function InfiniteCanvas({
         }
 
         onSelectImage(null)
-    }, [isPanMode, clientToCanvas, isPointInImage, wipImage, referenceImage, onSelectImage, startPan])
+    }, [isPanMode, clientToCanvas, isPointInImage, wipImage, referenceImage, onSelectImage, startPan, isLocked])
 
     // Handle mouse move
     const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -222,10 +228,15 @@ function InfiniteCanvas({
 
     // Handle mouse up
     const handleMouseUp = useCallback(() => {
+        const wasDragging = isDraggingImage
         endPan()
         setIsDraggingImage(false)
         dragStartRef.current = null
-    }, [endPan])
+
+        if (wasDragging && onTransformInteractionEnd) {
+            onTransformInteractionEnd()
+        }
+    }, [endPan, isDraggingImage, onTransformInteractionEnd])
 
     // Determine Transform Mode
     const getTransformMode = (type: 'reference' | 'wip'): TransformMode => {
@@ -341,6 +352,8 @@ function InfiniteCanvas({
                     perspectiveCorners={wipImage.transform.perspectiveCorners}
                     onRotationChange={handleRotationChange}
                     onPerspectiveCornerChange={handlePerspectiveCornerChange}
+                    onInteractionEnd={onTransformInteractionEnd}
+                    isLocked={isLocked}
                 />
             )}
 

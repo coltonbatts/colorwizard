@@ -8,7 +8,8 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import InfiniteCanvas, { SelectedImage, CanvasImageData } from '@/components/drawing/InfiniteCanvas'
 import DrawingControlPanel from '@/components/drawing/DrawingControlPanel'
-import { useImageTransform } from '@/hooks/useImageTransform'
+import { useImageTransform, ImageTransform } from '@/hooks/useImageTransform'
+import { useUndoRedo } from '@/hooks/useUndoRedo'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 
 interface CheckMyDrawingViewProps {
@@ -16,6 +17,11 @@ interface CheckMyDrawingViewProps {
     referenceImage: HTMLImageElement | null
     /** Callback to close the view */
     onClose: () => void
+}
+
+interface CombinedState {
+    ref: ImageTransform
+    wip: ImageTransform
 }
 
 export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyDrawingViewProps) {
@@ -42,6 +48,37 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
         imageDimensions: wipImage ? { width: wipImage.width, height: wipImage.height } : undefined
     })
 
+    // Undo/Redo System
+    const { push, undo, redo, canUndo, canRedo } = useUndoRedo<CombinedState>({
+        ref: refTransform.transform,
+        wip: wipTransform.transform
+    })
+
+    // Helper to capture current state and push to history
+    const recordHistory = useCallback(() => {
+        push({
+            ref: { ...refTransform.transform },
+            wip: { ...wipTransform.transform }
+        })
+    }, [push, refTransform.transform, wipTransform.transform])
+
+    // Handle Undo/Redo actions
+    const handleUndo = useCallback(() => {
+        const prevState = undo()
+        if (prevState) {
+            refTransform.setFullTransform(prevState.ref)
+            wipTransform.setFullTransform(prevState.wip)
+        }
+    }, [undo, refTransform, wipTransform])
+
+    const handleRedo = useCallback(() => {
+        const nextState = redo()
+        if (nextState) {
+            refTransform.setFullTransform(nextState.ref)
+            wipTransform.setFullTransform(nextState.wip)
+        }
+    }, [redo, refTransform, wipTransform])
+
     // Initialize positions
     useEffect(() => {
         if (referenceImage && refTransform.transform.position.x === 0 && refTransform.transform.position.y === 0) {
@@ -57,6 +94,9 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
             const img = new Image()
             img.onload = () => {
                 setWipImage(img)
+                // Capture state before changes
+                recordHistory()
+
                 // Position WIP slightly offset from reference or matching size
                 if (referenceImage) {
                     wipTransform.setPosition({
@@ -69,11 +109,14 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                     wipTransform.setScale(Math.min(scaleX, scaleY))
                 }
                 setSelectedImage('wip')
+
+                // Record after upload
+                setTimeout(recordHistory, 0)
             }
             img.src = e.target?.result as string
         }
         reader.readAsDataURL(file)
-    }, [referenceImage, refTransform.transform.position, wipTransform])
+    }, [referenceImage, refTransform.transform.position, wipTransform, recordHistory])
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()
@@ -94,36 +137,47 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
         }
     }, [handleFileSelect])
 
-    // Quick Actions
+    // Quick Actions (capture before and after)
+    const wrapActionWithHistory = useCallback((action: () => void) => {
+        recordHistory()
+        action()
+        setTimeout(recordHistory, 10) // Small delay to ensure state updated
+    }, [recordHistory])
+
     const handleMatchSize = useCallback(() => {
-        if (referenceImage && wipImage) {
-            const scaleX = referenceImage.width / wipImage.width
-            const scaleY = referenceImage.height / wipImage.height
-            wipTransform.setScale(Math.min(scaleX, scaleY))
-            wipTransform.setPosition({ ...refTransform.transform.position })
-            wipTransform.setRotation(0)
-        }
-    }, [referenceImage, wipImage, refTransform.transform.position, wipTransform])
+        wrapActionWithHistory(() => {
+            if (referenceImage && wipImage) {
+                const scaleX = referenceImage.width / wipImage.width
+                const scaleY = referenceImage.height / wipImage.height
+                wipTransform.setScale(Math.min(scaleX, scaleY))
+                wipTransform.setPosition({ ...refTransform.transform.position })
+                wipTransform.setRotation(0)
+            }
+        })
+    }, [referenceImage, wipImage, refTransform.transform.position, wipTransform, wrapActionWithHistory])
 
     const handleCenterBoth = useCallback(() => {
-        // Since it's an infinite canvas, we just pick a "center"
-        const center = { x: 200, y: 200 }
-        refTransform.setPosition(center)
-        if (wipImage) {
-            wipTransform.setPosition(center)
-        }
-    }, [refTransform, wipTransform, wipImage])
+        wrapActionWithHistory(() => {
+            const center = { x: 200, y: 200 }
+            refTransform.setPosition(center)
+            if (wipImage) {
+                wipTransform.setPosition(center)
+            }
+        })
+    }, [refTransform, wipTransform, wipImage, wrapActionWithHistory])
 
     const handleSideBySide = useCallback(() => {
-        if (referenceImage && wipImage) {
-            const refT = refTransform.transform
-            wipTransform.setPosition({
-                x: refT.position.x + (referenceImage.width * refT.scale) + 50,
-                y: refT.position.y
-            })
-            wipTransform.setRotation(0)
-        }
-    }, [referenceImage, wipImage, refTransform, wipTransform])
+        wrapActionWithHistory(() => {
+            if (referenceImage && wipImage) {
+                const refT = refTransform.transform
+                wipTransform.setPosition({
+                    x: refT.position.x + (referenceImage.width * refT.scale) + 50,
+                    y: refT.position.y
+                })
+                wipTransform.setRotation(0)
+            }
+        })
+    }, [referenceImage, wipImage, refTransform, wipTransform, wrapActionWithHistory])
 
     // State assembly for Canvas
     const referenceImageData: CanvasImageData | null = useMemo(() => {
@@ -147,15 +201,37 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
         }
     }, [wipImage, wipTransform.transform])
 
-    // Close on Escape
+    // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Close on Escape
             if (e.key === 'Escape') onClose()
-            if (e.key.toLowerCase() === 'g') setIsGrayscale(prev => !prev)
+
+            // Grayscale toggle
+            if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey) {
+                setIsGrayscale(prev => !prev)
+            }
+
+            // Undo (Cmd+Z)
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                e.preventDefault()
+                handleUndo()
+            }
+
+            // Redo (Cmd+Shift+Z or Cmd+Y)
+            if ((e.metaKey || e.ctrlKey) && (
+                (e.key.toLowerCase() === 'z' && e.shiftKey) ||
+                (e.key.toLowerCase() === 'y')
+            )) {
+                e.preventDefault()
+                handleRedo()
+            }
         }
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [onClose])
+    }, [onClose, handleUndo, handleRedo])
+
+    const isLocked = refTransform.transform.isLocked || wipTransform.transform.isLocked
 
     return (
         <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col md:flex-row overflow-hidden font-sans">
@@ -177,7 +253,30 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                         Check My Drawing
                     </h1>
 
-                    <div className="w-10 h-10" /> {/* Spacer */}
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={handleUndo}
+                            disabled={!canUndo}
+                            className="p-2 bg-gray-800/80 hover:bg-gray-700 disabled:opacity-30 text-white rounded-lg transition-all shadow-lg backdrop-blur-sm"
+                            title="Undo (Cmd+Z)"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M3 10h10a5 5 0 0 1 0 10H11" />
+                                <polyline points="8 5 3 10 8 15" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={handleRedo}
+                            disabled={!canRedo}
+                            className="p-2 bg-gray-800/80 hover:bg-gray-700 disabled:opacity-30 text-white rounded-lg transition-all shadow-lg backdrop-blur-sm"
+                            title="Redo (Cmd+Shift+Z)"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M21 10H11a5 5 0 0 0 0 10h2" />
+                                <polyline points="16 5 21 10 16 15" />
+                            </svg>
+                        </button>
+                    </div>
                 </header>
 
                 {/* Canvas Workspace */}
@@ -193,20 +292,19 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                         if (t.position) wipTransform.setPosition(t.position)
                         if (t.rotation !== undefined) wipTransform.setRotation(t.rotation)
                         if (t.perspectiveCorners) {
-                            // Manual update for individual corners if needed, 
-                            // but InfiniteCanvas handles the object spread.
-                            // We'll just proxy the whole corner set if it comes.
                             Object.entries(t.perspectiveCorners).forEach(([key, val]) => {
                                 wipTransform.setPerspectiveCorner(key as any, val)
                             })
                         }
                     }}
+                    onTransformInteractionEnd={recordHistory}
                     isGrayscale={isGrayscale}
+                    isLocked={isLocked}
                 >
                     {/* Instructions Overlay */}
                     {wipImage && (
                         <div className="absolute top-20 left-1/2 -translate-x-1/2 text-[10px] text-white/40 uppercase tracking-widest pointer-events-none text-center">
-                            Hold Space to pan • Scroll to zoom • Select image to move
+                            Hold Space to pan • Scroll to zoom • {isLocked ? 'Layout Locked' : 'Select image to move'}
                         </div>
                     )}
                 </InfiniteCanvas>
@@ -255,25 +353,42 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                     onSelectImage={setSelectedImage}
                     hasReferenceImage={true}
                     referenceScale={refTransform.transform.scale}
-                    onReferenceScaleChange={refTransform.setScale}
-                    onResetReference={refTransform.reset}
+                    onReferenceScaleChange={(s) => {
+                        recordHistory()
+                        refTransform.setScale(s)
+                    }}
+                    onResetReference={() => wrapActionWithHistory(refTransform.reset)}
                     hasWipImage={!!wipImage}
                     wipOpacity={wipTransform.transform.opacity}
-                    onWipOpacityChange={wipTransform.setOpacity}
+                    onWipOpacityChange={(o) => {
+                        // We don't record history for every opacity tick to avoid polluting the stack
+                        // but maybe we should record on "commit" if we had a slider release event.
+                        // For now, let's record only major changes.
+                        wipTransform.setOpacity(o)
+                    }}
                     wipScale={wipTransform.transform.scale}
-                    onWipScaleChange={wipTransform.setScale}
+                    onWipScaleChange={(s) => {
+                        recordHistory()
+                        wipTransform.setScale(s)
+                    }}
                     wipRotation={wipTransform.transform.rotation}
                     perspectiveEnabled={wipTransform.transform.perspectiveEnabled}
-                    onTogglePerspective={wipTransform.togglePerspective}
-                    onResetWip={wipTransform.reset}
+                    onTogglePerspective={() => wrapActionWithHistory(wipTransform.togglePerspective)}
+                    onResetWip={() => wrapActionWithHistory(wipTransform.reset)}
                     onMatchSize={handleMatchSize}
                     onCenterBoth={handleCenterBoth}
                     onSideBySide={handleSideBySide}
-                    onFitToView={handleCenterBoth} // Reuse center for now
-                    canvasZoom={1.0} // This should be synced from InfiniteCanvas ideally
-                    onResetView={() => { }} // Hooked into InfiniteCanvas
+                    onFitToView={handleCenterBoth}
+                    canvasZoom={1.0}
+                    onResetView={() => { }}
                     isGrayscale={isGrayscale}
                     onToggleGrayscale={() => setIsGrayscale(prev => !prev)}
+                    isLocked={isLocked}
+                    onToggleLock={() => {
+                        const newLock = !isLocked
+                        refTransform.setLocked(newLock)
+                        wipTransform.setLocked(newLock)
+                    }}
                     isCompact={isMobile}
                 />
             )}
