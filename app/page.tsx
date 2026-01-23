@@ -84,7 +84,8 @@ export default function Home() {
 
     // Modal state
     showCanvasSettingsModal, setShowCanvasSettingsModal,
-    lastSampleTime
+    lastSampleTime,
+    simpleMode, toggleSimpleMode
   } = useStore()
 
   // Session palette integration
@@ -169,11 +170,17 @@ export default function Home() {
         e.preventDefault()
         setShowCheckDrawing(true)
       }
+
+      // Shift+S for Simple/Pro mode toggle
+      if (e.key === 'S' && e.shiftKey) {
+        e.preventDefault()
+        toggleSimpleMode()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sidebarCollapsed, toggleSidebar, setActiveTab])
+  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -440,7 +447,11 @@ export default function Home() {
           {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
           {!isMobile && (
             <div className="flex border-b border-gray-100 bg-white items-stretch">
-              {TABS.map((tab, index) => (
+              {/* Simple mode shows: Sample, Mix, Matches only (Pinned is separate) */}
+              {(simpleMode
+                ? TABS.filter(tab => ['sample', 'oilmix', 'matches'].includes(tab.id))
+                : TABS
+              ).map((tab, index) => (
                 <button
                   key={tab.id}
                   className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
@@ -456,7 +467,7 @@ export default function Home() {
                   )}
                 </button>
               ))}
-              {/* ... rest of the buttons ... */}
+              {/* Pinned - always visible */}
               <button
                 className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
                   ? 'text-blue-600'
@@ -478,22 +489,25 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
                 )}
               </button>
-              <button
-                className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
-                  ? 'text-purple-600'
-                  : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-                  }`}
-                onClick={() => setActiveTab('cards')}
-                title="Color Cards"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <path d="M3 9h18" />
-                </svg>
-                {activeTab === 'cards' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 animate-in fade-in zoom-in-95" />
-                )}
-              </button>
+              {/* Cards - Pro mode only */}
+              {!simpleMode && (
+                <button
+                  className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
+                    ? 'text-purple-600'
+                    : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                    }`}
+                  onClick={() => setActiveTab('cards')}
+                  title="Color Cards"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <path d="M3 9h18" />
+                  </svg>
+                  {activeTab === 'cards' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 animate-in fade-in zoom-in-95" />
+                  )}
+                </button>
+              )}
             </div>
           )}
 

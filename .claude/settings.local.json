@@ -5,7 +5,11 @@
       "Bash(mkdir:*)",
       "Bash(npm install)",
       "Bash(npm run dev)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(npx skills:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

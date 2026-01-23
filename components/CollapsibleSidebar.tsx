@@ -1,9 +1,13 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { useStore } from '@/lib/store/useStore'
 
 // New tab type matching the store
 type TabType = 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
+
+// Tabs visible in simple mode (core functionality)
+const SIMPLE_MODE_TABS: TabType[] = ['sample', 'oilmix', 'matches', 'pinned']
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -114,6 +118,13 @@ export default function CollapsibleSidebar({
     pinnedCount = 0,
     width = 400
 }: CollapsibleSidebarProps) {
+    const { simpleMode } = useStore()
+
+    // Filter tabs based on mode
+    const visibleTabs = simpleMode
+        ? TABS.filter(tab => SIMPLE_MODE_TABS.includes(tab.id))
+        : TABS
+
     return (
         <div
             className={`
@@ -145,7 +156,7 @@ export default function CollapsibleSidebar({
             {/* Collapsed Icon Bar */}
             {collapsed && (
                 <div className="sidebar-icon-bar pt-4">
-                    {TABS.map((tab, index) => (
+                    {visibleTabs.map((tab, index) => (
                         <button
                             key={tab.id}
                             onClick={() => {
@@ -161,40 +172,44 @@ export default function CollapsibleSidebar({
 
                     <div className="w-6 h-px bg-gray-200 my-2" />
 
-                    {/* Pinned */}
-                    <button
-                        onClick={() => {
-                            onTabChange?.('pinned')
-                            onToggle()
-                        }}
-                        className={`sidebar-icon-btn tooltip-wrapper relative ${activeTab === 'pinned' ? 'active' : ''}`}
-                        data-tooltip={`Pinned Colors (${pinnedCount})`}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 17v5" />
-                            <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
-                        </svg>
-                        {pinnedCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                                {pinnedCount > 9 ? '9+' : pinnedCount}
-                            </span>
-                        )}
-                    </button>
+                    {/* Pinned - only if not already in visible tabs */}
+                    {!simpleMode && (
+                        <button
+                            onClick={() => {
+                                onTabChange?.('pinned')
+                                onToggle()
+                            }}
+                            className={`sidebar-icon-btn tooltip-wrapper relative ${activeTab === 'pinned' ? 'active' : ''}`}
+                            data-tooltip={`Pinned Colors (${pinnedCount})`}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12 17v5" />
+                                <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
+                            </svg>
+                            {pinnedCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                                    {pinnedCount > 9 ? '9+' : pinnedCount}
+                                </span>
+                            )}
+                        </button>
+                    )}
 
-                    {/* Cards */}
-                    <button
-                        onClick={() => {
-                            onTabChange?.('cards')
-                            onToggle()
-                        }}
-                        className={`sidebar-icon-btn tooltip-wrapper ${activeTab === 'cards' ? 'active' : ''}`}
-                        data-tooltip="Color Cards"
-                    >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <path d="M3 9h18" />
-                        </svg>
-                    </button>
+                    {/* Cards - only in Pro mode */}
+                    {!simpleMode && (
+                        <button
+                            onClick={() => {
+                                onTabChange?.('cards')
+                                onToggle()
+                            }}
+                            className={`sidebar-icon-btn tooltip-wrapper ${activeTab === 'cards' ? 'active' : ''}`}
+                            data-tooltip="Color Cards"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <path d="M3 9h18" />
+                            </svg>
+                        </button>
+                    )}
 
                     <div className="w-6 h-px bg-gray-200 my-2" />
 

@@ -51,6 +51,9 @@ interface ColorState {
     compactMode: boolean
     sidebarWidth: number
 
+    // Simple/Advanced mode - controls UI complexity
+    simpleMode: boolean
+
     // Breakdown state
     breakdownValue: number
 
@@ -99,6 +102,8 @@ interface ColorState {
     setBreakdownValue: (value: number) => void
     toggleSidebar: () => void
     toggleCompactMode: () => void
+    setSimpleMode: (simple: boolean) => void
+    toggleSimpleMode: () => void
 
     // Calibration actions
     setCalibration: (data: CalibrationData | null) => void
@@ -163,6 +168,7 @@ export const useStore = create<ColorState>()(
             sidebarCollapsed: false,
             compactMode: false,
             sidebarWidth: 400,
+            simpleMode: true, // Default to simple mode for new users
 
             // Breakdown state
             breakdownValue: 0,
@@ -223,6 +229,8 @@ export const useStore = create<ColorState>()(
             setBreakdownValue: (breakdownValue) => set({ breakdownValue }),
             toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
             toggleCompactMode: () => set((state) => ({ compactMode: !state.compactMode })),
+            setSimpleMode: (simpleMode) => set({ simpleMode }),
+            toggleSimpleMode: () => set((state) => ({ simpleMode: !state.simpleMode })),
 
             // Calibration actions
             setCalibration: (calibration) => set({ calibration }),
@@ -340,6 +348,7 @@ export const useStore = create<ColorState>()(
                 sidebarCollapsed: state.sidebarCollapsed,
                 compactMode: state.compactMode,
                 sidebarWidth: state.sidebarWidth,
+                simpleMode: state.simpleMode,
                 canvasSettings: state.canvasSettings,
                 // Persist grid settings
                 rulerGridEnabled: state.rulerGridEnabled,

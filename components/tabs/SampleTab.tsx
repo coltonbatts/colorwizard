@@ -17,6 +17,7 @@ import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { getColorName } from '@/lib/colorNaming'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
+import { useStore } from '@/lib/store/useStore'
 
 interface SampleTabProps {
     sampledColor: {
@@ -51,6 +52,7 @@ export default function SampleTab({
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
+    const { simpleMode } = useStore()
 
     if (!sampledColor) {
         return (
@@ -112,21 +114,23 @@ export default function SampleTab({
                 </button>
             </div>
 
-            {/* Quick Copy Buttons */}
-            <div className="flex justify-center gap-2 text-xs">
-                <button
-                    onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')}
-                    className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'rgb' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
-                >
-                    {copied === 'rgb' ? '✓ Copied' : `RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`}
-                </button>
-                <button
-                    onClick={() => copyToClipboard(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'hsl')}
-                    className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'hsl' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
-                >
-                    {copied === 'hsl' ? '✓ Copied' : `HSL ${hsl.h}°`}
-                </button>
-            </div>
+            {/* Quick Copy Buttons - Simplified in Simple Mode */}
+            {!simpleMode && (
+                <div className="flex justify-center gap-2 text-xs">
+                    <button
+                        onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')}
+                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'rgb' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
+                    >
+                        {copied === 'rgb' ? '✓ Copied' : `RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`}
+                    </button>
+                    <button
+                        onClick={() => copyToClipboard(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'hsl')}
+                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'hsl' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
+                    >
+                        {copied === 'hsl' ? '✓ Copied' : `HSL ${hsl.h}°`}
+                    </button>
+                </div>
+            )}
 
             {/* Value & Chroma Readout */}
             <div className="grid grid-cols-2 gap-4">
@@ -151,14 +155,16 @@ export default function SampleTab({
                 </div>
             </div>
 
-            {/* Label Input */}
-            <input
-                type="text"
-                placeholder="Add a label/note..."
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-studio focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            />
+            {/* Label Input - Hidden in Simple Mode */}
+            {!simpleMode && (
+                <input
+                    type="text"
+                    placeholder="Add a label/note..."
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-studio focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-2">
@@ -207,38 +213,42 @@ export default function SampleTab({
                     )}
                 </button>
 
-                <button
-                    onClick={async () => {
-                        const dmc = findClosestDMCColors(rgb, 5)
-                        const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
+                {/* Make Card - Pro mode only */}
+                {!simpleMode && (
+                    <button
+                        onClick={async () => {
+                            const dmc = findClosestDMCColors(rgb, 5)
+                            const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
 
-                        let descriptiveName = ''
-                        try {
-                            const nameMatch = await getColorName(hex)
-                            descriptiveName = nameMatch.name
-                        } catch (e) {
-                            console.error('Failed to get color name', e)
-                        }
+                            let descriptiveName = ''
+                            try {
+                                const nameMatch = await getColorName(hex)
+                                descriptiveName = nameMatch.name
+                            } catch (e) {
+                                console.error('Failed to get color name', e)
+                            }
 
-                        const newCard: ColorCard = {
-                            id: crypto.randomUUID(),
-                            name: label.trim() || descriptiveName || `Color ${hex}`,
-                            colorName: descriptiveName,
-                            createdAt: Date.now(),
-                            color: { hex, rgb, hsl, luminance },
-                            valueStep: sampledColor.valueMetadata?.step,
-                            dmcMatches: dmc,
-                            paintMatches: [],
-                        }
-                        setPendingCard(newCard)
-                        setShowCardModal(true)
-                    }}
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg"
-                >
-                    🎴 Card
-                </button>
+                            const newCard: ColorCard = {
+                                id: crypto.randomUUID(),
+                                name: label.trim() || descriptiveName || `Color ${hex}`,
+                                colorName: descriptiveName,
+                                createdAt: Date.now(),
+                                color: { hex, rgb, hsl, luminance },
+                                valueStep: sampledColor.valueMetadata?.step,
+                                dmcMatches: dmc,
+                                paintMatches: [],
+                            }
+                            setPendingCard(newCard)
+                            setShowCardModal(true)
+                        }}
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg"
+                    >
+                        🎴 Card
+                    </button>
+                )}
 
-                {onAddToSession && (
+                {/* Add to Session - Pro mode only */}
+                {!simpleMode && onAddToSession && (
                     <button
                         onClick={() => onAddToSession({ hex, rgb })}
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-500 hover:bg-amber-400 text-white shadow-lg"
