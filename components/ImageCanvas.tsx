@@ -86,7 +86,7 @@ const HIGHLIGHT_ALPHA_MAX = 255
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
-  const { breakdownValue, setBreakdownValue } = useStore()
+  const { breakdownValue, setBreakdownValue, valueModeEnabled } = useStore()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -131,6 +131,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
+
+  // Value Mode overrides the canvas preview into grayscale
+  useEffect(() => {
+    setIsGrayscale(valueModeEnabled)
+  }, [valueModeEnabled])
 
   const activeBreakdownStep = useMemo<BreakdownStep>(() => {
     if (breakdownValue <= 10) return 'Original'

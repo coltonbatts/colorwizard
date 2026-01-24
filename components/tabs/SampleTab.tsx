@@ -18,6 +18,7 @@ import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { getColorName } from '@/lib/colorNaming'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { useStore } from '@/lib/store/useStore'
+import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 
 interface SampleTabProps {
     sampledColor: {
@@ -52,7 +53,13 @@ export default function SampleTab({
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
-    const { simpleMode } = useStore()
+    const {
+        simpleMode,
+        valueModeEnabled,
+        valueModeSteps,
+        toggleValueMode,
+        setValueModeSteps
+    } = useStore()
 
     if (!sampledColor) {
         return (
@@ -72,7 +79,10 @@ export default function SampleTab({
     // Value readout
     const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
     const valueBand = getValueBand(valuePercent)
-    const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
+
+    const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
+    const valueModeGrayHex = valueModeMeta ? luminanceToGrayHex(valueModeMeta.y) : null
+    const grayscaleHex = valueModeGrayHex ?? `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
     const copyToClipboard = (text: string, type: string) => {
         navigator.clipboard.writeText(text)
@@ -82,10 +92,43 @@ export default function SampleTab({
 
     return (
         <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6 space-y-4">
+            {/* Value Mode Controls */}
+            <div className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+                <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-widest font-black text-studio-dim">Workflow</span>
+                    <span className="text-sm font-bold text-studio">Value Mode</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <select
+                        value={valueModeSteps}
+                        onChange={(e) => setValueModeSteps(Number(e.target.value) as 5 | 7 | 9 | 11)}
+                        disabled={!valueModeEnabled}
+                        className={`h-9 rounded-xl px-3 text-sm font-bold border transition-all ${valueModeEnabled ? 'bg-white border-gray-200 text-studio' : 'bg-gray-100 border-gray-100 text-gray-400'}`}
+                        aria-label="Value steps"
+                    >
+                        {[5, 7, 9, 11].map((n) => (
+                            <option key={n} value={n}>{n} steps</option>
+                        ))}
+                    </select>
+
+                    <button
+                        onClick={toggleValueMode}
+                        className={`h-9 px-4 rounded-xl text-sm font-black transition-all border ${valueModeEnabled
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
+                            : 'bg-white text-studio border-gray-200 hover:bg-gray-100'
+                            }`}
+                        title="Toggle Value Mode"
+                    >
+                        {valueModeEnabled ? 'On' : 'Off'}
+                    </button>
+                </div>
+            </div>
+
             {/* Giant Hero Swatch */}
             <div
                 className="w-full aspect-[2/1] rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-all duration-500 cursor-pointer"
-                style={{ backgroundColor: hex }}
+                style={{ backgroundColor: valueModeEnabled ? grayscaleHex : hex }}
                 onClick={() => setShowColorFullScreen(true)}
             >
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
@@ -101,6 +144,15 @@ export default function SampleTab({
 
             {/* Color Name */}
             <ColorNamingDisplay hex={hex} key={lastSampleTime} />
+
+            {/* Primary Readout */}
+            {valueModeEnabled && valueModeMeta ? (
+                <div className="flex flex-col items-center justify-center gap-1">
+                    <div className="text-[10px] uppercase tracking-widest font-black text-studio-dim">Value Step</div>
+                    <div className="font-mono text-5xl lg:text-6xl font-black tabular-nums text-studio">{valueModeMeta.step}</div>
+                    <div className="text-xs font-bold text-studio-dim">of {valueModeSteps}</div>
+                </div>
+            ) : null}
 
             {/* HEX Display with Copy */}
             <div className="flex items-center justify-center gap-3">
@@ -137,9 +189,15 @@ export default function SampleTab({
                 <div className="flex flex-col items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
                     <span className="text-blue-600 text-[10px] uppercase font-black tracking-widest mb-1">Value</span>
                     <span className="font-mono text-3xl text-studio font-black tabular-nums">
-                        {sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent}%
+                        {valueModeEnabled && valueModeMeta ? Math.round(valueModeMeta.y * 100) : (sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent)}%
                     </span>
-                    {sampledColor.valueMetadata ? (
+
+                    {valueModeEnabled && valueModeMeta ? (
+                        <div className="flex items-center gap-2 mt-1">
+                            <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: grayscaleHex }}></div>
+                            <span className="text-yellow-600 font-mono text-sm font-bold">Step {valueModeMeta.step} / {valueModeSteps}</span>
+                        </div>
+                    ) : sampledColor.valueMetadata ? (
                         <div className="flex items-center gap-2 mt-1">
                             <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: grayscaleHex }}></div>
                             <span className="text-yellow-600 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step}</span>
@@ -218,7 +276,7 @@ export default function SampleTab({
                     <button
                         onClick={async () => {
                             const dmc = findClosestDMCColors(rgb, 5)
-                            const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
+                            const luminance = (valueModeMeta?.y ?? (getLuminance(rgb.r, rgb.g, rgb.b) / 100))
 
                             let descriptiveName = ''
                             try {
@@ -234,7 +292,7 @@ export default function SampleTab({
                                 colorName: descriptiveName,
                                 createdAt: Date.now(),
                                 color: { hex, rgb, hsl, luminance },
-                                valueStep: sampledColor.valueMetadata?.step,
+                                valueStep: valueModeEnabled && valueModeMeta ? valueModeMeta.step : sampledColor.valueMetadata?.step,
                                 dmcMatches: dmc,
                                 paintMatches: [],
                             }

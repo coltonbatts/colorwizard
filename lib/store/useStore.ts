@@ -57,6 +57,10 @@ interface ColorState {
     // Breakdown state
     breakdownValue: number
 
+    // Value Mode (value-first workflow)
+    valueModeEnabled: boolean
+    valueModeSteps: 5 | 7 | 9 | 11
+
     // Calibration State
     calibration: CalibrationData | null
     calibrationStale: boolean
@@ -100,6 +104,12 @@ interface ColorState {
     setCompactMode: (compact: boolean) => void
     setSidebarWidth: (width: number) => void
     setBreakdownValue: (value: number) => void
+
+    // Value Mode actions
+    setValueModeEnabled: (enabled: boolean) => void
+    toggleValueMode: () => void
+    setValueModeSteps: (steps: 5 | 7 | 9 | 11) => void
+
     toggleSidebar: () => void
     toggleCompactMode: () => void
     setSimpleMode: (simple: boolean) => void
@@ -173,6 +183,10 @@ export const useStore = create<ColorState>()(
             // Breakdown state
             breakdownValue: 0,
 
+            // Value Mode (value-first workflow)
+            valueModeEnabled: false,
+            valueModeSteps: 9,
+
             // Calibration State
             calibration: null,
             calibrationStale: false,
@@ -227,6 +241,12 @@ export const useStore = create<ColorState>()(
             setCompactMode: (compactMode) => set({ compactMode }),
             setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
             setBreakdownValue: (breakdownValue) => set({ breakdownValue }),
+
+            // Value Mode actions
+            setValueModeEnabled: (valueModeEnabled) => set({ valueModeEnabled }),
+            toggleValueMode: () => set((state) => ({ valueModeEnabled: !state.valueModeEnabled })),
+            setValueModeSteps: (valueModeSteps) => set({ valueModeSteps }),
+
             toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
             toggleCompactMode: () => set((state) => ({ compactMode: !state.compactMode })),
             setSimpleMode: (simpleMode) => set({ simpleMode }),
@@ -355,6 +375,8 @@ export const useStore = create<ColorState>()(
                 rulerGridSpacing: state.rulerGridSpacing,
                 // Persist breakdown value
                 breakdownValue: state.breakdownValue,
+                valueModeEnabled: state.valueModeEnabled,
+                valueModeSteps: state.valueModeSteps,
             }),
         }
     )
