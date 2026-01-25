@@ -92,14 +92,19 @@ export default function CompactToolbar({
     const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
     const [showAdvancedTools, setShowAdvancedTools] = useState(false)
+    const [showValueModeDropdown, setShowValueModeDropdown] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
-    const { simpleMode } = useStore()
+    const valueModeRef = useRef<HTMLDivElement>(null)
+    const { simpleMode, valueModeEnabled, valueModeSteps, toggleValueMode, setValueModeSteps } = useStore()
 
     // Close menu on click outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuOpen(false)
+            }
+            if (valueModeRef.current && !valueModeRef.current.contains(e.target as Node)) {
+                setShowValueModeDropdown(false)
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
@@ -193,6 +198,75 @@ export default function CompactToolbar({
                     </svg>
                     <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>Drawing</span>
                 </button>
+            )}
+
+            {/* Value Mode Toggle - Global quick-access toggle */}
+            {hasImage && (
+                <div ref={valueModeRef} className="relative">
+                    <button
+                        onClick={() => {
+                            if (!valueModeEnabled) {
+                                toggleValueMode()
+                            } else {
+                                setShowValueModeDropdown(!showValueModeDropdown)
+                            }
+                        }}
+                        className={`toolbar-btn flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-sm ${valueModeEnabled
+                            ? 'bg-blue-600 text-white shadow-lg border border-blue-600'
+                            : 'bg-gray-50 text-studio hover:bg-gray-100 border border-gray-100'
+                            }`}
+                        title={`Value Mode - Toggle grayscale view (V) ${valueModeEnabled ? `- ${valueModeSteps} steps` : ''}`}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 2v20" />
+                            <path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" fillOpacity="0.3" />
+                        </svg>
+                        <span className={`toolbar-label ${compactMode ? 'hidden' : ''}`}>
+                            {valueModeEnabled ? `Value: ${valueModeSteps}` : 'Value'}
+                        </span>
+                        {valueModeEnabled && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        )}
+                    </button>
+
+                    {/* Dropdown for step selection */}
+                    {showValueModeDropdown && valueModeEnabled && (
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 min-w-[140px]">
+                            <div className="px-3 py-2 text-[10px] text-studio-dim uppercase font-black tracking-widest border-b border-gray-100">
+                                Value Steps
+                            </div>
+                            {([5, 7, 9, 11] as const).map((steps) => (
+                                <button
+                                    key={steps}
+                                    onClick={() => {
+                                        setValueModeSteps(steps)
+                                        setShowValueModeDropdown(false)
+                                    }}
+                                    className={`w-full px-4 py-2 text-left text-sm font-bold transition-colors ${valueModeSteps === steps
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'text-studio hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {steps} steps {valueModeSteps === steps && '✓'}
+                                </button>
+                            ))}
+                            <div className="border-t border-gray-100 mt-2 pt-2">
+                                <button
+                                    onClick={() => {
+                                        toggleValueMode()
+                                        setShowValueModeDropdown(false)
+                                    }}
+                                    className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                                >
+                                    Turn Off
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             )}
 
             {/* Advanced Tools Expand Button - Only in Simple Mode */}

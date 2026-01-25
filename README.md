@@ -38,6 +38,14 @@ Upload any reference image, click a color, and ColorWizard gives you:
 - HEX, RGB, and HSL readouts
 - Zoom/pan with keyboard shortcuts and mouse controls
 
+**Value Mode**
+
+- Global toggle accessible from toolbar (or press `V`)
+- Converts canvas to grayscale for value checking
+- Configurable value steps (5, 7, 9, or 11)
+- Shows value step number for sampled colors
+- Essential for painters checking value relationships
+
 **Oil Paint Recipes**
 
 - Six-color limited palette (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue)
@@ -94,12 +102,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Keyboard Shortcuts
 
-| Shortcut   | Action       |
-|------------|--------------|
-| `Spacebar` | Hold to pan  |
-| `+` / `=`  | Zoom in      |
-| `-`        | Zoom out     |
-| `0`        | Reset view   |
+| Shortcut   | Action                    |
+|------------|---------------------------|
+| `Spacebar` | Hold to pan               |
+| `+` / `=`  | Zoom in                   |
+| `-`        | Zoom out                  |
+| `V`        | Toggle Value Mode         |
+| `1`-`8`    | Switch sidebar tabs       |
+| `9`        | Check My Values view      |
+| `0`        | Check My Drawing view     |
+| `[` / `]`  | Collapse/expand sidebar   |
+| `Shift+S`  | Toggle Simple/Pro mode    |
 
 ---
 
@@ -135,7 +148,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - [x] DMC floss matching
 - [x] Color naming
 - [x] Exportable color cards
-- [ ] Session palette persistence
+- [x] Session palette persistence
+- [x] Value Mode for grayscale value checking
 - [ ] Palette extraction from full image
 - [ ] Export collections to CSV/JSON
 - [ ] Watercolor and acrylic palette support

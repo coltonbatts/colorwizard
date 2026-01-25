@@ -85,7 +85,8 @@ export default function Home() {
     // Modal state
     showCanvasSettingsModal, setShowCanvasSettingsModal,
     lastSampleTime,
-    simpleMode, toggleSimpleMode
+    simpleMode, toggleSimpleMode,
+    toggleValueMode
   } = useStore()
 
   // Session palette integration
@@ -176,11 +177,17 @@ export default function Home() {
         e.preventDefault()
         toggleSimpleMode()
       }
+
+      // V for Value Mode toggle
+      if ((e.key === 'v' || e.key === 'V') && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault()
+        toggleValueMode()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode])
+  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
