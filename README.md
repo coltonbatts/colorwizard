@@ -32,6 +32,12 @@ Upload any reference image, click a color, and ColorWizard gives you:
 
 ## Key Features
 
+**Modern UI/UX**
+
+- **Collapsible Sidebar Sections**: Clean, modular interface using the new `CollapsibleSection` component.
+- **Accent-Coded Categories**: Color-coded sections (Blue, Purple, Teal, etc.) for better visual organization.
+- **Fast Navigation**: Optimized sidebar for both desktop and tablet use.
+
 **Color Sampling**
 
 - Click-to-sample on any uploaded image
@@ -42,8 +48,9 @@ Upload any reference image, click a color, and ColorWizard gives you:
 
 - Global toggle accessible from toolbar (or press `V`)
 - Converts canvas to grayscale for value checking
-- Configurable value steps (5, 7, 9, or 11)
-- Shows value step number for sampled colors
+- **Opacity Control**: Adjust the value overlay intensity in real-time.
+- **Configurable Steps**: Choose between 5, 7, 9, or 11 value intervals.
+- **Refined Step Legend**: Modern grid-based preview of luminance values.
 - Essential for painters checking value relationships
 
 **Oil Paint Recipes**

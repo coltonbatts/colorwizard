@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { rgb as culoriRgb } from 'culori'
 import PaintRecipe from './PaintRecipe'
 import MixLab from './MixLab'
@@ -10,6 +10,7 @@ import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
 import ValueHistogram from './ValueHistogram'
 import ColorCardModal from './ColorCardModal'
+import CollapsibleSection from './ui/CollapsibleSection'
 import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
@@ -21,6 +22,8 @@ import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { ValueScaleResult } from '@/lib/valueScale'
 import ColorNamingDisplay from './ColorNamingDisplay'
 import { getColorName } from '@/lib/colorNaming'
+
+type MixSection = 'recipe' | 'mixlab' | 'harmonies' | 'value'
 
 
 interface ColorPanelProps {
@@ -47,16 +50,36 @@ interface ColorPanelProps {
 }
 
 type Tab = 'painter' | 'thread'
-type PainterSubTab = 'recipe' | 'mixlab' | 'harmonies' | 'valueScale'
 
 export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette, histogramBins, valueScaleResult, lastSampleTime }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
-  const [painterSubTab, setPainterSubTab] = useState<PainterSubTab>('recipe')
+  const [openSections, setOpenSections] = useState<Set<MixSection>>(new Set(['recipe']))
   const [label, setLabel] = useState('')
   const [isPinning, setIsPinning] = useState(false)
   const [showColorFullScreen, setShowColorFullScreen] = useState(false)
   const [showCardModal, setShowCardModal] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
+
+  // Section toggle handlers
+  const toggleSection = useCallback((section: MixSection) => {
+    setOpenSections(prev => {
+      const next = new Set(prev)
+      if (next.has(section)) {
+        next.delete(section)
+      } else {
+        next.add(section)
+      }
+      return next
+    })
+  }, [])
+
+  const expandAll = useCallback(() => {
+    setOpenSections(new Set(['recipe', 'mixlab', 'harmonies', 'value']))
+  }, [])
+
+  const collapseAll = useCallback(() => {
+    setOpenSections(new Set())
+  }, [])
 
 
   if (!sampledColor) {
@@ -257,53 +280,12 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         </button>
       </div>
 
-      {/* PAINTER SUB-TABS */}
-      {activeTab === 'painter' && (
-        <div className="flex border-b border-gray-800 bg-gray-900/20">
-          <button
-            onClick={() => setPainterSubTab('recipe')}
-            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'recipe'
-              ? 'text-blue-600 border-b border-blue-500 bg-blue-50/30'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-          >
-            Recipe
-          </button>
-          <button
-            onClick={() => setPainterSubTab('mixlab')}
-            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'mixlab'
-              ? 'text-purple-600 border-b border-purple-500 bg-purple-50/30'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-          >
-            Mix Lab
-          </button>
-          <button
-            onClick={() => setPainterSubTab('harmonies')}
-            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'harmonies'
-              ? 'text-teal-600 border-b border-teal-500 bg-teal-50/30'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-          >
-            Harmonies
-          </button>
-          <button
-            onClick={() => setPainterSubTab('valueScale')}
-            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${painterSubTab === 'valueScale'
-              ? 'text-yellow-600 border-b border-yellow-500 bg-yellow-50/30'
-              : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-              }`}
-          >
-            Value
-          </button>
-        </div>
-      )}
 
       {/* CONTENT AREA */}
       <div className="p-4 lg:p-6">
 
         {activeTab === 'painter' && (
-          <div className="space-y-6 lg:space-y-8 animate-in fade-in duration-300">
+          <div className="space-y-4 animate-in fade-in duration-300">
 
             {/* Visualizer - always visible in painter tab */}
             <section className="min-h-0">
@@ -322,172 +304,216 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
               />
             </section>
 
-            {/* Recipe or Mix Lab based on sub-tab */}
-            <section className="min-h-0">
-              {painterSubTab === 'recipe' ? (
-                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
-              ) : painterSubTab === 'mixlab' ? (
-                <MixLab targetHex={hex} />
-              ) : painterSubTab === 'harmonies' ? (
-                <ColorHarmonies rgb={rgb} onColorSelect={onColorSelect} />
-              ) : (
-                <div className="space-y-6">
-                  {/* Value Scale Controls */}
-                  <div className="p-4 bg-gray-900 rounded-lg border border-gray-800 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider">Value Distribution</h3>
-                    </div>
+            {/* Expand/Collapse All Control */}
+            <div className="flex items-center justify-between py-2 px-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mix Tools</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={expandAll}
+                  className="text-[10px] text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                >
+                  Expand all
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  onClick={collapseAll}
+                  className="text-[10px] text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                >
+                  Collapse all
+                </button>
+              </div>
+            </div>
 
-                    {histogramBins && (
+            {/* Collapsible Sections */}
+            <div className="space-y-3">
+
+              {/* 1. Paint Recipe */}
+              <CollapsibleSection
+                title="Paint Recipe"
+                icon="🎨"
+                accentColor="blue"
+                isOpen={openSections.has('recipe')}
+                onToggle={() => toggleSection('recipe')}
+              >
+                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
+              </CollapsibleSection>
+
+              {/* 2. Mix Lab */}
+              <CollapsibleSection
+                title="Mix Lab"
+                icon="🧪"
+                accentColor="purple"
+                isOpen={openSections.has('mixlab')}
+                onToggle={() => toggleSection('mixlab')}
+              >
+                <MixLab targetHex={hex} />
+              </CollapsibleSection>
+
+              {/* 3. Color Harmonies */}
+              <CollapsibleSection
+                title="Color Harmonies"
+                icon="🌈"
+                accentColor="teal"
+                isOpen={openSections.has('harmonies')}
+                onToggle={() => toggleSection('harmonies')}
+              >
+                <ColorHarmonies rgb={rgb} onColorSelect={onColorSelect} />
+              </CollapsibleSection>
+
+              {/* 4. Value Scale */}
+              <CollapsibleSection
+                title="Value Scale"
+                icon="◐"
+                accentColor="yellow"
+                isOpen={openSections.has('value')}
+                onToggle={() => toggleSection('value')}
+              >
+                <div className="space-y-4">
+                  {/* Value Distribution Histogram */}
+                  {histogramBins && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wide">Distribution</h4>
                       <ValueHistogram
                         bins={histogramBins}
                         thresholds={valueScaleResult?.thresholds}
                         currentValue={sampledColor ? getLuminance(sampledColor.rgb.r, sampledColor.rgb.g, sampledColor.rgb.b) / 100 : undefined}
                       />
-                    )}
-
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-800">
-                      <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settings</h3>
-                      <button
-                        onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
-                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}
-                      >
-                        {valueScaleSettings?.enabled ? 'Overlay ON' : 'Overlay OFF'}
-                      </button>
                     </div>
+                  )}
 
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Steps</span>
-                          <select
-                            value={valueScaleSettings?.steps}
-                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          >
-                            <option value="5">5 Steps</option>
-                            <option value="7">7 Steps</option>
-                            <option value="9">9 Steps</option>
-                            <option value="11">11 Steps</option>
-                          </select>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
-                          <select
-                            value={valueScaleSettings?.mode}
-                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, mode: e.target.value as any })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          >
-                            <option value="Even">Even</option>
-                            <option value="Percentile">Percentile</option>
-                          </select>
-                        </div>
-                      </div>
+                  {/* Overlay Toggle */}
+                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                    <span className="text-xs font-medium text-gray-600">Value Overlay</span>
+                    <button
+                      onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                      {valueScaleSettings?.enabled ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Clip</span>
-                          <select
-                            value={valueScaleSettings?.clip}
-                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, clip: parseFloat(e.target.value) as any })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          >
-                            <option value="0">None (0%)</option>
-                            <option value="0.005">0.5%</option>
-                            <option value="0.01">1%</option>
-                            <option value="0.02">2%</option>
-                          </select>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
-                            <span>Opacity</span>
-                            <span>{Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}%</span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}
-                            onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, opacity: parseInt(e.target.value) / 100 })}
-                            className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                          />
-                        </div>
-                      </div>
+                  {/* Settings Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Steps</span>
+                      <select
+                        value={valueScaleSettings?.steps}
+                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="5">5 Steps</option>
+                        <option value="7">7 Steps</option>
+                        <option value="9">9 Steps</option>
+                        <option value="11">11 Steps</option>
+                      </select>
                     </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={() => {
-                          const canvas = document.getElementById('value-map-canvas') as HTMLCanvasElement;
-                          if (!canvas) {
-                            alert('Value map canvas not found. Please enable the overlay first.');
-                            return;
-                          }
-
-                          // Convert canvas to blob and download
-                          canvas.toBlob((blob) => {
-                            if (!blob) {
-                              alert('Failed to generate PNG');
-                              return;
-                            }
-
-                            const url = URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = `value-map-${Date.now()}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                          }, 'image/png');
-                        }}
-                        className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] font-bold text-gray-300 transition-colors"
+                    <div>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
+                      <select
+                        value={valueScaleSettings?.mode}
+                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, mode: e.target.value as 'Even' | 'Percentile' })}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        Download PNG
-                      </button>
-                      <button
-                        onClick={() => {
-                          const data = JSON.stringify(valueScaleSettings, null, 2);
-                          navigator.clipboard.writeText(data);
-                          alert('Value Scale settings copied to clipboard!');
-                        }}
-                        className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-[10px] font-bold text-gray-300 transition-colors"
+                        <option value="Even">Even</option>
+                        <option value="Percentile">Percentile</option>
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Clip</span>
+                      <select
+                        value={valueScaleSettings?.clip}
+                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, clip: parseFloat(e.target.value) as 0 | 0.005 | 0.01 | 0.02 })}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        Copy JSON
-                      </button>
+                        <option value="0">None (0%)</option>
+                        <option value="0.005">0.5%</option>
+                        <option value="0.01">1%</option>
+                        <option value="0.02">2%</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
+                        <span>Opacity</span>
+                        <span>{Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}
+                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, opacity: parseInt(e.target.value) / 100 })}
+                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      />
                     </div>
                   </div>
 
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => {
+                        const canvas = document.getElementById('value-map-canvas') as HTMLCanvasElement;
+                        if (!canvas) {
+                          alert('Value map canvas not found. Please enable the overlay first.');
+                          return;
+                        }
+                        canvas.toBlob((blob) => {
+                          if (!blob) {
+                            alert('Failed to generate PNG');
+                            return;
+                          }
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `value-map-${Date.now()}.png`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        }, 'image/png');
+                      }}
+                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 transition-colors"
+                    >
+                      Download PNG
+                    </button>
+                    <button
+                      onClick={() => {
+                        const data = JSON.stringify(valueScaleSettings, null, 2);
+                        navigator.clipboard.writeText(data);
+                        alert('Value Scale settings copied to clipboard!');
+                      }}
+                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 transition-colors"
+                    >
+                      Copy JSON
+                    </button>
+                  </div>
+
                   {/* Value Scale Legend */}
-                  <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
-                    <h3 className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Value Step Legend</h3>
-                    <div className="space-y-2">
+                  <div className="pt-3 border-t border-gray-100">
+                    <h4 className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Step Legend</h4>
+                    <div className="grid grid-cols-2 gap-2">
                       {Array.from({ length: valueScaleSettings?.steps || 0 }).map((_, i) => {
                         const stepVal = (i / ((valueScaleSettings?.steps || 1) - 1));
-                        const color = `rgb(${Math.round(stepVal * 255)}, ${Math.round(stepVal * 255)}, ${Math.round(stepVal * 255)})`;
+                        const grayVal = Math.round(stepVal * 255);
+                        const color = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
                         return (
-                          <div key={i} className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded border border-gray-700 shadow-sm flex-shrink-0" style={{ backgroundColor: color }}></div>
-                            <div className="flex-1 flex flex-col">
-                              <span className="text-[11px] font-bold text-gray-200">Step {i + 1}</span>
-                              <span className="text-[9px] text-gray-500 font-mono italic">
-                                Approx {stepVal.toFixed(2)} Luminance
-                              </span>
+                          <div key={i} className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 rounded border border-gray-200 flex-shrink-0" style={{ backgroundColor: color }}></div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-bold text-gray-700 block">Step {i + 1}</span>
+                              <span className="text-[8px] text-gray-400 font-mono">{(stepVal * 100).toFixed(0)}%</span>
                             </div>
-                            {valueScaleSettings?.mode === 'Percentile' && (
-                              <span className="text-[10px] text-yellow-500/80 font-mono font-bold">~{Math.round(100 / valueScaleSettings.steps)}% pixels</span>
-                            )}
                           </div>
                         )
                       })}
                     </div>
                   </div>
                 </div>
-              )}
-            </section>
+              </CollapsibleSection>
+
+            </div>
 
             {/* Tech Specs */}
-            <section className="p-3 lg:p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <section className="p-3 lg:p-4 bg-gray-50 rounded-2xl border border-gray-100 mt-4">
               <h3 className="text-[10px] lg:text-xs font-bold text-studio-dim mb-2 lg:mb-3 uppercase tracking-widest">Technical Data</h3>
               <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm font-mono">
                 <div>
