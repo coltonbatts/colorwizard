@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { getBestContrast, getContrastRatio } from '@/lib/color/a11y'
 
 export interface SessionColor {
     id: string
@@ -123,13 +124,21 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                     setActivePopup(null)
                                     onColorSelect?.(color)
                                 }}
-                                className={`w-10 h-10 rounded-lg shadow-md border transition-all ${activePopup === color.id
+                                className={`w-10 h-10 rounded-lg shadow-md border transition-all flex items-center justify-center ${activePopup === color.id
                                     ? 'border-blue-500 ring-2 ring-blue-300 scale-110'
                                     : 'border-gray-200 hover:scale-110'
                                     }`}
                                 style={{ backgroundColor: color.hex }}
                                 title="Tap for options, double-tap to select"
-                            />
+                                aria-label={`Color swatch: ${color.label}. Tap for options, double-tap to select.`}
+                            >
+                                <span
+                                    className="text-[8px] font-black uppercase tracking-tighter"
+                                    style={{ color: getBestContrast(color.hex) }}
+                                >
+                                    {getContrastRatio(color.hex, getBestContrast(color.hex)).toFixed(1)}
+                                </span>
+                            </button>
 
                             {/* Action menu - visible when activePopup matches OR on hover (desktop) */}
                             <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 transition-opacity z-50 ${activePopup === color.id

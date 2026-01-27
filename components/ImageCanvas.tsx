@@ -62,6 +62,14 @@ interface ImageCanvasProps {
   onTransformChange?: (transform: TransformState) => void
   /** Callback to report measurement points in IMAGE-SPACE coordinates */
   onMeasurePointsChange?: (pointA: { x: number; y: number } | null, pointB: { x: number; y: number } | null) => void
+  /** Generate highlight overlay data (runs in worker) */
+  generateHighlightOverlay?: (
+    targetR: number,
+    targetG: number,
+    targetB: number,
+    tolerance: number,
+    mode: 'solid' | 'heatmap'
+  ) => Promise<Uint8ClampedArray | null>
   /** Measurement specifics for RulerOverlay */
   calibration?: CalibrationData | null
   gridEnabled?: boolean
@@ -86,7 +94,9 @@ const HIGHLIGHT_ALPHA_MAX = 255
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
-  const { breakdownValue, setBreakdownValue, valueModeEnabled } = useStore()
+  const breakdownValue = useStore(state => state.breakdownValue)
+  const setBreakdownValue = useStore(state => state.setBreakdownValue)
+  const valueModeEnabled = useStore(state => state.valueModeEnabled)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -955,11 +965,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.putImageData(imageData, 0, 0)
   }, [valueBuffer, valueScaleSettings?.enabled, valueScaleResult])
 
-  // Draw highlight overlay
+  // Update highlight overlay using worker
   useEffect(() => {
     const { highlightColor, highlightTolerance = 20, highlightMode = 'solid' } = props
-    const canvas = overlayCanvasRef.current
-    if (!canvas || !labBuffer || !highlightColor) {
+    if (!labBuffer || !highlightColor) {
+      const canvas = overlayCanvasRef.current
       if (canvas) {
         const ctx = canvas.getContext('2d')
         ctx?.clearRect(0, 0, canvas.width, canvas.height)
@@ -967,47 +977,42 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       return
     }
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    let isSubscribed = true
 
-    if (canvas.width !== labBuffer.width || canvas.height !== labBuffer.height) {
-      canvas.width = labBuffer.width
-      canvas.height = labBuffer.height
-    }
+    const updateHighlight = async () => {
+      const overlayData = await props.generateHighlightOverlay?.(
+        highlightColor.r,
+        highlightColor.g,
+        highlightColor.b,
+        highlightTolerance,
+        highlightMode
+      )
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+      if (!isSubscribed || !overlayData) return
 
-    const targetLab = rgbToLab(highlightColor.r, highlightColor.g, highlightColor.b)
-    const imageData = ctx.createImageData(labBuffer.width, labBuffer.height)
-    const data = imageData.data
+      const canvas = overlayCanvasRef.current
+      if (!canvas) return
 
-    const { l: lBuffer, a: aBuffer, b: bBuffer } = labBuffer
-    const pixelCount = lBuffer.length
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
 
-    for (let i = 0; i < pixelCount; i++) {
-      const currentLab = { mode: 'lab' as const, l: lBuffer[i], a: aBuffer[i], b: bBuffer[i] }
-      const dist = deltaE(currentLab, targetLab)
-
-      if (dist <= highlightTolerance) {
-        const idx = i * 4
-        if (highlightMode === 'solid') {
-          data[idx] = 255
-          data[idx + 1] = 0
-          data[idx + 2] = 255
-          data[idx + 3] = HIGHLIGHT_ALPHA_SOLID
-        } else {
-          const strength = 1 - (dist / highlightTolerance)
-          data[idx] = 255
-          data[idx + 1] = Math.floor(255 * (1 - strength))
-          data[idx + 2] = 0
-          data[idx + 3] = Math.min(HIGHLIGHT_ALPHA_MAX, Math.floor(HIGHLIGHT_ALPHA_MAX * strength * 1.5))
-        }
+      if (canvas.width !== labBuffer.width || canvas.height !== labBuffer.height) {
+        canvas.width = labBuffer.width
+        canvas.height = labBuffer.height
       }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const imageData = new ImageData(overlayData as any, labBuffer.width, labBuffer.height)
+      ctx.putImageData(imageData, 0, 0)
+      drawCanvas()
     }
 
-    ctx.putImageData(imageData, 0, 0)
+    updateHighlight()
 
-  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode])
+    return () => {
+      isSubscribed = false
+    }
+  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode, props.generateHighlightOverlay, drawCanvas])
 
   // Draw breakdown layers to offscreen canvas
   useEffect(() => {

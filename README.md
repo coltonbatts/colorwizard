@@ -38,6 +38,16 @@ Upload any reference image, click a color, and ColorWizard gives you:
 - **Accent-Coded Categories**: Color-coded sections (Blue, Purple, Teal, etc.) for better visual organization.
 - **Fast Navigation**: Optimized sidebar for both desktop and tablet use.
 
+**Performance & State Isolation**
+
+- **Worker-Driven Computations**: Heavy operations like paint recipe solving and image analysis are offloaded to Web Workers via Comlink, keeping the main thread responsive.
+- **Zustand Selectors**: Optimized state management using fine-grained selectors to minimize unnecessary re-renders.
+
+**Accessibility (WCAG Ready)**
+
+- **Real-time Contrast Ratios**: All color swatches display WCAG contrast ratios against their best-matching text color (Black/White).
+- **ARIA Compliance**: Every icon-only action has descriptive ARIA labels for full screen-reader support.
+
 **Color Sampling**
 
 - Click-to-sample on any uploaded image

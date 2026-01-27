@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { PALETTE } from '@/lib/spectral/palette'
-import { mixInteractive } from '@/lib/paint/solveRecipe'
 import { MixInput } from '@/lib/spectral/types'
+import { getSolverWorker } from '@/lib/workers'
 
 interface MixLabProps {
     targetHex?: string
@@ -38,8 +38,11 @@ export default function MixLab({ targetHex, onUseRecipe }: MixLabProps) {
 
         setIsCalculating(true)
         try {
-            const result = await mixInteractive(mixInputs)
-            setMixedHex(result.hex)
+            const solver = getSolverWorker()
+            const result = await solver.mixInteractive(mixInputs)
+            if (result) {
+                setMixedHex(result.hex)
+            }
         } catch (err) {
             console.error('Mix calculation failed:', err)
             setMixedHex('#808080')

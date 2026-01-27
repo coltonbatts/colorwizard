@@ -7,6 +7,7 @@
 
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
 import ImageCanvas from '@/components/ImageCanvas'
+import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
@@ -29,6 +30,7 @@ import CheckMyDrawingView from '@/components/CheckMyDrawingView'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
@@ -42,52 +44,70 @@ export default function Home() {
   const [showCheckValues, setShowCheckValues] = useState(false)
   // Track Check My Drawing full-screen view
   const [showCheckDrawing, setShowCheckDrawing] = useState(false)
-  const {
-    // Core color state
-    sampledColor, setSampledColor,
-    activeHighlightColor, setActiveHighlightColor,
-    highlightTolerance, setHighlightTolerance,
-    highlightMode, setHighlightMode,
-    image, setImage,
-    activeTab, setActiveTab,
-    pinnedColors, pinColor, unpinColor, clearPinned,
-    valueScaleSettings, setValueScaleSettings,
-    histogramBins, setHistogramBins,
-    valueScaleResult, setValueScaleResult,
-    palettes, createPalette, updatePalette, deletePalette, setActivePalette,
-    showPaletteManager, setShowPaletteManager,
-    canvasSettings, setCanvasSettings,
-
-    // Calibration state
-    calibration, calibrationStale,
-    showCalibrationModal, setShowCalibrationModal,
-    saveCalibration, resetCalibration, loadCalibrationFromStorage,
-
-    // Measurement state
-    measureMode, measurePointA, measurePointB, measurementLayer,
-    setMeasurePoints, toggleMeasureMode, toggleMeasurementLayer,
-
-    // Grid/Ruler state
-    rulerGridEnabled, rulerGridSpacing,
-    toggleRulerGrid, setRulerGridSpacing,
-
-    // Transform state
-    setTransformState,
-
-    // Layout state
-    sidebarCollapsed, toggleSidebar,
-    sidebarWidth, setSidebarWidth,
-    compactMode, toggleCompactMode,
-
-    // Breakdown state
-    breakdownValue, setBreakdownValue,
-
-    // Modal state
-    showCanvasSettingsModal, setShowCanvasSettingsModal,
-    lastSampleTime,
-    simpleMode, toggleSimpleMode,
-    toggleValueMode
-  } = useStore()
+  const sampledColor = useStore(state => state.sampledColor)
+  const setSampledColor = useStore(state => state.setSampledColor)
+  const activeHighlightColor = useStore(state => state.activeHighlightColor)
+  const setActiveHighlightColor = useStore(state => state.setActiveHighlightColor)
+  const highlightTolerance = useStore(state => state.highlightTolerance)
+  const setHighlightTolerance = useStore(state => state.setHighlightTolerance)
+  const highlightMode = useStore(state => state.highlightMode)
+  const setHighlightMode = useStore(state => state.setHighlightMode)
+  const image = useStore(state => state.image)
+  const setImage = useStore(state => state.setImage)
+  const activeTab = useStore(state => state.activeTab)
+  const setActiveTab = useStore(state => state.setActiveTab)
+  const pinnedColors = useStore(state => state.pinnedColors)
+  const pinColor = useStore(state => state.pinColor)
+  const unpinColor = useStore(state => state.unpinColor)
+  const clearPinned = useStore(state => state.clearPinned)
+  const valueScaleSettings = useStore(state => state.valueScaleSettings)
+  const setValueScaleSettings = useStore(state => state.setValueScaleSettings)
+  const histogramBins = useStore(state => state.histogramBins)
+  const setHistogramBins = useStore(state => state.setHistogramBins)
+  const valueScaleResult = useStore(state => state.valueScaleResult)
+  const setValueScaleResult = useStore(state => state.setValueScaleResult)
+  const palettes = useStore(state => state.palettes)
+  const createPalette = useStore(state => state.createPalette)
+  const updatePalette = useStore(state => state.updatePalette)
+  const deletePalette = useStore(state => state.deletePalette)
+  const setActivePalette = useStore(state => state.setActivePalette)
+  const showPaletteManager = useStore(state => state.showPaletteManager)
+  const setShowPaletteManager = useStore(state => state.setShowPaletteManager)
+  const canvasSettings = useStore(state => state.canvasSettings)
+  const setCanvasSettings = useStore(state => state.setCanvasSettings)
+  const calibration = useStore(state => state.calibration)
+  const calibrationStale = useStore(state => state.calibrationStale)
+  const showCalibrationModal = useStore(state => state.showCalibrationModal)
+  const setShowCalibrationModal = useStore(state => state.setShowCalibrationModal)
+  const saveCalibration = useStore(state => state.saveCalibration)
+  const resetCalibration = useStore(state => state.resetCalibration)
+  const loadCalibrationFromStorage = useStore(state => state.loadCalibrationFromStorage)
+  const measureMode = useStore(state => state.measureMode)
+  const measurePointA = useStore(state => state.measurePointA)
+  const measurePointB = useStore(state => state.measurePointB)
+  const measurementLayer = useStore(state => state.measurementLayer)
+  const setMeasurePoints = useStore(state => state.setMeasurePoints)
+  const toggleMeasureMode = useStore(state => state.toggleMeasureMode)
+  const toggleMeasurementLayer = useStore(state => state.toggleMeasurementLayer)
+  const rulerGridEnabled = useStore(state => state.rulerGridEnabled)
+  const rulerGridSpacing = useStore(state => state.rulerGridSpacing)
+  const toggleRulerGrid = useStore(state => state.toggleRulerGrid)
+  const setRulerGridSpacing = useStore(state => state.setRulerGridSpacing)
+  const setTransformState = useStore(state => state.setTransformState)
+  const sidebarCollapsed = useStore(state => state.sidebarCollapsed)
+  const toggleSidebar = useStore(state => state.toggleSidebar)
+  const sidebarWidth = useStore(state => state.sidebarWidth)
+  const setSidebarWidth = useStore(state => state.setSidebarWidth)
+  const compactMode = useStore(state => state.compactMode)
+  const toggleCompactMode = useStore(state => state.toggleCompactMode)
+  const breakdownValue = useStore(state => state.breakdownValue)
+  const setBreakdownValue = useStore(state => state.setBreakdownValue)
+  const showCanvasSettingsModal = useStore(state => state.showCanvasSettingsModal)
+  const setShowCanvasSettingsModal = useStore(state => state.setShowCanvasSettingsModal)
+  const lastSampleTime = useStore(state => state.lastSampleTime)
+  const simpleMode = useStore(state => state.simpleMode)
+  const toggleSimpleMode = useStore(state => state.toggleSimpleMode)
+  const toggleValueMode = useStore(state => state.toggleValueMode)
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -121,6 +141,29 @@ export default function Home() {
 
   // Canvas container ref
   const canvasContainerRef = useRef<HTMLDivElement>(null)
+
+  const {
+    labBuffer,
+    valueBuffer,
+    sortedLuminances,
+    valueScaleResult: analyzerValueScaleResult,
+    histogramBins: analyzerHistogramBins,
+    isAnalyzing,
+    breakdownBuffers,
+    generateBreakdown,
+    isGeneratingBreakdown,
+    generateHighlightOverlay
+  } = useImageAnalyzer(image, valueScaleSettings)
+
+  // Use the hook's results to update the store (or local state if preferred, 
+  // but store is better for consistency)
+  useEffect(() => {
+    if (analyzerValueScaleResult) setValueScaleResult(analyzerValueScaleResult)
+  }, [analyzerValueScaleResult, setValueScaleResult])
+
+  useEffect(() => {
+    if (analyzerHistogramBins.length > 0) setHistogramBins(analyzerHistogramBins)
+  }, [analyzerHistogramBins, setHistogramBins])
 
   // Load calibration on mount
   useEffect(() => {
@@ -330,46 +373,7 @@ export default function Home() {
         </div>
 
         {/* Highlight Controls - contextual */}
-        {activeHighlightColor && (
-          <div className="mb-4 p-4 bg-white rounded-2xl flex items-center gap-6 border border-gray-100 shadow-sm animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black text-studio-dim uppercase tracking-widest">Highlight Mode</span>
-              <div className="flex bg-gray-50 rounded-xl p-1 border border-gray-100 shadow-inner">
-                <button
-                  onClick={() => setHighlightMode('solid')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${highlightMode === 'solid' ? 'bg-white text-blue-600 shadow-sm' : 'text-studio-dim hover:text-studio-secondary'}`}
-                >
-                  Solid
-                </button>
-                <button
-                  onClick={() => setHighlightMode('heatmap')}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${highlightMode === 'heatmap' ? 'bg-white text-blue-600 shadow-sm' : 'text-studio-dim hover:text-studio-secondary'}`}
-                >
-                  Heatmap
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 flex-1">
-              <span className="text-[10px] font-black text-studio-dim uppercase tracking-widest whitespace-nowrap">Tolerance ({highlightTolerance})</span>
-              <input
-                type="range"
-                min="1"
-                max="60"
-                value={highlightTolerance}
-                onChange={(e) => setHighlightTolerance(Number(e.target.value))}
-                className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-            </div>
-
-            <button
-              onClick={() => setActiveHighlightColor(null)}
-              className="ml-auto px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-all"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+        <HighlightControls />
 
         {/* Main Canvas Area */}
         <div className="flex-1 min-h-0 relative" ref={canvasContainerRef}>

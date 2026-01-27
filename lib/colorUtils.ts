@@ -12,6 +12,8 @@ import {
   Rgb,
   Oklch
 } from 'culori';
+import { RGB, HSL } from './color/types';
+import { hexToRgb as canonicalHexToRgb, rgbToHsl as canonicalRgbToHsl } from './color/conversions';
 
 // Converters
 const toLab = converter('lab');
@@ -43,14 +45,8 @@ export function deltaE(color1: string | Color, color2: string | Color): number {
 /**
  * Converts Hex string (or any color) to RGB object {r, g, b} normalized 0-255
  */
-export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const rgb = toRgb(hex);
-  if (!rgb) return null;
-  return {
-    r: Math.round(rgb.r * 255),
-    g: Math.round(rgb.g * 255),
-    b: Math.round(rgb.b * 255)
-  };
+export function hexToRgb(hex: string): RGB | null {
+  return canonicalHexToRgb(hex);
 }
 
 /**
@@ -69,39 +65,8 @@ export function rgbToLab(r: number, g: number, b: number): Lab {
  * @param b - Blue component (0-255)
  * @returns HSL object with h (0-360), s (0-100), l (0-100)
  */
-export function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
-  const rNorm = r / 255;
-  const gNorm = g / 255;
-  const bNorm = b / 255;
-
-  const max = Math.max(rNorm, gNorm, bNorm);
-  const min = Math.min(rNorm, gNorm, bNorm);
-  let h = 0;
-  let s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case rNorm:
-        h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6;
-        break;
-      case gNorm:
-        h = ((bNorm - rNorm) / d + 2) / 6;
-        break;
-      case bNorm:
-        h = ((rNorm - gNorm) / d + 4) / 6;
-        break;
-    }
-  }
-
-  return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    l: Math.round(l * 100),
-  };
+export function rgbToHsl(r: number, g: number, b: number): HSL {
+  return canonicalRgbToHsl(r, g, b);
 }
 
 /**

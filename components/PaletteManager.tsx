@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Palette, PaletteColor, ALL_PALETTE_COLORS, generatePaletteId } from '@/lib/types/palette'
+import { getBestContrast, getContrastRatio } from '@/lib/color/a11y'
 
 interface PaletteManagerProps {
     isOpen: boolean
@@ -282,12 +283,20 @@ export default function PaletteManager({
                                                     ? 'bg-blue-900/30 border-blue-600 ring-1 ring-blue-500'
                                                     : 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                                                     }`}
+                                                aria-label={`Select color: ${color.displayName}`}
                                             >
                                                 <div
-                                                    className={`w-8 h-8 rounded-lg border-2 ${isSelected ? 'border-blue-400' : 'border-gray-600'
+                                                    className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center ${isSelected ? 'border-blue-400' : 'border-gray-600'
                                                         }`}
                                                     style={{ backgroundColor: getColorHex(color.id) }}
-                                                />
+                                                >
+                                                    <span
+                                                        className="text-[8px] font-black uppercase tracking-tighter"
+                                                        style={{ color: getBestContrast(getColorHex(color.id)) }}
+                                                    >
+                                                        {getContrastRatio(getColorHex(color.id), getBestContrast(getColorHex(color.id))).toFixed(1)}
+                                                    </span>
+                                                </div>
                                                 <div className="text-left flex-1">
                                                     <div className="text-sm font-medium text-gray-200">
                                                         {color.displayName}

@@ -95,7 +95,11 @@ export default function CompactToolbar({
     const [showValueModeDropdown, setShowValueModeDropdown] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
     const valueModeRef = useRef<HTMLDivElement>(null)
-    const { simpleMode, valueModeEnabled, valueModeSteps, toggleValueMode, setValueModeSteps } = useStore()
+    const simpleMode = useStore(state => state.simpleMode)
+    const valueModeEnabled = useStore(state => state.valueModeEnabled)
+    const valueModeSteps = useStore(state => state.valueModeSteps)
+    const toggleValueMode = useStore(state => state.toggleValueMode)
+    const setValueModeSteps = useStore(state => state.setValueModeSteps)
 
     // Close menu on click outside
     useEffect(() => {
