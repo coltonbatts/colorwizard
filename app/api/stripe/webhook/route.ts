@@ -9,9 +9,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { 
-  upgradeToPro, 
-  updateSubscriptionStatus, 
+import {
+  upgradeToPro,
+  updateSubscriptionStatus,
   cancelSubscription,
   getUserTier,
   createUserDoc
@@ -24,12 +24,41 @@ import {
 } from '@/lib/email/templates'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
+  apiVersion: '2026-01-28.clover' as any,
 })
 
-async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId || session.client_reference_id
+
+  if (!userId) {
+    console.error('No userId found in checkout session metadata')
+    return
+  }
+
+  // Upgrade user to Pro (Lifetime)
+  await upgradeToPro(userId, {
+    stripeCustomerId: session.customer as string,
+    priceId: session.line_items?.data[0]?.price?.id || '',
+    subscriptionStatus: 'active', // For one-time, we'll just mark it active
+  })
+
+  // Send conversion details to console for tracking
+  console.log(`✨ Lifetime Pro unlocked for user: ${userId}`)
+
+  // Send upgrade confirmation email
+  if (session.customer_details?.email) {
+    const template = getUpgradeConfirmationEmail(
+      session.customer_details.name || 'there',
+      'Lifetime Pro (One-time $1)'
+    )
+    await sendEmail(session.customer_details.email, template)
+  }
+}
+
+async function handleSubscriptionCreated(subscription: any) {
+  // Keeping for backward compatibility or future use
   const userId = subscription.metadata?.userId || subscription.client_reference_id
-  
+
   if (!userId) {
     console.error('No userId found in subscription metadata')
     return
@@ -61,10 +90,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
   // Send upgrade confirmation email
   if (customer.email) {
-    const planName = subscription.items.data[0]?.price?.interval === 'year' 
+    const planName = subscription.items.data[0]?.price?.interval === 'year'
       ? 'Pro Annual ($99/year)'
       : 'Pro Monthly ($9/month)'
-    
+
     const template = getUpgradeConfirmationEmail(customer.name || 'there', planName)
     await sendEmail(customer.email, template)
   }
@@ -72,9 +101,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   console.log(`✅ Subscription created for user: ${userId}`)
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(subscription: any) {
   const userId = subscription.metadata?.userId || subscription.client_reference_id
-  
+
   if (!userId) {
     console.error('No userId found in subscription metadata')
     return
@@ -90,9 +119,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log(`🔄 Subscription updated for user: ${userId}, status: ${subscription.status}`)
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(subscription: any) {
   const userId = subscription.metadata?.userId || subscription.client_reference_id
-  
+
   if (!userId) {
     console.error('No userId found in subscription metadata')
     return
@@ -116,7 +145,7 @@ async function verifyWebhookSignature(
   signature: string
 ): Promise<Stripe.Event> {
   const secret = process.env.STRIPE_WEBHOOK_SECRET || ''
-  
+
   try {
     return stripe.webhooks.constructEvent(body, signature, secret)
   } catch (err) {
@@ -126,7 +155,7 @@ async function verifyWebhookSignature(
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('stripe-signature')
-  
+
   if (!signature) {
     return NextResponse.json(
       { error: 'Missing stripe-signature header' },
@@ -140,18 +169,22 @@ export async function POST(req: NextRequest) {
 
     // Handle events
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session)
+        break
+
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object as Stripe.Subscription)
         break
-      
+
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
         break
-      
+
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
         break
-      
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }

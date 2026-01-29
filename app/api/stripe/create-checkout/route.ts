@@ -9,18 +9,17 @@ import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getUserIdFromRequest } from '@/lib/auth/server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
+  apiVersion: '2026-01-28.clover' as any,
 })
 
 interface CheckoutRequest {
-  priceId: string // 'monthly' or 'annual'
   email?: string
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CheckoutRequest
-    const { priceId: billingPeriod, email } = body
+    const { email } = body
     const userId = await getUserIdFromRequest(req)
 
     if (!userId) {
@@ -30,21 +29,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate billing period
-    if (billingPeriod !== 'monthly' && billingPeriod !== 'annual') {
-      return NextResponse.json(
-        { error: 'Invalid billing period. Choose monthly or annual.' },
-        { status: 400 }
-      )
-    }
-
-    const stripePrice = STRIPE_PRICES[billingPeriod]
+    const stripePrice = STRIPE_PRICES.lifetime
 
     if (!stripePrice.id || stripePrice.id.startsWith('price_test')) {
       return NextResponse.json(
-        { 
+        {
           error: 'Stripe product not configured. Please set environment variables.',
-          details: `Missing ${billingPeriod} price ID`
+          details: `Missing lifetime price ID`
         },
         { status: 500 }
       )
@@ -52,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
+      mode: 'payment', // Change to 'payment' for one-time
       payment_method_types: ['card'],
       line_items: [
         {
@@ -66,13 +57,9 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing?upgrade=canceled`,
       metadata: {
         userId,
-        billingPeriod,
+        type: 'lifetime_pro',
       },
-      subscription_data: {
-        metadata: {
-          userId,
-        },
-      },
+      // Note: subscription_data is removed because mode: 'payment'
     })
 
     return NextResponse.json({

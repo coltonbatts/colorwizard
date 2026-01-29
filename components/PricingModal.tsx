@@ -17,23 +17,16 @@ interface PricingModalProps {
 }
 
 export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
-  const { tier } = useUserTier()
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
+  const { tier, isPro } = useUserTier()
   const [isUpgrading, setIsUpgrading] = useState(false)
 
-  const proFeatures = getProOnlyFeatures()
-
-  const handleUpgrade = async (billingPeriod: 'monthly' | 'annual') => {
+  const handleUpgrade = async () => {
     setIsUpgrading(true)
     try {
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId: billingPeriod,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -52,15 +45,14 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
     }
   }
 
-  const freeFeatures = [
-    { name: 'Unlimited palette generation', included: true },
-    { name: 'Basic color exports (JSON, CSV)', included: true },
-    { name: 'Standard filters', included: true },
-    { name: 'AI palette suggestions', included: false },
-    { name: 'Advanced exports', included: false },
-    { name: 'Team collaboration', included: false },
-    { name: 'Advanced filters & presets', included: false },
-    { name: 'Priority support', included: false },
+  const features = [
+    { name: 'Unlimited palette generation', proOnly: false },
+    { name: 'Unlimited Procreate export (30 colors)', proOnly: true },
+    { name: 'AR Tracing for your physical canvas', proOnly: true },
+    { name: 'AI-power color harmony suggestions', proOnly: true },
+    { name: 'Advanced exports (Figma, Adobe, Framer)', proOnly: true },
+    { name: 'DMC floss matching & export', proOnly: true },
+    { name: 'Zero tracking & privacy-first', proOnly: false },
   ]
 
   return (
@@ -73,7 +65,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-40"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
 
           {/* Modal */}
@@ -81,177 +73,87 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] z-50 overflow-y-auto"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] z-50 overflow-y-auto"
           >
-            <div className="bg-white rounded-2xl shadow-2xl">
+            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-12 text-center">
-                <h2 className="text-4xl font-bold text-white mb-3">
-                  Simple, Transparent Pricing
+              <div className="bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 px-8 py-12 text-center relative">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)]" />
+                <h2 className="text-4xl font-black text-white mb-3">
+                  One-time payment.<br />Forever Pro.
                 </h2>
-                <p className="text-blue-100 text-lg">
-                  Choose the plan that works for you
+                <p className="text-white/90 text-lg">
+                  Help a solo dev build the best painter's tool
                 </p>
               </div>
 
-              {/* Billing Toggle */}
-              <div className="flex justify-center px-8 py-8">
-                <div className="bg-gray-100 rounded-lg p-1 flex gap-1">
-                  <button
-                    onClick={() => setSelectedBillingPeriod('monthly')}
-                    className={`px-8 py-3 rounded font-semibold transition-all ${
-                      selectedBillingPeriod === 'monthly'
-                        ? 'bg-white text-blue-600 shadow'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setSelectedBillingPeriod('annual')}
-                    className={`px-8 py-3 rounded font-semibold transition-all relative ${
-                      selectedBillingPeriod === 'annual'
-                        ? 'bg-white text-blue-600 shadow'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Annual
-                    <span className="absolute -top-3 -right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      Save {ANNUAL_DISCOUNT_PERCENT}%
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Pricing Cards */}
-              <div className="px-8 py-8 grid md:grid-cols-2 gap-8">
-                {/* Free Tier */}
-                <div className="border-2 border-gray-200 rounded-xl p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                  <p className="text-gray-600 mb-6">For individual designers</p>
-                  <div className="text-4xl font-bold text-gray-900 mb-1">$0</div>
-                  <p className="text-gray-600 text-sm mb-8">Forever free, no credit card</p>
-
-                  <button
-                    disabled={tier === 'free'}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      tier === 'free'
-                        ? 'bg-gray-100 text-gray-500 cursor-default'
-                        : 'border-2 border-gray-300 text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    {tier === 'free' ? '✓ Current Plan' : 'Downgrade'}
-                  </button>
-
-                  <div className="mt-8 space-y-4">
-                    {freeFeatures.map((feature) => (
-                      <div key={feature.name} className="flex gap-3">
-                        <span className={feature.included ? 'text-green-600 font-bold' : 'text-gray-300'}>
-                          {feature.included ? '✓' : '−'}
-                        </span>
-                        <span className={feature.included ? 'text-gray-900' : 'text-gray-400 line-through'}>
-                          {feature.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pro Tier */}
-                <div className="border-2 border-blue-500 rounded-xl p-8 relative bg-blue-50/30">
-                  <div className="absolute -top-4 left-8 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    Most Popular
+              {/* Pricing Content */}
+              <div className="p-8 md:p-12">
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Features:</h3>
+                    <ul className="space-y-4">
+                      {features.map((feature, i) => (
+                        <motion.li
+                          key={feature.name}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 * i }}
+                          className="flex items-start gap-3"
+                        >
+                          <span className={`mt-0.5 font-bold ${feature.proOnly ? 'text-purple-500' : 'text-green-500'}`}>
+                            {feature.proOnly ? '✨' : '✓'}
+                          </span>
+                          <span className={`text-sm ${feature.proOnly ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                            {feature.name}
+                          </span>
+                        </motion.li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                  <p className="text-gray-600 mb-6">For professionals & teams</p>
-
-                  {selectedBillingPeriod === 'monthly' ? (
-                    <div>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        ${STRIPE_PRICES.monthly.displayAmount}
-                      </div>
-                      <p className="text-gray-600 text-sm mb-8">per month, cancel anytime</p>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-3xl p-8 text-center border border-gray-100 dark:border-gray-800 shadow-inner">
+                    <div className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-2">Lifetime Access</div>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <span className="text-2xl font-bold text-gray-500 line-through opacity-50">$5.00</span>
+                      <span className="text-6xl font-black text-gray-900 dark:text-white">$1</span>
                     </div>
-                  ) : (
-                    <div>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        ${STRIPE_PRICES.annual.displayAmount}
-                      </div>
-                      <p className="text-gray-600 text-sm mb-1">billed annually</p>
-                      <p className="text-green-600 text-sm font-medium mb-8">
-                        ${ANNUAL_MONTHLY_EQUIVALENT}/month
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 font-medium">Limited Launch Offer</p>
 
-                  <button
-                    onClick={() => handleUpgrade(selectedBillingPeriod)}
-                    disabled={tier === 'pro' || isUpgrading}
-                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      tier === 'pro'
-                        ? 'bg-gray-100 text-gray-500 cursor-default'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                    }`}
-                  >
-                    {tier === 'pro' 
-                      ? '✓ Current Plan' 
-                      : isUpgrading 
-                      ? 'Processing...' 
-                      : 'Upgrade to Pro'}
-                  </button>
+                    <button
+                      onClick={handleUpgrade}
+                      disabled={isPro || isUpgrading}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl shadow-purple-500/20 disabled:opacity-50 disabled:grayscale mb-4 flex items-center justify-center gap-2"
+                    >
+                      {isPro ? '✓ You Are Pro' : isUpgrading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Get Lifetime Pro Now'}
+                    </button>
 
-                  <div className="mt-8 space-y-4">
-                    {freeFeatures.map((feature) => (
-                      <div key={feature.name} className="flex gap-3">
-                        <span className="text-green-600 font-bold">✓</span>
-                        <span className="text-gray-900">{feature.name}</span>
-                      </div>
-                    ))}
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                      Secure Checkout via Stripe
+                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* FAQ */}
-              <div className="bg-gray-50 px-8 py-12 border-t border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-                  Frequently Asked Questions
-                </h3>
-                <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Yes! Both monthly and annual plans can be canceled anytime. No penalties.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">What payment methods do you accept?</h4>
-                    <p className="text-gray-600 text-sm">
-                      We accept all major credit and debit cards through Stripe.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Is there a free trial?</h4>
-                    <p className="text-gray-600 text-sm">
-                      The free tier is unlimited! Try all free features before upgrading.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Can I switch billing periods?</h4>
-                    <p className="text-gray-600 text-sm">
-                      Yes, manage your subscription in your account settings anytime.
+                {/* Guilt-trip / Artist section */}
+                <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 text-xl">👨‍💻</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed">
+                      "I built ColorWizard because I was fed up with tools charging $30/year for basic features. For the price of half a coffee, you're not just getting Pro features—you're supporting a fellow artist and keeping this project open-source and tracking-free. Thank you."
+                      <br />
+                      <span className="font-bold text-gray-900 dark:text-white not-italic mt-2 block">— Colton</span>
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Close Button */}
-              <div className="flex justify-center px-8 py-8">
+              <div className="bg-gray-50 dark:bg-gray-800/30 px-8 py-6 flex justify-center">
                 <button
                   onClick={onClose}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-semibold text-sm transition-colors"
                 >
-                  Close
+                  Return to Studio
                 </button>
               </div>
             </div>

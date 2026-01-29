@@ -9,16 +9,7 @@ import { useState, useCallback } from 'react';
 import { useUserTier } from '@/lib/hooks/useUserTier';
 import { exportToProcreate } from '@/lib/procreateExport';
 import type { ProcreateColor, ProcreateExportOptions } from '@/lib/types/procreate';
-
-/**
- * Free tier color limit
- */
-const FREE_TIER_COLOR_LIMIT = 5;
-
-/**
- * Pro tier color limit (Procreate max)
- */
-const PRO_TIER_COLOR_LIMIT = 30;
+import { getFeatureLimit } from '@/lib/featureFlags';
 
 export interface UseExportToProcreateResult {
     /** Export function */
@@ -39,11 +30,11 @@ export interface UseExportToProcreateResult {
  * Hook for Procreate palette export with Pro tier gating
  */
 export function useExportToProcreate(): UseExportToProcreateResult {
-    const { isPro } = useUserTier();
+    const { tier, isPro } = useUserTier();
     const [isExporting, setIsExporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const maxColors = isPro ? PRO_TIER_COLOR_LIMIT : FREE_TIER_COLOR_LIMIT;
+    const maxColors = getFeatureLimit('exportToProcreate', tier);
 
     const handleExport = useCallback(
         async (colors: ProcreateColor[], paletteName?: string) => {
@@ -57,9 +48,9 @@ export function useExportToProcreate(): UseExportToProcreateResult {
                 }
 
                 // Enforce tier limits
-                if (!isPro && colors.length > FREE_TIER_COLOR_LIMIT) {
+                if (!isPro && colors.length > maxColors) {
                     throw new Error(
-                        `Free tier limited to ${FREE_TIER_COLOR_LIMIT} colors. Upgrade to Pro for unlimited exports!`
+                        `Free tier limited to ${maxColors} colors. Support the project for $1 to unlock unlimited exports!`
                     );
                 }
 

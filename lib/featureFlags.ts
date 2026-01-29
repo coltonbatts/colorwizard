@@ -4,7 +4,7 @@
  */
 
 export type UserTier = 'free' | 'pro'
-export type FeatureName = 
+export type FeatureName =
   | 'aiPaletteSuggestions'
   | 'exportToFigma'
   | 'exportToAdobe'
@@ -13,6 +13,8 @@ export type FeatureName =
   | 'advancedFilters'
   | 'advancedPresets'
   | 'prioritySupport'
+  | 'exportToProcreate'
+  | 'arTracing'
 
 export interface FeatureConfig {
   name: FeatureName
@@ -82,6 +84,20 @@ export const FEATURES: Record<FeatureName, FeatureConfig> = {
     freeEnabled: false,
     proEnabled: true,
   },
+  exportToProcreate: {
+    name: 'exportToProcreate',
+    label: 'Procreate Export',
+    description: 'Export palettes to Procreate (.swatches)',
+    freeEnabled: true, // Enabled for both, but limited for Free
+    proEnabled: true,
+  },
+  arTracing: {
+    name: 'arTracing',
+    label: 'AR Tracing',
+    description: 'Project images onto your canvas using AR',
+    freeEnabled: false,
+    proEnabled: true,
+  },
 }
 
 /**
@@ -93,8 +109,18 @@ export function isFeatureEnabled(featureName: FeatureName, tier: UserTier): bool
     console.warn(`Unknown feature: ${featureName}`)
     return false
   }
-  
+
   return tier === 'pro' ? feature.proEnabled : feature.freeEnabled
+}
+
+/**
+ * Get numerical limits for features (e.g. Procreate export color count)
+ */
+export function getFeatureLimit(featureName: FeatureName, tier: UserTier): number {
+  if (featureName === 'exportToProcreate') {
+    return tier === 'pro' ? 30 : 5
+  }
+  return Infinity
 }
 
 /**
