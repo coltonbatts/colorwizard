@@ -75,13 +75,15 @@ export default function DashboardContent() {
             </div>
           )}
 
-          {tier === 'pro' && (
+          {(tier === 'pro' || tier === 'pro_lifetime') && (
             <div className="mt-8 bg-green-50 border-2 border-green-500 rounded-lg p-6">
               <h2 className="text-xl font-bold text-green-700 mb-2">
-                ✓ You're a Pro subscriber!
+                ✓ You're a Pro member!
               </h2>
               <p className="text-green-600">
-                Enjoy unlimited access to all advanced features.
+                {tier === 'pro_lifetime' 
+                  ? 'Enjoy unlimited access to all Pro features. Yours forever!' 
+                  : 'Enjoy unlimited access to all advanced features.'}
               </p>
             </div>
           )}

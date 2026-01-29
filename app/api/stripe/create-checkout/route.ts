@@ -1,6 +1,6 @@
 /**
  * POST /api/stripe/create-checkout
- * Creates a Stripe Checkout session for Pro tier upgrade
+ * Creates a Stripe Checkout session for $1 lifetime Pro purchase
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,14 +11,13 @@ import { getUserIdFromRequest } from '@/lib/auth/server'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
 interface CheckoutRequest {
-  priceId: string // 'monthly' or 'annual'
   email?: string
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CheckoutRequest
-    const { priceId: billingPeriod, email } = body
+    const { email } = body
     const userId = await getUserIdFromRequest(req)
 
     if (!userId) {
@@ -28,33 +27,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate billing period
-    if (billingPeriod !== 'monthly' && billingPeriod !== 'annual') {
-      return NextResponse.json(
-        { error: 'Invalid billing period. Choose monthly or annual.' },
-        { status: 400 }
-      )
-    }
+    const lifetimePrice = STRIPE_PRICES.lifetime
 
-    const stripePrice = STRIPE_PRICES[billingPeriod]
-
-    if (!stripePrice.id || stripePrice.id.startsWith('price_test')) {
+    if (!lifetimePrice.id || lifetimePrice.id.startsWith('price_test')) {
       return NextResponse.json(
         { 
-          error: 'Stripe product not configured. Please set environment variables.',
-          details: `Missing ${billingPeriod} price ID`
+          error: 'Stripe product not configured. Please set NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID in environment variables.',
+          details: 'Missing lifetime price ID'
         },
         { status: 500 }
       )
     }
 
-    // Create Stripe checkout session
+    // Create one-time payment checkout session
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
+      mode: 'payment', // One-time payment, not subscription
       payment_method_types: ['card'],
       line_items: [
         {
-          price: stripePrice.id,
+          price: lifetimePrice.id,
           quantity: 1,
         },
       ],
@@ -64,12 +55,6 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing?upgrade=canceled`,
       metadata: {
         userId,
-        billingPeriod,
-      },
-      subscription_data: {
-        metadata: {
-          userId,
-        },
       },
     })
 

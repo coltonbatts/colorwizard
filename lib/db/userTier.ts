@@ -17,16 +17,23 @@ import type { UserTier } from '@/lib/featureFlags'
 export interface UserTierDoc {
   tier: UserTier
   stripeCustomerId?: string
-  subscriptionId?: string
-  priceId?: string
-  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'pending' | 'trialing'
+  subscriptionId?: string // Deprecated: for subscription model only
+  priceId?: string // Deprecated: for subscription model only
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'pending' | 'trialing' // Deprecated: for subscription model only
   createdAt: Timestamp
   upgradeDate?: Timestamp
+  proUnlockedAt?: Timestamp // Timestamp of lifetime unlock
   canceledAt?: Timestamp
-  nextBillingDate?: Timestamp
-  currentPeriodEnd?: Timestamp
-  currentPeriodStart?: Timestamp
+  nextBillingDate?: Timestamp // Deprecated: for subscription model only
+  currentPeriodEnd?: Timestamp // Deprecated: for subscription model only
+  currentPeriodStart?: Timestamp // Deprecated: for subscription model only
   email?: string
+  // Lifetime purchase tracking
+  stripe?: {
+    customerId?: string
+    lastCheckoutSessionId?: string // Idempotency: track processed sessions
+    lastPaymentIntentId?: string // Alternative idempotency key
+  }
 }
 
 /**
@@ -145,4 +152,60 @@ export async function linkStripeCustomer(userId: string, stripeCustomerId: strin
   await updateDoc(userRef, {
     stripeCustomerId,
   })
+}
+
+/**
+ * Unlock Pro Lifetime tier for a user (idempotent one-time purchase)
+ * @param userId - Firebase user ID
+ * @param checkoutSessionId - Stripe checkout session ID for idempotency
+ * @param stripeCustomerId - Stripe customer ID
+ * @returns true if newly unlocked, false if already processed
+ */
+export async function unlockProLifetime(
+  userId: string,
+  {
+    checkoutSessionId,
+    stripeCustomerId,
+  }: {
+    checkoutSessionId: string
+    stripeCustomerId?: string
+  }
+): Promise<boolean> {
+  const userRef = doc(db, 'users', userId)
+  
+  // Check if already processed
+  const userDoc = await getDoc(userRef)
+  if (!userDoc.exists()) {
+    // User doc doesn't exist yet, create it
+    await setDoc(userRef, {
+      tier: 'pro_lifetime',
+      createdAt: serverTimestamp(),
+      proUnlockedAt: serverTimestamp(),
+      stripe: {
+        customerId: stripeCustomerId,
+        lastCheckoutSessionId: checkoutSessionId,
+      },
+    })
+    return true
+  }
+
+  const userData = userDoc.data() as UserTierDoc
+  
+  // Idempotency check: if we've already processed this session, do nothing
+  if (userData.stripe?.lastCheckoutSessionId === checkoutSessionId) {
+    console.log(`Checkout session ${checkoutSessionId} already processed for user ${userId}`)
+    return false
+  }
+
+  // First-time unlock: update tier to pro_lifetime
+  await updateDoc(userRef, {
+    tier: 'pro_lifetime',
+    proUnlockedAt: serverTimestamp(),
+    stripe: {
+      customerId: stripeCustomerId || userData.stripeCustomerId,
+      lastCheckoutSessionId: checkoutSessionId,
+    },
+  })
+  
+  return true
 }

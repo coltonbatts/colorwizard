@@ -7,14 +7,14 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { STRIPE_PRICES, ANNUAL_MONTHLY_EQUIVALENT } from '@/lib/stripe-config'
+import { STRIPE_PRICES } from '@/lib/stripe-config'
 
 interface UpgradePromptProps {
   featureName: string
   featureDescription?: string
   isOpen: boolean
   onClose: () => void
-  onUpgradeClick: (billingPeriod: 'monthly' | 'annual') => void
+  onUpgradeClick: () => void
   isLoading?: boolean
 }
 
@@ -26,10 +26,8 @@ export default function UpgradePrompt({
   onUpgradeClick,
   isLoading = false,
 }: UpgradePromptProps) {
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
-
   const handleUpgrade = () => {
-    onUpgradeClick(selectedBillingPeriod)
+    onUpgradeClick()
   }
 
   return (
@@ -59,7 +57,7 @@ export default function UpgradePrompt({
                   {featureName}
                 </h2>
                 <p className="text-blue-100">
-                  Pro feature · Optional upgrade
+                  Pro feature · Unlock now for just $1
                 </p>
               </div>
 
@@ -71,57 +69,17 @@ export default function UpgradePrompt({
                   </p>
                 )}
 
-                {/* Billing Toggle */}
-                <div className="bg-gray-50 rounded-lg p-1 flex gap-1">
-                  <button
-                    onClick={() => setSelectedBillingPeriod('monthly')}
-                    className={`flex-1 py-2 px-4 rounded font-medium transition-all ${
-                      selectedBillingPeriod === 'monthly'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setSelectedBillingPeriod('annual')}
-                    className={`flex-1 py-2 px-4 rounded font-medium transition-all relative ${
-                      selectedBillingPeriod === 'annual'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Annual
-                    <span className="text-xs bg-green-100 text-green-700 rounded px-2 py-1 absolute -top-2 -right-2">
-                      Save 18%
-                    </span>
-                  </button>
-                </div>
-
                 {/* Pricing Display */}
                 <div className="border-2 border-blue-200 rounded-lg p-6 text-center bg-blue-50/50">
-                  {selectedBillingPeriod === 'monthly' ? (
-                    <>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        {STRIPE_PRICES.monthly.displayAmount}
-                      </div>
-                      <div className="text-gray-600">
-                        per month, cancel anytime
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        {STRIPE_PRICES.annual.displayAmount}
-                      </div>
-                      <div className="text-gray-600 mb-2">
-                        per year
-                      </div>
-                      <div className="text-sm text-green-600 font-medium">
-                        ${ANNUAL_MONTHLY_EQUIVALENT}/month billed annually
-                      </div>
-                    </>
-                  )}
+                  <div className="text-4xl font-bold text-blue-600 mb-1">
+                    ${STRIPE_PRICES.lifetime.displayAmount}
+                  </div>
+                  <div className="text-gray-600 text-sm">
+                    One-time lifetime purchase
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    No recurring charges. Unlock Pro forever.
+                  </p>
                 </div>
 
                 {/* Features Included */}
@@ -164,10 +122,10 @@ export default function UpgradePrompt({
                   {isLoading ? (
                     <>
                       <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Upgrading...
+                      Processing...
                     </>
                   ) : (
-                    `Upgrade to Pro`
+                    `Unlock for $1`
                   )}
                 </button>
               </div>

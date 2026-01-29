@@ -8,7 +8,7 @@
  * We don't gate basic functionality. People pay because they want extras, not because they're trapped.
  */
 
-export type UserTier = 'free' | 'pro'
+export type UserTier = 'free' | 'pro' | 'pro_lifetime'
 
 /**
  * PRO-ONLY features (everything else is free)
@@ -99,8 +99,8 @@ export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTie
     return true
   }
   
-  // Pro features require Pro tier
-  return tier === 'pro'
+  // Pro features require Pro tier (subscription or lifetime)
+  return tier === 'pro' || tier === 'pro_lifetime'
 }
 
 /**

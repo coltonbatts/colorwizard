@@ -30,44 +30,38 @@ export function useFeatureAccess(featureName: ProOnlyFeature) {
     return false
   }, [hasAccess])
 
-  const handleUpgradeClick = useCallback(
-    async (billingPeriod: 'monthly' | 'annual') => {
-      setIsUpgrading(true)
-      try {
-        const response = await fetch('/api/stripe/create-checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            priceId: billingPeriod,
-            email: '', // Optional, or get from auth context
-          }),
-        })
+  const handleUpgradeClick = useCallback(async () => {
+    setIsUpgrading(true)
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
 
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to create checkout session')
-        }
-
-        const data = await response.json()
-        
-        // Redirect to Stripe Checkout
-        if (data.url) {
-          window.location.href = data.url
-        } else if (data.error) {
-          throw new Error(data.error)
-        }
-      } catch (error) {
-        console.error('Error initiating upgrade:', error)
-        const message = error instanceof Error ? error.message : 'Unknown error occurred'
-        alert(`Failed to start upgrade: ${message}. Please try again.`)
-      } finally {
-        setIsUpgrading(false)
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create checkout session')
       }
-    },
-    []
-  )
+
+      const data = await response.json()
+      
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else if (data.error) {
+        throw new Error(data.error)
+      }
+    } catch (error) {
+      console.error('Error initiating upgrade:', error)
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to start upgrade: ${message}. Please try again.`)
+    } finally {
+      setIsUpgrading(false)
+    }
+  }, [])
 
   return {
     hasAccess: hasAccess(),

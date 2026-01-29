@@ -1,13 +1,13 @@
 /**
  * PricingModal Component
- * Shows tier comparison and upgrade options
+ * Shows tier comparison and $1 lifetime upgrade option
  */
 
 'use client'
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { STRIPE_PRICES, ANNUAL_MONTHLY_EQUIVALENT, ANNUAL_DISCOUNT_PERCENT } from '@/lib/stripe-config'
+import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getProFeatures, FREE_FEATURES, PRO_ONLY_FEATURES } from '@/lib/featureFlags'
 import { useUserTier } from '@/lib/hooks/useUserTier'
 
@@ -18,12 +18,11 @@ interface PricingModalProps {
 
 export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const { tier } = useUserTier()
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
   const [isUpgrading, setIsUpgrading] = useState(false)
 
   const proFeatures = getProFeatures()
 
-  const handleUpgrade = async (billingPeriod: 'monthly' | 'annual') => {
+  const handleUpgrade = async () => {
     setIsUpgrading(true)
     try {
       const response = await fetch('/api/stripe/create-checkout', {
@@ -31,9 +30,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          priceId: billingPeriod,
-        }),
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -85,37 +82,8 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                   Simple, Transparent Pricing
                 </h2>
                 <p className="text-blue-100 text-lg">
-                  Choose the plan that works for you
+                  Unlock Pro features with a one-time lifetime purchase
                 </p>
-              </div>
-
-              {/* Billing Toggle */}
-              <div className="flex justify-center px-8 py-8">
-                <div className="bg-gray-100 rounded-lg p-1 flex gap-1">
-                  <button
-                    onClick={() => setSelectedBillingPeriod('monthly')}
-                    className={`px-8 py-3 rounded font-semibold transition-all ${
-                      selectedBillingPeriod === 'monthly'
-                        ? 'bg-white text-blue-600 shadow'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setSelectedBillingPeriod('annual')}
-                    className={`px-8 py-3 rounded font-semibold transition-all relative ${
-                      selectedBillingPeriod === 'annual'
-                        ? 'bg-white text-blue-600 shadow'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Annual
-                    <span className="absolute -top-3 -right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      Save {ANNUAL_DISCOUNT_PERCENT}%
-                    </span>
-                  </button>
-                </div>
               </div>
 
               {/* Pricing Cards */}
@@ -163,41 +131,29 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                  <p className="text-gray-600 mb-6">For professionals & teams</p>
+                  <p className="text-gray-600 mb-6">Unlock forever</p>
 
-                  {selectedBillingPeriod === 'monthly' ? (
-                    <div>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        ${STRIPE_PRICES.monthly.displayAmount}
-                      </div>
-                      <p className="text-gray-600 text-sm mb-8">per month, cancel anytime</p>
+                  <div>
+                    <div className="text-4xl font-bold text-blue-600 mb-1">
+                      ${STRIPE_PRICES.lifetime.displayAmount}
                     </div>
-                  ) : (
-                    <div>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        ${STRIPE_PRICES.annual.displayAmount}
-                      </div>
-                      <p className="text-gray-600 text-sm mb-1">billed annually</p>
-                      <p className="text-green-600 text-sm font-medium mb-8">
-                        ${ANNUAL_MONTHLY_EQUIVALENT}/month
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-gray-600 text-sm mb-8">One-time lifetime purchase</p>
+                  </div>
 
                   <button
-                    onClick={() => handleUpgrade(selectedBillingPeriod)}
-                    disabled={tier === 'pro' || isUpgrading}
+                    onClick={() => handleUpgrade()}
+                    disabled={tier === 'pro' || tier === 'pro_lifetime' || isUpgrading}
                     className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                      tier === 'pro'
+                      tier === 'pro' || tier === 'pro_lifetime'
                         ? 'bg-gray-100 text-gray-500 cursor-default'
                         : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
-                    {tier === 'pro' 
+                    {tier === 'pro' || tier === 'pro_lifetime'
                       ? '✓ Current Plan' 
                       : isUpgrading 
                       ? 'Processing...' 
-                      : 'Upgrade to Pro'}
+                      : 'Upgrade for $1'}
                   </button>
 
                   <div className="mt-8 space-y-3">
@@ -230,9 +186,9 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">Is this a subscription?</h4>
                     <p className="text-gray-600 text-sm">
-                      Yes! Both monthly and annual plans can be canceled anytime. No penalties.
+                      No! One-time $1 payment = Pro features for life. No recurring charges.
                     </p>
                   </div>
                   <div>
@@ -248,9 +204,9 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Can I switch billing periods?</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">What if I'm not satisfied?</h4>
                     <p className="text-gray-600 text-sm">
-                      Yes, manage your subscription in your account settings anytime.
+                      Reach out for a refund within 7 days. We stand behind our product.
                     </p>
                   </div>
                 </div>
