@@ -47,7 +47,8 @@ export function useFeatureAccess(featureName: FeatureName) {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to create checkout session')
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create checkout session')
         }
 
         const data = await response.json()
@@ -55,10 +56,13 @@ export function useFeatureAccess(featureName: FeatureName) {
         // Redirect to Stripe Checkout
         if (data.url) {
           window.location.href = data.url
+        } else if (data.error) {
+          throw new Error(data.error)
         }
       } catch (error) {
         console.error('Error initiating upgrade:', error)
-        alert('Failed to start upgrade. Please try again.')
+        const message = error instanceof Error ? error.message : 'Unknown error occurred'
+        alert(`Failed to start upgrade: ${message}. Please try again.`)
       } finally {
         setIsUpgrading(false)
       }

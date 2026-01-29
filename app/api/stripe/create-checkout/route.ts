@@ -23,15 +23,32 @@ export async function POST(req: NextRequest) {
     const { priceId: billingPeriod, email } = body
     const userId = await getUserIdFromRequest(req)
 
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User not authenticated' },
+        { status: 401 }
+      )
+    }
+
     // Validate billing period
     if (billingPeriod !== 'monthly' && billingPeriod !== 'annual') {
       return NextResponse.json(
-        { error: 'Invalid billing period' },
+        { error: 'Invalid billing period. Choose monthly or annual.' },
         { status: 400 }
       )
     }
 
     const stripePrice = STRIPE_PRICES[billingPeriod]
+
+    if (!stripePrice.id || stripePrice.id.startsWith('price_test')) {
+      return NextResponse.json(
+        { 
+          error: 'Stripe product not configured. Please set environment variables.',
+          details: `Missing ${billingPeriod} price ID`
+        },
+        { status: 500 }
+      )
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -43,7 +60,7 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      customer_email: email,
+      customer_email: email || undefined,
       client_reference_id: userId,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?session_id={CHECKOUT_SESSION_ID}&upgrade=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing?upgrade=canceled`,
@@ -64,8 +81,9 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating checkout session:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: `Failed to create checkout session: ${message}` },
       { status: 500 }
     )
   }
