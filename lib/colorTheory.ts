@@ -6,7 +6,13 @@
  */
 
 import { RGB, HSL } from './color/types';
-import { rgbToHsl, rgbToHex as canonicalRgbToHex } from './color/conversions';
+import { rgbToHsl as colorTheoryRgbToHsl, rgbToHex as canonicalRgbToHex } from './color/conversions';
+
+// Export types for use in other modules
+export type { RGB } from './color/types'
+
+// Re-export commonly used functions
+export const rgbToHsl = colorTheoryRgbToHsl
 
 // The 12 segments of the traditional artist's color wheel (RYB system)
 export const COLOR_WHEEL_SEGMENTS = [

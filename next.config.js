@@ -18,17 +18,11 @@ const nextConfig = {
   // Enable compression for responses
   compress: true,
 
-  // Enable swcMinify for better minification
-  swcMinify: true,
-
   // Optimize for production
   productionBrowserSourceMaps: false,
 
   // Enable strict mode for better error detection in development
   reactStrictMode: true,
-
-  // Optimize font loading
-  optimizeFonts: true,
 }
 
 module.exports = nextConfig
