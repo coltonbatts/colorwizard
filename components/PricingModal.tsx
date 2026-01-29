@@ -1,0 +1,263 @@
+/**
+ * PricingModal Component
+ * Shows tier comparison and upgrade options
+ */
+
+'use client'
+
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { STRIPE_PRICES, ANNUAL_MONTHLY_EQUIVALENT, ANNUAL_DISCOUNT_PERCENT } from '@/lib/stripe-config'
+import { getProOnlyFeatures } from '@/lib/featureFlags'
+import { useUserTier } from '@/lib/hooks/useUserTier'
+
+interface PricingModalProps {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
+  const { tier } = useUserTier()
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
+  const [isUpgrading, setIsUpgrading] = useState(false)
+
+  const proFeatures = getProOnlyFeatures()
+
+  const handleUpgrade = async (billingPeriod: 'monthly' | 'annual') => {
+    setIsUpgrading(true)
+    try {
+      const response = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: billingPeriod,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
+      }
+
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Error initiating upgrade:', error)
+      alert('Failed to start upgrade. Please try again.')
+    } finally {
+      setIsUpgrading(false)
+    }
+  }
+
+  const freeFeatures = [
+    { name: 'Unlimited palette generation', included: true },
+    { name: 'Basic color exports (JSON, CSV)', included: true },
+    { name: 'Standard filters', included: true },
+    { name: 'AI palette suggestions', included: false },
+    { name: 'Advanced exports', included: false },
+    { name: 'Team collaboration', included: false },
+    { name: 'Advanced filters & presets', included: false },
+    { name: 'Priority support', included: false },
+  ]
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 z-40"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] z-50 overflow-y-auto"
+          >
+            <div className="bg-white rounded-2xl shadow-2xl">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-12 text-center">
+                <h2 className="text-4xl font-bold text-white mb-3">
+                  Simple, Transparent Pricing
+                </h2>
+                <p className="text-blue-100 text-lg">
+                  Choose the plan that works for you
+                </p>
+              </div>
+
+              {/* Billing Toggle */}
+              <div className="flex justify-center px-8 py-8">
+                <div className="bg-gray-100 rounded-lg p-1 flex gap-1">
+                  <button
+                    onClick={() => setSelectedBillingPeriod('monthly')}
+                    className={`px-8 py-3 rounded font-semibold transition-all ${
+                      selectedBillingPeriod === 'monthly'
+                        ? 'bg-white text-blue-600 shadow'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    onClick={() => setSelectedBillingPeriod('annual')}
+                    className={`px-8 py-3 rounded font-semibold transition-all relative ${
+                      selectedBillingPeriod === 'annual'
+                        ? 'bg-white text-blue-600 shadow'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Annual
+                    <span className="absolute -top-3 -right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      Save {ANNUAL_DISCOUNT_PERCENT}%
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Pricing Cards */}
+              <div className="px-8 py-8 grid md:grid-cols-2 gap-8">
+                {/* Free Tier */}
+                <div className="border-2 border-gray-200 rounded-xl p-8">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
+                  <p className="text-gray-600 mb-6">For individual designers</p>
+                  <div className="text-4xl font-bold text-gray-900 mb-1">$0</div>
+                  <p className="text-gray-600 text-sm mb-8">Forever free, no credit card</p>
+
+                  <button
+                    disabled={tier === 'free'}
+                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                      tier === 'free'
+                        ? 'bg-gray-100 text-gray-500 cursor-default'
+                        : 'border-2 border-gray-300 text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tier === 'free' ? '✓ Current Plan' : 'Downgrade'}
+                  </button>
+
+                  <div className="mt-8 space-y-4">
+                    {freeFeatures.map((feature) => (
+                      <div key={feature.name} className="flex gap-3">
+                        <span className={feature.included ? 'text-green-600 font-bold' : 'text-gray-300'}>
+                          {feature.included ? '✓' : '−'}
+                        </span>
+                        <span className={feature.included ? 'text-gray-900' : 'text-gray-400 line-through'}>
+                          {feature.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pro Tier */}
+                <div className="border-2 border-blue-500 rounded-xl p-8 relative bg-blue-50/30">
+                  <div className="absolute -top-4 left-8 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                    Most Popular
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
+                  <p className="text-gray-600 mb-6">For professionals & teams</p>
+
+                  {selectedBillingPeriod === 'monthly' ? (
+                    <div>
+                      <div className="text-4xl font-bold text-blue-600 mb-1">
+                        ${STRIPE_PRICES.monthly.displayAmount}
+                      </div>
+                      <p className="text-gray-600 text-sm mb-8">per month, cancel anytime</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-4xl font-bold text-blue-600 mb-1">
+                        ${STRIPE_PRICES.annual.displayAmount}
+                      </div>
+                      <p className="text-gray-600 text-sm mb-1">billed annually</p>
+                      <p className="text-green-600 text-sm font-medium mb-8">
+                        ${ANNUAL_MONTHLY_EQUIVALENT}/month
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => handleUpgrade(selectedBillingPeriod)}
+                    disabled={tier === 'pro' || isUpgrading}
+                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                      tier === 'pro'
+                        ? 'bg-gray-100 text-gray-500 cursor-default'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    {tier === 'pro' 
+                      ? '✓ Current Plan' 
+                      : isUpgrading 
+                      ? 'Processing...' 
+                      : 'Upgrade to Pro'}
+                  </button>
+
+                  <div className="mt-8 space-y-4">
+                    {freeFeatures.map((feature) => (
+                      <div key={feature.name} className="flex gap-3">
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span className="text-gray-900">{feature.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQ */}
+              <div className="bg-gray-50 px-8 py-12 border-t border-gray-200">
+                <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+                  Frequently Asked Questions
+                </h3>
+                <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Can I cancel anytime?</h4>
+                    <p className="text-gray-600 text-sm">
+                      Yes! Both monthly and annual plans can be canceled anytime. No penalties.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">What payment methods do you accept?</h4>
+                    <p className="text-gray-600 text-sm">
+                      We accept all major credit and debit cards through Stripe.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Is there a free trial?</h4>
+                    <p className="text-gray-600 text-sm">
+                      The free tier is unlimited! Try all free features before upgrading.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Can I switch billing periods?</h4>
+                    <p className="text-gray-600 text-sm">
+                      Yes, manage your subscription in your account settings anytime.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-center px-8 py-8">
+                <button
+                  onClick={onClose}
+                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}

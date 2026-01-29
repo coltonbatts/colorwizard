@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Outfit } from 'next/font/google'
+import { AuthProvider } from '@/lib/auth/useAuth'
 import './globals.css'
 
 const inter = Inter({
@@ -29,7 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>{children}</body>
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
