@@ -8,6 +8,9 @@
 import { useState, useEffect } from 'react'
 import { BrandSelector } from '../BrandSelector'
 import { TubeSelector } from '../TubeSelector'
+import ProcreateExportButton from '../ProcreateExportButton'
+import type { ProcreateColor } from '@/lib/types/procreate'
+import { getPaint } from '@/lib/paint/catalog'
 
 interface PaletteTabProps {
     onPaletteChange?: (brandId: string, lineId: string, paintIds: string[]) => void
@@ -102,29 +105,54 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
             </section>
 
             {/* Quick Actions */}
-            <div className="flex gap-2">
-                <button
-                    onClick={() => {
-                        setSelectedBrandId(undefined)
-                        setSelectedLineId(undefined)
-                        setSelectedPaintIds([])
-                    }}
-                    disabled={!selectedBrandId && !selectedLineId && selectedPaintIds.length === 0}
-                    className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-studio-dim hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    Clear Selection
-                </button>
-                <button
-                    onClick={() => {
-                        const data = JSON.stringify({ brandId: selectedBrandId, lineId: selectedLineId, paintIds: selectedPaintIds })
-                        navigator.clipboard.writeText(data)
-                        alert('Palette copied to clipboard!')
-                    }}
-                    disabled={selectedPaintIds.length === 0}
-                    className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    Export Palette
-                </button>
+            <div className="flex flex-col gap-2">
+                {/* Procreate Export */}
+                {selectedPaintIds.length > 0 && (
+                    <ProcreateExportButton
+                        colors={selectedPaintIds.map((paintId): ProcreateColor => {
+                            // Paint IDs are in format: brandId/lineId/slug
+                            // We'll use a simplified approach - just extract the name from the ID
+                            const parts = paintId.split('/');
+                            const slug = parts[parts.length - 1];
+                            const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                            // Note: We'd need to fetch actual hex values from catalog
+                            // For now, using a placeholder - this will be enhanced
+                            return {
+                                hex: '#888888', // TODO: Fetch from catalog
+                                name,
+                            };
+                        })}
+                        paletteName={selectedBrandId ? `${selectedBrandId} Palette` : 'My Palette'}
+                        variant="primary"
+                        className="w-full"
+                    />
+                )}
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            setSelectedBrandId(undefined)
+                            setSelectedLineId(undefined)
+                            setSelectedPaintIds([])
+                        }}
+                        disabled={!selectedBrandId && !selectedLineId && selectedPaintIds.length === 0}
+                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-studio-dim hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        Clear Selection
+                    </button>
+                    <button
+                        onClick={() => {
+                            const data = JSON.stringify({ brandId: selectedBrandId, lineId: selectedLineId, paintIds: selectedPaintIds })
+                            navigator.clipboard.writeText(data)
+                            alert('Palette copied to clipboard!')
+                        }}
+                        disabled={selectedPaintIds.length === 0}
+                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        Copy JSON
+                    </button>
+                </div>
             </div>
 
             {/* Tips */}

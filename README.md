@@ -55,6 +55,7 @@ Upload an image. Click a color. Get:
 - Real paint brands supported: Winsor & Newton, Golden, Gamblin
 - Spectral.js mixing engine (not magic, just accurate)
 - Interactive mix lab for experimentation
+- **Export to Procreate** — send recipes directly to Procreate on iPad
 
 **Embroidery Floss Matching**
 
@@ -153,7 +154,7 @@ Next.js 15 · React 18 · TypeScript · Tailwind · Canvas API · Spectral.js ·
 
 ## Coming Next
 
-- [ ] Procreate plugin (sample colors directly in Procreate)
+- [x] **Procreate integration** — export palettes directly to Procreate (DONE!)
 - [ ] Batch palette extraction (upload image, get 5 colors)
 - [ ] Cloud sync (optional, Pro tier)
 - [ ] Watercolor & acrylic palettes

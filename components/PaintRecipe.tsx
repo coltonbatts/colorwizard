@@ -9,6 +9,8 @@ import { Palette } from '@/lib/types/palette'
 import { SkeletonPaintRecipe } from '@/components/ui/SkeletonLoader'
 import { useDebouncedLoading } from '@/hooks/useDebounce'
 import PuddleRecipeDisplay from './paint/PuddleRecipeDisplay'
+import ProcreateExportButton from './ProcreateExportButton'
+import type { ProcreateColor } from '@/lib/types/procreate'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
@@ -248,14 +250,35 @@ export default function PaintRecipe({
           </div>
         )}
         {!isEmptyCatalog && (
-          <p className="text-xs text-gray-500">
-            {useCatalog && paintIds && paintIds.length > 0
-              ? 'Recipe uses only paints from your Paint Library selection'
-              : activePalette && !activePalette.isDefault
-                ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
-                : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
-            }
-          </p>
+          <>
+            <p className="text-xs text-gray-500 mb-3">
+              {useCatalog && paintIds && paintIds.length > 0
+                ? 'Recipe uses only paints from your Paint Library selection'
+                : activePalette && !activePalette.isDefault
+                  ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
+                  : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
+              }
+            </p>
+
+            {/* Procreate Export Button */}
+            <ProcreateExportButton
+              colors={recipe.ingredients.map((ing): ProcreateColor => ({
+                hex: ing.pigment.hex,
+                name: ing.pigment.name,
+              }))}
+              paletteName={`${targetHex.replace('#', '')} Recipe`}
+              variant="secondary"
+              className="w-full"
+              onExportSuccess={() => {
+                // Optional: Show success toast
+                console.log('Recipe exported to Procreate successfully!');
+              }}
+              onExportError={(error) => {
+                // Optional: Show error toast
+                console.error('Export failed:', error);
+              }}
+            />
+          </>
         )}
       </div>
     </div>
