@@ -11,7 +11,7 @@
  ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 </pre>
 
-### A Color Picker Built for Painters. Not Locked. Not Crippled. Not Owned by Anyone But You.
+### A Color Picker Built for Painters. Not Locked. Not Crippled. Not Owned by Anyone But You
 
 </div>
 
@@ -25,6 +25,7 @@ Upload an image. Click a color. Get:
 - **Embroidery matches** — top 5 DMC floss threads that match
 - **Color name** — what it's called in 30k+ actual color names
 - **Export cards** — studio reference cards, PNG, yours to keep
+- **AR Tracing** — project reference images onto your canvas with your camera (NEW!)
 - **Zero account** — no email, no sign-up, no tracking
 - **Your data** — stays on your machine. We don't see it. We don't store it.
 
@@ -32,37 +33,72 @@ Upload an image. Click a color. Get:
 
 ## Features
 
+### Color Tools
+
 **Speed**
+
 - 50% faster than v1. No bullshit. No lag. Click-to-color is instant.
 
 **Color Sampling**
+
 - Click any pixel. Get HEX, RGB, HSL instantly.
 - Zoom/pan with keyboard + mouse. Smooth scrolling.
 
 **Value Mode**
+
 - Press V to check values in grayscale. Essential for painters.
 - Adjustable overlay opacity. Choose 5/7/9/11 value steps.
 
 **Oil Paint Recipes**
+
 - 6-color limited palette (realistic, actually used by painters)
 - Real paint brands supported: Winsor & Newton, Golden, Gamblin
 - Spectral.js mixing engine (not magic, just accurate)
 - Interactive mix lab for experimentation
 
 **Embroidery Floss Matching**
+
 - All 454 DMC threads. Top 5 matches for any color.
 - Use it for cross-stitch. Use it as a reference. Just works.
 
 **Keyboard Shortcuts**
+
 - Spacebar: pan. +/-: zoom. V: value mode. 1-8: sidebar tabs. [/]: collapse sidebar.
 
 **Privacy**
+
 - Your images? Stay on your machine. We never see them.
 - Your colors? Not tracked. Not sent to a server. Not sold.
 - Export anything, anytime. It's yours.
 
 **Accessibility**
+
 - WCAG contrast ratios on every swatch. Screen reader ready. Keyboard navigable.
+
+### AR Tracing (NEW!)
+
+**Free Features**
+
+- Camera-based AR projection of reference images
+- Opacity control (0-100%) for perfect tracing
+- Grid overlays (rule of thirds, golden ratio)
+- Upload up to 5 reference images
+
+**Pro Features ($1 one-time, lifetime access)**
+
+- Unlimited reference image storage
+- Value breakdown mode (light/mid/dark layers)
+- Advanced AR tracking with stabilization
+- High-resolution export (PNG, JPG, SVG)
+- Time-lapse recording
+
+**Why $1?**
+
+- No subscription. Pay once, own forever.
+- Competes with DaVinci Eye ($30/year) at 1/30th the price.
+- Web-based: works on phones, tablets, and desktops.
+
+Visit `/trace` to try it out!
 
 ---
 
