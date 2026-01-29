@@ -35,6 +35,8 @@ import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 import ArtistBadge from '@/components/ArtistBadge'
+import LaunchBanner from '@/components/LaunchBanner'
+import SocialProofBadge from '@/components/SocialProofBadge'
 
 import { useStore } from '@/lib/store/useStore'
 
@@ -346,6 +348,7 @@ export default function Home() {
 
   return (
     <main className={`flex flex-col ${image ? 'md:flex-row' : ''} h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
+      <LaunchBanner />
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
         <div className="mb-4">
@@ -612,6 +615,7 @@ export default function Home() {
       )}
 
       <ArtistBadge />
+      <SocialProofBadge />
     </main>
   )
 }

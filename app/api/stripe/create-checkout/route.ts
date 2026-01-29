@@ -8,9 +8,13 @@ import Stripe from 'stripe'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getUserIdFromRequest } from '@/lib/auth/server'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-01-28.clover' as any,
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-01-28.clover' as any,
+  })
+  : null
 
 interface CheckoutRequest {
   email?: string
@@ -18,6 +22,12 @@ interface CheckoutRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!stripe) {
+      return NextResponse.json(
+        { error: 'Stripe is not configured' },
+        { status: 500 }
+      )
+    }
     const body = (await req.json()) as CheckoutRequest
     const { email } = body
     const userId = await getUserIdFromRequest(req)
@@ -42,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripe!.checkout.sessions.create({
       mode: 'payment', // Change to 'payment' for one-time
       payment_method_types: ['card'],
       line_items: [

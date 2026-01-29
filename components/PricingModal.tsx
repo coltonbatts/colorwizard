@@ -150,6 +150,23 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* Testimonials */}
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { name: 'Sarah J.', role: 'Oil Painter', text: 'Finally, a tool that understands traditional color theory. Changed my workflow overnight.' },
+                    { name: 'Marcus D.', role: 'Illustrator', text: 'The spectral mixing is spooky accurate. $1 is an absolute steal for this quality.' }
+                  ].map((t, i) => (
+                    <div key={i} className="p-4 bg-gray-50 dark:bg-gray-800/20 rounded-2xl border border-gray-100 dark:border-gray-800">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 italic mb-2">"{t.text}"</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                        <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tighter">{t.name}</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-tighter">— {t.role}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Close Button */}

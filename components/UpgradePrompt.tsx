@@ -26,10 +26,8 @@ export default function UpgradePrompt({
   onUpgradeClick,
   isLoading = false,
 }: UpgradePromptProps) {
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
-
   const handleUpgrade = () => {
-    onUpgradeClick(selectedBillingPeriod)
+    onUpgradeClick('annual' as any) // Keep internal logic consistent with previous calls if needed
   }
 
   return (
@@ -42,138 +40,91 @@ export default function UpgradePrompt({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/30 z-40"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           />
-          
+
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm z-50 px-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8">
-                <h2 className="text-2xl font-bold text-white mb-2">
+              <div className="bg-gradient-to-br from-indigo-600 to-blue-700 px-8 py-10 text-center relative overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl" />
+
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6 shadow-xl">✨</div>
+                <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">
                   Unlock {featureName}
                 </h2>
-                <p className="text-blue-100">
-                  Upgrade to Pro for advanced features
+                <p className="text-indigo-100 text-sm font-bold uppercase tracking-widest opacity-80">
+                  Join the Studio Pro Community
                 </p>
               </div>
 
               {/* Content */}
               <div className="px-8 py-8 space-y-6">
                 {featureDescription && (
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-gray-600 text-sm leading-relaxed font-medium text-center">
                     {featureDescription}
                   </p>
                 )}
 
-                {/* Billing Toggle */}
-                <div className="bg-gray-50 rounded-lg p-1 flex gap-1">
-                  <button
-                    onClick={() => setSelectedBillingPeriod('monthly')}
-                    className={`flex-1 py-2 px-4 rounded font-medium transition-all ${
-                      selectedBillingPeriod === 'monthly'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    onClick={() => setSelectedBillingPeriod('annual')}
-                    className={`flex-1 py-2 px-4 rounded font-medium transition-all relative ${
-                      selectedBillingPeriod === 'annual'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Annual
-                    <span className="text-xs bg-green-100 text-green-700 rounded px-2 py-1 absolute -top-2 -right-2">
-                      Save 18%
-                    </span>
-                  </button>
-                </div>
-
                 {/* Pricing Display */}
-                <div className="border-2 border-blue-200 rounded-lg p-6 text-center bg-blue-50/50">
-                  {selectedBillingPeriod === 'monthly' ? (
-                    <>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        {STRIPE_PRICES.monthly.displayAmount}
-                      </div>
-                      <div className="text-gray-600">
-                        per month, cancel anytime
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-4xl font-bold text-blue-600 mb-1">
-                        {STRIPE_PRICES.annual.displayAmount}
-                      </div>
-                      <div className="text-gray-600 mb-2">
-                        per year
-                      </div>
-                      <div className="text-sm text-green-600 font-medium">
-                        ${ANNUAL_MONTHLY_EQUIVALENT}/month billed annually
-                      </div>
-                    </>
-                  )}
+                <div className="bg-indigo-50/50 rounded-3xl p-6 text-center border border-indigo-100/50">
+                  <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Lifetime Access</div>
+                  <div className="text-5xl font-black text-gray-900 mb-1 tracking-tighter">
+                    $1
+                  </div>
+                  <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+                    One-time payment • No subscriptions
+                  </div>
                 </div>
 
                 {/* Features Included */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">Unlock all Pro features:</h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>AI palette suggestions</span>
+                <div className="space-y-3">
+                  <ul className="space-y-3 text-xs text-gray-600 font-bold">
+                    <li className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-[10px]">✓</div>
+                      <span>AI Palette Suggestions</span>
                     </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Advanced exports (Figma, Adobe, Framer)</span>
+                    <li className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-[10px]">✓</div>
+                      <span>Unlimited Procreate Exports</span>
                     </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Team collaboration & sharing</span>
+                    <li className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-[10px]">✓</div>
+                      <span>AR Tracing Assistant</span>
                     </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Advanced filters & presets</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Priority support</span>
+                    <li className="flex items-center gap-3">
+                      <div className="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-[10px]">🎨</div>
+                      <span>Support Indie Development</span>
                     </li>
                   </ul>
                 </div>
-              </div>
 
-              {/* Actions */}
-              <div className="border-t border-gray-100 px-8 py-6 bg-gray-50 flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                  disabled={isLoading}
-                >
-                  Maybe Later
-                </button>
                 <button
                   onClick={handleUpgrade}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
                   {isLoading ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Upgrading...
-                    </>
+                    'Processing...'
                   ) : (
-                    `Upgrade to Pro`
+                    <>Ready for Pro ($1)</>
                   )}
+                </button>
+
+                <button
+                  onClick={onClose}
+                  className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors"
+                  disabled={isLoading}
+                >
+                  Maybe Later
                 </button>
               </div>
             </div>

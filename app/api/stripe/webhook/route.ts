@@ -23,9 +23,13 @@ import {
   getInvoiceEmail,
 } from '@/lib/email/templates'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-01-28.clover' as any,
-})
+export const dynamic = 'force-dynamic'
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2026-01-28.clover' as any,
+  })
+  : null
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId || session.client_reference_id
@@ -147,7 +151,7 @@ async function verifyWebhookSignature(
   const secret = process.env.STRIPE_WEBHOOK_SECRET || ''
 
   try {
-    return stripe.webhooks.constructEvent(body, signature, secret)
+    return stripe!.webhooks.constructEvent(body, signature, secret)
   } catch (err) {
     throw new Error(`Webhook signature verification failed: ${err}`)
   }
@@ -155,6 +159,13 @@ async function verifyWebhookSignature(
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get('stripe-signature')
+
+  if (!stripe) {
+    return NextResponse.json(
+      { error: 'Stripe is not configured' },
+      { status: 500 }
+    )
+  }
 
   if (!signature) {
     return NextResponse.json(

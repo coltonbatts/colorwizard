@@ -8,8 +8,9 @@
 import { useState, useEffect } from 'react'
 import { BrandSelector } from '../BrandSelector'
 import { TubeSelector } from '../TubeSelector'
+import dynamic from 'next/dynamic'
 import ProcreateExportButton from '../ProcreateExportButton'
-import SharePaletteButton from '../SharePaletteButton'
+const SharePaletteButton = dynamic(() => import('../SharePaletteButton'), { ssr: false })
 import type { ProcreateColor } from '@/lib/types/procreate'
 import { getPaint } from '@/lib/paint/catalog'
 
@@ -147,6 +148,7 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
                         }}
                         disabled={!selectedBrandId && !selectedLineId && selectedPaintIds.length === 0}
                         className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-studio-dim hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Clear current paint selection"
                     >
                         Clear Selection
                     </button>
@@ -158,6 +160,7 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
                         }}
                         disabled={selectedPaintIds.length === 0}
                         className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Copy palette data as JSON to clipboard"
                     >
                         Copy JSON
                     </button>

@@ -4,11 +4,13 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useUserTier } from '@/lib/hooks/useUserTier'
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { tier, refetch } = useUserTier()
@@ -22,7 +24,7 @@ export default function DashboardPage() {
       setShowSuccessMessage(true)
       // Refetch user tier to confirm upgrade
       refetch()
-      
+
       // Clear URL params
       window.history.replaceState({}, '', '/dashboard')
     }
@@ -50,7 +52,7 @@ export default function DashboardPage() {
 
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
-          
+
           <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded">
             <p className="text-gray-700">
               <strong>Current Tier:</strong>{' '}
@@ -87,5 +89,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   )
 }

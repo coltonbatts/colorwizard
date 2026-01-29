@@ -16,8 +16,30 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'Color Wizard 2.0',
-  description: 'Professional oil paint color mixing assistant with spectral accuracy',
+  title: 'ColorWizard | Professional Color Mixing for Artists',
+  description: 'The spectral color mixing assistant for oil painters. $1 Lifetime Pro. Traditional color theory meeting modern AI.',
+  keywords: ['oil painting', 'color mixing', 'color theory', 'artist tools', 'spectral color', 'palette generator', 'procreate export'],
+  openGraph: {
+    title: 'ColorWizard | Built for Artists',
+    description: 'Stop guessing your mixes. $1 Lifetime Pro access now live.',
+    url: 'https://colorwizard.app',
+    siteName: 'ColorWizard',
+    images: [
+      {
+        url: 'https://colorwizard.app/og-image.png', // User will need to provide this
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ColorWizard | Built for Artists',
+    description: 'The definitive tool for modern oil painters. $1 Forever.',
+    creator: '@coltonbatts',
+  },
   icons: {
     icon: '/favicon.png',
   },
