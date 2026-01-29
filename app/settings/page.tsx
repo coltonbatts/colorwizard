@@ -127,12 +127,28 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Security */}
-        <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Security</h2>
-          <button className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-            Change Password
-          </button>
+        {/* Security / Mission */}
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 flex flex-col justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Security</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Manage your account security and password settings.</p>
+            </div>
+            <button className="w-full px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors uppercase tracking-widest text-[10px]">
+              Change Password
+            </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-xl p-8 text-white">
+            <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">The Mission</h2>
+            <p className="text-sm text-indigo-100 leading-relaxed mb-6 italic">
+              "ColorWizard is built on the belief that professional art tools should be accessible, private, and subscription-free. Thank you for supporting solo indie development."
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">👨‍🎨</div>
+              <div className="text-xs uppercase tracking-widest font-black text-indigo-200">Colton Batts</div>
+            </div>
+          </div>
         </div>
       </div>
 

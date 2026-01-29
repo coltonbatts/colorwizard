@@ -34,6 +34,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
+import ArtistBadge from '@/components/ArtistBadge'
 
 import { useStore } from '@/lib/store/useStore'
 
@@ -66,7 +67,7 @@ export default function Home() {
   const unpinColor = useStore(state => state.unpinColor)
   const clearPinned = useStore(state => state.clearPinned)
   const lastSampleTime = useStore(state => state.lastSampleTime)
-  
+
   const valueScaleSettings = useStore(state => state.valueScaleSettings)
   const setValueScaleSettings = useStore(state => state.setValueScaleSettings)
   const histogramBins = useStore(state => state.histogramBins)
@@ -82,7 +83,7 @@ export default function Home() {
   const setShowPaletteManager = useStore(state => state.setShowPaletteManager)
   const canvasSettings = useStore(state => state.canvasSettings)
   const setCanvasSettings = useStore(state => state.setCanvasSettings)
-  
+
   const calibration = useStore(state => state.calibration)
   const calibrationStale = useStore(state => state.calibrationStale)
   const showCalibrationModal = useStore(state => state.showCalibrationModal)
@@ -609,6 +610,8 @@ export default function Home() {
           onClose={() => setShowCheckDrawing(false)}
         />
       )}
+
+      <ArtistBadge />
     </main>
   )
 }

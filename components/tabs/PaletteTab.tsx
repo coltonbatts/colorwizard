@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { BrandSelector } from '../BrandSelector'
 import { TubeSelector } from '../TubeSelector'
 import ProcreateExportButton from '../ProcreateExportButton'
+import SharePaletteButton from '../SharePaletteButton'
 import type { ProcreateColor } from '@/lib/types/procreate'
 import { getPaint } from '@/lib/paint/catalog'
 
@@ -108,25 +109,33 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
             <div className="flex flex-col gap-2">
                 {/* Procreate Export */}
                 {selectedPaintIds.length > 0 && (
-                    <ProcreateExportButton
-                        colors={selectedPaintIds.map((paintId): ProcreateColor => {
-                            // Paint IDs are in format: brandId/lineId/slug
-                            // We'll use a simplified approach - just extract the name from the ID
-                            const parts = paintId.split('/');
-                            const slug = parts[parts.length - 1];
-                            const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    <div className="space-y-3">
+                        <ProcreateExportButton
+                            colors={selectedPaintIds.map((paintId): ProcreateColor => {
+                                // Paint IDs are in format: brandId/lineId/slug
+                                // We'll use a simplified approach - just extract the name from the ID
+                                const parts = paintId.split('/');
+                                const slug = parts[parts.length - 1];
+                                const name = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                            // Note: We'd need to fetch actual hex values from catalog
-                            // For now, using a placeholder - this will be enhanced
-                            return {
-                                hex: '#888888', // TODO: Fetch from catalog
-                                name,
-                            };
-                        })}
-                        paletteName={selectedBrandId ? `${selectedBrandId} Palette` : 'My Palette'}
-                        variant="primary"
-                        className="w-full"
-                    />
+                                // Note: We'd need to fetch actual hex values from catalog
+                                // For now, using a placeholder - this will be enhanced
+                                return {
+                                    hex: '#888888', // TODO: Fetch from catalog
+                                    name,
+                                };
+                            })}
+                            paletteName={selectedBrandId ? `${selectedBrandId} Palette` : 'My Palette'}
+                            variant="primary"
+                            className="w-full"
+                        />
+
+                        <SharePaletteButton
+                            paintIds={selectedPaintIds}
+                            paletteName={selectedBrandId ? `${selectedBrandId} Palette` : 'My Palette'}
+                            className="w-full"
+                        />
+                    </div>
                 )}
 
                 <div className="flex gap-2">

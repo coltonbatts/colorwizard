@@ -134,15 +134,20 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                   </div>
                 </div>
 
-                {/* Guilt-trip / Artist section */}
-                <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 text-xl">👨‍💻</div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed">
-                      "I built ColorWizard because I was fed up with tools charging $30/year for basic features. For the price of half a coffee, you're not just getting Pro features—you're supporting a fellow artist and keeping this project open-source and tracking-free. Thank you."
-                      <br />
-                      <span className="font-bold text-gray-900 dark:text-white not-italic mt-2 block">— Colton</span>
-                    </p>
+                {/* Mission Section */}
+                <div className="mt-12 bg-indigo-50 dark:bg-indigo-900/10 rounded-[2rem] p-8 border border-indigo-100 dark:border-indigo-800/30">
+                  <div className="flex items-start gap-6">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-indigo-600 flex items-center justify-center flex-shrink-0 text-3xl shadow-lg shadow-indigo-500/20">🎨</div>
+                    <div>
+                      <h4 className="text-xl font-black text-gray-900 dark:text-white mb-2 uppercase tracking-tighter">Built by an Artist, for Artists</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 italic leading-relaxed">
+                        "I built ColorWizard because I was fed up with tools charging $30/year for basic features. For the price of half a coffee, you're not just getting Pro features—you're supporting a fellow creator and keeping this project open-source and privacy-first. Thank you for making this possible."
+                      </p>
+                      <div className="mt-4 flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-indigo-600"></span>
+                        <span className="text-xs font-black text-indigo-600 tracking-widest uppercase">Colton Batts (Solo Maker)</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
