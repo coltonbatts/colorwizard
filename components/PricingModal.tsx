@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { STRIPE_PRICES, ANNUAL_MONTHLY_EQUIVALENT, ANNUAL_DISCOUNT_PERCENT } from '@/lib/stripe-config'
-import { getProOnlyFeatures } from '@/lib/featureFlags'
+import { getProFeatures, FREE_FEATURES, PRO_ONLY_FEATURES } from '@/lib/featureFlags'
 import { useUserTier } from '@/lib/hooks/useUserTier'
 
 interface PricingModalProps {
@@ -21,7 +21,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<'monthly' | 'annual'>('annual')
   const [isUpgrading, setIsUpgrading] = useState(false)
 
-  const proFeatures = getProOnlyFeatures()
+  const proFeatures = getProFeatures()
 
   const handleUpgrade = async (billingPeriod: 'monthly' | 'annual') => {
     setIsUpgrading(true)
@@ -52,16 +52,11 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
     }
   }
 
-  const freeFeatures = [
-    { name: 'Unlimited palette generation', included: true },
-    { name: 'Basic color exports (JSON, CSV)', included: true },
-    { name: 'Standard filters', included: true },
-    { name: 'AI palette suggestions', included: false },
-    { name: 'Advanced exports', included: false },
-    { name: 'Team collaboration', included: false },
-    { name: 'Advanced filters & presets', included: false },
-    { name: 'Priority support', included: false },
-  ]
+  // All features available in free tier
+  const freeFeatures = FREE_FEATURES.map(name => ({ name, included: true }))
+  
+  // Pro-only features
+  const proOnlyFeatures = PRO_ONLY_FEATURES.map(name => ({ name, included: false }))
 
   return (
     <AnimatePresence>
@@ -144,14 +139,18 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                   </button>
 
                   <div className="mt-8 space-y-4">
+                    {/* All free features */}
                     {freeFeatures.map((feature) => (
                       <div key={feature.name} className="flex gap-3">
-                        <span className={feature.included ? 'text-green-600 font-bold' : 'text-gray-300'}>
-                          {feature.included ? '✓' : '−'}
-                        </span>
-                        <span className={feature.included ? 'text-gray-900' : 'text-gray-400 line-through'}>
-                          {feature.name}
-                        </span>
+                        <span className="text-green-600 font-bold">✓</span>
+                        <span className="text-gray-900">{feature.name}</span>
+                      </div>
+                    ))}
+                    {/* Grayed out pro-only features */}
+                    {proOnlyFeatures.map((feature) => (
+                      <div key={feature.name} className="flex gap-3">
+                        <span className="text-gray-300">−</span>
+                        <span className="text-gray-400">{feature.name}</span>
                       </div>
                     ))}
                   </div>
@@ -201,13 +200,25 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                       : 'Upgrade to Pro'}
                   </button>
 
-                  <div className="mt-8 space-y-4">
+                  <div className="mt-8 space-y-3">
+                    {/* Pro tier gets everything from free */}
                     {freeFeatures.map((feature) => (
                       <div key={feature.name} className="flex gap-3">
                         <span className="text-green-600 font-bold">✓</span>
                         <span className="text-gray-900">{feature.name}</span>
                       </div>
                     ))}
+                    
+                    {/* Plus pro-only features */}
+                    <div className="border-t border-blue-200 pt-3 mt-3">
+                      <p className="text-xs font-semibold text-blue-700 mb-2">PRO ADDITIONS:</p>
+                      {PRO_ONLY_FEATURES.map((feature) => (
+                        <div key={feature} className="flex gap-3">
+                          <span className="text-blue-600 font-bold">⭐</span>
+                          <span className="text-gray-900">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -56,10 +56,10 @@ export default function UpgradePrompt({
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8">
                 <h2 className="text-2xl font-bold text-white mb-2">
-                  Unlock {featureName}
+                  {featureName}
                 </h2>
                 <p className="text-blue-100">
-                  Upgrade to Pro for advanced features
+                  Pro feature · Optional upgrade
                 </p>
               </div>
 
@@ -126,29 +126,24 @@ export default function UpgradePrompt({
 
                 {/* Features Included */}
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">Unlock all Pro features:</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">With Pro, you get:</h3>
                   <ul className="space-y-2 text-sm text-gray-600">
                     <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
+                      <span className="text-blue-600 font-bold">⭐</span>
                       <span>AI palette suggestions</span>
                     </li>
                     <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Advanced exports (Figma, Adobe, Framer)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
+                      <span className="text-blue-600 font-bold">⭐</span>
                       <span>Team collaboration & sharing</span>
                     </li>
                     <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Advanced filters & presets</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Priority support</span>
+                      <span className="text-blue-600 font-bold">⭐</span>
+                      <span>Advanced presets & workflows</span>
                     </li>
                   </ul>
+                  <p className="text-xs text-gray-600 mt-3 italic">
+                    All exports, filters, and tools are included in free.
+                  </p>
                 </div>
               </div>
 

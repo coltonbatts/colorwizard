@@ -8,9 +8,7 @@ import Stripe from 'stripe'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getUserIdFromRequest } from '@/lib/auth/server'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
 interface CheckoutRequest {
   priceId: string // 'monthly' or 'annual'

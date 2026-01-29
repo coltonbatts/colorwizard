@@ -1,114 +1,111 @@
 /**
- * Feature Flags System for ColorWizard Freemium Model
- * Maps user tier to feature availability
+ * Feature Flags System for ColorWizard
+ * 
+ * PHILOSOPHY: AI-first, transparent, no bullshit.
+ * 
+ * FREE tier is genuinely free - unlimited palettes, all exports, full control.
+ * PRO tier ($9/month) adds AI suggestions + team collaboration only.
+ * We don't gate basic functionality. People pay because they want extras, not because they're trapped.
  */
 
 export type UserTier = 'free' | 'pro'
-export type FeatureName = 
+
+/**
+ * PRO-ONLY features (everything else is free)
+ * These are genuine value-adds, not artificial gatekeeping
+ */
+export type ProOnlyFeature = 
   | 'aiPaletteSuggestions'
-  | 'exportToFigma'
-  | 'exportToAdobe'
-  | 'exportToFramer'
-  | 'colorCollaboration'
-  | 'advancedFilters'
+  | 'teamCollaboration'
   | 'advancedPresets'
-  | 'prioritySupport'
+
+// Alias for backward compatibility
+export type FeatureName = ProOnlyFeature
 
 export interface FeatureConfig {
-  name: FeatureName
+  name: ProOnlyFeature
   label: string
   description: string
-  freeEnabled: boolean
-  proEnabled: boolean
+  category: 'ai' | 'collaboration' | 'productivity'
 }
 
 /**
- * Master feature configuration
+ * Master feature configuration - ONLY pro features listed
+ * Everything else is available to free users
  */
-export const FEATURES: Record<FeatureName, FeatureConfig> = {
+export const PRO_FEATURES: Record<ProOnlyFeature, FeatureConfig> = {
   aiPaletteSuggestions: {
     name: 'aiPaletteSuggestions',
     label: 'AI Palette Suggestions',
-    description: 'Generate color harmonies using AI based on color theory',
-    freeEnabled: false,
-    proEnabled: true,
+    description: 'Get AI-powered color harmony suggestions based on color theory',
+    category: 'ai',
   },
-  exportToFigma: {
-    name: 'exportToFigma',
-    label: 'Figma Export',
-    description: 'Export palettes directly to Figma',
-    freeEnabled: false,
-    proEnabled: true,
-  },
-  exportToAdobe: {
-    name: 'exportToAdobe',
-    label: 'Adobe Export',
-    description: 'Export to Adobe XD and Creative Cloud formats',
-    freeEnabled: false,
-    proEnabled: true,
-  },
-  exportToFramer: {
-    name: 'exportToFramer',
-    label: 'Framer Export',
-    description: 'Export to Framer projects',
-    freeEnabled: false,
-    proEnabled: true,
-  },
-  colorCollaboration: {
-    name: 'colorCollaboration',
+  teamCollaboration: {
+    name: 'teamCollaboration',
     label: 'Team Collaboration',
-    description: 'Share palettes and collaborate with team members',
-    freeEnabled: false,
-    proEnabled: true,
-  },
-  advancedFilters: {
-    name: 'advancedFilters',
-    label: 'Advanced Filters',
-    description: 'Access to advanced color filtering options',
-    freeEnabled: false,
-    proEnabled: true,
+    description: 'Share palettes and collaborate with team members in real-time',
+    category: 'collaboration',
   },
   advancedPresets: {
     name: 'advancedPresets',
     label: 'Advanced Presets',
-    description: 'Premium color harmony and palette presets',
-    freeEnabled: false,
-    proEnabled: true,
-  },
-  prioritySupport: {
-    name: 'prioritySupport',
-    label: 'Priority Support',
-    description: 'Fast-track support for Pro subscribers',
-    freeEnabled: false,
-    proEnabled: true,
+    description: 'Access to curated color harmony presets and advanced workflows',
+    category: 'productivity',
   },
 }
 
+// Alias for backward compatibility
+export const FEATURES = PRO_FEATURES
+
 /**
- * Check if a feature is enabled for a given tier
+ * What's FREE (no gating, no limits)
  */
-export function isFeatureEnabled(featureName: FeatureName, tier: UserTier): boolean {
-  const feature = FEATURES[featureName]
-  if (!feature) {
-    console.warn(`Unknown feature: ${featureName}`)
-    return false
+export const FREE_FEATURES = [
+  'Unlimited palette generation',
+  'All export formats (JSON, CSV, CSS, SVG, etc.)',
+  'Direct Figma export',
+  'Direct Adobe export',
+  'Direct Framer export',
+  'Full color analysis tools',
+  'Standard color filters',
+  'Oil paint color mixing',
+  'DMC floss matching',
+  'Custom calibration',
+  'All data is yours - no watermarks or tracking',
+]
+
+/**
+ * What's PRO-only ($9/month or $99/year)
+ */
+export const PRO_ONLY_FEATURES = [
+  'AI palette suggestions',
+  'Team collaboration & sharing',
+  'Advanced presets',
+]
+
+/**
+ * Check if a feature is Pro-only (and user needs to upgrade)
+ */
+export function isProOnlyFeature(featureName: string): boolean {
+  return (Object.keys(PRO_FEATURES) as ProOnlyFeature[]).includes(featureName as ProOnlyFeature)
+}
+
+/**
+ * Check if user has access to a Pro feature
+ */
+export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTier): boolean {
+  if (!isProOnlyFeature(featureName)) {
+    // If it's not in the pro-only list, it's free for everyone
+    return true
   }
   
-  return tier === 'pro' ? feature.proEnabled : feature.freeEnabled
+  // Pro features require Pro tier
+  return tier === 'pro'
 }
 
 /**
- * Get all features available for a tier
+ * Get all Pro-only features
  */
-export function getFeaturesForTier(tier: UserTier): FeatureName[] {
-  return (Object.keys(FEATURES) as FeatureName[]).filter(
-    featureName => isFeatureEnabled(featureName, tier)
-  )
-}
-
-/**
- * Get features only available in Pro tier
- */
-export function getProOnlyFeatures(): FeatureConfig[] {
-  return Object.values(FEATURES).filter(feature => !feature.freeEnabled && feature.proEnabled)
+export function getProFeatures(): FeatureConfig[] {
+  return Object.values(PRO_FEATURES)
 }

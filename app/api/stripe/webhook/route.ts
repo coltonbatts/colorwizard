@@ -23,12 +23,10 @@ import {
   getInvoiceEmail,
 } from '@/lib/email/templates'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20',
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata?.userId || subscription.client_reference_id
+  const userId = subscription.metadata?.userId || (subscription as any).client_reference_id
   
   if (!userId) {
     console.error('No userId found in subscription metadata')
@@ -52,16 +50,18 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   })
 
   // Update subscription dates
+  const sub = subscription as any
   await updateSubscriptionStatus(userId, {
     subscriptionStatus: subscription.status,
-    nextBillingDate: new Date(subscription.current_period_end * 1000),
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    currentPeriodStart: new Date(subscription.current_period_start * 1000),
+    nextBillingDate: new Date(sub.current_period_end * 1000),
+    currentPeriodEnd: new Date(sub.current_period_end * 1000),
+    currentPeriodStart: new Date(sub.current_period_start * 1000),
   })
 
   // Send upgrade confirmation email
   if (customer.email) {
-    const planName = subscription.items.data[0]?.price?.interval === 'year' 
+    const price = subscription.items.data[0]?.price as any
+    const planName = price?.interval === 'year' 
       ? 'Pro Annual ($99/year)'
       : 'Pro Monthly ($9/month)'
     
@@ -73,25 +73,26 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata?.userId || subscription.client_reference_id
+  const userId = subscription.metadata?.userId || (subscription as any).client_reference_id
   
   if (!userId) {
     console.error('No userId found in subscription metadata')
     return
   }
 
+  const sub2 = subscription as any
   await updateSubscriptionStatus(userId, {
     subscriptionStatus: subscription.status,
-    nextBillingDate: new Date(subscription.current_period_end * 1000),
-    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    currentPeriodStart: new Date(subscription.current_period_start * 1000),
+    nextBillingDate: new Date(sub2.current_period_end * 1000),
+    currentPeriodEnd: new Date(sub2.current_period_end * 1000),
+    currentPeriodStart: new Date(sub2.current_period_start * 1000),
   })
 
   console.log(`🔄 Subscription updated for user: ${userId}, status: ${subscription.status}`)
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata?.userId || subscription.client_reference_id
+  const userId = subscription.metadata?.userId || (subscription as any).client_reference_id
   
   if (!userId) {
     console.error('No userId found in subscription metadata')

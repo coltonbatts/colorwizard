@@ -1,5 +1,9 @@
 /**
  * Hook to check feature access and show upgrade modal
+ * 
+ * PHILOSOPHY: Only gated for actual Pro features (AI, collaboration, presets).
+ * Everything else is always accessible.
+ * 
  * Usage: const { hasAccess, promptUpgrade } = useFeatureAccess('aiPaletteSuggestions')
  */
 
@@ -7,20 +11,15 @@
 
 import { useState, useCallback } from 'react'
 import { useUserTier } from './useUserTier'
-import { isFeatureEnabled, type FeatureName } from '@/lib/featureFlags'
+import { hasAccessToProFeature, type ProOnlyFeature } from '@/lib/featureFlags'
 
-interface UseFeatureAccessOptions {
-  featureName: FeatureName
-  onAccessDenied?: () => void
-}
-
-export function useFeatureAccess(featureName: FeatureName) {
+export function useFeatureAccess(featureName: ProOnlyFeature) {
   const { tier, loading: tierLoading } = useUserTier()
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
 
   const hasAccess = useCallback(() => {
-    return isFeatureEnabled(featureName, tier)
+    return hasAccessToProFeature(featureName, tier)
   }, [featureName, tier])
 
   const promptUpgrade = useCallback(() => {
