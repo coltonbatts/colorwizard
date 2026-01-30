@@ -6,6 +6,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getProFeatures, FREE_FEATURES, PRO_ONLY_FEATURES } from '@/lib/featureFlags'
@@ -229,14 +230,24 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
               </div>
 
               {/* Bottom Actions */}
-              <div className="border-t border-gray-200 px-8 py-6 flex flex-col sm:flex-row gap-3 justify-between items-center">
-                <button
-                  onClick={onClose}
-                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                  title="Already purchased? Click to sync your purchase status"
-                >
-                  Restore Purchase
-                </button>
+              <div className="border-t border-gray-200 px-8 py-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="flex gap-4">
+                  <button
+                    onClick={onClose}
+                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                    title="Already purchased? Click to sync your purchase status"
+                  >
+                    Restore Purchase
+                  </button>
+                  <Link
+                    href="/support"
+                    onClick={onClose}
+                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                    title="Get help with Pro features and billing"
+                  >
+                    Support
+                  </Link>
+                </div>
                 <button
                   onClick={onClose}
                   className="text-gray-600 hover:text-gray-900 font-medium transition-colors"

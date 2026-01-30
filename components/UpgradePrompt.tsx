@@ -6,6 +6,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import Spinner from '@/components/ui/Spinner'
@@ -107,28 +108,37 @@ export default function UpgradePrompt({
               </div>
 
               {/* Actions */}
-              <div className="border-t border-gray-100 px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 flex gap-3">
-                <button
+              <div className="border-t border-gray-100 px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 space-y-3">
+                <div className="flex gap-3">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+                    disabled={isLoading}
+                  >
+                    Maybe Later
+                  </button>
+                  <button
+                    onClick={handleUpgrade}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <Spinner size="sm" />
+                        Processing...
+                      </span>
+                    ) : (
+                      `Unlock for $1`
+                    )}
+                  </button>
+                </div>
+                <Link
+                  href="/support"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
-                  disabled={isLoading}
+                  className="block w-full text-center px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                 >
-                  Maybe Later
-                </button>
-                <button
-                  onClick={handleUpgrade}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <Spinner size="sm" />
-                      Processing...
-                    </span>
-                  ) : (
-                    `Unlock for $1`
-                  )}
-                </button>
+                  Get help with Pro features
+                </Link>
               </div>
             </div>
           </motion.div>
