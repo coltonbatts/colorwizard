@@ -30,6 +30,40 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Remove Product Hunt badge and "Built by Artist" button on load
+              (function() {
+                function removeUnwantedElements() {
+                  // Remove Product Hunt link/banner
+                  const phLinks = document.querySelectorAll('a[href*="producthunt.com"]');
+                  phLinks.forEach(el => {
+                    const parent = el.closest('div');
+                    if (parent) parent.remove();
+                  });
+                  
+                  // Remove "Built by Artist" button
+                  const buttons = document.querySelectorAll('button');
+                  buttons.forEach(btn => {
+                    if (btn.textContent.includes('Built') && btn.textContent.includes('Artist')) {
+                      btn.remove();
+                    }
+                  });
+                }
+                
+                // Run immediately and on DOMContentLoaded
+                removeUnwantedElements();
+                document.addEventListener('DOMContentLoaded', removeUnwantedElements);
+                
+                // Also check periodically for dynamically injected elements
+                setInterval(removeUnwantedElements, 1000);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
