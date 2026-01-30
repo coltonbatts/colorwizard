@@ -93,19 +93,19 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
               </AnimatePresence>
 
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-12 text-center">
-                <h2 className="text-4xl font-bold text-white mb-3">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-8 py-8 sm:py-12 text-center">
+                <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3">
                   Simple, Transparent Pricing
                 </h2>
-                <p className="text-blue-100 text-lg">
+                <p className="text-blue-100 text-base sm:text-lg">
                   Unlock Pro features with a one-time lifetime purchase
                 </p>
               </div>
 
               {/* Pricing Cards */}
-              <div className="px-8 py-8 grid md:grid-cols-2 gap-8">
+              <div className="px-4 sm:px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                 {/* Free Tier */}
-                <div className="border-2 border-gray-200 rounded-xl p-8">
+                <div className="border-2 border-gray-200 rounded-xl p-4 sm:p-8">
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
                   <p className="text-gray-600 mb-6">For individual designers</p>
                   <div className="text-4xl font-bold text-gray-900 mb-1">$0</div>
@@ -141,7 +141,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                 </div>
 
                 {/* Pro Tier */}
-                <div className="border-2 border-blue-500 rounded-xl p-8 relative bg-blue-50/30">
+                <div className="border-2 border-blue-500 rounded-xl p-4 sm:p-8 relative bg-blue-50/30">
                   <div className="absolute -top-4 left-8 bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                     Most Popular
                   </div>
@@ -196,11 +196,11 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
               </div>
 
               {/* FAQ */}
-              <div className="bg-gray-50 px-8 py-12 border-t border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+              <div className="bg-gray-50 px-4 sm:px-8 py-8 sm:py-12 border-t border-gray-200">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">
                   Frequently Asked Questions
                 </h3>
-                <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 max-w-3xl mx-auto">
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Is this a subscription?</h4>
                     <p className="text-gray-600 text-sm">
