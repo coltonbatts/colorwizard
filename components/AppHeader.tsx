@@ -19,7 +19,7 @@ export default function AppHeader() {
   return (
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-blue-600">ColorWizard</h1>
             {tierLoading ? (
@@ -33,12 +33,12 @@ export default function AppHeader() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="w-full sm:w-auto flex items-center gap-4">
             {/* Pricing Button */}
             {tier === 'free' && (
               <button
                 onClick={() => setShowPricingModal(true)}
-                className="px-4 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg transition-colors"
+                className="flex-1 sm:flex-none px-4 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg transition-colors"
               >
                 Upgrade to Pro
               </button>
