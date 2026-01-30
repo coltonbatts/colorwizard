@@ -34,3 +34,4 @@ next-env.d.ts
 
 # assistant handoff / local scratch
 LOU_HANDOFF.md
+STRIPE_LIVE_KEYS.md
