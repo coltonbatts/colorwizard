@@ -48,12 +48,12 @@ export default function UpgradePrompt({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] sm:w-full max-w-md z-50"
           >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8">
-                <h2 className="text-2xl font-bold text-white mb-2">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-8 py-6 sm:py-8">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                   {featureName}
                 </h2>
                 <p className="text-blue-100">
@@ -62,7 +62,7 @@ export default function UpgradePrompt({
               </div>
 
               {/* Content */}
-              <div className="px-8 py-8 space-y-6">
+              <div className="px-4 sm:px-8 py-6 sm:py-8 space-y-6">
                 {featureDescription && (
                   <p className="text-gray-600 text-sm leading-relaxed">
                     {featureDescription}
@@ -106,7 +106,7 @@ export default function UpgradePrompt({
               </div>
 
               {/* Actions */}
-              <div className="border-t border-gray-100 px-8 py-6 bg-gray-50 flex gap-3">
+              <div className="border-t border-gray-100 px-4 sm:px-8 py-4 sm:py-6 bg-gray-50 flex gap-3">
                 <button
                   onClick={onClose}
                   className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
