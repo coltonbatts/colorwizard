@@ -228,8 +228,15 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                 </div>
               </div>
 
-              {/* Close Button */}
-              <div className="flex justify-center px-8 py-8">
+              {/* Bottom Actions */}
+              <div className="border-t border-gray-200 px-8 py-6 flex flex-col sm:flex-row gap-3 justify-between items-center">
+                <button
+                  onClick={onClose}
+                  className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                  title="Already purchased? Click to sync your purchase status"
+                >
+                  Restore Purchase
+                </button>
                 <button
                   onClick={onClose}
                   className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
