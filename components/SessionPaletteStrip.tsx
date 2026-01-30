@@ -7,6 +7,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getBestContrast, getContrastRatio } from '@/lib/color/a11y'
+import ProcreateExportButton from './ProcreateExportButton'
+import type { ProcreateColor } from '@/lib/types/procreate'
 
 export interface SessionColor {
     id: string
@@ -191,11 +193,21 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
 
                 {/* Actions */}
                 <div className="flex gap-2 shrink-0">
+                    <ProcreateExportButton
+                        colors={colors.map((c): ProcreateColor => ({
+                            hex: c.hex,
+                            name: c.label,
+                            rgb: [c.rgb.r, c.rgb.g, c.rgb.b],
+                        }))}
+                        paletteName="Session Palette"
+                        variant="minimal"
+                        className="px-3 py-1.5 text-xs"
+                    />
                     <button
                         onClick={exportPalette}
                         className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors"
                     >
-                        Export
+                        JSON
                     </button>
                     <button
                         onClick={clearAll}

@@ -12,7 +12,7 @@ import PricingModal from '@/components/PricingModal'
 
 export default function SettingsPage() {
   const { user } = useAuth()
-  const { tier, subscriptionStatus, nextBillingDate, upgradeDate } = useUserTier()
+  const { tier, isPro, subscriptionStatus, nextBillingDate, upgradeDate } = useUserTier()
   const [showPricingModal, setShowPricingModal] = useState(false)
 
   const formatDate = (dateString?: string) => {
@@ -39,7 +39,7 @@ export default function SettingsPage() {
         {/* Account Info */}
         <div className="bg-white rounded-lg shadow p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Information</h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -68,86 +68,87 @@ export default function SettingsPage() {
         </div>
 
         {/* Subscription Info */}
-        <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Subscription</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Access & Membership</h2>
 
           <div className="space-y-6">
             {/* Current Plan */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 rounded-2xl p-6 border border-purple-100 dark:border-purple-800/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 capitalize">
-                    {tier} Plan
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {isPro ? 'Lifetime Pro' : 'Free Member'}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1 capitalize">
-                    {subscriptionStatus || 'Not subscribed'}
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {isPro ? 'Forever access to all features' : 'Basic features enabled'}
                   </p>
                 </div>
-                {tier === 'pro' && (
-                  <span className="bg-green-100 text-green-800 text-sm font-semibold px-4 py-2 rounded-full">
-                    Active
+                {isPro && (
+                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg shadow-purple-500/20">
+                    LIFETIME
                   </span>
                 )}
               </div>
 
-              {tier === 'free' && (
+              {!isPro && (
                 <button
                   onClick={() => setShowPricingModal(true)}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-md shadow-purple-500/10"
                 >
-                  Upgrade to Pro
+                  Get Lifetime Pro for $1
                 </button>
               )}
             </div>
 
             {/* Billing Details */}
-            {tier === 'pro' && (
-              <div className="border border-gray-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Billing Details</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Next Billing Date</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {formatDate(nextBillingDate)}
-                    </p>
+            {isPro && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Status</p>
+                    <p className="text-sm font-bold text-green-600 dark:text-green-400">Permanently Active</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Upgrade Date</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Unlocked On</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
                       {formatDate(upgradeDate)}
                     </p>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Manage Subscription */}
-            {tier === 'pro' && (
-              <div className="border border-gray-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Manage Subscription</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  To manage billing, update payment method, or cancel your subscription, visit your Stripe customer portal.
-                </p>
-                <button
-                  onClick={() => {
-                    // In production, redirect to Stripe customer portal
-                    alert('Coming soon: Stripe customer portal integration')
-                  }}
-                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                >
-                  View Billing Portal
-                </button>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800/30 text-xs text-blue-700 dark:text-blue-400 flex gap-3">
+                  <span className="text-lg">ℹ️</span>
+                  <p>
+                    You have permanent access to all Pro features. Since this is a one-time payment, there are no recurring subscriptions to manage or cancel. Your membership is linked to your account forever.
+                  </p>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Security */}
-        <div className="bg-white rounded-lg shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Security</h2>
-          <button className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-            Change Password
-          </button>
+        {/* Security / Mission */}
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 flex flex-col justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Security</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Manage your account security and password settings.</p>
+            </div>
+            <button className="w-full px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors uppercase tracking-widest text-[10px]">
+              Change Password
+            </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-xl p-8 text-white">
+            <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">The Mission</h2>
+            <p className="text-sm text-indigo-100 leading-relaxed mb-6 italic">
+              "ColorWizard is built on the belief that professional art tools should be accessible, private, and subscription-free. Thank you for supporting solo indie development."
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">👨‍🎨</div>
+              <div className="text-xs uppercase tracking-widest font-black text-indigo-200">Colton Batts</div>
+            </div>
+          </div>
         </div>
       </div>
 

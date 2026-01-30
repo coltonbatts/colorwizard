@@ -4,13 +4,13 @@
  */
 
 import { db } from '@/lib/firebase'
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   Timestamp,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore'
 import type { UserTier } from '@/lib/featureFlags'
 
@@ -57,16 +57,16 @@ export async function createUserDoc(userId: string, email?: string): Promise<Use
 export async function getUserTier(userId: string): Promise<UserTierDoc | null> {
   const userRef = doc(db, 'users', userId)
   const docSnap = await getDoc(userRef)
-  
+
   if (!docSnap.exists()) {
     return null
   }
-  
+
   return docSnap.data() as UserTierDoc
 }
 
 /**
- * Update user tier to Pro and store subscription info
+ * Update user tier to Pro permanently
  */
 export async function upgradeToPro(
   userId: string,
@@ -76,19 +76,19 @@ export async function upgradeToPro(
     priceId,
     subscriptionStatus = 'active',
   }: {
-    stripeCustomerId: string
-    subscriptionId: string
-    priceId: string
+    stripeCustomerId?: string
+    subscriptionId?: string
+    priceId?: string
     subscriptionStatus?: string
   }
 ): Promise<void> {
   const userRef = doc(db, 'users', userId)
-  
+
   await updateDoc(userRef, {
     tier: 'pro',
-    stripeCustomerId,
-    subscriptionId,
-    priceId,
+    stripeCustomerId: stripeCustomerId || null,
+    subscriptionId: subscriptionId || null,
+    priceId: priceId || null,
     subscriptionStatus,
     upgradeDate: serverTimestamp(),
   })
@@ -112,11 +112,11 @@ export async function updateSubscriptionStatus(
   }
 ): Promise<void> {
   const userRef = doc(db, 'users', userId)
-  
+
   const updateData: any = {
     subscriptionStatus,
   }
-  
+
   if (nextBillingDate) {
     updateData.nextBillingDate = Timestamp.fromDate(nextBillingDate)
   }
@@ -126,7 +126,7 @@ export async function updateSubscriptionStatus(
   if (currentPeriodStart) {
     updateData.currentPeriodStart = Timestamp.fromDate(currentPeriodStart)
   }
-  
+
   await updateDoc(userRef, updateData)
 }
 
@@ -135,7 +135,7 @@ export async function updateSubscriptionStatus(
  */
 export async function cancelSubscription(userId: string): Promise<void> {
   const userRef = doc(db, 'users', userId)
-  
+
   await updateDoc(userRef, {
     tier: 'free',
     subscriptionStatus: 'canceled',
@@ -148,7 +148,7 @@ export async function cancelSubscription(userId: string): Promise<void> {
  */
 export async function linkStripeCustomer(userId: string, stripeCustomerId: string): Promise<void> {
   const userRef = doc(db, 'users', userId)
-  
+
   await updateDoc(userRef, {
     stripeCustomerId,
   })

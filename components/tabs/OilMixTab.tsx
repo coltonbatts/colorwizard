@@ -12,6 +12,8 @@ import { Palette } from '@/lib/types/palette'
 import ErrorBoundary from '../ErrorBoundary'
 import { RecipeSolverErrorFallback } from '../errors/RecipeSolverErrorFallback'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
+import AISuggestions from '../AISuggestions'
+import ColorHarmonies from '../ColorHarmonies'
 
 interface OilMixTabProps {
     sampledColor: {
@@ -63,6 +65,21 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
                         }
                     }}
                 />
+            </section>
+
+            {/* AI Suggestions & Harmonies */}
+            <section className="space-y-8">
+                <AISuggestions rgb={sampledColor.rgb} />
+
+                <div className="pt-4 border-t border-gray-100">
+                    <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest mb-4">
+                        Standard Harmonies
+                    </h3>
+                    <ColorHarmonies
+                        rgb={sampledColor.rgb}
+                        onColorSelect={onColorSelect || (() => { })}
+                    />
+                </div>
             </section>
 
             {/* Paint Recipe - Wrapped in ErrorBoundary */}
