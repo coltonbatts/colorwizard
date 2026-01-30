@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
+import Spinner from '@/components/ui/Spinner'
 
 interface UpgradePromptProps {
   featureName: string
@@ -120,10 +121,10 @@ export default function UpgradePrompt({
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="flex items-center gap-2">
+                      <Spinner size="sm" />
                       Processing...
-                    </>
+                    </span>
                   ) : (
                     `Unlock for $1`
                   )}
