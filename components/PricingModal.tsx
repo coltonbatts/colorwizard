@@ -19,11 +19,13 @@ interface PricingModalProps {
 export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const { tier } = useUserTier()
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const proFeatures = getProFeatures()
 
   const handleUpgrade = async () => {
     setIsUpgrading(true)
+    setError(null)
     try {
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -43,7 +45,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
       }
     } catch (error) {
       console.error('Error initiating upgrade:', error)
-      alert('Failed to start upgrade. Please try again.')
+      setError('Checkout failed to load. Check your internet and try again.')
     } finally {
       setIsUpgrading(false)
     }
@@ -76,6 +78,20 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] z-50 overflow-y-auto"
           >
             <div className="bg-white rounded-2xl shadow-2xl">
+              {/* Error Toast */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-red-50 border-l-4 border-red-500 px-6 py-4 text-red-700"
+                  >
+                    <p className="font-medium">{error}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-12 text-center">
                 <h2 className="text-4xl font-bold text-white mb-3">
