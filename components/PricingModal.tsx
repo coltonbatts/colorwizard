@@ -116,7 +116,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                     className={`w-full py-3 rounded-lg font-semibold transition-all ${
                       tier === 'free'
                         ? 'bg-gray-100 text-gray-500 cursor-default'
-                        : 'border-2 border-gray-300 text-gray-900 hover:bg-gray-50'
+                        : 'bg-white border-2 border-gray-300 text-gray-900 hover:bg-gray-50 active:bg-gray-100'
                     }`}
                   >
                     {tier === 'free' ? '✓ Current Plan' : 'Downgrade'}
@@ -162,7 +162,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                     className={`w-full py-3 rounded-lg font-semibold transition-all ${
                       tier === 'pro' || tier === 'pro_lifetime'
                         ? 'bg-gray-100 text-gray-500 cursor-default'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
                     {tier === 'pro' || tier === 'pro_lifetime'
