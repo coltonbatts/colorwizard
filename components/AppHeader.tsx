@@ -22,7 +22,7 @@ export default function AppHeader() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-blue-600">ColorWizard</h1>
-            {!tierLoading && tier === 'pro' && (
+            {!tierLoading && (tier === 'pro' || tier === 'pro_lifetime') && (
               <span className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                 ✨ Pro
               </span>
@@ -46,7 +46,7 @@ export default function AppHeader() {
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">{user.displayName || user.email?.split('@')[0]}</p>
                   <p className="text-xs text-gray-500">
-                    {tierLoading ? '...' : tier === 'pro' ? 'Pro Subscriber' : 'Free'}
+                    {tierLoading ? '...' : tier === 'pro' || tier === 'pro_lifetime' ? 'Pro' : 'Free'}
                   </p>
                 </div>
               </div>
