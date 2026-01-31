@@ -8,7 +8,7 @@ import Stripe from 'stripe'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getUserIdFromRequest } from '@/lib/auth/server'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+export const dynamic = 'force-dynamic'
 
 interface CheckoutRequest {
   email?: string
@@ -16,6 +16,7 @@ interface CheckoutRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
     const body = (await req.json()) as CheckoutRequest
     const { email } = body
     const userId = await getUserIdFromRequest(req)
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     if (!lifetimePrice.id || lifetimePrice.id.startsWith('price_test')) {
       return NextResponse.json(
-        { 
+        {
           error: 'Stripe product not configured. Please set NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID in environment variables.',
           details: 'Missing lifetime price ID'
         },

@@ -14,7 +14,7 @@ export type UserTier = 'free' | 'pro' | 'pro_lifetime'
  * PRO-ONLY features (everything else is free)
  * These are genuine value-adds, not artificial gatekeeping
  */
-export type ProOnlyFeature = 
+export type ProOnlyFeature =
   | 'aiPaletteSuggestions'
   | 'teamCollaboration'
   | 'advancedPresets'
@@ -98,7 +98,7 @@ export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTie
     // If it's not in the pro-only list, it's free for everyone
     return true
   }
-  
+
   // Pro features require Pro tier (subscription or lifetime)
   return tier === 'pro' || tier === 'pro_lifetime'
 }
@@ -108,4 +108,18 @@ export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTie
  */
 export function getProFeatures(): FeatureConfig[] {
   return Object.values(PRO_FEATURES)
+}
+
+/**
+ * Get numerical limit for a feature based on user tier
+ */
+export function getFeatureLimit(featureName: string, tier: UserTier): number {
+  if (featureName === 'exportToProcreate') {
+    // Free tier limited to 5 colors for Procreate export
+    // Pro/Lifetime have no such limit
+    return tier === 'free' ? 5 : Infinity;
+  }
+
+  // Default to Infinity for features without explicitly defined limits
+  return Infinity;
 }

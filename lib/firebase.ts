@@ -11,14 +11,21 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase with safeguard for build time
-const app = getApps().length > 0
-    ? getApp()
-    : (process.env.NEXT_PUBLIC_FIREBASE_API_KEY
-        ? initializeApp(firebaseConfig)
-        : null);
+const isConfigValid = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.NEXT_PUBLIC_FIREBASE_API_KEY !== 'undefined';
 
-const db = app ? getFirestore(app) : null as any;
-const auth = app ? getAuth(app) : null as any;
+// Getter functions to avoid initialization during build-time module evaluation
+export function getFirebaseApp() {
+    if (getApps().length > 0) return getApp();
+    if (isConfigValid) return initializeApp(firebaseConfig);
+    return null;
+}
 
-export { app, db, auth };
+export function getFirestoreDb() {
+    const app = getFirebaseApp();
+    return app ? getFirestore(app) : null;
+}
+
+export function getFirebaseAuth() {
+    const app = getFirebaseApp();
+    return app ? getAuth(app) : null;
+}

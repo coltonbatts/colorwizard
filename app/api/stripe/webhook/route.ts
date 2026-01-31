@@ -13,7 +13,7 @@ import { unlockProLifetime, createUserDoc } from '@/lib/db/userTier'
 import { sendEmail } from '@/lib/email/service'
 import { getUpgradeConfirmationEmail } from '@/lib/email/templates'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+export const dynamic = 'force-dynamic'
 
 /**
  * Handle checkout.session.completed event
@@ -65,6 +65,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
  * Verify Stripe webhook signature
  */
 async function verifyWebhookSignature(
+  stripe: Stripe,
   body: string,
   signature: string
 ): Promise<Stripe.Event> {
@@ -78,6 +79,7 @@ async function verifyWebhookSignature(
 }
 
 export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
   const signature = req.headers.get('stripe-signature')
 
   if (!signature) {
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.text()
-    const event = await verifyWebhookSignature(body, signature)
+    const event = await verifyWebhookSignature(stripe, body, signature)
 
     // Handle events
     switch (event.type) {

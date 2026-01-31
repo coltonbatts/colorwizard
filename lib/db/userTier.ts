@@ -3,7 +3,7 @@
  * Handles user document creation, tier updates, and subscription tracking
  */
 
-import { db } from '@/lib/firebase'
+import { getFirestoreDb } from '@/lib/firebase'
 import {
   doc,
   getDoc,
@@ -40,6 +40,8 @@ export interface UserTierDoc {
  * Create a new user document with free tier
  */
 export async function createUserDoc(userId: string, email?: string): Promise<UserTierDoc> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
   const userData: UserTierDoc = {
     tier: 'free',
@@ -55,6 +57,8 @@ export async function createUserDoc(userId: string, email?: string): Promise<Use
  * Get user's tier information
  */
 export async function getUserTier(userId: string): Promise<UserTierDoc | null> {
+  const db = getFirestoreDb()
+  if (!db) return null
   const userRef = doc(db, 'users', userId)
   const docSnap = await getDoc(userRef)
 
@@ -82,6 +86,8 @@ export async function upgradeToPro(
     subscriptionStatus?: string
   }
 ): Promise<void> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
 
   await updateDoc(userRef, {
@@ -111,6 +117,8 @@ export async function updateSubscriptionStatus(
     currentPeriodStart?: Date
   }
 ): Promise<void> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
 
   const updateData: any = {
@@ -134,6 +142,8 @@ export async function updateSubscriptionStatus(
  * Cancel subscription and downgrade to free
  */
 export async function cancelSubscription(userId: string): Promise<void> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
 
   await updateDoc(userRef, {
@@ -147,6 +157,8 @@ export async function cancelSubscription(userId: string): Promise<void> {
  * Link a Stripe customer to user (if signing up later)
  */
 export async function linkStripeCustomer(userId: string, stripeCustomerId: string): Promise<void> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
 
   await updateDoc(userRef, {
@@ -171,8 +183,10 @@ export async function unlockProLifetime(
     stripeCustomerId?: string
   }
 ): Promise<boolean> {
+  const db = getFirestoreDb()
+  if (!db) throw new Error('Database not initialized')
   const userRef = doc(db, 'users', userId)
-  
+
   // Check if already processed
   const userDoc = await getDoc(userRef)
   if (!userDoc.exists()) {
@@ -190,7 +204,7 @@ export async function unlockProLifetime(
   }
 
   const userData = userDoc.data() as UserTierDoc
-  
+
   // Idempotency check: if we've already processed this session, do nothing
   if (userData.stripe?.lastCheckoutSessionId === checkoutSessionId) {
     console.log(`Checkout session ${checkoutSessionId} already processed for user ${userId}`)
@@ -206,6 +220,6 @@ export async function unlockProLifetime(
       lastCheckoutSessionId: checkoutSessionId,
     },
   })
-  
+
   return true
 }

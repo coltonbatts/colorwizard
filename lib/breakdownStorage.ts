@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { getFirestoreDb } from './firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
 export interface LayerState {
@@ -15,6 +15,8 @@ export interface LayerBreakdownDoc {
 }
 
 export async function saveLayerBreakdown(breakdown: Omit<LayerBreakdownDoc, 'createdAt'>) {
+    const db = getFirestoreDb();
+    if (!db) throw new Error('Database not initialized');
     try {
         const docRef = await addDoc(collection(db, 'layer_breakdowns'), {
             ...breakdown,
@@ -28,6 +30,8 @@ export async function saveLayerBreakdown(breakdown: Omit<LayerBreakdownDoc, 'cre
 }
 
 export async function getLayerBreakdowns() {
+    const db = getFirestoreDb();
+    if (!db) return [];
     const q = query(collection(db, 'layer_breakdowns'), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
