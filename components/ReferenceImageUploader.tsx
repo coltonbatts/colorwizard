@@ -22,9 +22,10 @@ export function ReferenceImageUploader({
 }: ReferenceImageUploaderProps) {
     const [images, setImages] = useState<ReferenceImage[]>([]);
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+    const [isConverting, setIsConverting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
@@ -34,9 +35,37 @@ export function ReferenceImageUploader({
             return;
         }
 
-        const file = files[0];
+        let file = files[0];
+        const isHeic = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
 
-        // Validate file type
+        // Handle HEIC/HEIF conversion
+        if (isHeic) {
+            try {
+                setIsConverting(true);
+                const heic2any = (await import('heic2any')).default;
+                const convertedBlob = await heic2any({
+                    blob: file,
+                    toType: 'image/jpeg',
+                    quality: 0.8
+                });
+
+                // heic2any can return an array if multiple images are in the HEIC
+                const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+
+                file = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+                    type: 'image/jpeg',
+                });
+            } catch (err) {
+                console.error('HEIC conversion failed:', err);
+                alert('Failed to convert HEIC image. Please try a different format.');
+                setIsConverting(false);
+                return;
+            } finally {
+                setIsConverting(false);
+            }
+        }
+
+        // Validate file type (after potential conversion)
         if (!file.type.startsWith('image/')) {
             alert('Please select an image file');
             return;
@@ -104,18 +133,27 @@ export function ReferenceImageUploader({
             {/* Upload button */}
             <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={!canUploadMore}
-                className={`w-full py-3 rounded-lg border-2 border-dashed transition-colors mb-4 ${canUploadMore
-                        ? 'border-gray-600 hover:border-blue-500 text-gray-300 hover:text-blue-400 cursor-pointer'
-                        : 'border-gray-700 text-gray-600 cursor-not-allowed'
+                disabled={!canUploadMore || isConverting}
+                className={`w-full py-3 rounded-lg border-2 border-dashed transition-colors mb-4 ${canUploadMore && !isConverting
+                    ? 'border-gray-600 hover:border-blue-500 text-gray-300 hover:text-blue-400 cursor-pointer'
+                    : 'border-gray-700 text-gray-600 cursor-not-allowed'
                     }`}
             >
-                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-sm">
-                    {canUploadMore ? 'Upload Reference Image' : 'Upgrade to Pro for unlimited images'}
-                </span>
+                {isConverting ? (
+                    <div className="flex flex-col items-center">
+                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2" />
+                        <span className="text-sm">Converting HEIC...</span>
+                    </div>
+                ) : (
+                    <>
+                        <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="text-sm">
+                            {canUploadMore ? 'Upload Reference Image' : 'Upgrade to Pro for unlimited images'}
+                        </span>
+                    </>
+                )}
             </button>
 
             <input
@@ -134,8 +172,8 @@ export function ReferenceImageUploader({
                             key={image.id}
                             onClick={() => handleImageClick(image)}
                             className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer transition-all ${selectedImageId === image.id
-                                    ? 'ring-2 ring-blue-500 scale-95'
-                                    : 'hover:ring-2 hover:ring-gray-500'
+                                ? 'ring-2 ring-blue-500 scale-95'
+                                : 'hover:ring-2 hover:ring-gray-500'
                                 }`}
                         >
                             <img
