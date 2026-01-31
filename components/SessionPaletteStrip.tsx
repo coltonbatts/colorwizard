@@ -194,11 +194,13 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                 {/* Actions */}
                 <div className="flex gap-2 shrink-0">
                     <ProcreateExportButton
-                        colors={colors.map((c): ProcreateColor => ({
-                            hex: c.hex,
-                            name: c.label,
-                            rgb: [c.rgb.r, c.rgb.g, c.rgb.b],
-                        }))}
+                        colors={colors
+                            .filter(c => c && c.rgb) // Safety check: filter out colors without rgb
+                            .map((c): ProcreateColor => ({
+                                hex: c.hex,
+                                name: c.label,
+                                rgb: [c.rgb.r, c.rgb.g, c.rgb.b],
+                            }))}
                         paletteName="Session Palette"
                         variant="minimal"
                         className="px-3 py-1.5 text-xs"

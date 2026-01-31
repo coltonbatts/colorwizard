@@ -1742,36 +1742,3 @@ body::before {
         border-left: 1px solid var(--studio-border);
     }
 }
-
-/* ============================================
-   Hide Product Hunt Badge & "Built by Artist"
-   These are injected by external services and don't match our brand
-   ============================================ */
-
-/* Hide the Product Hunt link (appears at top of page) */
-a[href="https://www.producthunt.com/posts/color-wizard"],
-a[href*="producthunt"],
-/* Hide parent container of Product Hunt banner */
-a[href="https://www.producthunt.com/posts/color-wizard"]::before,
-a[href="https://www.producthunt.com/posts/color-wizard"]::after {
-    display: none !important;
-}
-
-/* Hide Product Hunt banner container */
-main > :first-child > :first-child {
-    display: none !important;
-}
-
-/* Hide "Built by an Artist for Artists" button */
-button[aria-label*="Built by"],
-button[aria-label*="Artist"],
-/* Target button with emoji in text */
-button:has(> :is(div, span) * :is(svg, span):last-of-type) {
-    display: none !important;
-}
-
-/* Hide the "Why" drawer/modal (the one with the story) */
-div[class*="drawer"],
-div[class*="modal"] {
-    display: none !important;
-}

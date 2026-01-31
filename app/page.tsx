@@ -18,6 +18,7 @@ import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColo
 import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 
 // Tab content components
 import SampleTab from '@/components/tabs/SampleTab'
@@ -291,7 +292,17 @@ export default function Home() {
           <OilMixTab
             sampledColor={sampledColor}
             activePalette={activePalette}
-            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+            onColorSelect={(color) => {
+              const rgb = typeof color === 'object' ? color : undefined
+              if (rgb) {
+                setSampledColor({
+                  rgb,
+                  hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                  hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+                })
+                setActiveHighlightColor(rgb)
+              }
+            }}
           />
         )
       case 'palette':
@@ -300,14 +311,28 @@ export default function Home() {
         return (
           <MatchesTab
             sampledColor={sampledColor}
-            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+            onColorSelect={(rgb) => {
+              setSampledColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+              })
+              setActiveHighlightColor(rgb)
+            }}
           />
         )
       case 'advanced':
         return (
           <AdvancedTab
             sampledColor={sampledColor}
-            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+            onColorSelect={(rgb) => {
+              setSampledColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+              })
+              setActiveHighlightColor(rgb)
+            }}
             valueScaleSettings={valueScaleSettings}
             onValueScaleChange={setValueScaleSettings}
             histogramBins={histogramBins}
@@ -324,7 +349,14 @@ export default function Home() {
             onUnpin={unpinColor}
             onClearAll={clearPinned}
             onExport={handleExportPalette}
-            onSelect={(rgb) => setActiveHighlightColor(rgb)}
+            onSelect={(rgb) => {
+              setSampledColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+              })
+              setActiveHighlightColor(rgb)
+            }}
           />
         )
       case 'cards':
@@ -332,7 +364,14 @@ export default function Home() {
       case 'library':
         return (
           <PaintLibraryTab
-            onColorSelect={(rgb) => setActiveHighlightColor(rgb)}
+            onColorSelect={(rgb) => {
+              setSampledColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+              })
+              setActiveHighlightColor(rgb)
+            }}
           />
         )
       default:

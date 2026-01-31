@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * MatchesTab - The "Matches" tab content
- * DMC thread matching
+ * MatchesTab - The "Threads" tab content
+ * Shows matching DMC embroidery floss for the sampled color
  */
 
 import DMCFlossMatch from '../DMCFlossMatch'
@@ -21,25 +21,34 @@ interface MatchesTabProps {
 export default function MatchesTab({ sampledColor, onColorSelect }: MatchesTabProps) {
     if (!sampledColor) {
         return (
-            <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-100 flex items-center justify-center mb-4">
-                    <span className="text-2xl text-studio-dim">🧵</span>
+            <div className="tab-empty-state h-full flex flex-col items-center justify-center p-6 text-center">
+                <div className="tab-empty-icon mb-4 opacity-20">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
+                        <circle cx="20.5" cy="3.5" r="1.5" />
+                        <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
+                    </svg>
                 </div>
-                <p className="text-center font-semibold text-studio">Sample a color first</p>
-                <p className="text-sm text-studio-muted mt-2">Then see matching threads</p>
+                <h3 className="text-lg font-semibold text-studio mb-1">Sample a color first</h3>
+                <p className="text-sm text-studio-muted">Tap the image to see matching DMC embroidery floss</p>
             </div>
         )
     }
 
     return (
-        <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6">
-            <ErrorBoundary
-                fallback={({ error, resetError }) => (
-                    <SidebarErrorFallback error={error} resetError={resetError} />
-                )}
-            >
-                <DMCFlossMatch rgb={sampledColor.rgb} onColorSelect={onColorSelect || (() => { })} />
-            </ErrorBoundary>
+        <div className="tab-content-scroll h-full">
+            <div className="p-4 lg:p-6 pb-20">
+                <ErrorBoundary
+                    fallback={({ error, resetError }) => (
+                        <SidebarErrorFallback error={error} resetError={resetError} />
+                    )}
+                >
+                    <DMCFlossMatch
+                        rgb={sampledColor.rgb}
+                        onColorSelect={onColorSelect || (() => { })}
+                    />
+                </ErrorBoundary>
+            </div>
         </div>
     )
 }
