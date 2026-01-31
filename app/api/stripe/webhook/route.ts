@@ -12,6 +12,7 @@ import Stripe from 'stripe'
 import { unlockProLifetime, createUserDoc } from '@/lib/db/userTier'
 import { sendEmail } from '@/lib/email/service'
 import { getUpgradeConfirmationEmail } from '@/lib/email/templates'
+import { validateServerEnv } from '@/lib/env-validator'
 
 export const dynamic = 'force-dynamic'
 
@@ -79,7 +80,8 @@ async function verifyWebhookSignature(
 }
 
 export async function POST(req: NextRequest) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+  validateServerEnv()
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const signature = req.headers.get('stripe-signature')
 
   if (!signature) {

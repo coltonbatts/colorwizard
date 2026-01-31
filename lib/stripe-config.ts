@@ -17,8 +17,8 @@ export interface StripePrice {
 export const STRIPE_PRICES = {
   // Pro Lifetime: One-time $1 payment
   lifetime: {
-    id: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID || 'price_test_lifetime',
-    productId: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRODUCT_ID || 'prod_test_lifetime',
+    id: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID!,
+    productId: process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRODUCT_ID!,
     amount: 100, // $1.00 in cents
     currency: 'usd',
     displayAmount: 1,

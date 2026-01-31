@@ -11,7 +11,7 @@
  ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 ```
 
-### A Color Picker Built for Painters. Not Locked. Not Crippled. Not Owned by Anyone But You.
+### A Color Picker Built for Painters. Not Locked. Not Crippled. Not Owned by Anyone But You
 
 **Free. Open source. No paywalls for the good stuff.**
 
@@ -62,44 +62,55 @@ Real painter feedback: "No lag. Just works."
 ## Features
 
 **Speed**
+
 - Click-to-color is instant (Web Workers handle the heavy math)
 - Zoom/pan with keyboard + mouse
 - Optimized rendering (Zustand selectors, component splitting)
 
 **Color Sampling**
+
 - HEX, RGB, HSL readouts
 - Zoom and pan with smooth scrolling
 - Support for drag-and-drop images
 
 **Value Mode**
+
 - Press V to check grayscale values (essential for painting)
 - Adjustable overlay opacity
 - 5/7/9/11 value interval options
 
 **Oil Paint Recipes**
+
 - 6-color realistic palette (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue)
 - Brand support (Winsor & Newton, Golden, Gamblin)
 - Spectral.js mixing engine
 - Interactive mix lab for experimentation
 
 **Embroidery Floss**
+
 - All 454 DMC threads
 - Top 5 matches for any color
 - Cross-stitch reference
 
 **Privacy**
+
 - Your images? Never uploaded. Stay on your machine.
 - Your colors? Not tracked. Not stored. Not sold.
 - Export anytime. Nothing is locked.
 
 **Keyboard Shortcuts**
+
 - Spacebar: pan
 - +/-: zoom
 - V: value mode
-- 1-8: sidebar tabs
+- 1-9: sidebar tabs (Surface, Structure, Reference, Sample, etc.)
+- 0: Library
+- Alt + 9: Check My Values (Overlay)
+- Alt + 0: Check My Drawing (Perspective Warp)
 - [/]: collapse sidebar
 
 **Accessibility**
+
 - WCAG contrast ratios on every swatch
 - Screen reader ready
 - Keyboard navigable
@@ -148,6 +159,7 @@ Next.js 15 · React 18 · TypeScript · Tailwind CSS · Canvas API · Spectral.j
 ## Pricing
 
 ### Free Tier
+
 - Unlimited color sampling
 - Paint recipes
 - DMC floss matching
@@ -155,11 +167,15 @@ Next.js 15 · React 18 · TypeScript · Tailwind CSS · Canvas API · Spectral.j
 - Export everything
 - Forever
 
-### Pro Tier ($8/month, coming soon)
-- Batch palette extraction
-- Cloud palette sync
-- Custom paint libraries
-- Procreate plugin (beta)
+### Pro Tier ($1 one-time purchase, lifetime access)
+
+- **Surface Handling** — Import and persist your own surface photos locally
+- **Structure Tools** — Square grid overlays with adjustable spacing and opacity
+- **Reference Overlay** — Import reference photos with Move, Scale, Rotate, and Opacity controls
+- **Batch palette extraction** (Coming soon)
+- **Cloud palette sync** (Coming soon)
+- **Custom paint libraries** (Coming soon)
+- **Procreate plugin** (Coming soon)
 
 **The core tool is free forever.** We're not hiding the good stuff. If you just need to sample colors and get recipes, you never have to pay.
 
@@ -190,6 +206,7 @@ A slow tool is a betrayal. We spent a sprint optimizing every interaction. 50% f
 This is open source. Fork it. Improve it. Send a PR. We'll look at it.
 
 Ideas for contributions:
+
 - New palette types (pastel, watercolor, etc.)
 - Export formats (CSV, Figma plugins, etc.)
 - UI/UX improvements

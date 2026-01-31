@@ -36,6 +36,10 @@ import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
+import SurfaceTab from '@/components/tabs/SurfaceTab'
+import StructureTab from '@/components/tabs/StructureTab'
+import ReferenceTab from '@/components/tabs/ReferenceTab'
+
 import { useStore } from '@/lib/store/useStore'
 
 export default function Home() {
@@ -95,6 +99,19 @@ export default function Home() {
   const measurePointA = useStore(state => state.measurePointA)
   const measurePointB = useStore(state => state.measurePointB)
   const measurementLayer = useStore(state => state.measurementLayer)
+
+  const referenceImage = useStore(state => state.referenceImage)
+  const setReferenceImage = useStore(state => state.setReferenceImage)
+
+  // Synchronize persistent referenceImage string to runtime HTMLImageElement
+  useEffect(() => {
+    if (referenceImage && !image) {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      img.src = referenceImage
+      img.onload = () => setImage(img)
+    }
+  }, [referenceImage, image, setImage])
   const setMeasurePoints = useStore(state => state.setMeasurePoints)
   const toggleMeasureMode = useStore(state => state.toggleMeasureMode)
   const toggleMeasurementLayer = useStore(state => state.toggleMeasurementLayer)
@@ -196,29 +213,31 @@ export default function Home() {
         if (sidebarCollapsed) toggleSidebar()
       }
 
-      // 1-8 for tab switching
+      // 1-9 for tab switching
       const tabKeys: { [key: string]: TabType } = {
-        '1': 'sample',
-        '2': 'oilmix',
-        '3': 'palette',
-        '4': 'matches',
-        '5': 'advanced',
-        '6': 'pinned',
-        '7': 'cards',
-        '8': 'library',
+        '1': 'surface',
+        '2': 'structure',
+        '3': 'reference',
+        '4': 'sample',
+        '5': 'oilmix',
+        '6': 'palette',
+        '7': 'matches',
+        '8': 'advanced',
+        '9': 'pinned',
+        '0': 'library',
       }
       if (tabKeys[e.key]) {
         e.preventDefault()
         setActiveTab(tabKeys[e.key])
         if (sidebarCollapsed) toggleSidebar()
       }
-      // 9 for Check My Values full-screen
-      if (e.key === '9' && image) {
+      // Alt + 9 for Check My Values full-screen
+      if (e.altKey && e.key === '9' && image) {
         e.preventDefault()
         setShowCheckValues(true)
       }
-      // 0 for Check My Drawing full-screen
-      if (e.key === '0' && image) {
+      // Alt + 0 for Check My Drawing full-screen
+      if (e.altKey && e.key === '0' && image) {
         e.preventDefault()
         setShowCheckDrawing(true)
       }
@@ -276,6 +295,12 @@ export default function Home() {
   // Render tab content
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'surface':
+        return <SurfaceTab />
+      case 'structure':
+        return <StructureTab />
+      case 'reference':
+        return <ReferenceTab />
       case 'sample':
         return (
           <SampleTab

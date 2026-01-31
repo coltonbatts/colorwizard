@@ -34,6 +34,8 @@ interface RulerOverlayProps {
     image?: HTMLImageElement | null
     /** Canvas settings for real-world scaling */
     canvasSettings?: CanvasSettings
+    /** Grid opacity */
+    gridOpacity?: number
 }
 
 /** Get color based on measurement layer */
@@ -65,7 +67,8 @@ export default function RulerOverlay({
     transformState,
     measurementLayer,
     image,
-    canvasSettings
+    canvasSettings,
+    gridOpacity = 0.15
 }: RulerOverlayProps) {
     // Internal state for uncontrolled mode
     const [internalPointA, setInternalPointA] = useState<Point | null>(null)
@@ -120,15 +123,15 @@ export default function RulerOverlay({
             backgroundImage: `
         repeating-linear-gradient(
           to right,
-          rgba(255, 255, 255, 0.15) 0px,
-          rgba(255, 255, 255, 0.15) 1px,
+          rgba(255, 255, 255, ${gridOpacity}) 0px,
+          rgba(255, 255, 255, ${gridOpacity}) 1px,
           transparent 1px,
           transparent ${spacingPx}px
         ),
         repeating-linear-gradient(
           to bottom,
-          rgba(255, 255, 255, 0.15) 0px,
-          rgba(255, 255, 255, 0.15) 1px,
+          rgba(255, 255, 255, ${gridOpacity}) 0px,
+          rgba(255, 255, 255, ${gridOpacity}) 1px,
           transparent 1px,
           transparent ${spacingPx}px
         )

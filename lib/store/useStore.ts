@@ -37,7 +37,7 @@ interface ColorState {
     highlightTolerance: number
     highlightMode: 'solid' | 'heatmap'
     image: HTMLImageElement | null
-    activeTab: 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
+    activeTab: 'surface' | 'structure' | 'reference' | 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
     pinnedColors: PinnedColor[]
     valueScaleSettings: ValueScaleSettings
     histogramBins: number[]
@@ -45,6 +45,24 @@ interface ColorState {
     palettes: Palette[]
     showPaletteManager: boolean
     canvasSettings: CanvasSettings
+
+    // Surface State
+    surfaceImage: string | null
+    surfaceBounds: { x: number; y: number; width: number; height: number } | null
+
+    // Grid (Structure) state
+    gridOpacity: number
+
+    // Reference State
+    referenceImage: string | null
+    referenceOpacity: number
+    referenceLocked: boolean
+    referenceTransform: {
+        x: number
+        y: number
+        scale: number
+        rotation: number
+    }
 
     // Layout preferences
     sidebarCollapsed: boolean
@@ -98,6 +116,14 @@ interface ColorState {
     setPalettes: (palettes: Palette[]) => void
     setShowPaletteManager: (show: boolean) => void
     setCanvasSettings: (settings: CanvasSettings) => void
+    setSurfaceImage: (image: string | null) => void
+    setSurfaceBounds: (bounds: ColorState['surfaceBounds']) => void
+    setGridOpacity: (opacity: number) => void
+    setReferenceImage: (image: string | null) => void
+    setReferenceOpacity: (opacity: number) => void
+    setReferenceLocked: (locked: boolean) => void
+    setReferenceTransform: (transform: ColorState['referenceTransform']) => void
+    resetReferenceTransform: () => void
 
     // Layout actions
     setSidebarCollapsed: (collapsed: boolean) => void
@@ -173,6 +199,13 @@ export const useStore = create<ColorState>()(
             palettes: [DEFAULT_PALETTE],
             showPaletteManager: false,
             canvasSettings: DEFAULT_CANVAS_SETTINGS,
+            surfaceImage: null,
+            surfaceBounds: null,
+            gridOpacity: 0.3,
+            referenceImage: null,
+            referenceOpacity: 0.5,
+            referenceLocked: false,
+            referenceTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
 
             // Layout preferences
             sidebarCollapsed: false,
@@ -225,7 +258,7 @@ export const useStore = create<ColorState>()(
             setHighlightMode: (highlightMode) => set({ highlightMode }),
             setImage: (image) => {
                 console.log('[useStore] setImage called with:', image ? `${image.width}x${image.height}` : 'null');
-                set({ image });
+                set({ image, referenceImage: image ? image.src : null });
             },
             setActiveTab: (activeTab) => set({ activeTab }),
             setPinnedColors: (pinnedColors) => set({ pinnedColors }),
@@ -235,6 +268,14 @@ export const useStore = create<ColorState>()(
             setPalettes: (palettes) => set({ palettes }),
             setShowPaletteManager: (showPaletteManager) => set({ showPaletteManager }),
             setCanvasSettings: (canvasSettings) => set({ canvasSettings }),
+            setSurfaceImage: (surfaceImage) => set({ surfaceImage }),
+            setSurfaceBounds: (surfaceBounds) => set({ surfaceBounds }),
+            setGridOpacity: (gridOpacity) => set({ gridOpacity }),
+            setReferenceImage: (referenceImage) => set({ referenceImage }),
+            setReferenceOpacity: (referenceOpacity) => set({ referenceOpacity }),
+            setReferenceLocked: (referenceLocked) => set({ referenceLocked }),
+            setReferenceTransform: (referenceTransform) => set({ referenceTransform }),
+            resetReferenceTransform: () => set({ referenceTransform: { x: 0, y: 0, scale: 1, rotation: 0 } }),
 
             // Layout actions
             setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
@@ -377,6 +418,10 @@ export const useStore = create<ColorState>()(
                 breakdownValue: state.breakdownValue,
                 valueModeEnabled: state.valueModeEnabled,
                 valueModeSteps: state.valueModeSteps,
+                // Persist surface state
+                surfaceImage: state.surfaceImage,
+                surfaceBounds: state.surfaceBounds,
+                gridOpacity: state.gridOpacity,
             }),
         }
     )

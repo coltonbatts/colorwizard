@@ -97,12 +97,30 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const breakdownValue = useStore(state => state.breakdownValue)
   const setBreakdownValue = useStore(state => state.setBreakdownValue)
   const valueModeEnabled = useStore(state => state.valueModeEnabled)
+  const surfaceImage = useStore(state => state.surfaceImage)
+  const gridOpacity = useStore(state => state.gridOpacity)
+  const referenceOpacity = useStore(state => state.referenceOpacity)
+  const referenceTransform = useStore(state => state.referenceTransform)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
   const breakdownCanvasRef = useRef<HTMLCanvasElement>(null)
+
+  const [surfaceImageElement, setSurfaceImageElement] = useState<HTMLImageElement | null>(null)
+
+  // Load surface image into element
+  useEffect(() => {
+    if (!surfaceImage) {
+      setSurfaceImageElement(null)
+      return
+    }
+    const img = new Image()
+    img.src = surfaceImage
+    img.onload = () => setSurfaceImageElement(img)
+  }, [surfaceImage])
 
   // Use the image analyzer hook for worker-based processing
   const {
@@ -243,7 +261,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    if (!image || !imageDrawInfo) return
+    if ((!image && !surfaceImageElement) || !imageDrawInfo) return
 
     // Save context state
     ctx.save()
@@ -253,140 +271,168 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.scale(zoomLevel, zoomLevel)
 
     // Draw image at the calculated fit position
-    // Draw image at the calculated fit position
     const { x, y, width, height } = imageDrawInfo
 
-    if (splitMode && valueMapCanvasRef.current) {
-      const splitX = width / 2
-
-      // Left half: Original
+    // 1. Draw Surface Image (Background)
+    if (surfaceImageElement) {
       ctx.save()
-      ctx.beginPath()
-      ctx.rect(x, y, splitX, height)
-      ctx.clip()
-      if (isGrayscale) ctx.filter = 'grayscale(100%)'
-      ctx.drawImage(image, x, y, width, height)
+      ctx.drawImage(surfaceImageElement, x, y, width, height)
       ctx.restore()
+    }
 
-      // Right half: Value Map
+    // 2. Draw Reference Image (Foreground)
+    if (image && imageDrawInfo) {
       ctx.save()
-      ctx.beginPath()
-      ctx.rect(x + splitX, y, splitX, height)
-      ctx.clip()
-      ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-      ctx.restore()
 
-      // Divider
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-      ctx.lineWidth = 2 / zoomLevel
-      ctx.beginPath()
-      ctx.moveTo(x + splitX, y)
-      ctx.lineTo(x + splitX, y + height)
-      ctx.stroke()
-    } else {
-      // Normal rendering or breakdown
-      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
+      // Apply reference opacity
+      ctx.globalAlpha = referenceOpacity
 
-      // Always draw the base image as a fallback if the breakdown is not ready
-      // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
-      const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
-        'Imprimatura': 'imprimatura',
-        'Dead Color': 'deadColor',
-        'Local Color': 'localColor',
-        'Spectral Glaze': 'spectralGlaze'
-      };
+      // Apply transformations centered on the image
+      const centerX = x + width / 2
+      const centerY = y + height / 2
 
-      const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+      ctx.translate(centerX, centerY)
+      ctx.rotate((referenceTransform.rotation * Math.PI) / 180)
+      ctx.scale(referenceTransform.scale, referenceTransform.scale)
+      ctx.translate(-centerX, -centerY)
 
-      const showBaseUnderneath = activeBreakdownStep === 'Original' ||
-        activeBreakdownStep === 'Spectral Glaze' ||
-        !currentBuffer;
+      // Apply X/Y offsets from transform state
+      ctx.translate(referenceTransform.x, referenceTransform.y)
 
-      if (showBaseUnderneath) {
+      if (splitMode && valueMapCanvasRef.current) {
+        const splitX = width / 2
+
+        // Left half: Original
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x, y, splitX, height)
+        ctx.clip()
+        if (isGrayscale) ctx.filter = 'grayscale(100%)'
         ctx.drawImage(image, x, y, width, height)
-      }
+        ctx.restore()
 
-      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
-
-      // Blend value map overlay if enabled and we are in original view
-      if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
-        const opacity = valueScaleSettings.opacity ?? 0.45
-        ctx.globalAlpha = opacity
+        // Right half: Value Map
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(x + splitX, y, splitX, height)
+        ctx.clip()
         ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-        ctx.globalAlpha = 1.0
-      } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
-        // Draw Breakdown Layer on top
-        // If it's Imprimatura, it already has some transparency from the worker
-        ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
-      }
-    }
+        ctx.restore()
 
-    // Draw Highlight Overlay if available
-    if (overlayCanvasRef.current && labBuffer?.width) {
-      ctx.drawImage(
-        overlayCanvasRef.current,
-        imageDrawInfo.x,
-        imageDrawInfo.y,
-        imageDrawInfo.width,
-        imageDrawInfo.height
-      )
-    }
-
-    // Draw Grid
-    if (gridEnabled && image) {
-      const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
-      const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
-
-      const ppiDraw = imageDrawInfo.width / activeWidth
-
-      ctx.save()
-      ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'
-      ctx.lineWidth = 1 / zoomLevel
-      ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
-
-      ctx.font = `${12 / zoomLevel}px monospace`
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      // Vertical lines (Columns)
-      for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
-        const xPos = gridX * ppiDraw
+        // Divider
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+        ctx.lineWidth = 2 / zoomLevel
         ctx.beginPath()
-        ctx.moveTo(xPos, 0)
-        ctx.lineTo(xPos, imageDrawInfo.height)
+        ctx.moveTo(x + splitX, y)
+        ctx.lineTo(x + splitX, y + height)
         ctx.stroke()
+      } else {
+        // Normal rendering or breakdown
+        if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
 
-        // Column label (A, B, C...)
-        if (gridX < activeWidth) {
-          const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
-          ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
+        // Always draw the base image as a fallback if the breakdown is not ready
+        // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
+        const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
+          'Imprimatura': 'imprimatura',
+          'Dead Color': 'deadColor',
+          'Local Color': 'localColor',
+          'Spectral Glaze': 'spectralGlaze'
+        };
+
+        const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+
+        const showBaseUnderneath = activeBreakdownStep === 'Original' ||
+          activeBreakdownStep === 'Spectral Glaze' ||
+          !currentBuffer;
+
+        if (showBaseUnderneath && image) {
+          ctx.drawImage(image, x, y, width, height)
+        }
+
+        if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
+
+        // Blend value map overlay if enabled and we are in original view
+        if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+          const opacity = valueScaleSettings.opacity ?? 0.45
+          ctx.globalAlpha = opacity
+          ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
+          ctx.globalAlpha = 1.0
+        } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
+          // Draw Breakdown Layer on top
+          // If it's Imprimatura, it already has some transparency from the worker
+          ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
         }
       }
 
-      // Horizontal lines (Rows)
-      for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
-        const yPos = gridY * ppiDraw
-        ctx.beginPath()
-        ctx.moveTo(0, yPos)
-        ctx.lineTo(imageDrawInfo.width, yPos)
-        ctx.stroke()
+      // Draw Highlight Overlay if available
+      if (overlayCanvasRef.current && labBuffer?.width) {
+        ctx.drawImage(
+          overlayCanvasRef.current,
+          imageDrawInfo.x,
+          imageDrawInfo.y,
+          imageDrawInfo.width,
+          imageDrawInfo.height
+        )
+      }
 
-        // Row label (1, 2, 3...)
-        if (gridY < activeHeight) {
-          const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
-          ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
+      // Draw Grid
+      if (gridEnabled && image) {
+        const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
+        const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
+
+        const ppiDraw = imageDrawInfo.width / activeWidth
+
+        ctx.save()
+        ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`
+        ctx.lineWidth = 1 / zoomLevel
+        ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
+
+        ctx.font = `${12 / zoomLevel}px monospace`
+        ctx.fillStyle = `rgba(255, 255, 255, ${gridOpacity + 0.2})`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+
+        // Vertical lines (Columns)
+        for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
+          const xPos = gridX * ppiDraw
+          ctx.beginPath()
+          ctx.moveTo(xPos, 0)
+          ctx.lineTo(xPos, imageDrawInfo.height)
+          ctx.stroke()
+
+          // Column label (A, B, C...)
+          if (gridX < activeWidth) {
+            const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
+            ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
+          }
         }
+
+        // Horizontal lines (Rows)
+        for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
+          const yPos = gridY * ppiDraw
+          ctx.beginPath()
+          ctx.moveTo(0, yPos)
+          ctx.lineTo(imageDrawInfo.width, yPos)
+          ctx.stroke()
+
+          // Row label (1, 2, 3...)
+          if (gridY < activeHeight) {
+            const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
+            ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
+          }
+        }
+
+        ctx.restore()
       }
 
       ctx.restore()
     }
 
-    // Restore context state
+    // Restore global context state
     ctx.restore()
-  }, [image, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, valueScaleSettings, valueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep])
+  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep])
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -409,15 +455,16 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   // Update image draw info when image or canvas dimensions change
   useEffect(() => {
-    if (image && canvasRef.current) {
+    const mainImg = image || surfaceImageElement
+    if (mainImg && canvasRef.current) {
       const canvas = canvasRef.current
-      const info = calculateImageFit(image, canvas.width, canvas.height)
+      const info = calculateImageFit(mainImg, canvas.width, canvas.height)
       setImageDrawInfo(info)
       // Reset zoom and pan when new image loads or canvas resizes
       setZoomLevel(1)
       setPanOffset({ x: 0, y: 0 })
     }
-  }, [image, canvasDimensions, calculateImageFit])
+  }, [image, surfaceImageElement, canvasDimensions, calculateImageFit])
 
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {
@@ -1106,7 +1153,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
-      {!image ? (
+      {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
         <div className="flex-1 flex flex-col">
@@ -1201,6 +1248,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             <RulerOverlay
               gridEnabled={props.gridEnabled || false}
               gridSpacing={props.gridSpacing || 1}
+              gridOpacity={gridOpacity}
               calibration={props.calibration || null}
               measureEnabled={props.measureMode || false}
               measurePointA={props.measurePointA}
@@ -1209,7 +1257,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               onMeasurePointsChange={props.onMeasurePointsChange}
               transformState={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
               measurementLayer={props.measurementLayer}
-              image={image}
+              image={image || surfaceImageElement}
               canvasSettings={props.canvasSettings}
             />
           </div>

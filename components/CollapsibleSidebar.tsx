@@ -4,10 +4,11 @@ import { ReactNode } from 'react'
 import { useStore } from '@/lib/store/useStore'
 
 // New tab type matching the store
-type TabType = 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
+// New tab type matching the store
+type TabType = 'surface' | 'structure' | 'reference' | 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
 
 // Tabs visible in simple mode (core functionality)
-const SIMPLE_MODE_TABS: TabType[] = ['sample', 'oilmix', 'matches', 'pinned']
+const SIMPLE_MODE_TABS: TabType[] = ['surface', 'structure', 'reference', 'sample', 'oilmix', 'matches', 'pinned']
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -21,6 +22,43 @@ interface CollapsibleSidebarProps {
 
 // Tab configuration with icons
 const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[] = [
+    {
+        id: 'surface',
+        label: 'Surface',
+        tooltip: 'Surface / Canvas',
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+            </svg>
+        )
+    },
+    {
+        id: 'structure',
+        label: 'Structure',
+        tooltip: 'Grid & Guides',
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M3 9h18" />
+                <path d="M3 15h18" />
+                <path d="M9 3v18" />
+                <path d="M15 3v18" />
+            </svg>
+        )
+    },
+    {
+        id: 'reference',
+        label: 'Reference',
+        tooltip: 'Reference Overlay',
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+            </svg>
+        )
+    },
     {
         id: 'sample',
         label: 'Sample',

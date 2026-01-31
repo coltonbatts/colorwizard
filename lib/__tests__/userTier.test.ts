@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { 
+import {
   createUserDoc,
   getUserTier,
   unlockProLifetime,
@@ -43,7 +43,7 @@ vi.mock('firebase/firestore', () => {
     setDoc: vi.fn(async (docRef: any, data: any) => {
       userDocStore[docRef.docId] = {
         ...data,
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
     }),
     updateDoc: vi.fn(async (docRef: any, data: any) => {
@@ -89,7 +89,7 @@ describe('userTier.ts - Tier Management', () => {
       // This would call Firebase, but our mock stores it in memory
       // Note: The real implementation uses Firebase, so this test
       // verifies the function signature and behavior
-      
+
       // For now, we'll verify the expected behavior
       expect(userId).toBeTruthy()
       expect(email).toBeTruthy()
@@ -97,7 +97,7 @@ describe('userTier.ts - Tier Management', () => {
 
     it('should set tier to free for new users', async () => {
       const userId = 'test-user-123'
-      
+
       // Verify initial state
       expect(userDocStore[userId]).toBeUndefined()
     })
@@ -105,7 +105,7 @@ describe('userTier.ts - Tier Management', () => {
     it('should store email if provided', async () => {
       const userId = 'test-user-123'
       const email = 'test@example.com'
-      
+
       // Verify that email parameter is accepted
       expect(email).toMatch(/@/)
     })
@@ -118,18 +118,18 @@ describe('userTier.ts - Tier Management', () => {
   describe('getUserTier', () => {
     it('should return null for non-existent user', async () => {
       const nonExistentUserId = 'non-existent-user'
-      
+
       // Mock will return exists() = false
       expect(userDocStore[nonExistentUserId]).toBeUndefined()
     })
 
     it('should return user tier data for existing user', async () => {
       const userId = 'test-user-456'
-      
+
       // Manually set up a user in the store
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       // Verify it exists
@@ -151,12 +151,12 @@ describe('userTier.ts - Tier Management', () => {
       // Set up initial free user
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       // Mock the Firebase calls for unlock
       const { doc, setDoc, getDoc, updateDoc } = await import('firebase/firestore')
-      
+
       vi.mocked(getDoc).mockResolvedValueOnce({
         exists: () => true,
         data: () => userDocStore[userId],
@@ -169,7 +169,7 @@ describe('userTier.ts - Tier Management', () => {
 
     it('should set proUnlockedAt timestamp on first unlock', async () => {
       const userId = 'test-user-timestamp'
-      
+
       // This would be set by serverTimestamp() in real code
       const now = Date.now()
       expect(now).toBeGreaterThan(0)
@@ -178,7 +178,7 @@ describe('userTier.ts - Tier Management', () => {
     it('should store stripe customer ID on unlock', async () => {
       const userId = 'test-user-stripe-customer'
       const stripeCustomerId = 'cus_12345'
-      
+
       // Verify structure
       expect(stripeCustomerId).toMatch(/^cus_/)
     })
@@ -186,7 +186,7 @@ describe('userTier.ts - Tier Management', () => {
     it('should store checkout session ID on unlock', async () => {
       const userId = 'test-user-session'
       const checkoutSessionId = 'cs_test_abc'
-      
+
       // Verify structure
       expect(checkoutSessionId).toMatch(/^cs_/)
     })
@@ -202,7 +202,7 @@ describe('userTier.ts - Tier Management', () => {
       const userId = 'test-user-idempotent'
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_existing_123',
           lastCheckoutSessionId: 'cs_existing_456',
@@ -215,7 +215,7 @@ describe('userTier.ts - Tier Management', () => {
       const existingSessionId = 'cs_existing_456'
 
       const user = userDocStore[userId]
-      
+
       // Business rule: same session ID = already processed
       expect(user.stripe?.lastCheckoutSessionId).toBe(existingSessionId)
     })
@@ -223,7 +223,7 @@ describe('userTier.ts - Tier Management', () => {
     it('should NOT double-update on webhook retry with same session', async () => {
       const userId = 'test-user-idempotent'
       const existingSessionId = 'cs_existing_456'
-      
+
       // Count initial updates (before function call)
       const tierBefore = userDocStore[userId].tier
 
@@ -242,7 +242,7 @@ describe('userTier.ts - Tier Management', () => {
 
       // Critical business rule: same session = idempotent
       // Even if Stripe sends webhook multiple times, we only process once
-      const isAlreadyProcessed = 
+      const isAlreadyProcessed =
         userDocStore[userId].stripe?.lastCheckoutSessionId === sessionId
 
       // Must be idempotent to prevent double-charging
@@ -272,7 +272,7 @@ describe('userTier.ts - Tier Management', () => {
       // Start: free
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       expect(userDocStore[userId].tier).toBe('free')
@@ -294,7 +294,7 @@ describe('userTier.ts - Tier Management', () => {
       // Start: pro_lifetime
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_abc',
           lastCheckoutSessionId: 'cs_xyz',
@@ -318,7 +318,7 @@ describe('userTier.ts - Tier Management', () => {
       // Set up user
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       // Link customer (in real code)
@@ -334,7 +334,7 @@ describe('userTier.ts - Tier Management', () => {
       userDocStore[userId] = {
         tier: 'free',
         stripeCustomerId: oldCustomerId,
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       expect(userDocStore[userId].stripeCustomerId).toBe(oldCustomerId)
@@ -356,7 +356,7 @@ describe('userTier.ts - Tier Management', () => {
 
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       const user = userDocStore[userId]
@@ -370,7 +370,7 @@ describe('userTier.ts - Tier Management', () => {
 
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_123',
           lastCheckoutSessionId: 'cs_456',
@@ -390,7 +390,7 @@ describe('userTier.ts - Tier Management', () => {
       userDocStore[userId] = {
         tier: 'free',
         email,
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       expect(userDocStore[userId].email).toBe(email)
@@ -398,7 +398,7 @@ describe('userTier.ts - Tier Management', () => {
 
     it('should support proUnlockedAt timestamp', async () => {
       const userId = 'test-user-timestamp-unlock'
-      const now = { toDate: () => new Date(), toMillis: () => Date.now() }
+      const now = { toDate: () => new Date(), toMillis: () => Date.now() } as any
 
       userDocStore[userId] = {
         tier: 'pro_lifetime',
@@ -425,25 +425,25 @@ describe('userTier.ts - Tier Management', () => {
       const userId1 = 'test-invariant-1'
       userDocStore[userId1] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       const userId2 = 'test-invariant-2'
       userDocStore[userId2] = {
         tier: 'pro',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       const userId3 = 'test-invariant-3'
       userDocStore[userId3] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
-      // All users have valid tiers
-      ;[userDocStore[userId1], userDocStore[userId2], userDocStore[userId3]].forEach((user) => {
-        expect(validTiers).toContain(user.tier)
-      })
+        // All users have valid tiers
+        ;[userDocStore[userId1], userDocStore[userId2], userDocStore[userId3]].forEach((user) => {
+          expect(validTiers).toContain(user.tier)
+        })
     })
 
     it('should ensure createdAt is always set', async () => {
@@ -452,7 +452,7 @@ describe('userTier.ts - Tier Management', () => {
       userIds.forEach((userId) => {
         userDocStore[userId] = {
           tier: 'free',
-          createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+          createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         }
       })
 
@@ -467,7 +467,7 @@ describe('userTier.ts - Tier Management', () => {
 
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_123',
           lastCheckoutSessionId: 'cs_abc',
@@ -485,7 +485,7 @@ describe('userTier.ts - Tier Management', () => {
       // First processing
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_123',
           lastCheckoutSessionId: sessionId,
@@ -512,7 +512,7 @@ describe('userTier.ts - Tier Management', () => {
 
       userDocStore[userId] = {
         tier: 'free',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         // No stripeCustomerId initially
       }
 
@@ -534,7 +534,7 @@ describe('userTier.ts - Tier Management', () => {
       // First request processes
       userDocStore[userId] = {
         tier: 'pro_lifetime',
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
         stripe: {
           customerId: 'cus_123',
           lastCheckoutSessionId: sessionId,
@@ -558,7 +558,7 @@ describe('userTier.ts - Tier Management', () => {
       userDocStore[userId] = {
         tier: 'free',
         email,
-        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() } as any,
       }
 
       const emailBefore = userDocStore[userId].email

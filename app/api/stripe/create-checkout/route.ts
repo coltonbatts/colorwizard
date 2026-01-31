@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { STRIPE_PRICES } from '@/lib/stripe-config'
 import { getUserIdFromRequest } from '@/lib/auth/server'
+import { validateServerEnv } from '@/lib/env-validator'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,8 @@ interface CheckoutRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '')
+    validateServerEnv()
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
     const body = (await req.json()) as CheckoutRequest
     const { email } = body
     const userId = await getUserIdFromRequest(req)

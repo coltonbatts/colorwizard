@@ -15,17 +15,16 @@ describe('calibration', () => {
         const localStorageData: Record<string, string> = {}
 
         // Create window object with mocked properties
-        // @ts-ignore - creating mock window for node env
         globalThis.window = {
             devicePixelRatio: 2.0,
-            visualViewport: { scale: 1.0 },
+            visualViewport: { scale: 1.0 } as any,
             localStorage: {
                 getItem: (key: string) => localStorageData[key] ?? null,
                 setItem: (key: string, value: string) => { localStorageData[key] = value },
                 removeItem: (key: string) => { delete localStorageData[key] },
                 clear: () => { Object.keys(localStorageData).forEach(k => delete localStorageData[k]) }
-            }
-        }
+            } as any
+        } as any
 
         // Also set localStorage on global for the module
         // @ts-ignore
@@ -185,7 +184,7 @@ describe('calibration', () => {
 
         it('returns true when viewport scale changes', async () => {
             // @ts-ignore
-            globalThis.window.visualViewport = { scale: 2.0 }
+            globalThis.window.visualViewport = { scale: 2.0 } as any
             const { isCalibrationStale } = await import('./calibration')
 
             const data: CalibrationData = {
@@ -249,7 +248,7 @@ describe('calibration', () => {
             // @ts-ignore
             globalThis.window.devicePixelRatio = 3.0
             // @ts-ignore
-            globalThis.window.visualViewport = { scale: 1.5 }
+            globalThis.window.visualViewport = { scale: 1.5 } as any
 
             const { createCalibration } = await import('./calibration')
             const data = createCalibration(120, 'ruler', 2)
