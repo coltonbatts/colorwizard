@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import { ARCanvas } from '@/components/ARCanvas';
 import { ReferenceImageUploader } from '@/components/ReferenceImageUploader';
+import { useUserTier } from '@/lib/hooks/useUserTier';
 
 export default function TracePage() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [opacity, setOpacity] = useState(50);
     const [showGrid, setShowGrid] = useState(false);
-    const [gridType, setGridType] = useState<'thirds' | 'golden' | 'custom'>('thirds');
+    const [gridType, setGridType] = useState<'thirds' | 'golden' | 'doodle'>('thirds');
     const [showSidebar, setShowSidebar] = useState(true);
 
-    // TODO: Get from user auth/tier
-    const isPro = false;
+    const { isPro } = useUserTier();
 
     return (
         <div className="h-screen w-screen bg-black flex overflow-hidden">
@@ -76,6 +76,18 @@ export default function TracePage() {
                                             className="w-4 h-4"
                                         />
                                         <span className="text-gray-300 text-sm">Golden Ratio</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="gridType"
+                                            value="doodle"
+                                            checked={gridType === 'doodle'}
+                                            onChange={() => setGridType('doodle')}
+                                            className="w-4 h-4"
+                                        />
+                                        <span className="text-gray-300 text-sm">Doodle Grid</span>
                                     </label>
                                 </div>
                             )}

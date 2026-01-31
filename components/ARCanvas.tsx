@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { CameraView } from './CameraView';
 
 interface ARCanvasProps {
     referenceImage: string | null;
     opacity?: number;
     showGrid?: boolean;
-    gridType?: 'thirds' | 'golden' | 'custom';
+    gridType?: 'thirds' | 'golden' | 'doodle';
     onOpacityChange?: (opacity: number) => void;
 }
 
@@ -21,6 +21,27 @@ export function ARCanvas({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     const [localOpacity, setLocalOpacity] = useState(opacity);
+
+    // Generate random doodle shapes only once (memoized)
+    // We generate a set of normalized coordinates (0-1) for circles, triangles, squiggles
+    const doodles = useMemo(() => {
+        const shapes = [];
+        // Generate 15 random shapes
+        for (let i = 0; i < 15; i++) {
+            shapes.push({
+                type: Math.random() > 0.6 ? 'squiggle' : (Math.random() > 0.5 ? 'circle' : 'triangle'),
+                x: Math.random(),
+                y: Math.random(),
+                size: 0.05 + Math.random() * 0.1, // 5% to 15% of screen size
+                rotation: Math.random() * Math.PI * 2,
+                points: Array.from({ length: 5 }, () => ({
+                    dx: (Math.random() - 0.5) * 0.1,
+                    dy: (Math.random() - 0.5) * 0.1
+                }))
+            });
+        }
+        return shapes;
+    }, []); // Empty dependency array = generate once per mount
 
     // Update canvas size when window resizes
     useEffect(() => {
@@ -88,7 +109,7 @@ export function ARCanvas({
             // Draw grid even without reference image
             drawGrid(ctx, canvas.width, canvas.height, gridType);
         }
-    }, [referenceImage, localOpacity, showGrid, gridType, canvasSize]);
+    }, [referenceImage, localOpacity, showGrid, gridType, canvasSize, doodles]);
 
     const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number, type: string) => {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
@@ -128,6 +149,40 @@ export function ARCanvas({
             ctx.moveTo(0, height - goldenHeight);
             ctx.lineTo(width, height - goldenHeight);
             ctx.stroke();
+        } else if (type === 'doodle') {
+            // Doodle Grid (Random Shapes)
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)'; // Cyan for doodles
+            ctx.lineWidth = 2;
+
+            doodles.forEach(d => {
+                const cx = d.x * width;
+                const cy = d.y * height;
+                const r = d.size * Math.min(width, height);
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(d.rotation);
+
+                ctx.beginPath();
+                if (d.type === 'circle') {
+                    ctx.arc(0, 0, r, 0, Math.PI * 2);
+                } else if (d.type === 'triangle') {
+                    ctx.moveTo(0, -r);
+                    ctx.lineTo(r * 0.866, r * 0.5);
+                    ctx.lineTo(-r * 0.866, r * 0.5);
+                    ctx.closePath();
+                } else {
+                    // Squiggle
+                    ctx.moveTo(-r, 0);
+                    ctx.bezierCurveTo(
+                        -r/2, r, 
+                        r/2, -r, 
+                        r, 0
+                    );
+                }
+                ctx.stroke();
+                ctx.restore();
+            });
         }
     };
 

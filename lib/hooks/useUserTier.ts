@@ -80,6 +80,6 @@ export function useUserTier() {
     loading,
     error,
     refetch: fetchUserTier,
-    isPro: tierData.tier === 'pro',
+    isPro: tierData.tier === 'pro' || tierData.tier === 'pro_lifetime',
   }
 }
