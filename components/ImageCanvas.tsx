@@ -253,18 +253,27 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
+    const rectWidth = Math.floor(rect.width)
+    const rectHeight = Math.floor(rect.height)
+    if (
+      rectWidth > 0 &&
+      rectHeight > 0 &&
+      (canvasDimensions.width !== rectWidth || canvasDimensions.height !== rectHeight)
+    ) {
+      setCanvasDimensions({ width: rectWidth, height: rectHeight })
+    }
 
     // Set internal resolution (DPR aware)
-    if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
+    if (canvas.width !== rectWidth * dpr || canvas.height !== rectHeight * dpr) {
+      canvas.width = rectWidth * dpr
+      canvas.height = rectHeight * dpr
+      canvas.style.width = `${rectWidth}px`
+      canvas.style.height = `${rectHeight}px`
     }
 
     // Clear canvas
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, rect.width, rect.height)
+    ctx.clearRect(0, 0, rectWidth, rectHeight)
 
     if ((!image && !surfaceImageElement) || !imageDrawInfo) return
 
@@ -458,20 +467,31 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     return () => resizeObserver.disconnect()
   }, []) // Removed dependency on image to avoid observer churn
 
-  // Update image draw info when image or canvas dimensions change
+  // Update image draw info when image changes (reset zoom/pan)
   useEffect(() => {
     const mainImg = image || surfaceImageElement
-    if (mainImg) {
-      const info = calculateFit(
-        { width: canvasDimensions.width, height: canvasDimensions.height },
-        { width: mainImg.width, height: mainImg.height }
-      )
-      setImageDrawInfo(info)
-      // Reset zoom and pan when new image loads
-      setZoomLevel(1)
-      setPanOffset({ x: 0, y: 0 })
-    }
-  }, [image, surfaceImageElement, canvasDimensions])
+    if (!mainImg) return
+
+    const info = calculateFit(
+      { width: canvasDimensions.width, height: canvasDimensions.height },
+      { width: mainImg.width, height: mainImg.height }
+    )
+    setImageDrawInfo(info)
+    setZoomLevel(1)
+    setPanOffset({ x: 0, y: 0 })
+  }, [image, surfaceImageElement])
+
+  // Update image draw info on resize without resetting zoom/pan
+  useEffect(() => {
+    const mainImg = image || surfaceImageElement
+    if (!mainImg) return
+
+    const info = calculateFit(
+      { width: canvasDimensions.width, height: canvasDimensions.height },
+      { width: mainImg.width, height: mainImg.height }
+    )
+    setImageDrawInfo(info)
+  }, [canvasDimensions, image, surfaceImageElement])
 
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {
