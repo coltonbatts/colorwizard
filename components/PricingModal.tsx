@@ -221,7 +221,7 @@ export default function PricingModal({ isOpen, onClose }: PricingModalProps) {
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">What if I'm not satisfied?</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">What if I&apos;m not satisfied?</h4>
                     <p className="text-gray-600 text-sm">
                       Reach out for a refund within 7 days. We stand behind our product.
                     </p>

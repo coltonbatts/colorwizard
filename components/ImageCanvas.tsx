@@ -5,7 +5,7 @@
  * Refactored to use extracted sub-components and hooks for maintainability.
  */
 
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo, useId } from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
 import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/canvas'
 import { CalibrationData } from '@/lib/calibration'
@@ -109,6 +109,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
   const breakdownCanvasRef = useRef<HTMLCanvasElement>(null)
+  const desktopFileInputId = useId()
+  const mobileFileInputId = useId()
 
   const [surfaceImageElement, setSurfaceImageElement] = useState<HTMLImageElement | null>(null)
 
@@ -1054,7 +1056,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const imageData = new ImageData(overlayData as any, labBuffer.width, labBuffer.height)
+      const imageData = new ImageData(new Uint8ClampedArray(overlayData), labBuffer.width, labBuffer.height)
       ctx.putImageData(imageData, 0, 0)
       drawCanvas()
     }
@@ -1151,7 +1153,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   // Handle direct file input for mobile/desktop "New Image" action
   const handleDirectFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const input = e.currentTarget
+    const file = input.files?.[0]
     if (file) {
       console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
       const reader = new FileReader()
@@ -1166,6 +1169,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       }
       reader.readAsDataURL(file)
     }
+    input.value = ''
   }, [props.onImageLoad])
 
   // Get cursor style based on current mode
@@ -1293,15 +1297,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
           {/* Bottom Controls - visible on desktop, mobile uses header */}
           <div className="hidden md:flex items-center justify-between mt-4">
-            <label className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors cursor-pointer">
+            <label
+              htmlFor={desktopFileInputId}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors cursor-pointer"
+            >
               <span>Load New Image</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleDirectFileInput}
-                className="absolute w-1 h-1 opacity-0 pointer-events-none"
-              />
             </label>
+            <input
+              id={desktopFileInputId}
+              type="file"
+              accept="image/*"
+              onChange={handleDirectFileInput}
+              className="sr-only"
+            />
             <div className="text-gray-500 text-sm">
               Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
             </div>
@@ -1309,15 +1317,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
           {/* Mobile: New Image button */}
           <div className="flex md:hidden items-center justify-center mt-2 pb-2">
-            <label className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer">
+            <label
+              htmlFor={mobileFileInputId}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+            >
               <span>New Image</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleDirectFileInput}
-                className="absolute w-1 h-1 opacity-0 pointer-events-none"
-              />
             </label>
+            <input
+              id={mobileFileInputId}
+              type="file"
+              accept="image/*"
+              onChange={handleDirectFileInput}
+              className="sr-only"
+            />
           </div>
         </div>
       )}

@@ -9,9 +9,9 @@ import { useState } from 'react'
 import MixLab from '../MixLab'
 import ColorHarmonies from '../ColorHarmonies'
 import ValueHistogram from '../ValueHistogram'
-import ProcessSlider from '../ProcessSlider'
+import ProcessSlider, { BreakdownStep } from '../ProcessSlider'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
-import { ValueScaleResult } from '@/lib/valueScale'
+import { ValueScaleResult, ValueScaleMode } from '@/lib/valueScale'
 import { getLuminance } from '@/lib/paintingMath'
 
 interface AdvancedTabProps {
@@ -44,7 +44,7 @@ export default function AdvancedTab({
     const [openSection, setOpenSection] = useState<Section | null>('mixlab')
 
     // Derive active breakdown step
-    const activeBreakdownStep = (() => {
+    const activeBreakdownStep: BreakdownStep = (() => {
         if (breakdownValue <= 10) return 'Original'
         if (breakdownValue <= 35) return 'Imprimatura'
         if (breakdownValue <= 60) return 'Dead Color'
@@ -151,7 +151,7 @@ export default function AdvancedTab({
                                 <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
                                 <select
                                     value={valueScaleSettings.mode}
-                                    onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings, mode: e.target.value as any })}
+                                    onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings, mode: e.target.value as ValueScaleMode })}
                                     className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 >
                                     <option value="Even">Even</option>
@@ -172,7 +172,7 @@ export default function AdvancedTab({
                         <ProcessSlider
                             value={breakdownValue}
                             onChange={onBreakdownChange}
-                            activeStep={activeBreakdownStep as any}
+                            activeStep={activeBreakdownStep}
                         />
                         <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
                             <p className="text-xs text-blue-700 leading-relaxed">

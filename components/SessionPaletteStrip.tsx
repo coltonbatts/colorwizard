@@ -23,6 +23,8 @@ interface SessionPaletteStripProps {
 }
 
 const STORAGE_KEY = 'colorwizard-session-palette'
+type SessionPaletteAddFn = (hex: string, rgb: { r: number; g: number; b: number }) => void
+type SessionPaletteWindow = Window & { __sessionPaletteAdd?: SessionPaletteAddFn }
 
 export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStripProps) {
     // Load from localStorage on mount - using initializer function for state
@@ -93,8 +95,9 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
 
     // Expose addColor for parent components
     useEffect(() => {
-        (window as any).__sessionPaletteAdd = addColor
-        return () => { delete (window as any).__sessionPaletteAdd }
+        const sessionWindow = window as SessionPaletteWindow
+        sessionWindow.__sessionPaletteAdd = addColor
+        return () => { delete sessionWindow.__sessionPaletteAdd }
     }, [addColor])
 
     if (colors.length === 0) {
@@ -226,8 +229,9 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
 // Hook for adding colors from anywhere
 export function useSessionPalette() {
     const addColor = (hex: string, rgb: { r: number; g: number; b: number }) => {
-        if (typeof window !== 'undefined' && (window as any).__sessionPaletteAdd) {
-            (window as any).__sessionPaletteAdd(hex, rgb)
+        if (typeof window !== 'undefined') {
+            const sessionWindow = window as SessionPaletteWindow
+            sessionWindow.__sessionPaletteAdd?.(hex, rgb)
         }
     }
     return { addColor }

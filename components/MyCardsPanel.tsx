@@ -47,7 +47,7 @@ export default function MyCardsPanel() {
                         </div>
                         <p className="text-sm font-medium text-gray-600">No cards yet</p>
                         <p className="text-xs text-gray-400 mt-1">
-                            Sample a color and click "Make Card" to create one
+                            Sample a color and click &quot;Make Card&quot; to create one
                         </p>
                     </div>
                 ) : (

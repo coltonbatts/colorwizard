@@ -31,7 +31,7 @@ export default function PinnedColorsPanel({
                 </div>
                 <p className="text-center font-bold text-studio">No pinned colors yet</p>
                 <p className="text-sm text-studio-muted mt-2 text-center max-w-[200px]">
-                    Use the "Pin Color" button in the Inspect panel to save colors for comparison.
+                    Use the &quot;Pin Color&quot; button in the Inspect panel to save colors for comparison.
                 </p>
             </div>
         )

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useId } from 'react';
 
 /**
  * ImageDropzone - Drag and drop zone for loading images.
@@ -14,6 +14,7 @@ interface ImageDropzoneProps {
 
 export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
     const [isDragging, setIsDragging] = useState(false);
+    const inputId = useId();
 
     const loadImage = useCallback(
         (file: File) => {
@@ -67,11 +68,13 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
     const handleFileInput = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
+            const input = e.currentTarget;
+            const file = input.files?.[0];
             if (file) {
                 console.log('[ImageDropzone] File selected:', file.name, file.type, file.size, 'bytes');
                 loadImage(file);
             }
+            input.value = '';
         },
         [loadImage]
     );
@@ -115,19 +118,20 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             Drop an image here to begin your analysis
                         </p>
 
-                        <label className="cursor-pointer group block">
+                        <input
+                            id={inputId}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                                console.log('[ImageDropzone] Input onChange fired');
+                                handleFileInput(e);
+                            }}
+                            className="sr-only"
+                        />
+                        <label htmlFor={inputId} className="cursor-pointer group block">
                             <span className="px-8 sm:px-10 md:px-12 py-4 md:py-5 bg-studio text-white rounded-full font-black uppercase tracking-widest hover:bg-studio/90 transition-all shadow-xl group-active:scale-95 inline-block text-sm sm:text-base">
                                 Choose Image
                             </span>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    console.log('[ImageDropzone] Input onChange fired');
-                                    handleFileInput(e);
-                                }}
-                                className="absolute w-1 h-1 opacity-0 pointer-events-none"
-                            />
                         </label>
 
                         <div className="mt-4 md:mt-8 flex items-center justify-center gap-3 md:gap-6 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-studio-dim">
