@@ -64,16 +64,16 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
     }, [selectedBrandId, selectedLineId, selectedPaintIds, onPaletteChange])
 
     return (
-        <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6 space-y-6">
+        <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-lg font-bold text-studio mb-1">Your Palette</h2>
-                <p className="text-sm text-studio-muted">Select your paint brand and tubes</p>
+                <h2 className="text-lg font-bold text-ink mb-1">Your Palette</h2>
+                <p className="text-sm text-ink-muted">Select your paint brand and tubes</p>
             </div>
 
             {/* Brand & Line Selection */}
-            <section className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest mb-3">Paint Brand</h3>
+            <section className="p-4 bg-paper-recessed rounded-lg border border-ink-hairline">
+                <h3 className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-3">Paint Brand</h3>
                 <BrandSelector
                     selectedBrandId={selectedBrandId}
                     selectedLineId={selectedLineId}
@@ -84,16 +84,16 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
                         setSelectedPaintIds([])
                     }}
                     onLineChange={setSelectedLineId}
-                    className="text-studio"
+                    className="text-ink"
                 />
             </section>
 
             {/* Tube Selection */}
-            <section className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest mb-3">
+            <section className="p-4 bg-paper-recessed rounded-lg border border-ink-hairline">
+                <h3 className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-3">
                     Your Tubes
                     {selectedPaintIds.length > 0 && (
-                        <span className="ml-2 text-blue-600">({selectedPaintIds.length} selected)</span>
+                        <span className="ml-2 text-signal">({selectedPaintIds.length} selected)</span>
                     )}
                 </h3>
                 <TubeSelector
@@ -147,7 +147,7 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
                             setSelectedPaintIds([])
                         }}
                         disabled={!selectedBrandId && !selectedLineId && selectedPaintIds.length === 0}
-                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-gray-200 text-studio-dim hover:bg-gray-50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold border border-ink-hairline text-ink-faint hover:bg-paper-recessed transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Clear current paint selection"
                     >
                         Clear Selection
@@ -159,7 +159,7 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
                             alert('Palette copied to clipboard!')
                         }}
                         disabled={selectedPaintIds.length === 0}
-                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-2 rounded-xl text-sm font-bold bg-signal text-white hover:bg-signal-hover transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Copy palette data as JSON to clipboard"
                     >
                         Copy JSON
@@ -168,9 +168,9 @@ export default function PaletteTab({ onPaletteChange }: PaletteTabProps) {
             </div>
 
             {/* Tips */}
-            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                <h4 className="text-xs font-black text-blue-800 uppercase tracking-widest mb-2">Pro Tip</h4>
-                <p className="text-xs text-blue-700 leading-relaxed">
+            <div className="p-4 bg-subsignal-muted rounded-lg border border-subsignal">
+                <h4 className="text-xs font-black text-subsignal uppercase tracking-widest mb-2">Pro Tip</h4>
+                <p className="text-xs text-subsignal leading-relaxed">
                     Select the tubes you actually own. Color recipes will be optimized for your available paints.
                 </p>
             </div>

@@ -60,8 +60,8 @@ export default function AdvancedTab({
         <button
             onClick={() => toggleSection(section)}
             className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${openSection === section
-                ? 'bg-gray-900 border-gray-800 text-white'
-                : 'bg-gray-50 border-gray-200 text-studio hover:bg-gray-100'
+                ? 'bg-ink border-ink-muted text-white'
+                : 'bg-paper-recessed border-ink-hairline text-ink hover:bg-paper-recessed'
                 }`}
         >
             <span className="flex items-center gap-2 font-bold text-sm">
@@ -75,22 +75,22 @@ export default function AdvancedTab({
     )
 
     return (
-        <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6 space-y-3">
+        <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-3">
             {/* Header */}
             <div className="mb-4">
-                <h2 className="text-lg font-bold text-studio mb-1">Advanced Tools</h2>
-                <p className="text-sm text-studio-muted">Power features for deep color work</p>
+                <h2 className="text-lg font-bold text-ink mb-1">Advanced Tools</h2>
+                <p className="text-sm text-ink-muted">Power features for deep color work</p>
             </div>
 
             {/* Mix Lab Section */}
             <div>
                 <SectionHeader section="mixlab" title="Spectral Mix Lab" icon="🔬" />
                 {openSection === 'mixlab' && (
-                    <div className="mt-2 p-4 bg-gray-900 rounded-xl border border-gray-800">
+                    <div className="mt-2 p-4 bg-ink rounded-xl border border-ink-muted">
                         {sampledColor ? (
                             <MixLab targetHex={sampledColor.hex} />
                         ) : (
-                            <p className="text-gray-400 text-center py-8">Sample a color to use Mix Lab</p>
+                            <p className="text-white/50 text-center py-8">Sample a color to use Mix Lab</p>
                         )}
                     </div>
                 )}
@@ -100,11 +100,11 @@ export default function AdvancedTab({
             <div>
                 <SectionHeader section="harmonies" title="Color Harmonies" icon="🎨" />
                 {openSection === 'harmonies' && (
-                    <div className="mt-2 p-4 bg-white rounded-xl border border-gray-200">
+                    <div className="mt-2 p-4 bg-paper-elevated rounded-xl border border-ink-hairline">
                         {sampledColor ? (
                             <ColorHarmonies rgb={sampledColor.rgb} onColorSelect={onColorSelect || (() => { })} />
                         ) : (
-                            <p className="text-studio-muted text-center py-8">Sample a color to see harmonies</p>
+                            <p className="text-ink-muted text-center py-8">Sample a color to see harmonies</p>
                         )}
                     </div>
                 )}
@@ -114,7 +114,7 @@ export default function AdvancedTab({
             <div>
                 <SectionHeader section="value" title="Value Distribution" icon="📊" />
                 {openSection === 'value' && valueScaleSettings && (
-                    <div className="mt-2 p-4 bg-gray-900 rounded-xl border border-gray-800 space-y-4">
+                    <div className="mt-2 p-4 bg-ink rounded-xl border border-ink-muted space-y-4">
                         {histogramBins && histogramBins.length > 0 && (
                             <ValueHistogram
                                 bins={histogramBins}
@@ -123,11 +123,11 @@ export default function AdvancedTab({
                             />
                         )}
 
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-800">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settings</span>
+                        <div className="flex items-center justify-between pt-2 border-t border-ink-muted">
+                            <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Settings</span>
                             <button
                                 onClick={() => onValueScaleChange?.({ ...valueScaleSettings, enabled: !valueScaleSettings.enabled })}
-                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${valueScaleSettings.enabled ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'}`}
+                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${valueScaleSettings.enabled ? 'bg-signal text-white' : 'bg-ink text-white/50 hover:text-white/80'}`}
                             >
                                 {valueScaleSettings.enabled ? 'Overlay ON' : 'Overlay OFF'}
                             </button>
@@ -135,11 +135,11 @@ export default function AdvancedTab({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Steps</span>
+                                <span className="text-[10px] text-white/60 font-bold uppercase block mb-1">Steps</span>
                                 <select
                                     value={valueScaleSettings.steps}
                                     onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings, steps: parseInt(e.target.value) })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full bg-ink border border-ink-muted rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-signal"
                                 >
                                     <option value="5">5 Steps</option>
                                     <option value="7">7 Steps</option>
@@ -148,11 +148,11 @@ export default function AdvancedTab({
                                 </select>
                             </div>
                             <div>
-                                <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
+                                <span className="text-[10px] text-white/60 font-bold uppercase block mb-1">Mode</span>
                                 <select
                                     value={valueScaleSettings.mode}
                                     onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings, mode: e.target.value as ValueScaleMode })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full bg-ink border border-ink-muted rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:ring-1 focus:ring-signal"
                                 >
                                     <option value="Even">Even</option>
                                     <option value="Percentile">Percentile</option>
@@ -167,15 +167,15 @@ export default function AdvancedTab({
             <div>
                 <SectionHeader section="stages" title="Painting Stages" icon="🖼️" />
                 {openSection === 'stages' && (
-                    <div className="mt-2 p-4 bg-white rounded-xl border border-gray-200 space-y-4">
-                        <p className="text-sm text-studio-muted mb-4">Explore the visual breakdown of the painting process.</p>
+                    <div className="mt-2 p-4 bg-paper-elevated rounded-xl border border-ink-hairline space-y-4">
+                        <p className="text-sm text-ink-muted mb-4">Explore the visual breakdown of the painting process.</p>
                         <ProcessSlider
                             value={breakdownValue}
                             onChange={onBreakdownChange}
                             activeStep={activeBreakdownStep}
                         />
-                        <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                            <p className="text-xs text-blue-700 leading-relaxed">
+                        <div className="p-3 bg-subsignal-muted rounded-xl border border-subsignal">
+                            <p className="text-xs text-subsignal leading-relaxed">
                                 <strong>Tip:</strong> Use these stages to plan your physical painting layers.
                             </p>
                         </div>

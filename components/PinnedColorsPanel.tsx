@@ -25,12 +25,12 @@ export default function PinnedColorsPanel({
 
     if (pinnedColors.length === 0) {
         return (
-            <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-100 flex items-center justify-center mb-4 text-studio-dim grayscale opacity-30">
+            <div className="h-full p-6 flex flex-col items-center justify-center bg-paper-elevated text-ink-secondary">
+                <div className="w-16 h-16 rounded-full border-2 border-ink-hairline flex items-center justify-center mb-4 text-ink-faint grayscale opacity-30">
                     <span className="text-2xl">📌</span>
                 </div>
-                <p className="text-center font-bold text-studio">No pinned colors yet</p>
-                <p className="text-sm text-studio-muted mt-2 text-center max-w-[200px]">
+                <p className="text-center font-bold text-ink">No pinned colors yet</p>
+                <p className="text-sm text-ink-muted mt-2 text-center max-w-[200px]">
                     Use the &quot;Pin Color&quot; button in the Inspect panel to save colors for comparison.
                 </p>
             </div>
@@ -44,12 +44,12 @@ export default function PinnedColorsPanel({
     }
 
     return (
-        <div className="flex flex-col h-full bg-white font-sans">
+        <div className="flex flex-col h-full bg-paper-elevated font-sans">
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
+            <div className="p-4 border-b border-ink-hairline flex items-center justify-between sticky top-0 bg-paper-elevated/90 backdrop-blur-md z-10">
                 <div>
-                    <h2 className="text-lg font-bold text-studio leading-none">Pinned Colors</h2>
-                    <span className="text-[10px] text-studio-dim uppercase tracking-widest font-black mt-1 block">
+                    <h2 className="text-lg font-bold text-ink leading-none">Pinned Colors</h2>
+                    <span className="text-[10px] text-ink-faint uppercase tracking-widest font-black mt-1 block">
                         {pinnedColors.length} saved
                     </span>
                 </div>
@@ -57,7 +57,7 @@ export default function PinnedColorsPanel({
                     <button
                         onClick={onExport}
                         title="Export Palette as JSON"
-                        className="p-2 text-studio-secondary hover:text-blue-600 bg-gray-50 border border-gray-100 rounded-xl transition-all shadow-sm"
+                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-all shadow-sm"
                         aria-label="Export Palette as JSON"
                     >
                         💾
@@ -65,7 +65,7 @@ export default function PinnedColorsPanel({
                     <button
                         onClick={onClearAll}
                         title="Clear All"
-                        className="p-2 text-studio-secondary hover:text-red-600 bg-gray-50 border border-gray-100 rounded-xl transition-all shadow-sm"
+                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-all shadow-sm"
                         aria-label="Clear All Pinned Colors"
                     >
                         🗑️
@@ -82,9 +82,9 @@ export default function PinnedColorsPanel({
                     return (
                         <div
                             key={color.id}
-                            className={`group rounded-2xl border transition-all duration-500 overflow-hidden ${expandedId === color.id
-                                ? 'bg-gray-50 border-gray-200 shadow-lg scale-[1.02]'
-                                : 'bg-white border-gray-100 hover:border-blue-200 hover:shadow-md'
+                            className={`group rounded-lg border transition-all duration-500 overflow-hidden ${expandedId === color.id
+                                ? 'bg-paper-recessed border-ink-hairline shadow-lg scale-[1.02]'
+                                : 'bg-paper-elevated border-ink-hairline hover:border-signal hover:shadow-md'
                                 }`}
                             draggable
                             onDragStart={(e) => {
@@ -100,7 +100,7 @@ export default function PinnedColorsPanel({
                             <div className="p-3 flex items-center gap-3">
                                 {/* Swatch */}
                                 <div
-                                    className="w-12 h-12 rounded-lg border border-gray-700 shrink-0 shadow-inner flex items-center justify-center"
+                                    className="w-12 h-12 rounded-lg border border-ink-muted shrink-0 shadow-inner flex items-center justify-center"
                                     style={{ backgroundColor: color.hex }}
                                 >
                                     <span
@@ -116,10 +116,10 @@ export default function PinnedColorsPanel({
                                     className="flex-1 min-w-0 cursor-pointer"
                                     onClick={() => setExpandedId(expandedId === color.id ? null : color.id)}
                                 >
-                                    <h3 className="text-sm font-bold text-studio leading-tight break-words">
+                                    <h3 className="text-sm font-bold text-ink leading-tight break-words">
                                         {color.label}
                                     </h3>
-                                    <div className="flex items-center gap-2 text-[10px] font-mono text-studio-dim mt-0.5">
+                                    <div className="flex items-center gap-2 text-[10px] font-mono text-ink-faint mt-0.5">
                                         <span className="font-bold">{color.hex}</span>
                                         <span>•</span>
                                         <span>{new Date(color.timestamp).toLocaleDateString()}</span>
@@ -131,8 +131,8 @@ export default function PinnedColorsPanel({
                                     <button
                                         onClick={() => onSelect(color.rgb)}
                                         className={`p-2 rounded-lg transition-all ${isActive(color.rgb)
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-500 hover:text-blue-400 hover:bg-gray-800'
+                                            ? 'bg-signal text-white'
+                                            : 'text-ink-muted hover:text-signal hover:bg-ink'
                                             }`}
                                         title={isActive(color.rgb) ? 'Currently Highlighted' : 'Activate Highlight'}
                                         aria-label={isActive(color.rgb) ? 'Color is currently highlighted' : 'Highlight this color on the canvas'}
@@ -141,7 +141,7 @@ export default function PinnedColorsPanel({
                                     </button>
                                     <button
                                         onClick={() => onUnpin(color.id)}
-                                        className="p-2 text-studio-dim hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                        className="p-2 text-ink-faint hover:text-signal hover:bg-signal-muted rounded-xl transition-all"
                                         title="Remove"
                                         aria-label={`Remove ${color.label} from pinned colors`}
                                     >
@@ -152,7 +152,7 @@ export default function PinnedColorsPanel({
 
                             {/* Expanded Content */}
                             {expandedId === color.id && (
-                                <div className="border-t border-gray-800 p-4 space-y-6 animate-in slide-in-from-top-2 duration-300">
+                                <div className="border-t border-ink-muted p-4 space-y-6 animate-in slide-in-from-top-2 duration-300">
                                     {/* Tech Specs */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-2 bg-gray-950/50 rounded-lg border border-gray-800/50">
@@ -168,13 +168,13 @@ export default function PinnedColorsPanel({
                                     {/* Spectral Recipe */}
                                     {color.spectralRecipe && (
                                         <div>
-                                            <h4 className="text-[10px] uppercase font-bold text-blue-400 tracking-wider mb-2">Spectral Recipe</h4>
+                                            <h4 className="text-[10px] uppercase font-bold text-signal tracking-wider mb-2">Spectral Recipe</h4>
                                             <div className="space-y-1.5">
                                                 {color.spectralRecipe.ingredients.map((ing, i) => (
                                                     <div key={i} className="flex items-center gap-2 py-1 border-b border-gray-800/30 last:border-0">
-                                                        <div className="w-3 h-3 rounded shadow-sm border border-gray-700" style={{ backgroundColor: ing.pigment.hex }} />
+                                                        <div className="w-3 h-3 rounded shadow-sm border border-ink-muted" style={{ backgroundColor: ing.pigment.hex }} />
                                                         <span className="text-xs text-gray-300 flex-1 truncate">{ing.pigment.name}</span>
-                                                        <span className="text-[10px] font-mono text-gray-500">{ing.percentage}</span>
+                                                        <span className="text-[10px] font-mono text-white/50">{ing.percentage}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -183,14 +183,14 @@ export default function PinnedColorsPanel({
 
                                     {/* DMC Matches */}
                                     <div>
-                                        <h4 className="text-[10px] uppercase font-bold text-pink-400 tracking-wider mb-2">DMC Thread Matches</h4>
+                                        <h4 className="text-[10px] uppercase font-bold text-signal tracking-wider mb-2">DMC Thread Matches</h4>
                                         <div className="grid grid-cols-1 gap-1.5">
                                             {color.dmcMatches.slice(0, 3).map((match) => (
-                                                <div key={match.number} className="flex items-center gap-2 p-1.5 bg-gray-950/30 border border-gray-800 rounded group/dmc">
-                                                    <div className="w-6 h-6 rounded border border-gray-700" style={{ backgroundColor: match.hex }} />
+                                                <div key={match.number} className="flex items-center gap-2 p-1.5 bg-gray-950/30 border border-ink-muted rounded group/dmc">
+                                                    <div className="w-6 h-6 rounded border border-ink-muted" style={{ backgroundColor: match.hex }} />
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-[10px] font-bold text-gray-200 truncate">{match.number} - {match.name}</p>
-                                                        <p className="text-[9px] text-gray-500 tracking-tight">{match.confidenceLabel} • {Math.round(match.similarity)}% sim</p>
+                                                        <p className="text-[9px] text-white/50 tracking-tight">{match.confidenceLabel} • {Math.round(match.similarity)}% sim</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -200,7 +200,7 @@ export default function PinnedColorsPanel({
                                     <div className="pt-2">
                                         <button
                                             onClick={() => setExpandedId(null)}
-                                            className="w-full py-1.5 text-[10px] uppercase font-bold text-gray-500 hover:text-gray-300 bg-gray-800/30 rounded border border-gray-800 transition-all"
+                                            className="w-full py-1.5 text-[10px] uppercase font-bold text-white/50 hover:text-white/80 bg-gray-800/30 rounded border border-gray-700/50 transition-all"
                                         >
                                             Close Details
                                         </button>

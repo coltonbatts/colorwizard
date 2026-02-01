@@ -33,12 +33,12 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
 
     if (!sampledColor) {
         return (
-            <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-100 flex items-center justify-center mb-4">
-                    <span className="text-2xl text-studio-dim">🎨</span>
+            <div className="h-full p-6 flex flex-col items-center justify-center bg-paper-elevated text-ink-secondary">
+                <div className="w-16 h-16 rounded-full border-2 border-ink-hairline flex items-center justify-center mb-4">
+                    <span className="text-2xl text-ink-faint">🎨</span>
                 </div>
-                <p className="text-center font-semibold text-studio">Sample a color first</p>
-                <p className="text-sm text-studio-muted mt-2">Then see how to mix it</p>
+                <p className="text-center font-semibold text-ink">Sample a color first</p>
+                <p className="text-sm text-ink-muted mt-2">Then see how to mix it</p>
             </div>
         )
     }
@@ -46,10 +46,10 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
     const { hex, hsl } = sampledColor
 
     return (
-        <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6 space-y-6">
+        <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-6">
             {/* Color Wheel - Compact */}
             <section>
-                <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest mb-3">Color Position</h3>
+                <h3 className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-3">Color Position</h3>
                 <PhotoshopColorWheel
                     color={hex}
                     onChange={(newHex) => {
@@ -71,8 +71,8 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
             <section className="space-y-8">
                 <AISuggestions rgb={sampledColor.rgb} />
 
-                <div className="pt-4 border-t border-gray-100">
-                    <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest mb-4">
+                <div className="pt-4 border-t border-ink-hairline">
+                    <h3 className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-4">
                         Standard Harmonies
                     </h3>
                     <ColorHarmonies

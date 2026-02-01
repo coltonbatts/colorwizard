@@ -61,12 +61,12 @@ export default function SampleTab({
 
     if (!sampledColor) {
         return (
-            <div className="h-full p-6 flex flex-col items-center justify-center bg-white text-studio-secondary">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-100 flex items-center justify-center mb-4">
-                    <span className="text-2xl text-studio-dim">?</span>
+            <div className="h-full p-6 flex flex-col items-center justify-center bg-paper-elevated text-ink-secondary">
+                <div className="w-16 h-16 rounded-full border-2 border-ink-hairline flex items-center justify-center mb-4">
+                    <span className="text-2xl text-ink-faint">?</span>
                 </div>
-                <p className="text-center font-semibold text-studio">Click image to sample</p>
-                <p className="text-sm text-studio-muted mt-2">Pick a color to analyze</p>
+                <p className="text-center font-semibold text-ink">Click image to sample</p>
+                <p className="text-sm text-ink-muted mt-2">Pick a color to analyze</p>
             </div>
         )
     }
@@ -89,26 +89,26 @@ export default function SampleTab({
     }
 
     return (
-        <div className="bg-white text-studio font-sans min-h-full p-4 lg:p-6 space-y-4">
+        <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-4">
             {/* Value Mode Active Indicator - shows when enabled via toolbar */}
             {valueModeEnabled && (
-                <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                    <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">
+                <div className="flex items-center gap-2 bg-subsignal-muted border border-subsignal rounded-xl px-4 py-2">
+                    <div className="w-2 h-2 bg-signal rounded-full animate-pulse" />
+                    <span className="text-xs font-bold text-signal uppercase tracking-widest">
                         Value Mode Active ({valueModeSteps} steps)
                     </span>
-                    <span className="text-xs text-blue-500 ml-auto">Press V to toggle</span>
+                    <span className="text-xs text-signal ml-auto">Press V to toggle</span>
                 </div>
             )}
 
             {/* Giant Hero Swatch */}
             <div
-                className="w-full aspect-[2/1] rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-all duration-500 cursor-pointer"
+                className="w-full aspect-[2/1] rounded-xl shadow-md border border-ink-hairline relative overflow-hidden group transition-all duration-500 cursor-pointer"
                 style={{ backgroundColor: valueModeEnabled ? grayscaleHex : hex }}
                 onClick={() => setShowColorFullScreen(true)}
             >
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
-                <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-3xl"></div>
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-xl"></div>
                 <button
                     onClick={(e) => { e.stopPropagation(); setShowColorFullScreen(true) }}
                     className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white/70 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
@@ -124,18 +124,18 @@ export default function SampleTab({
             {/* Primary Readout */}
             {valueModeEnabled && valueModeMeta ? (
                 <div className="flex flex-col items-center justify-center gap-1">
-                    <div className="text-[10px] uppercase tracking-widest font-black text-studio-dim">Value Step</div>
-                    <div className="font-mono text-5xl lg:text-6xl font-black tabular-nums text-studio">{valueModeMeta.step}</div>
-                    <div className="text-xs font-bold text-studio-dim">of {valueModeSteps}</div>
+                    <div className="text-[10px] uppercase tracking-widest font-black text-ink-faint">Value Step</div>
+                    <div className="font-mono text-5xl lg:text-6xl font-black tabular-nums text-ink">{valueModeMeta.step}</div>
+                    <div className="text-xs font-bold text-ink-faint">of {valueModeSteps}</div>
                 </div>
             ) : null}
 
             {/* HEX Display with Copy */}
             <div className="flex items-center justify-center gap-3">
-                <h2 className="text-3xl lg:text-4xl font-black tracking-tighter font-mono text-studio tabular-nums">{hex}</h2>
+                <h2 className="text-3xl lg:text-4xl font-black tracking-tighter font-mono text-ink tabular-nums">{hex}</h2>
                 <button
                     onClick={() => copyToClipboard(hex, 'hex')}
-                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-studio-dim hover:text-studio"
+                    className="p-2 rounded-lg hover:bg-paper-recessed transition-colors text-ink-faint hover:text-ink"
                     title="Copy HEX"
                 >
                     {copied === 'hex' ? '✓' : '📋'}
@@ -147,13 +147,13 @@ export default function SampleTab({
                 <div className="flex justify-center gap-2 text-xs">
                     <button
                         onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')}
-                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'rgb' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
+                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'rgb' ? 'bg-subsignal-muted border-subsignal text-subsignal' : 'border-ink-hairline hover:bg-paper-recessed text-ink-faint'}`}
                     >
                         {copied === 'rgb' ? '✓ Copied' : `RGB ${rgb.r}, ${rgb.g}, ${rgb.b}`}
                     </button>
                     <button
                         onClick={() => copyToClipboard(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'hsl')}
-                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'hsl' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 hover:bg-gray-50 text-studio-dim'}`}
+                        className={`px-3 py-1.5 rounded-lg border transition-all ${copied === 'hsl' ? 'bg-subsignal-muted border-subsignal text-subsignal' : 'border-ink-hairline hover:bg-paper-recessed text-ink-faint'}`}
                     >
                         {copied === 'hsl' ? '✓ Copied' : `HSL ${hsl.h}°`}
                     </button>
@@ -162,30 +162,30 @@ export default function SampleTab({
 
             {/* Value & Chroma Readout */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <span className="text-blue-600 text-[10px] uppercase font-black tracking-widest mb-1">Value</span>
-                    <span className="font-mono text-3xl text-studio font-black tabular-nums">
+                <div className="flex flex-col items-center bg-paper-recessed p-4 rounded-lg border border-ink-hairline">
+                    <span className="text-signal text-[10px] uppercase font-black tracking-widest mb-1">Value</span>
+                    <span className="font-mono text-3xl text-ink font-black tabular-nums">
                         {valueModeEnabled && valueModeMeta ? Math.round(valueModeMeta.y * 100) : (sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent)}%
                     </span>
 
                     {valueModeEnabled && valueModeMeta ? (
                         <div className="flex items-center gap-2 mt-1">
-                            <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: grayscaleHex }}></div>
-                            <span className="text-yellow-600 font-mono text-sm font-bold">Step {valueModeMeta.step} / {valueModeSteps}</span>
+                            <div className="w-4 h-4 rounded-sm border border-ink-hairline" style={{ backgroundColor: grayscaleHex }}></div>
+                            <span className="text-ink-secondary font-mono text-sm font-bold">Step {valueModeMeta.step} / {valueModeSteps}</span>
                         </div>
                     ) : sampledColor.valueMetadata ? (
                         <div className="flex items-center gap-2 mt-1">
-                            <div className="w-4 h-4 rounded-sm border border-gray-200" style={{ backgroundColor: grayscaleHex }}></div>
-                            <span className="text-yellow-600 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step}</span>
+                            <div className="w-4 h-4 rounded-sm border border-ink-hairline" style={{ backgroundColor: grayscaleHex }}></div>
+                            <span className="text-ink-secondary font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step}</span>
                         </div>
                     ) : (
-                        <span className="text-[10px] text-studio-muted font-bold uppercase mt-1">{valueBand}</span>
+                        <span className="text-[10px] text-ink-muted font-bold uppercase mt-1">{valueBand}</span>
                     )}
                 </div>
 
-                <div className="flex flex-col items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <span className="text-studio-dim text-[10px] uppercase font-bold tracking-widest mb-1">Chroma</span>
-                    <span className="font-mono text-2xl text-studio font-black">{chroma.label}</span>
+                <div className="flex flex-col items-center bg-paper-recessed p-4 rounded-lg border border-ink-hairline">
+                    <span className="text-ink-faint text-[10px] uppercase font-bold tracking-widest mb-1">Chroma</span>
+                    <span className="font-mono text-2xl text-ink font-black">{chroma.label}</span>
                 </div>
             </div>
 
@@ -196,7 +196,7 @@ export default function SampleTab({
                     placeholder="Add a label/note..."
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-studio focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full bg-paper-elevated border border-ink-hairline rounded-xl px-4 py-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-signal transition-all"
                 />
             )}
 
@@ -231,8 +231,8 @@ export default function SampleTab({
                     }}
                     disabled={isPinning || isPinned}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isPinned
-                        ? 'bg-green-100 text-green-600 border border-green-200'
-                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
+                        ? 'bg-subsignal-muted text-subsignal border border-subsignal'
+                        : 'bg-signal hover:bg-signal-hover text-white shadow-lg'
                         }`}
                 >
                     {isPinning ? (
@@ -275,7 +275,7 @@ export default function SampleTab({
                             setPendingCard(newCard)
                             setShowCardModal(true)
                         }}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg"
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg"
                     >
                         🎴 Card
                     </button>
@@ -285,7 +285,7 @@ export default function SampleTab({
                 {!simpleMode && onAddToSession && (
                     <button
                         onClick={() => onAddToSession({ hex, rgb })}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-amber-500 hover:bg-amber-400 text-white shadow-lg"
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-signal-muted0 hover:bg-amber-400 text-white shadow-lg"
                         title="Add to Session Palette"
                     >
                         +
