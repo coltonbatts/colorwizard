@@ -20,7 +20,7 @@ export async function createSourceBuffer(
     const canvas = document.createElement('canvas');
     let { width, height } = image;
 
-    // Preserve aspect ratio while capping resolution
+    // Calculate target dimensions
     if (width > maxDim || height > maxDim) {
         const ratio = Math.min(maxDim / width, maxDim / height);
         width = Math.round(width * ratio);
@@ -39,12 +39,30 @@ export async function createSourceBuffer(
         throw new Error('Failed to create source buffer context');
     }
 
-    // iOS Safari sometimes fails to draw huge images in one go if they are > 4096px
-    // But since we are already capping the target, the downscale happens during drawImage.
-    // If the *source* image is massive, it might still be risky, but this is the standard way.
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(image, 0, 0, width, height);
+    try {
+        // Optimization: Use createImageBitmap if available (modern browsers)
+        // This handles downscaling much more efficiently than drawImage on a massive source
+        if ('createImageBitmap' in window) {
+            const bitmap = await createImageBitmap(image, {
+                resizeWidth: width,
+                resizeHeight: height,
+                resizeQuality: 'high'
+            });
+            ctx.drawImage(bitmap, 0, 0);
+            bitmap.close(); // Important: release memory immediately
+        } else {
+            // Fallback for older browsers
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(image, 0, 0, width, height);
+        }
+    } catch (err) {
+        console.warn('[imagePipeline] createImageBitmap failed, falling back to drawImage', err);
+        // Fallback if bitmap creation fails
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(image, 0, 0, width, height);
+    }
 
     console.log(`[imagePipeline] Created source buffer: ${width}x${height} (original ${image.width}x${image.height})`);
 
