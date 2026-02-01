@@ -455,7 +455,7 @@ export default function Home() {
           onClearImage={handleClearImage}
         />
       )}
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
         <div className="mb-4">
           <CompactToolbar
@@ -571,6 +571,7 @@ export default function Home() {
           onTabChange={setActiveTab}
           pinnedCount={pinnedColors.length}
           width={sidebarWidth}
+          className="mobile-controls-area"
         >
           {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
           {!isMobile && (

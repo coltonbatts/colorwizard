@@ -18,6 +18,7 @@ interface CollapsibleSidebarProps {
     onTabChange?: (tab: TabType) => void
     pinnedCount?: number
     width?: number
+    className?: string
 }
 
 // Tab configuration with icons
@@ -154,7 +155,8 @@ export default function CollapsibleSidebar({
     activeTab = 'sample',
     onTabChange,
     pinnedCount = 0,
-    width = 400
+    width = 400,
+    className = ''
 }: CollapsibleSidebarProps) {
     const { simpleMode } = useStore()
 
@@ -169,6 +171,7 @@ export default function CollapsibleSidebar({
                 relative flex flex-col h-full bg-white border-l border-gray-100 shadow-xl z-10
                 sidebar-collapsible
                 ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}
+                ${className}
             `}
             style={{
                 '--computed-sidebar-width': `${width}px`

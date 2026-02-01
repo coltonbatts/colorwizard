@@ -62,13 +62,20 @@
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
 
     /* Type Scale — Clear, limited, editorial */
-    --text-xs: 0.6875rem;    /* 11px - Micro labels */
-    --text-sm: 0.8125rem;    /* 13px - Secondary text */
-    --text-base: 0.9375rem;  /* 15px - Body */
-    --text-lg: 1.125rem;     /* 18px - Subheadings */
-    --text-xl: 1.375rem;     /* 22px - Section headers */
-    --text-2xl: 1.75rem;     /* 28px - Page titles */
-    --text-3xl: 2.25rem;     /* 36px - Display */
+    --text-xs: 0.6875rem;
+    /* 11px - Micro labels */
+    --text-sm: 0.8125rem;
+    /* 13px - Secondary text */
+    --text-base: 0.9375rem;
+    /* 15px - Body */
+    --text-lg: 1.125rem;
+    /* 18px - Subheadings */
+    --text-xl: 1.375rem;
+    /* 22px - Section headers */
+    --text-2xl: 1.75rem;
+    /* 28px - Page titles */
+    --text-3xl: 2.25rem;
+    /* 36px - Display */
 
     /* Line Heights — Generous for readability */
     --leading-tight: 1.25;
@@ -82,15 +89,24 @@
     --tracking-caps: 0.1em;
 
     /* === SPACING — Whitespace is active === */
-    --space-1: 0.25rem;   /* 4px */
-    --space-2: 0.5rem;    /* 8px */
-    --space-3: 0.75rem;   /* 12px */
-    --space-4: 1rem;      /* 16px */
-    --space-5: 1.5rem;    /* 24px */
-    --space-6: 2rem;      /* 32px */
-    --space-8: 3rem;      /* 48px */
-    --space-10: 4rem;     /* 64px */
-    --space-12: 6rem;     /* 96px */
+    --space-1: 0.25rem;
+    /* 4px */
+    --space-2: 0.5rem;
+    /* 8px */
+    --space-3: 0.75rem;
+    /* 12px */
+    --space-4: 1rem;
+    /* 16px */
+    --space-5: 1.5rem;
+    /* 24px */
+    --space-6: 2rem;
+    /* 32px */
+    --space-8: 3rem;
+    /* 48px */
+    --space-10: 4rem;
+    /* 64px */
+    --space-12: 6rem;
+    /* 96px */
 
     /* === LAYOUT === */
     --sidebar-width: 420px;
@@ -150,20 +166,45 @@ body {
    ============================================ */
 
 @layer utilities {
+
     /* Ink variants */
-    .text-ink { color: var(--ink); }
-    .text-ink-secondary { color: var(--ink-secondary); }
-    .text-ink-muted { color: var(--ink-muted); }
-    .text-ink-faint { color: var(--ink-faint); }
+    .text-ink {
+        color: var(--ink);
+    }
+
+    .text-ink-secondary {
+        color: var(--ink-secondary);
+    }
+
+    .text-ink-muted {
+        color: var(--ink-muted);
+    }
+
+    .text-ink-faint {
+        color: var(--ink-faint);
+    }
 
     /* Signal colors */
-    .text-signal { color: var(--signal); }
-    .text-subsignal { color: var(--subsignal); }
+    .text-signal {
+        color: var(--signal);
+    }
+
+    .text-subsignal {
+        color: var(--subsignal);
+    }
 
     /* Font families */
-    .font-ui { font-family: var(--font-ui); }
-    .font-display { font-family: var(--font-display); }
-    .font-mono { font-family: var(--font-mono); }
+    .font-ui {
+        font-family: var(--font-ui);
+    }
+
+    .font-display {
+        font-family: var(--font-display);
+    }
+
+    .font-mono {
+        font-family: var(--font-mono);
+    }
 
     /* Wordmark: Apple Garamond inspired, editorial finality */
     .font-wordmark {
@@ -220,6 +261,7 @@ body {
    ============================================ */
 
 @layer components {
+
     /* Paper Surface — Primary panel background */
     .paper-panel {
         background: var(--paper-elevated);
@@ -290,8 +332,13 @@ body {
         border-radius: 0;
     }
 
-    .color-bar-signal { background: var(--signal); }
-    .color-bar-subsignal { background: var(--subsignal); }
+    .color-bar-signal {
+        background: var(--signal);
+    }
+
+    .color-bar-subsignal {
+        background: var(--subsignal);
+    }
 
     .color-bar-vertical {
         width: 3px;
@@ -443,7 +490,7 @@ body {
     width: var(--computed-sidebar-width, var(--sidebar-width));
     min-width: var(--computed-sidebar-width, var(--sidebar-width));
     transition: width var(--duration-normal) var(--ease-out),
-                min-width var(--duration-normal) var(--ease-out);
+        min-width var(--duration-normal) var(--ease-out);
     overflow: hidden;
 }
 
@@ -597,7 +644,7 @@ body {
 
 .color-swatch {
     transition: transform var(--duration-fast) ease,
-                box-shadow var(--duration-fast) ease;
+        box-shadow var(--duration-fast) ease;
     border-radius: var(--radius-md);
 }
 
@@ -674,7 +721,7 @@ body {
     }
 
     /* Preview area */
-    main.flex > div:first-child:not(.mobile-header) {
+    .mobile-preview-area {
         flex: 1 1 auto !important;
         max-height: 65dvh;
         padding: 0 !important;
@@ -683,7 +730,7 @@ body {
     }
 
     /* Controls area */
-    main.flex > div:last-child {
+    .mobile-controls-area {
         flex: 1 1 auto !important;
         width: 100% !important;
         min-width: 100% !important;
@@ -745,7 +792,7 @@ body {
     }
 
     /* Hide resize handle */
-    main.flex > .w-1\.5 {
+    main.flex>.w-1\.5 {
         display: none !important;
     }
 
@@ -757,13 +804,13 @@ body {
         width: 100%;
     }
 
-    main.flex > div:first-child:has(.mobile-hero-dropzone) {
+    main.flex>div:first-child:has(.mobile-hero-dropzone) {
         flex: 1 1 auto !important;
         max-height: none !important;
         padding: 0 !important;
     }
 
-    main.flex:has(.mobile-hero-dropzone) > div:last-child {
+    main.flex:has(.mobile-hero-dropzone) .mobile-controls-area {
         display: none !important;
     }
 }
@@ -1366,6 +1413,7 @@ body {
         transform: translate(-50%, -50%) scale(0);
         opacity: 1;
     }
+
     100% {
         transform: translate(-50%, -50%) scale(2);
         opacity: 0;
@@ -1379,7 +1427,7 @@ body {
     border: 2px solid white;
     border-radius: 50%;
     box-shadow: 0 0 0 1px var(--ink-muted),
-                0 2px 6px rgba(26, 26, 26, 0.15);
+        0 2px 6px rgba(26, 26, 26, 0.15);
     pointer-events: none;
     transform: translate(-50%, -50%);
     transition: opacity var(--duration-fast) ease;
@@ -1474,6 +1522,7 @@ body {
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1486,8 +1535,13 @@ body {
 
 /* Progress indicator */
 @keyframes indeterminate-progress {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(400%); }
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(400%);
+    }
 }
 
 .animate-indeterminate-progress {
