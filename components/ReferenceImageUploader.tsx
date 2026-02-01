@@ -46,7 +46,7 @@ export function ReferenceImageUploader({
                 const convertedBlob = await heic2any({
                     blob: file,
                     toType: 'image/jpeg',
-                    quality: 0.8
+                    quality: 0.95
                 });
 
                 // heic2any can return an array if multiple images are in the HEIC

@@ -25,21 +25,39 @@ export default function ColorTheoryCanvas({ onColorSample }: ColorTheoryCanvasPr
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
-        canvas.width = container.clientWidth
-        canvas.height = container.clientHeight
+        const dpr = window.devicePixelRatio || 1
+        const rect = container.getBoundingClientRect()
+        
+        // Internal buffer size (DPI aware)
+        canvas.width = rect.width * dpr
+        canvas.height = rect.height * dpr
+        
+        // CSS display size
+        canvas.style.width = `${rect.width}px`
+        canvas.style.height = `${rect.height}px`
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.scale(dpr, dpr)
+        ctx.clearRect(0, 0, rect.width, rect.height)
 
-        // Calculate fit
+        // Calculate fit that preserves aspect ratio
         const scale = Math.min(
-            canvas.width / image.width,
-            canvas.height / image.height
+            rect.width / image.width,
+            rect.height / image.height
         ) * 0.9
 
-        const x = (canvas.width - image.width * scale) / 2
-        const y = (canvas.height - image.height * scale) / 2
+        const drawWidth = image.width * scale
+        const drawHeight = image.height * scale
+        const x = (rect.width - drawWidth) / 2
+        const y = (rect.height - drawHeight) / 2
 
-        ctx.drawImage(image, x, y, image.width * scale, image.height * scale)
+        // Safety check: verify aspect ratio integrity
+        const sourceAspect = image.width / image.height
+        const destAspect = drawWidth / drawHeight
+        if (Math.abs(sourceAspect - destAspect) > 0.001) {
+            console.error('Reference Integrity Violated: Aspect ratio mismatch in rendering', { sourceAspect, destAspect })
+        }
+
+        ctx.drawImage(image, x, y, drawWidth, drawHeight)
     }, [image])
 
     // Handle resize
@@ -51,20 +69,28 @@ export default function ColorTheoryCanvas({ onColorSample }: ColorTheoryCanvasPr
             const ctx = canvas.getContext('2d')
             if (!ctx) return
 
-            canvas.width = container.clientWidth
-            canvas.height = container.clientHeight
+            const dpr = window.devicePixelRatio || 1
+            const rect = container.getBoundingClientRect()
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            canvas.width = rect.width * dpr
+            canvas.height = rect.height * dpr
+            canvas.style.width = `${rect.width}px`
+            canvas.style.height = `${rect.height}px`
+
+            ctx.scale(dpr, dpr)
+            ctx.clearRect(0, 0, rect.width, rect.height)
 
             const scale = Math.min(
-                canvas.width / image.width,
-                canvas.height / image.height
+                rect.width / image.width,
+                rect.height / image.height
             ) * 0.9
 
-            const x = (canvas.width - image.width * scale) / 2
-            const y = (canvas.height - image.height * scale) / 2
+            const drawWidth = image.width * scale
+            const drawHeight = image.height * scale
+            const x = (rect.width - drawWidth) / 2
+            const y = (rect.height - drawHeight) / 2
 
-            ctx.drawImage(image, x, y, image.width * scale, image.height * scale)
+            ctx.drawImage(image, x, y, drawWidth, drawHeight)
         }
 
         window.addEventListener('resize', handleResize)
@@ -161,7 +187,8 @@ export default function ColorTheoryCanvas({ onColorSample }: ColorTheoryCanvasPr
                 <>
                     <canvas
                         ref={canvasRef}
-                        className="w-full h-full cursor-crosshair"
+                        className="cursor-crosshair block"
+                        style={{ objectFit: 'contain' }}
                         onClick={handleClick}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={() => setHoveredColor(null)}

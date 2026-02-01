@@ -31,10 +31,11 @@ interface ColorData {
 import { rgbToLab, deltaE, rgbToHsl } from '@/lib/colorUtils'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
-import { TransformState, screenToImage } from '@/lib/calibration'
-import { CanvasSettings } from '@/lib/types/canvas'
-
 // Define RGB interface locally if not exported
+import { TransformState, screenToImage } from '@/lib/calibration'
+import { CanvasSettings as AppCanvasSettings } from '@/lib/types/canvas'
+import { calculateFit } from '@/lib/canvasRendering'
+
 interface RGB {
   r: number
   g: number
@@ -53,7 +54,7 @@ interface ImageCanvasProps {
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: ValueScaleResult) => void
-  canvasSettings?: CanvasSettings
+  canvasSettings?: AppCanvasSettings
   /** Enable measurement mode - when true, clicks report canvas-space coordinates */
   measureMode?: boolean
   /** Callback when a measurement click occurs (canvas-space coordinates for transform-invariant storage) */
@@ -237,18 +238,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }))
   }, [internalGridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize])
 
-  // Calculate initial image fit
-  const calculateImageFit = useCallback(
-    (img: HTMLImageElement, canvasWidth: number, canvasHeight: number) => {
-      const ratio = Math.min(canvasWidth / img.width, canvasHeight / img.height)
-      const width = img.width * ratio
-      const height = img.height * ratio
-      const x = (canvasWidth - width) / 2
-      const y = (canvasHeight - height) / 2
-      return { x, y, width, height }
-    },
-    []
-  )
+  // No longer needed, using shared calculateFit
+
 
   // Draw image on canvas with zoom and pan transforms
   const drawCanvas = useCallback(() => {
@@ -258,8 +249,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+
+    // Set internal resolution (DPR aware)
+    if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      canvas.style.width = `${rect.width}px`
+      canvas.style.height = `${rect.height}px`
+    }
+
     // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, rect.width, rect.height)
 
     if ((!image && !surfaceImageElement) || !imageDrawInfo) return
 
@@ -451,20 +454,22 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     resizeObserver.observe(canvasContainer)
     return () => resizeObserver.disconnect()
-  }, [image])
+  }, []) // Removed dependency on image to avoid observer churn
 
   // Update image draw info when image or canvas dimensions change
   useEffect(() => {
     const mainImg = image || surfaceImageElement
-    if (mainImg && canvasRef.current) {
-      const canvas = canvasRef.current
-      const info = calculateImageFit(mainImg, canvas.width, canvas.height)
+    if (mainImg) {
+      const info = calculateFit(
+        { width: canvasDimensions.width, height: canvasDimensions.height },
+        { width: mainImg.width, height: mainImg.height }
+      )
       setImageDrawInfo(info)
-      // Reset zoom and pan when new image loads or canvas resizes
+      // Reset zoom and pan when new image loads
       setZoomLevel(1)
       setPanOffset({ x: 0, y: 0 })
     }
-  }, [image, surfaceImageElement, canvasDimensions, calculateImageFit])
+  }, [image, surfaceImageElement, canvasDimensions])
 
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {

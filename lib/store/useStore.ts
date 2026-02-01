@@ -203,7 +203,7 @@ export const useStore = create<ColorState>()(
             surfaceBounds: null,
             gridOpacity: 0.3,
             referenceImage: null,
-            referenceOpacity: 0.5,
+            referenceOpacity: 1.0,
             referenceLocked: false,
             referenceTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
 

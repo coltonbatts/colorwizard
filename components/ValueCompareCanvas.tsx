@@ -108,22 +108,28 @@ export default function ValueCompareCanvas({
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
-        // Set canvas size to container size
+        // Set canvas size to container size with DPI awareness
+        const dpr = window.devicePixelRatio || 1
         const rect = container.getBoundingClientRect()
-        canvas.width = rect.width
-        canvas.height = rect.height
+        canvas.width = rect.width * dpr
+        canvas.height = rect.height * dpr
+        canvas.style.width = `${rect.width}px`
+        canvas.style.height = `${rect.height}px`
+
+        ctx.scale(dpr, dpr)
 
         // Clear canvas
         ctx.fillStyle = '#1f2937' // Dark gray background
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.fillRect(0, 0, rect.width, rect.height)
 
         if (!grayscaleCanvas) return
 
         // Calculate centered position with zoom and pan
+        // Use rect.width/height as the coordinate space (scaled by dpr)
         const imgWidth = grayscaleCanvas.width * zoom
         const imgHeight = grayscaleCanvas.height * zoom
-        const x = (canvas.width - imgWidth) / 2 + pan.x
-        const y = (canvas.height - imgHeight) / 2 + pan.y
+        const x = (rect.width - imgWidth) / 2 + pan.x
+        const y = (rect.height - imgHeight) / 2 + pan.y
 
         // Draw grayscale image
         ctx.drawImage(grayscaleCanvas, x, y, imgWidth, imgHeight)
@@ -137,6 +143,13 @@ export default function ValueCompareCanvas({
             })
 
             // Scale overlay to match displayed image size
+            // Aspect ratio integrity check
+            const sourceAspect = grayscaleCanvas.width / grayscaleCanvas.height
+            const overlayAspect = overlayCanvas.width / overlayCanvas.height
+            if (Math.abs(sourceAspect - overlayAspect) > 0.001) {
+                console.error('Reference Integrity Violated: Overlay aspect ratio mismatch', { sourceAspect, overlayAspect })
+            }
+
             ctx.drawImage(overlayCanvas, x, y, imgWidth, imgHeight)
         }
     }, [image, zoom, pan, showProblemAreas, comparisonResult, animationOffset, isReference])
