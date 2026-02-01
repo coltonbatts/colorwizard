@@ -1267,12 +1267,13 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             />
           </div>
 
-          <div className="mt-2 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+          {/* Keyboard hints - hidden on mobile */}
+          <div className="hidden md:block mt-2 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
             Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • V: Value • S: Split • G: Grid
           </div>
 
-          {/* Bottom Controls */}
-          <div className="flex items-center justify-between mt-4">
+          {/* Bottom Controls - visible on desktop, mobile uses header */}
+          <div className="hidden md:flex items-center justify-between mt-4">
             <button
               onClick={props.onReset}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
@@ -1282,6 +1283,16 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             <div className="text-gray-500 text-sm">
               Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
             </div>
+          </div>
+
+          {/* Mobile: New Image button */}
+          <div className="flex md:hidden items-center justify-center mt-2 pb-2">
+            <button
+              onClick={props.onReset}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm"
+            >
+              New Image
+            </button>
           </div>
         </div>
       )}

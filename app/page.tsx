@@ -17,6 +17,7 @@ import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
 import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
+import MobileHeader from '@/components/MobileHeader'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 
@@ -407,8 +408,21 @@ export default function Home() {
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
 
+  // Clear image and reset view
+  const handleClearImage = useCallback(() => {
+    setImage(null)
+    setReferenceImage(null)
+  }, [setImage, setReferenceImage])
+
   return (
-    <main className={`flex flex-col ${image ? 'md:flex-row' : ''} h-screen bg-white overflow-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
+    <main className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-white overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
+      {/* Mobile Header - only show when image is loaded */}
+      {image && (
+        <MobileHeader
+          hasImage={!!image}
+          onClearImage={handleClearImage}
+        />
+      )}
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
         <div className="mb-4">
