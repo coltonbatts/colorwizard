@@ -481,7 +481,7 @@ body::before {
 
     /* Mobile CSS Variables */
     :root {
-        --mobile-preview-height: 50vh;
+        --mobile-preview-height: 70vh;
         --mobile-touch-target: 44px;
         --sidebar-width: 100%;
         --sidebar-collapsed-width: 0;
@@ -546,7 +546,7 @@ body::before {
     /* Preview area: flexible height based on content, up to ~55% */
     main.flex>div:first-child:not(.mobile-header) {
         flex: 1 1 auto !important;
-        max-height: 55dvh;
+        max-height: 70dvh;
         padding: 0 !important;
         overflow: hidden;
         width: 100% !important;
@@ -555,7 +555,7 @@ body::before {
     /* When mobile header is present, adjust sibling */
     main.flex>.mobile-header+div {
         flex: 1 1 auto !important;
-        max-height: calc(55dvh - 56px);
+        max-height: calc(70dvh - 56px);
     }
 
     /* Toolbar margin reduction on mobile */
@@ -574,7 +574,7 @@ body::before {
     /* Ensure the canvas viewport has a reliable height on mobile */
     .canvas-viewport {
         min-height: 50dvh;
-        height: 55dvh;
+        height: 70dvh;
     }
 
     /* Controls/sidebar area: scrollable below preview */

@@ -90,9 +90,6 @@ const ZOOM_WHEEL_SENSITIVITY = 0.001
 // Drag detection threshold (pixels)
 const DRAG_THRESHOLD = 3
 
-// Highlight overlay alpha values
-const HIGHLIGHT_ALPHA_SOLID = 180
-
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
   const breakdownValue = useStore(state => state.breakdownValue)
@@ -357,137 +354,135 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
       // Apply X/Y offsets from transform state
       ctx.translate(referenceTransform.x, referenceTransform.y)
+    }
 
-      if (splitMode && valueMapCanvasRef.current) {
-        const splitX = width / 2
+    if (splitMode && valueMapCanvasRef.current) {
+      const splitX = width / 2
 
-        // Left half: Original
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x, y, splitX, height)
-        ctx.clip()
-        if (isGrayscale) ctx.filter = 'grayscale(100%)'
-        ctx.drawImage(image, x, y, width, height)
-        ctx.restore()
+      // Left half: Original
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(x, y, splitX, height)
+      ctx.clip()
+      if (isGrayscale && image) ctx.filter = 'grayscale(100%)'
+      if (image) ctx.drawImage(image, x, y, width, height)
+      ctx.restore()
 
-        // Right half: Value Map
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x + splitX, y, splitX, height)
-        ctx.clip()
+      // Right half: Value Map
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(x + splitX, y, splitX, height)
+      ctx.clip()
+      ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
+      ctx.restore()
+
+      // Divider
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+      ctx.lineWidth = 2 / zoomLevel
+      ctx.beginPath()
+      ctx.moveTo(x + splitX, y)
+      ctx.lineTo(x + splitX, y + height)
+      ctx.stroke()
+    } else {
+      // Normal rendering or breakdown
+      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
+
+      // Always draw the base image as a fallback if the breakdown is not ready
+      // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
+      const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
+        'Imprimatura': 'imprimatura',
+        'Dead Color': 'deadColor',
+        'Local Color': 'localColor',
+        'Spectral Glaze': 'spectralGlaze'
+      };
+
+      const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+
+      const showBaseUnderneath = activeBreakdownStep === 'Original' ||
+        activeBreakdownStep === 'Spectral Glaze' ||
+        !currentBuffer;
+
+      if (showBaseUnderneath) {
+        // Mobile Stabilization: Draw from source buffer if available, fallback to image
+        const source = sourceBufferRef.current || image
+        if (source) {
+          ctx.drawImage(source as CanvasImageSource, x, y, width, height)
+        }
+      }
+
+      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
+
+      // Blend value map overlay if enabled and we are in original view
+      if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
+        const opacity = valueScaleSettings.opacity ?? 0.45
+        ctx.globalAlpha = opacity
         ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-        ctx.restore()
+        ctx.globalAlpha = 1.0
+      } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
+        // Draw Breakdown Layer on top
+        // If it's Imprimatura, it already has some transparency from the worker
+        ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
+      }
+    }
 
-        // Divider
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-        ctx.lineWidth = 2 / zoomLevel
+    // Draw Highlight Overlay if available
+    if (overlayCanvasRef.current && labBuffer?.width) {
+      ctx.drawImage(
+        overlayCanvasRef.current,
+        imageDrawInfo.x,
+        imageDrawInfo.y,
+        imageDrawInfo.width,
+        imageDrawInfo.height
+      )
+    }
+
+    // Draw Grid
+    if (gridEnabled && image) {
+      const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
+      const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
+
+      const ppiDraw = imageDrawInfo.width / activeWidth
+
+      ctx.save()
+      ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`
+      ctx.lineWidth = 1 / zoomLevel
+      ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
+
+      ctx.font = `${12 / zoomLevel}px monospace`
+      ctx.fillStyle = `rgba(255, 255, 255, ${gridOpacity + 0.2})`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+
+      // Vertical lines (Columns)
+      for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
+        const xPos = gridX * ppiDraw
         ctx.beginPath()
-        ctx.moveTo(x + splitX, y)
-        ctx.lineTo(x + splitX, y + height)
+        ctx.moveTo(xPos, 0)
+        ctx.lineTo(xPos, imageDrawInfo.height)
         ctx.stroke()
-      } else {
-        // Normal rendering or breakdown
-        if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
 
-        // Always draw the base image as a fallback if the breakdown is not ready
-        // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
-        const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
-          'Imprimatura': 'imprimatura',
-          'Dead Color': 'deadColor',
-          'Local Color': 'localColor',
-          'Spectral Glaze': 'spectralGlaze'
-        };
-
-        const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
-
-        const showBaseUnderneath = activeBreakdownStep === 'Original' ||
-          activeBreakdownStep === 'Spectral Glaze' ||
-          !currentBuffer;
-
-        if (showBaseUnderneath) {
-          // Mobile Stabilization: Draw from source buffer if available, fallback to image
-          const source = sourceBufferRef.current || image
-          if (source) {
-            ctx.drawImage(source as CanvasImageSource, x, y, width, height)
-          }
-        }
-
-        if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
-
-        // Blend value map overlay if enabled and we are in original view
-        if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
-          const opacity = valueScaleSettings.opacity ?? 0.45
-          ctx.globalAlpha = opacity
-          ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-          ctx.globalAlpha = 1.0
-        } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
-          // Draw Breakdown Layer on top
-          // If it's Imprimatura, it already has some transparency from the worker
-          ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
+        // Column label (A, B, C...)
+        if (gridX < activeWidth) {
+          const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
+          ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
         }
       }
 
-      // Draw Highlight Overlay if available
-      if (overlayCanvasRef.current && labBuffer?.width) {
-        ctx.drawImage(
-          overlayCanvasRef.current,
-          imageDrawInfo.x,
-          imageDrawInfo.y,
-          imageDrawInfo.width,
-          imageDrawInfo.height
-        )
-      }
+      // Horizontal lines (Rows)
+      for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
+        const yPos = gridY * ppiDraw
+        ctx.beginPath()
+        ctx.moveTo(0, yPos)
+        ctx.lineTo(imageDrawInfo.width, yPos)
+        ctx.stroke()
 
-      // Draw Grid
-      if (gridEnabled && image) {
-        const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
-        const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
-
-        const ppiDraw = imageDrawInfo.width / activeWidth
-
-        ctx.save()
-        ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
-
-        ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`
-        ctx.lineWidth = 1 / zoomLevel
-        ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
-
-        ctx.font = `${12 / zoomLevel}px monospace`
-        ctx.fillStyle = `rgba(255, 255, 255, ${gridOpacity + 0.2})`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-
-        // Vertical lines (Columns)
-        for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
-          const xPos = gridX * ppiDraw
-          ctx.beginPath()
-          ctx.moveTo(xPos, 0)
-          ctx.lineTo(xPos, imageDrawInfo.height)
-          ctx.stroke()
-
-          // Column label (A, B, C...)
-          if (gridX < activeWidth) {
-            const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
-            ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
-          }
+        // Row label (1, 2, 3...)
+        if (gridY < activeHeight) {
+          const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
+          ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
         }
-
-        // Horizontal lines (Rows)
-        for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
-          const yPos = gridY * ppiDraw
-          ctx.beginPath()
-          ctx.moveTo(0, yPos)
-          ctx.lineTo(imageDrawInfo.width, yPos)
-          ctx.stroke()
-
-          // Row label (1, 2, 3...)
-          if (gridY < activeHeight) {
-            const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
-            ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
-          }
-        }
-
-        ctx.restore()
       }
 
       ctx.restore()
@@ -495,7 +490,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     // Restore global context state
     ctx.restore()
-  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep])
+  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep, breakdownBuffers, breakdownCanvasRef, overlayCanvasRef, sourceBufferRef, valueMapCanvasRef])
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -674,6 +669,32 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setPanOffset({ x: 0, y: 0 })
   }, [])
 
+  // Mobile Stabilization: Bound the pan offset so the image doesn't disappear
+  const getClampedPan = useCallback((x: number, y: number, zoom: number) => {
+    if (!imageDrawInfo) return { x, y }
+
+    const { x: imgX, y: imgY, width: imgW, height: imgH } = imageDrawInfo
+    const viewportW = canvasDimensions.width
+    const viewportH = canvasDimensions.height
+
+    // Transformed image bounds in logical screen space
+    const tw = imgW * zoom
+    const th = imgH * zoom
+
+    // Ensure at least 20% of the image remains visible
+    const minVisible = 0.2
+
+    // Logically: we want [imgX*zoom + panX, imgX*zoom + panX + tw] to overlap with [0, viewportW]
+    // Simplified:
+    const limitX = Math.max(viewportW, tw) * 0.8
+    const limitY = Math.max(viewportH, th) * 0.8
+
+    return {
+      x: Math.max(-limitX - imgX * zoom, Math.min(viewportW + limitX - (imgX * zoom + tw), x)),
+      y: Math.max(-limitY - imgY * zoom, Math.min(viewportH + limitY - (imgY * zoom + th), y))
+    }
+  }, [imageDrawInfo, canvasDimensions])
+
   const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !image) return
 
@@ -835,13 +856,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         if (dist > DRAG_THRESHOLD) hasDraggedRef.current = true
       }
 
-      const deltaX = (e.clientX - lastPanPoint.current.x) * scaleX
-      const deltaY = (e.clientY - lastPanPoint.current.y) * scaleY
+      const deltaX = e.clientX - lastPanPoint.current.x
+      const deltaY = e.clientY - lastPanPoint.current.y
 
-      setPanOffset((prev) => ({
-        x: prev.x + deltaX,
-        y: prev.y + deltaY,
-      }))
+      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
 
       lastPanPoint.current = { x: e.clientX, y: e.clientY }
     }
@@ -891,11 +909,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
   }
 
-  // Helper: Get center point between two touches
-  const getTouchCenter = (t1: React.Touch, t2: React.Touch, rect: DOMRect, scaleX: number, scaleY: number) => {
+  // Helper: Get center point between two touches (logical pixels)
+  const getTouchCenter = (t1: React.Touch, t2: React.Touch, rect: DOMRect) => {
     return {
-      x: ((t1.clientX + t2.clientX) / 2 - rect.left) * scaleX,
-      y: ((t1.clientY + t2.clientY) / 2 - rect.top) * scaleY,
+      x: (t1.clientX + t2.clientX) / 2 - rect.left,
+      y: (t1.clientY + t2.clientY) / 2 - rect.top,
     }
   }
 
@@ -975,16 +993,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     touchStateRef.current.touchStartTime = now
     touchStateRef.current.touchStartPos = { x: touch.clientX, y: touch.clientY }
 
+    const rect = canvas.getBoundingClientRect()
+
     if (e.touches.length === 2) {
       // Two fingers: init pinch/pan
       e.preventDefault()
-      const rect = canvas.getBoundingClientRect()
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
 
       touchStateRef.current.isPinching = true
       touchStateRef.current.lastDistance = getTouchDistance(e.touches[0], e.touches[1])
-      touchStateRef.current.lastCenter = getTouchCenter(e.touches[0], e.touches[1], rect, scaleX, scaleY)
+      touchStateRef.current.lastCenter = getTouchCenter(e.touches[0], e.touches[1], rect)
     } else if (e.touches.length === 1) {
       // Single finger: potential tap or pan
       touchStateRef.current.isPinching = false
@@ -1001,32 +1018,31 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
 
     if (e.touches.length === 2) {
       // Two-finger gesture: pinch-to-zoom and pan
       e.preventDefault()
 
       const newDistance = getTouchDistance(e.touches[0], e.touches[1])
-      const newCenter = getTouchCenter(e.touches[0], e.touches[1], rect, scaleX, scaleY)
+      const newCenter = getTouchCenter(e.touches[0], e.touches[1], rect)
 
       if (touchStateRef.current.isPinching && touchStateRef.current.lastDistance > 0) {
         // Calculate zoom
         const zoomDelta = newDistance / touchStateRef.current.lastDistance
         const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * zoomDelta))
 
-        // Apply zoom centered on pinch point
+        // Apply zoom centered on pinch point (logical coordinates)
         const zoomRatio = targetZoom / zoomLevel
         const newPanX = newCenter.x - (newCenter.x - panOffset.x) * zoomRatio
         const newPanY = newCenter.y - (newCenter.y - panOffset.y) * zoomRatio
 
-        // Apply pan
+        // Apply pan delta (logical coordinates)
         const panDeltaX = newCenter.x - touchStateRef.current.lastCenter.x
         const panDeltaY = newCenter.y - touchStateRef.current.lastCenter.y
 
         setZoomLevel(targetZoom)
-        setPanOffset({ x: newPanX + panDeltaX, y: newPanY + panDeltaY })
+        const clampedPan = getClampedPan(newPanX + panDeltaX, newPanY + panDeltaY, targetZoom)
+        setPanOffset(clampedPan)
       }
 
       touchStateRef.current.lastDistance = newDistance
@@ -1041,10 +1057,10 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
       if (dist > DRAG_THRESHOLD) {
         hasDraggedRef.current = true
-        // Pan the canvas
-        const deltaX = (touch.clientX - (lastPanPoint.current.x || touch.clientX)) * scaleX
-        const deltaY = (touch.clientY - (lastPanPoint.current.y || touch.clientY)) * scaleY
-        setPanOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }))
+        // Pan the canvas - removing scaleX/Y for 1:1 logical pixel panning
+        const deltaX = touch.clientX - (lastPanPoint.current.x || touch.clientX)
+        const deltaY = touch.clientY - (lastPanPoint.current.y || touch.clientY)
+        setPanOffset(prev => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
       }
       lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
     }
@@ -1082,7 +1098,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Reset drag state
     hasDraggedRef.current = false
     lastPanPoint.current = { x: 0, y: 0 }
-  }, [image, props.measureMode, sampleColorFromTouch, resetView])
+  }, [getClampedPan, imageDrawInfo, canvasDimensions, image, zoomLevel, props.measureMode, sampleColorFromTouch, resetView])
 
   // Draw value map overlay
   useEffect(() => {
