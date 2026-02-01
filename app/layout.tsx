@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import './globals.css'
@@ -14,6 +14,12 @@ const outfit = Outfit({
   variable: '--font-outfit',
   display: 'swap',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+}
 
 export const metadata: Metadata = {
   title: 'ColorWizard | Professional Color Mixing for Artists',

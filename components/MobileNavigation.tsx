@@ -208,6 +208,25 @@ export default function MobileNavigation({
                                     </button>
                                 </div>
 
+                                {/* AR Tracing */}
+                                <div className="mobile-nav-section">
+                                    <span className="mobile-nav-section-label">Tools</span>
+                                    <Link
+                                        href="/trace"
+                                        className="mobile-nav-item"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <span className="mobile-nav-icon">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="1" />
+                                                <path d="M12 2v6m0 4v6" />
+                                                <path d="M2 12h6m4 0h6" />
+                                            </svg>
+                                        </span>
+                                        <span className="mobile-nav-label">AR Trace</span>
+                                    </Link>
+                                </div>
+
                                 {/* Settings */}
                                 <div className="mobile-nav-section">
                                     <span className="mobile-nav-section-label">Settings</span>

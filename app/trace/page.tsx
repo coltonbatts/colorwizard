@@ -1,16 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ARCanvas } from '@/components/ARCanvas';
 import { ReferenceImageUploader } from '@/components/ReferenceImageUploader';
 import { useUserTier } from '@/lib/hooks/useUserTier';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 export default function TracePage() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [opacity, setOpacity] = useState(50);
     const [showGrid, setShowGrid] = useState(false);
     const [gridType, setGridType] = useState<'thirds' | 'golden' | 'doodle'>('thirds');
+    const isMobile = useIsMobile();
     const [showSidebar, setShowSidebar] = useState(true);
+
+    // Sync sidebar visibility with mobile state after hydration
+    useEffect(() => {
+        setShowSidebar(!isMobile);
+    }, [isMobile]);
 
     const { isPro } = useUserTier();
 

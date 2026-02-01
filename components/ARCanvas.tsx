@@ -3,12 +3,21 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { CameraView } from './CameraView';
 
+const DEBUG = true;
+
 interface ARCanvasProps {
     referenceImage: string | null;
     opacity?: number;
     showGrid?: boolean;
     gridType?: 'thirds' | 'golden' | 'doodle';
     onOpacityChange?: (opacity: number) => void;
+}
+
+interface VideoBounds {
+    offsetX: number;
+    offsetY: number;
+    width: number;
+    height: number;
 }
 
 export function ARCanvas({
@@ -19,20 +28,21 @@ export function ARCanvas({
     onOpacityChange
 }: ARCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const videoContainerRef = useRef<HTMLDivElement>(null);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+    const [videoBounds, setVideoBounds] = useState<VideoBounds>({ offsetX: 0, offsetY: 0, width: 0, height: 0 });
     const [localOpacity, setLocalOpacity] = useState(opacity);
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
 
     // Generate random doodle shapes only once (memoized)
-    // We generate a set of normalized coordinates (0-1) for circles, triangles, squiggles
     const doodles = useMemo(() => {
         const shapes = [];
-        // Generate 15 random shapes
         for (let i = 0; i < 15; i++) {
             shapes.push({
                 type: Math.random() > 0.6 ? 'squiggle' : (Math.random() > 0.5 ? 'circle' : 'triangle'),
                 x: Math.random(),
                 y: Math.random(),
-                size: 0.05 + Math.random() * 0.1, // 5% to 15% of screen size
+                size: 0.05 + Math.random() * 0.1,
                 rotation: Math.random() * Math.PI * 2,
                 points: Array.from({ length: 5 }, () => ({
                     dx: (Math.random() - 0.5) * 0.1,
@@ -41,23 +51,83 @@ export function ARCanvas({
             });
         }
         return shapes;
-    }, []); // Empty dependency array = generate once per mount
+    }, []);
 
-    // Update canvas size when window resizes
+    // Update canvas size and compute video bounds when window resizes or video loads
     useEffect(() => {
         const updateCanvasSize = () => {
-            if (canvasRef.current) {
-                const rect = canvasRef.current.getBoundingClientRect();
-                setCanvasSize({ width: rect.width, height: rect.height });
-                canvasRef.current.width = rect.width;
-                canvasRef.current.height = rect.height;
+            const canvas = canvasRef.current;
+            const videoContainer = videoContainerRef.current;
+            if (!canvas || !videoContainer) return;
+
+            const rect = videoContainer.getBoundingClientRect();
+            const cssWidth = rect.width;
+            const cssHeight = rect.height;
+
+            // Set canvas CSS size
+            canvas.style.width = `${cssWidth}px`;
+            canvas.style.height = `${cssHeight}px`;
+
+            // Set canvas bitmap size (scaled by DPR for crisp rendering on retina)
+            canvas.width = cssWidth * dpr;
+            canvas.height = cssHeight * dpr;
+
+            setCanvasSize({ width: cssWidth, height: cssHeight });
+
+            // Compute video bounds: where the video actually appears within the container
+            // The video uses object-cover, which CROPS the image (not letterbox)
+            // Formula: scale = max(containerW / videoW, containerH / videoH)
+            const video = videoContainer.querySelector('video') as HTMLVideoElement;
+            if (video && video.videoWidth && video.videoHeight) {
+                const scale = Math.max(cssWidth / video.videoWidth, cssHeight / video.videoHeight);
+                const scaledW = video.videoWidth * scale;
+                const scaledH = video.videoHeight * scale;
+                const offsetX = (cssWidth - scaledW) / 2;
+                const offsetY = (cssHeight - scaledH) / 2;
+
+                setVideoBounds({ offsetX, offsetY, width: scaledW, height: scaledH });
+            } else {
+                // If video dimensions not available yet, assume full container
+                setVideoBounds({ offsetX: 0, offsetY: 0, width: cssWidth, height: cssHeight });
             }
         };
 
         updateCanvasSize();
         window.addEventListener('resize', updateCanvasSize);
-        return () => window.removeEventListener('resize', updateCanvasSize);
-    }, []);
+
+        const container = videoContainerRef.current;
+        if (!container) return () => window.removeEventListener('resize', updateCanvasSize);
+
+        // Attach video event listeners when video element is found
+        const attemptAttachVideoListeners = () => {
+            const video = container.querySelector('video') as HTMLVideoElement | undefined;
+            if (video) {
+                video.addEventListener('loadedmetadata', updateCanvasSize);
+                video.addEventListener('playing', updateCanvasSize);
+                return true;
+            }
+            return false;
+        };
+
+        // Try to attach immediately (video may already be in DOM)
+        if (attemptAttachVideoListeners()) {
+            return () => window.removeEventListener('resize', updateCanvasSize);
+        }
+
+        // If video not found, watch for it to appear
+        const observer = new MutationObserver(() => {
+            if (attemptAttachVideoListeners()) {
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+
+        return () => {
+            window.removeEventListener('resize', updateCanvasSize);
+            observer.disconnect();
+        };
+    }, [dpr]);
 
     // Draw reference image and grid on canvas
     useEffect(() => {
@@ -67,8 +137,11 @@ export function ARCanvas({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Reset and apply DPR transform before any drawing
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // Clear canvas in CSS pixel space
+        ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
         // Draw reference image if provided
         if (referenceImage) {
@@ -78,22 +151,22 @@ export function ARCanvas({
 
                 // Calculate dimensions to fit image while maintaining aspect ratio
                 const imgAspect = img.width / img.height;
-                const canvasAspect = canvas.width / canvas.height;
+                const videoAspect = videoBounds.width / videoBounds.height;
 
                 let drawWidth, drawHeight, offsetX, offsetY;
 
-                if (imgAspect > canvasAspect) {
-                    // Image is wider than canvas
-                    drawWidth = canvas.width;
-                    drawHeight = canvas.width / imgAspect;
-                    offsetX = 0;
-                    offsetY = (canvas.height - drawHeight) / 2;
+                if (imgAspect > videoAspect) {
+                    // Image is wider than video bounds
+                    drawWidth = videoBounds.width;
+                    drawHeight = videoBounds.width / imgAspect;
+                    offsetX = videoBounds.offsetX;
+                    offsetY = videoBounds.offsetY + (videoBounds.height - drawHeight) / 2;
                 } else {
-                    // Image is taller than canvas
-                    drawHeight = canvas.height;
-                    drawWidth = canvas.height * imgAspect;
-                    offsetX = (canvas.width - drawWidth) / 2;
-                    offsetY = 0;
+                    // Image is taller than video bounds
+                    drawHeight = videoBounds.height;
+                    drawWidth = videoBounds.height * imgAspect;
+                    offsetX = videoBounds.offsetX + (videoBounds.width - drawWidth) / 2;
+                    offsetY = videoBounds.offsetY;
                 }
 
                 ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
@@ -101,62 +174,85 @@ export function ARCanvas({
 
                 // Draw grid if enabled
                 if (showGrid) {
-                    drawGrid(ctx, canvas.width, canvas.height, gridType);
+                    drawGrid(ctx, videoBounds);
                 }
             };
             img.src = referenceImage;
         } else if (showGrid) {
             // Draw grid even without reference image
-            drawGrid(ctx, canvas.width, canvas.height, gridType);
+            drawGrid(ctx, videoBounds);
         }
-    }, [referenceImage, localOpacity, showGrid, gridType, canvasSize, doodles]);
+    }, [referenceImage, localOpacity, showGrid, gridType, canvasSize, videoBounds, doodles]);
 
-    const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number, type: string) => {
+    const drawGrid = (ctx: CanvasRenderingContext2D, bounds: VideoBounds) => {
+        const { offsetX, offsetY, width, height } = bounds;
+
+        if (DEBUG) {
+            // Debug overlay: Draw video bounds rectangle
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(offsetX, offsetY, width, height);
+            ctx.setLineDash([]);
+
+            // Debug overlay: Render debug text
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.9)';
+            ctx.font = 'bold 12px monospace';
+            const debugLines = [
+                `DPR: ${dpr.toFixed(2)}`,
+                `Video: ${canvasSize.width > 0 && videoBounds.width > 0 ? 'loaded' : 'loading'}`,
+                `Bounds: x=${offsetX.toFixed(0)} y=${offsetY.toFixed(0)} w=${width.toFixed(0)} h=${height.toFixed(0)}`
+            ];
+            debugLines.forEach((line, i) => {
+                ctx.fillText(line, offsetX + 10, offsetY + 25 + i * 16);
+            });
+        }
+
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
         ctx.lineWidth = 1;
 
-        if (type === 'thirds') {
+        if (gridType === 'thirds') {
             // Rule of thirds
             const thirdWidth = width / 3;
             const thirdHeight = height / 3;
 
             // Vertical lines
             ctx.beginPath();
-            ctx.moveTo(thirdWidth, 0);
-            ctx.lineTo(thirdWidth, height);
-            ctx.moveTo(thirdWidth * 2, 0);
-            ctx.lineTo(thirdWidth * 2, height);
+            ctx.moveTo(offsetX + thirdWidth, offsetY);
+            ctx.lineTo(offsetX + thirdWidth, offsetY + height);
+            ctx.moveTo(offsetX + thirdWidth * 2, offsetY);
+            ctx.lineTo(offsetX + thirdWidth * 2, offsetY + height);
 
             // Horizontal lines
-            ctx.moveTo(0, thirdHeight);
-            ctx.lineTo(width, thirdHeight);
-            ctx.moveTo(0, thirdHeight * 2);
-            ctx.lineTo(width, thirdHeight * 2);
+            ctx.moveTo(offsetX, offsetY + thirdHeight);
+            ctx.lineTo(offsetX + width, offsetY + thirdHeight);
+            ctx.moveTo(offsetX, offsetY + thirdHeight * 2);
+            ctx.lineTo(offsetX + width, offsetY + thirdHeight * 2);
             ctx.stroke();
-        } else if (type === 'golden') {
+        } else if (gridType === 'golden') {
             // Golden ratio (approximately 1.618)
             const goldenWidth = width / 1.618;
             const goldenHeight = height / 1.618;
 
             ctx.beginPath();
-            ctx.moveTo(goldenWidth, 0);
-            ctx.lineTo(goldenWidth, height);
-            ctx.moveTo(width - goldenWidth, 0);
-            ctx.lineTo(width - goldenWidth, height);
+            ctx.moveTo(offsetX + goldenWidth, offsetY);
+            ctx.lineTo(offsetX + goldenWidth, offsetY + height);
+            ctx.moveTo(offsetX + width - goldenWidth, offsetY);
+            ctx.lineTo(offsetX + width - goldenWidth, offsetY + height);
 
-            ctx.moveTo(0, goldenHeight);
-            ctx.lineTo(width, goldenHeight);
-            ctx.moveTo(0, height - goldenHeight);
-            ctx.lineTo(width, height - goldenHeight);
+            ctx.moveTo(offsetX, offsetY + goldenHeight);
+            ctx.lineTo(offsetX + width, offsetY + goldenHeight);
+            ctx.moveTo(offsetX, offsetY + height - goldenHeight);
+            ctx.lineTo(offsetX + width, offsetY + height - goldenHeight);
             ctx.stroke();
-        } else if (type === 'doodle') {
+        } else if (gridType === 'doodle') {
             // Doodle Grid (Random Shapes)
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)'; // Cyan for doodles
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
             ctx.lineWidth = 2;
 
             doodles.forEach(d => {
-                const cx = d.x * width;
-                const cy = d.y * height;
+                const cx = offsetX + d.x * width;
+                const cy = offsetY + d.y * height;
                 const r = d.size * Math.min(width, height);
 
                 ctx.save();
@@ -175,8 +271,8 @@ export function ARCanvas({
                     // Squiggle
                     ctx.moveTo(-r, 0);
                     ctx.bezierCurveTo(
-                        -r/2, r, 
-                        r/2, -r, 
+                        -r/2, r,
+                        r/2, -r,
                         r, 0
                     );
                 }
@@ -193,14 +289,14 @@ export function ARCanvas({
     };
 
     return (
-        <div className="relative w-full h-full">
+        <div ref={videoContainerRef} className="relative w-full h-full">
             {/* Camera feed */}
             <CameraView className="absolute inset-0" />
 
             {/* AR overlay canvas */}
             <canvas
                 ref={canvasRef}
-                className="absolute inset-0 w-full h-full pointer-events-none"
+                className="absolute inset-0 pointer-events-none"
             />
 
             {/* Opacity control */}
