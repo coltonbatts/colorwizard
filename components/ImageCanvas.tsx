@@ -7,7 +7,7 @@
 
 import { useRef, useState, useEffect, useCallback, useMemo, useId } from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
-import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/canvas'
+import { ZoomControlsBar, GridControlsPanel, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
@@ -119,6 +119,24 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     displayHeight: number;
     dpr: number;
   } | null>(null)
+
+  const [minimapVisible, setMinimapVisible] = useState(false)
+  const minimapTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const showMinimap = useCallback(() => {
+    setMinimapVisible(true)
+    if (minimapTimeoutRef.current) clearTimeout(minimapTimeoutRef.current)
+    minimapTimeoutRef.current = setTimeout(() => {
+      setMinimapVisible(false)
+    }, 2000)
+  }, [])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (minimapTimeoutRef.current) clearTimeout(minimapTimeoutRef.current)
+    }
+  }, [])
 
   const [surfaceImageElement, setSurfaceImageElement] = useState<HTMLImageElement | null>(null)
 
@@ -585,8 +603,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       const newZoom = zoomLevel * (1 + delta)
 
       zoomAtPoint(newZoom, cursorX, cursorY)
+      showMinimap()
     },
-    [image, zoomLevel, zoomAtPoint]
+    [image, zoomLevel, zoomAtPoint, showMinimap]
   )
 
   // Add wheel event listener
@@ -862,6 +881,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
 
       lastPanPoint.current = { x: e.clientX, y: e.clientY }
+      showMinimap()
     }
   }
 
@@ -1061,10 +1081,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         const deltaX = touch.clientX - (lastPanPoint.current.x || touch.clientX)
         const deltaY = touch.clientY - (lastPanPoint.current.y || touch.clientY)
         setPanOffset(prev => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
+        showMinimap()
       }
       lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
     }
-  }, [image, zoomLevel, panOffset])
+  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan])
 
   // Handle touch end
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -1412,6 +1433,14 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               measurementLayer={props.measurementLayer}
               image={image || surfaceImageElement}
               canvasSettings={props.canvasSettings}
+            />
+
+            {/* Navigator Minimap */}
+            <NavigatorMinimap
+              image={image}
+              transform={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
+              canvasDimensions={canvasDimensions}
+              isVisible={minimapVisible}
             />
           </div>
 
