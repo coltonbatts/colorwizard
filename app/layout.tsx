@@ -1,19 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Outfit } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import './globals.css'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  display: 'swap',
-})
+/**
+ * ColorWizard — Editorial Modernism for Tools
+ *
+ * Typography:
+ * - Display/Wordmark: EB Garamond (Apple Garamond inspired)
+ * - UI: Helvetica Neue (system fallback)
+ * - Technical: JetBrains Mono
+ *
+ * Fonts are loaded via CSS @import in globals.css
+ * for optimal control and reduced JavaScript overhead.
+ */
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -22,17 +21,17 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'ColorWizard | Professional Color Mixing for Artists',
-  description: 'The spectral color mixing assistant for oil painters. $1 Lifetime Pro. Traditional color theory meeting modern AI.',
-  keywords: ['oil painting', 'color mixing', 'color theory', 'artist tools', 'spectral color', 'palette generator', 'procreate export'],
+  title: 'ColorWizard. | Perceptual Color for Artists',
+  description: 'A professional color tool for artists. Spectral color mixing, perceptual analysis, and paint recipe generation. Built with precision, designed to recede.',
+  keywords: ['oil painting', 'color mixing', 'color theory', 'artist tools', 'spectral color', 'palette generator', 'perceptual color'],
   openGraph: {
-    title: 'ColorWizard | Built for Artists',
-    description: 'Stop guessing your mixes. $1 Lifetime Pro access now live.',
+    title: 'ColorWizard. | Perceptual Color for Artists',
+    description: 'The professional color tool for oil painters. Let the art lead.',
     url: 'https://colorwizard.app',
-    siteName: 'ColorWizard',
+    siteName: 'ColorWizard.',
     images: [
       {
-        url: 'https://colorwizard.app/og-image.png', // User will need to provide this
+        url: 'https://colorwizard.app/og-image.png',
         width: 1200,
         height: 630,
       },
@@ -42,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ColorWizard | Built for Artists',
-    description: 'The definitive tool for modern oil painters. $1 Forever.',
+    title: 'ColorWizard. | Perceptual Color for Artists',
+    description: 'The professional color tool for oil painters.',
     creator: '@coltonbatts',
   },
   icons: {
@@ -57,8 +56,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${outfit.variable}`}>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
