@@ -571,6 +571,12 @@ body::before {
         flex-direction: column;
     }
 
+    /* Ensure the canvas viewport has a reliable height on mobile */
+    .canvas-viewport {
+        min-height: 50dvh;
+        height: 55dvh;
+    }
+
     /* Controls/sidebar area: scrollable below preview */
     main.flex>div:last-child {
         flex: 1 1 auto !important;

@@ -1246,8 +1246,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
-            className="flex-1 relative overflow-hidden md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
+            className="canvas-viewport flex-1 relative overflow-hidden md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
           >
+            {image && (!imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0) && (
+              <img
+                src={image.src}
+                alt="Reference preview"
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              />
+            )}
             {/* Loading indicator */}
             {isAnalyzing && (
               <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-xs text-white/70 bg-gray-900/80 px-2 py-1 rounded">
