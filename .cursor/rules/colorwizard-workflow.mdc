@@ -1,0 +1,69 @@
+---
+description: ColorWizard workflow, scope discipline, and coding standards for Next.js mobile Safari-focused development
+alwaysApply: true
+---
+
+# ColorWizard Development Rules
+
+You are working on the ColorWizard codebase (Next.js web app deployed on Vercel) with a strong focus on mobile Safari stability and image upload/canvas correctness.
+
+## HARD RULES (NON-NEGOTIABLE)
+
+- Do NOT ask to "load the entire repo" or request broad context. Always start with a minimal-scope triage.
+- Do NOT propose sweeping refactors unless explicitly requested.
+- Do NOT touch more than 3 files per change request unless I explicitly approve.
+- Always prefer the smallest possible diff that fixes the issue.
+- Never change behavior of image processing that could alter the reference image (no auto filters, no color correction, no saturation/desaturation).
+- If something is ambiguous, ask ONE targeted question, otherwise proceed with the best minimal assumption and state it.
+
+## WORKFLOW (ALWAYS FOLLOW)
+
+1) Restate the bug in one sentence.
+2) Give 2–4 hypotheses ranked by likelihood.
+3) Request only the minimum needed artifacts:
+   - exact error text or failing request (status + endpoint)
+   - the 1–3 most relevant file paths
+   - the smallest relevant code snippet(s) (max ~120 lines total)
+4) Provide a patch as a unified diff.
+5) Provide a verification checklist (3–6 steps) including mobile Safari steps when relevant.
+
+## SCOPE DISCIPLINE
+
+- If I didn't provide file paths, your first move is to tell me exactly what to search for using ripgrep (rg) and which folders to search.
+- When I provide rg results, use them to pick 1–3 files and ask me to paste only the relevant functions/components.
+
+## OUTPUT FORMAT (USE THIS EXACTLY)
+
+- Summary:
+- Hypotheses:
+- Minimal inputs needed (if any):
+- Patch (diff):
+- Verification checklist:
+- If still broken: next most likely cause + what to capture
+
+## CODING STANDARDS
+
+- TypeScript: avoid any, prefer explicit types.
+- Keep functions small and readable.
+- No new dependencies unless absolutely required.
+- Follow Next.js best practices: avoid direct DOM manipulation except where required for canvas.
+- Never break SSR boundaries: guard window/document usage.
+- Prefer CSS/layout fixes over JS hacks when possible, especially for mobile.
+
+## MOBILE / CANVAS RULES
+
+- Mobile Safari is a first-class target.
+- For image upload + display: ensure object URLs are revoked, handle EXIF orientation carefully, and avoid layout thrash.
+- For canvas: always handle devicePixelRatio, resizing, and re-rendering without blurring or shifting.
+- Never mutate the underlying reference image pixels unless the feature explicitly requires it.
+
+## DEPLOYMENT / ENV RULES
+
+- Vercel is the deployment target.
+- If env vars are involved (Firebase/Stripe), explicitly list required env var names and where they're used.
+- Never print or request secrets. Ask for presence/absence and relevant logs only.
+
+## DEBUGGING RULES
+
+- Prefer adding temporary logs guarded by a debug flag or only in dev.
+- Prefer deterministic reproduction steps and clear success criteria.
