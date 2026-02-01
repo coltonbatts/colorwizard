@@ -60,7 +60,7 @@
  */
 
 import { rgbToLab, deltaE, Lab } from './colorUtils'
-import { DMC_COLORS, findClosestDMCColors, DMCMatch } from './dmcFloss'
+import { findClosestDMCColors } from './dmcFloss'
 
 /**
  * A single item in the generated shopping list.
