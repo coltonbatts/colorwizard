@@ -24,19 +24,18 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
         }
 
         setIsLoading(true)
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            const img = new Image()
-            img.onload = () => {
-                onImageLoad(img)
-                setIsLoading(false)
-            }
-            img.onerror = () => {
-                setIsLoading(false)
-            }
-            img.src = e.target?.result as string
+        const objectUrl = URL.createObjectURL(file)
+        const img = new Image()
+        img.onload = () => {
+            onImageLoad(img)
+            setIsLoading(false)
+            URL.revokeObjectURL(objectUrl)
         }
-        reader.readAsDataURL(file)
+        img.onerror = () => {
+            setIsLoading(false)
+            URL.revokeObjectURL(objectUrl)
+        }
+        img.src = objectUrl
     }, [onImageLoad])
 
     const handleDragOver = useCallback((e: React.DragEvent) => {

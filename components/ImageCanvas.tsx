@@ -1157,17 +1157,18 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const file = input.files?.[0]
     if (file) {
       console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const img = new Image()
-        img.onload = () => {
-          console.log('[ImageCanvas] Direct image loaded successfully')
-          props.onImageLoad(img)
-        }
-        img.onerror = () => console.error('[ImageCanvas] Direct image load error')
-        img.src = event.target?.result as string
+      const objectUrl = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => {
+        console.log('[ImageCanvas] Direct image loaded successfully')
+        props.onImageLoad(img)
+        URL.revokeObjectURL(objectUrl)
       }
-      reader.readAsDataURL(file)
+      img.onerror = () => {
+        console.error('[ImageCanvas] Direct image load error')
+        URL.revokeObjectURL(objectUrl)
+      }
+      img.src = objectUrl
     }
     input.value = ''
   }, [props.onImageLoad])

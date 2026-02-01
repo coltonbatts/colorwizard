@@ -18,28 +18,21 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
     const loadImage = useCallback(
         (file: File) => {
-            const reader = new FileReader();
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
 
-            reader.onerror = () => {
-                console.error('Failed to read file:', reader.error);
+            img.onerror = () => {
+                console.error('Failed to load image from file');
+                URL.revokeObjectURL(objectUrl);
             };
 
-            reader.onload = (event) => {
-                const img = new Image();
-
-                img.onerror = () => {
-                    console.error('Failed to load image from file');
-                };
-
-                img.onload = () => {
-                    console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
-                    onImageLoad(img);
-                };
-
-                img.src = event.target?.result as string;
+            img.onload = () => {
+                console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
+                onImageLoad(img);
+                URL.revokeObjectURL(objectUrl);
             };
 
-            reader.readAsDataURL(file);
+            img.src = objectUrl;
         },
         [onImageLoad]
     );
