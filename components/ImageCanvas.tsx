@@ -1149,6 +1149,25 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   const isActualSizeEnabled = !!(props.calibration?.pxPerInch && props.canvasSettings?.enabled && imageDrawInfo)
 
+  // Handle direct file input for mobile/desktop "New Image" action
+  const handleDirectFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          console.log('[ImageCanvas] Direct image loaded successfully')
+          props.onImageLoad(img)
+        }
+        img.onerror = () => console.error('[ImageCanvas] Direct image load error')
+        img.src = event.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    }
+  }, [props.onImageLoad])
+
   // Get cursor style based on current mode
   const getCursorStyle = () => {
     if (isPanning) return 'grabbing'
@@ -1274,12 +1293,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
           {/* Bottom Controls - visible on desktop, mobile uses header */}
           <div className="hidden md:flex items-center justify-between mt-4">
-            <button
-              onClick={props.onReset}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors"
-            >
-              Load New Image
-            </button>
+            <label className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors cursor-pointer">
+              <span>Load New Image</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleDirectFileInput}
+                className="absolute w-1 h-1 opacity-0 pointer-events-none"
+              />
+            </label>
             <div className="text-gray-500 text-sm">
               Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
             </div>
@@ -1287,12 +1309,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
           {/* Mobile: New Image button */}
           <div className="flex md:hidden items-center justify-center mt-2 pb-2">
-            <button
-              onClick={props.onReset}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm"
-            >
-              New Image
-            </button>
+            <label className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer">
+              <span>New Image</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleDirectFileInput}
+                className="absolute w-1 h-1 opacity-0 pointer-events-none"
+              />
+            </label>
           </div>
         </div>
       )}

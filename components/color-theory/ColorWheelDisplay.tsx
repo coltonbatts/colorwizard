@@ -32,7 +32,7 @@ export default function ColorWheelDisplay({
         const y = e.clientY - rect.top - radius
 
         // Calculate angle in degrees, adjusted so -90 (top) is 0
-        let angle = Math.atan2(y, x) * (180 / Math.PI)
+        const angle = Math.atan2(y, x) * (180 / Math.PI)
         // atan2: 0 is right (3 o'clock), -90 is top.
         // We want 0 at top. 
         // 0 -> 90
@@ -105,26 +105,26 @@ export default function ColorWheelDisplay({
             // angle 30 -> index 0.5 (between 0 and 1).
 
             // calc rough index
-            let floatIndex = (normalized - 15) / 30
+            const floatIndex = (normalized - 15) / 30
             // Handle wrap for pure local math
             // If angle is 10 (between 345 and 15), floatIndex = -0.16. 
             // floor is -1 -> index 11.
 
-            let idx1 = Math.floor(floatIndex)
-            let idx2 = idx1 + 1
+            const idx1 = Math.floor(floatIndex)
+            const idx2 = idx1 + 1
 
             // Wrap indices
-            let i1 = (idx1 + 12) % 12
-            let i2 = (idx2 + 12) % 12
+            const i1 = (idx1 + 12) % 12
+            const i2 = (idx2 + 12) % 12
 
             // Fraction
-            let t = floatIndex - idx1
+            const t = floatIndex - idx1
             // at angle 15: floatIndex 0. t = 0. Hue = Hue(0).
             // at angle 45: floatIndex 1. t = 0. Hue = Hue(1).
             // at angle 30: floatIndex 0.5. t = 0.5.
 
-            let h1 = COLOR_WHEEL_SEGMENTS[i1].hue
-            let h2 = COLOR_WHEEL_SEGMENTS[i2].hue
+            const h1 = COLOR_WHEEL_SEGMENTS[i1].hue
+            const h2 = COLOR_WHEEL_SEGMENTS[i2].hue
 
             // Shortest path interpolation
             let diff = h2 - h1
@@ -156,7 +156,7 @@ export default function ColorWheelDisplay({
                 }
 
                 // Angle calculations
-                let angleRaw = Math.atan2(dy, dx) * (180 / Math.PI) // -180 to 180
+                const angleRaw = Math.atan2(dy, dx) * (180 / Math.PI) // -180 to 180
                 // Convert to 0-360 relative to Top (-90)
                 let angleRelTop = angleRaw + 90
                 if (angleRelTop < 0) angleRelTop += 360

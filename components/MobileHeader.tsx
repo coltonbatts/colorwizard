@@ -36,8 +36,9 @@ export default function MobileHeader({ hasImage = false, onClearImage }: MobileH
         </button>
 
         {/* Logo / Title - clickable to home */}
-        <Link href="/" className="mobile-header-title">
-          ColorWizard
+        <Link href="/" className="mobile-header-title flex flex-col items-center">
+          <span>ColorWizard</span>
+          <span className="text-[8px] font-mono opacity-30 leading-none">UPLOAD_FIX_V1</span>
         </Link>
 
         {/* Right Actions */}

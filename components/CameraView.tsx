@@ -45,8 +45,8 @@ export function CameraView({ onStreamReady, facingMode = 'environment', classNam
                         <div className="bg-gray-800 rounded-lg p-4 text-left text-sm text-gray-300">
                             <p className="font-semibold mb-2">How to fix:</p>
                             <ol className="list-decimal list-inside space-y-1">
-                                <li>Click the camera icon in your browser's address bar</li>
-                                <li>Select "Allow" for camera access</li>
+                                <li>Click the camera icon in your browser&apos;s address bar</li>
+                                <li>Select &quot;Allow&quot; for camera access</li>
                                 <li>Refresh this page</li>
                             </ol>
                         </div>

@@ -75,7 +75,7 @@ export function generateSwatchesJson(
     const limitedColors = colors.slice(0, Math.min(colors.length, maxColors));
 
     // Convert to swatches
-    let swatches = limitedColors
+    const swatches = limitedColors
         .map(colorToSwatch)
         .filter((swatch): swatch is ProcreateSwatch => swatch !== null);
 

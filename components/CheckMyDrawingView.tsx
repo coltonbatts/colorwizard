@@ -293,7 +293,7 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                         if (t.rotation !== undefined) wipTransform.setRotation(t.rotation)
                         if (t.perspectiveCorners) {
                             Object.entries(t.perspectiveCorners).forEach(([key, val]) => {
-                                wipTransform.setPerspectiveCorner(key as any, val)
+                                wipTransform.setPerspectiveCorner(key as 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight', val)
                             })
                         }
                     }}
@@ -314,11 +314,10 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                     <div
                         className="absolute inset-0 flex items-center justify-center p-8 z-20 pointer-events-none"
                     >
-                        <div
+                        <label
                             className="bg-gray-800/90 backdrop-blur-xl border-2 border-dashed border-gray-600 rounded-3xl p-12 max-w-sm w-full text-center shadow-2xl pointer-events-auto cursor-pointer hover:border-blue-500 hover:bg-gray-800 transition-all group"
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
-                            onClick={() => fileInputRef.current?.click()}
                         >
                             <div className="w-20 h-20 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5">
@@ -331,17 +330,16 @@ export default function CheckMyDrawingView({ referenceImage, onClose }: CheckMyD
                             <p className="text-gray-400 text-sm mb-6">
                                 Upload a photo of your drawing to overlay it on the reference and check accuracy.
                             </p>
-                            <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20">
+                            <span className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/20 inline-block">
                                 Select Photo
-                            </button>
+                            </span>
                             <input
-                                ref={fileInputRef}
                                 type="file"
                                 accept="image/*"
-                                className="hidden"
+                                className="absolute w-1 h-1 opacity-0 pointer-events-none"
                                 onChange={handleInputChange}
                             />
-                        </div>
+                        </label>
                     </div>
                 )}
             </div>

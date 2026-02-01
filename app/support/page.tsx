@@ -34,7 +34,7 @@ export default function SupportPage() {
                   How do I upgrade to Pro?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Click the "Upgrade to Pro" button in the header, select the Pro tier, and complete the $1 checkout. You'll get lifetime access to all Pro features.
+                  Click the &quot;Upgrade to Pro&quot; button in the header, select the Pro tier, and complete the $1 checkout. You&apos;ll get lifetime access to all Pro features.
                 </p>
               </details>
 
@@ -43,7 +43,7 @@ export default function SupportPage() {
                   Is this a subscription?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  No! It's a one-time $1 payment. Once you upgrade, you have Pro access forever—no recurring charges.
+                  No! It&apos;s a one-time $1 payment. Once you upgrade, you have Pro access forever—no recurring charges.
                 </p>
               </details>
 
@@ -52,16 +52,16 @@ export default function SupportPage() {
                   Can I get a refund?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Yes. If you're not satisfied within 7 days of purchase, we'll refund your $1. Just reach out to support.
+                  Yes. If you&apos;re not satisfied within 7 days of purchase, we&apos;ll refund your $1. Just reach out to support.
                 </p>
               </details>
 
               <details className="group cursor-pointer">
                 <summary className="font-semibold text-gray-900 group-open:text-blue-600 transition-colors">
-                  My purchase didn't sync. What do I do?
+                  My purchase didn&apos;t sync. What do I do?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Go to the pricing page and click "Restore Purchase" to manually sync your entitlement. This re-checks your purchase status with our server.
+                  Go to the pricing page and click &quot;Restore Purchase&quot; to manually sync your entitlement. This re-checks your purchase status with our server.
                 </p>
               </details>
             </div>
@@ -71,7 +71,7 @@ export default function SupportPage() {
           <div className="bg-white rounded-xl shadow-md p-8 border-l-4 border-emerald-500">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">✨ Pro Features</h2>
             <p className="text-gray-600 mb-6">
-              What's included with ColorWizard Pro?
+              What&apos;s included with ColorWizard Pro?
             </p>
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex gap-3">
@@ -84,7 +84,7 @@ export default function SupportPage() {
               </li>
               <li className="flex gap-3">
                 <span className="text-blue-600 font-bold">⭐</span>
-                <span><strong>Advanced Presets & Workflows</strong> - Save and load custom workflows</span>
+                <span><strong>Advanced Presets &amp; Workflows</strong> - Save and load custom workflows</span>
               </li>
               <li className="flex gap-3">
                 <span className="text-emerald-600 font-bold">✓</span>
@@ -123,7 +123,7 @@ export default function SupportPage() {
                   How do I clear my calibration?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Click the calibration icon in the toolbar, then click "Reset Calibration" to return to factory defaults.
+                  Click the calibration icon in the toolbar, then click &quot;Reset Calibration&quot; to return to factory defaults.
                 </p>
               </details>
             </div>
@@ -131,7 +131,7 @@ export default function SupportPage() {
 
           {/* Account & Privacy */}
           <div className="bg-white rounded-xl shadow-md p-8 border-l-4 border-orange-500">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">👤 Account & Privacy</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">👤 Account &amp; Privacy</h2>
             <p className="text-gray-600 mb-6">
               Account, privacy, and data questions.
             </p>
@@ -141,7 +141,7 @@ export default function SupportPage() {
                   How do I delete my account?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Contact support at support@color-wizard.app with your email. We'll delete all your data within 7 days.
+                  Contact support at support@color-wizard.app with your email. We&apos;ll delete all your data within 7 days.
                 </p>
               </details>
 
@@ -159,7 +159,7 @@ export default function SupportPage() {
                   Can I export my palettes?
                 </summary>
                 <p className="mt-2 text-gray-600 text-sm">
-                  Yes! Go to Pinned Colors in the sidebar and click "Export" to download as JSON. You can re-import later.
+                  Yes! Go to Pinned Colors in the sidebar and click &quot;Export&quot; to download as JSON. You can re-import later.
                 </p>
               </details>
             </div>

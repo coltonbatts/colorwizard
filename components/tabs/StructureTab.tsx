@@ -46,7 +46,7 @@ export default function StructureTab() {
                         <div className="space-y-2">
                             <div className="flex justify-between text-xs text-studio-dim">
                                 <span>Spacing (inches)</span>
-                                <span className="font-mono">{rulerGridSpacing}"</span>
+                                <span className="font-mono">{rulerGridSpacing}&quot;</span>
                             </div>
                             <div className="flex gap-2">
                                 {[0.25, 0.5, 1, 2].map(val => (
@@ -60,7 +60,7 @@ export default function StructureTab() {
                                                 : 'bg-gray-50 text-studio-dim hover:bg-gray-100'}
                     `}
                                     >
-                                        {val}"
+                                        {val}&quot;
                                     </button>
                                 ))}
                             </div>

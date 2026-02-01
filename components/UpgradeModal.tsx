@@ -83,7 +83,7 @@ export default function UpgradeModal({
 
                         {featureName && (
                             <p className="text-gray-600 dark:text-gray-400 mb-6 italic text-sm">
-                                You're trying to export {currentCount} colors, but the free tier limit is {limit}.
+                                You&apos;re trying to export {currentCount} colors, but the free tier limit is {limit}.
                             </p>
                         )}
 
@@ -115,7 +115,7 @@ export default function UpgradeModal({
 
                         <div className="space-y-4">
                             <p className="text-gray-500 dark:text-gray-400 text-sm px-6">
-                                "I'm just one dev building this for artists. For the price of <span className="text-gray-900 dark:text-white font-semibold">half a coffee</span>, you help me keep the lights on and unlock every feature forever." — Colton
+                                &quot;I&apos;m just one dev building this for artists. For the price of <span className="text-gray-900 dark:text-white font-semibold">half a coffee</span>, you help me keep the lights on and unlock every feature forever.&quot; — Colton
                             </p>
 
                             <button

@@ -142,7 +142,7 @@ export default function SettingsPage() {
           <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl shadow-xl p-8 text-white">
             <h2 className="text-2xl font-black mb-4 uppercase tracking-tighter">The Mission</h2>
             <p className="text-sm text-indigo-100 leading-relaxed mb-6 italic">
-              "ColorWizard is built on the belief that professional art tools should be accessible, private, and subscription-free. Thank you for supporting solo indie development."
+              &quot;ColorWizard is built on the belief that professional art tools should be accessible, private, and subscription-free. Thank you for supporting solo indie development.&quot;
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">👨‍🎨</div>

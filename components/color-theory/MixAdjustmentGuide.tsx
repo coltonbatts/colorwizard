@@ -39,8 +39,8 @@ export default function MixAdjustmentGuide({
         const deltaS = mixS - targetS
 
         // Hue Analysis
-        let targetH = targetHsl.h ?? 0
-        let mixH = mixHsl.h ?? 0
+        const targetH = targetHsl.h ?? 0
+        const mixH = mixHsl.h ?? 0
 
         // Shortest path for hue difference
         let deltaH = mixH - targetH

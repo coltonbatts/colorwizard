@@ -257,6 +257,9 @@ export const useStore = create<ColorState>()(
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
             setHighlightMode: (highlightMode) => set({ highlightMode }),
             setImage: (image) => {
+                const currentImage = get().image;
+                if (image === currentImage) return;
+                
                 console.log('[useStore] setImage called with:', image ? `${image.width}x${image.height}` : 'null');
                 set({ image, referenceImage: image ? image.src : null });
             },

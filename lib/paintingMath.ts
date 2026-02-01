@@ -108,7 +108,7 @@ export function rotateHue(color: string | Color, degrees: number): string {
     const c = toOklch(color);
     if (!c) return '#000000';
 
-    let newHue = (c.h ?? 0) + degrees;
+    const newHue = (c.h ?? 0) + degrees;
     // Normalize to 0-360 not strictly needed for culori but good for sanity
     // newHue = newHue % 360; 
     // if (newHue < 0) newHue += 360;

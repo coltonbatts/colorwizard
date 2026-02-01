@@ -99,7 +99,7 @@ export default function ShoppingListPanel({ image }: ShoppingListPanelProps) {
                             <label className="block text-[10px] font-black text-studio-dim uppercase tracking-widest mb-1.5">Detail</label>
                             <select
                                 value={config.detailLevel}
-                                onChange={(e) => setConfig({ ...config, detailLevel: e.target.value as any })}
+                                onChange={(e) => setConfig({ ...config, detailLevel: e.target.value as "medium" | "high" | "low" })}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm text-studio focus:border-blue-500 outline-none shadow-sm"
                             >
                                 <option value="low">Low (Fast)</option>

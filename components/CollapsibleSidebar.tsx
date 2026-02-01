@@ -172,7 +172,7 @@ export default function CollapsibleSidebar({
             `}
             style={{
                 '--computed-sidebar-width': `${width}px`
-            } as any}
+            } as React.CSSProperties}
         >
             {/* Toggle Button */}
             <button

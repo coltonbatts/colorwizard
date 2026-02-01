@@ -43,12 +43,17 @@ export default function SurfaceTab() {
                             />
                         </div>
                         <div className="flex gap-2">
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="flex-1 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-studio-secondary rounded-lg text-sm font-medium transition-colors"
+                            <label
+                                className="flex-1 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-studio-secondary rounded-lg text-sm font-medium transition-colors cursor-pointer text-center"
                             >
-                                Change Photo
-                            </button>
+                                <span>Change Photo</span>
+                                <input
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    accept="image/*"
+                                    className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                                />
+                            </label>
                             <button
                                 onClick={handleClear}
                                 className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors"
@@ -69,21 +74,19 @@ export default function SurfaceTab() {
                             <p className="text-sm font-medium text-studio-secondary">No surface photo yet</p>
                             <p className="text-xs text-studio-dim">Upload a photo to define your bounds</p>
                         </div>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-shadow shadow-sm hover:shadow-md"
+                        <label
+                            className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-shadow shadow-sm hover:shadow-md cursor-pointer inline-block"
                         >
-                            Import Surface
-                        </button>
+                            <span>Import Surface</span>
+                            <input
+                                type="file"
+                                onChange={handleFileChange}
+                                accept="image/*"
+                                className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                            />
+                        </label>
                     </div>
                 )}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
-                />
             </div>
 
             {surfaceImage && (

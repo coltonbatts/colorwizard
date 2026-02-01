@@ -12,6 +12,7 @@ import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { CalibrationData, TransformState } from '@/lib/calibration'
 import { CanvasSettings } from '@/lib/types/canvas'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
+import { ValueScaleResult } from '@/lib/valueScale'
 
 interface Point {
   x: number
@@ -33,7 +34,7 @@ interface CanvasSectionProps {
   valueScaleSettings: ValueScaleSettings
   onValueScaleChange: (settings: ValueScaleSettings) => void
   onHistogramComputed: (bins: number[]) => void
-  onValueScaleResult: (result: any) => void
+  onValueScaleResult: (result: ValueScaleResult) => void
   measureMode: boolean
   onMeasurePointsChange: (a: Point | null, b: Point | null) => void
   onTransformChange: (state: TransformState) => void

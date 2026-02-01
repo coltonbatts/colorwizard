@@ -7,6 +7,7 @@
  */
 
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
+import dynamic from 'next/dynamic'
 import ImageCanvas from '@/components/ImageCanvas'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
@@ -28,8 +29,6 @@ import PaletteTab from '@/components/tabs/PaletteTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
 import AdvancedTab from '@/components/tabs/AdvancedTab'
 import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
-import CheckMyValuesView from '@/components/CheckMyValuesView'
-import CheckMyDrawingView from '@/components/CheckMyDrawingView'
 import PinnedColorsPanel from '@/components/PinnedColorsPanel'
 import MyCardsPanel from '@/components/MyCardsPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -43,6 +42,10 @@ import ReferenceTab from '@/components/tabs/ReferenceTab'
 
 import { useStore } from '@/lib/store/useStore'
 
+// Dynamic imports for heavy full-screen views to optimize bundle size
+const CheckMyValuesView = dynamic(() => import('@/components/CheckMyValuesView'), { ssr: false })
+const CheckMyDrawingView = dynamic(() => import('@/components/CheckMyDrawingView'), { ssr: false })
+
 export default function Home() {
   const isMobile = useIsMobile()
   // Track whether mobile user is viewing dashboard vs browsing tabs
@@ -53,8 +56,6 @@ export default function Home() {
   const [showCheckDrawing, setShowCheckDrawing] = useState(false)
 
   // Optimized selectors: Grouped by logical domain to reduce re-render cascades
-  // Reduces 40+ individual selector calls to 3 grouped selectors
-  // This reduces unnecessary re-renders by preventing cascading updates
   const sampledColor = useStore(state => state.sampledColor)
   const setSampledColor = useStore(state => state.setSampledColor)
   const activeHighlightColor = useStore(state => state.activeHighlightColor)
@@ -104,15 +105,6 @@ export default function Home() {
   const referenceImage = useStore(state => state.referenceImage)
   const setReferenceImage = useStore(state => state.setReferenceImage)
 
-  // Synchronize persistent referenceImage string to runtime HTMLImageElement
-  useEffect(() => {
-    if (referenceImage && !image) {
-      const img = new Image()
-      img.crossOrigin = "anonymous"
-      img.src = referenceImage
-      img.onload = () => setImage(img)
-    }
-  }, [referenceImage, image, setImage])
   const setMeasurePoints = useStore(state => state.setMeasurePoints)
   const toggleMeasureMode = useStore(state => state.toggleMeasureMode)
   const toggleMeasurementLayer = useStore(state => state.toggleMeasurementLayer)
@@ -134,6 +126,40 @@ export default function Home() {
   const simpleMode = useStore(state => state.simpleMode)
   const toggleSimpleMode = useStore(state => state.toggleSimpleMode)
   const toggleValueMode = useStore(state => state.toggleValueMode)
+
+  // Clear image and reset view
+  const handleClearImage = useCallback(() => {
+    console.log('[Home] Clearing image and resetting state')
+    setImage(null)
+    setReferenceImage(null)
+    setSampledColor(null)
+    setActiveHighlightColor(null)
+    setBreakdownValue(0)
+  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue])
+
+  const lastProcessedRef = useRef<string | null>(null)
+
+  // Synchronize persistent referenceImage string to runtime HTMLImageElement
+  useEffect(() => {
+    if (referenceImage && !image && referenceImage !== lastProcessedRef.current) {
+      console.log('[Home] Loading reference image from string...')
+      lastProcessedRef.current = referenceImage
+      
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+      img.src = referenceImage
+      img.onload = () => {
+        console.log('[Home] Reference image loaded successfully')
+        setImage(img)
+      }
+      img.onerror = (e) => {
+        console.error('[Home] Failed to load reference image:', e)
+        lastProcessedRef.current = null
+      }
+    } else if (!referenceImage) {
+      lastProcessedRef.current = null
+    }
+  }, [referenceImage, image, setImage])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -181,8 +207,7 @@ export default function Home() {
     generateHighlightOverlay
   } = useImageAnalyzer(image, valueScaleSettings)
 
-  // Use the hook's results to update the store (or local state if preferred, 
-  // but store is better for consistency)
+  // Use the hook's results to update the store
   useEffect(() => {
     if (analyzerValueScaleResult) setValueScaleResult(analyzerValueScaleResult)
   }, [analyzerValueScaleResult, setValueScaleResult])
@@ -258,7 +283,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode])
+  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode, image])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -288,7 +313,7 @@ export default function Home() {
     setSampledColor({
       hex: color.hex,
       rgb: color.rgb,
-      hsl: { h: 0, s: 0, l: 0 } // Will be recalculated
+      hsl: { h: 0, s: 0, l: 0 }
     })
     setActiveTab('sample')
   }
@@ -408,12 +433,6 @@ export default function Home() {
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
 
-  // Clear image and reset view
-  const handleClearImage = useCallback(() => {
-    setImage(null)
-    setReferenceImage(null)
-  }, [setImage, setReferenceImage])
-
   return (
     <main className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-white overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
       {/* Mobile Header - only show when image is loaded */}
@@ -466,14 +485,14 @@ export default function Home() {
             fallback={({ resetError }) => (
               <CanvasErrorFallback
                 resetError={resetError}
-                onReset={() => setImage(null)}
+                onReset={handleClearImage}
               />
             )}
           >
             <ImageCanvas
               image={image}
               onImageLoad={setImage}
-              onReset={() => setImage(null)}
+              onReset={handleClearImage}
               onColorSample={(color) => {
                 if (measureMode && calibration) {
                   return
@@ -543,7 +562,6 @@ export default function Home() {
           {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
           {!isMobile && (
             <div className="flex border-b border-gray-100 bg-white items-stretch">
-              {/* Simple mode shows: Sample, Mix, Matches only (Pinned is separate) */}
               {(simpleMode
                 ? TABS.filter(tab => ['sample', 'oilmix', 'matches'].includes(tab.id))
                 : TABS
@@ -563,7 +581,6 @@ export default function Home() {
                   )}
                 </button>
               ))}
-              {/* Pinned - always visible */}
               <button
                 className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
                   ? 'text-blue-600'
@@ -585,7 +602,6 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
                 )}
               </button>
-              {/* Cards - Pro mode only */}
               {!simpleMode && (
                 <button
                   className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
@@ -607,7 +623,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Tab Content */}
           <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50/30">
             {isMobile && image && mobileShowDashboard ? (
               <MobileDashboard
@@ -628,13 +643,12 @@ export default function Home() {
         </CollapsibleSidebar>
       )}
 
-      {/* Mobile Navigation */}
       {isMobile && (
         <MobileNavigation
           activeTab={activeTab}
           onTabChange={(tab) => {
             setActiveTab(tab)
-            setMobileShowDashboard(false) // Switch from dashboard to tab view
+            setMobileShowDashboard(false)
           }}
           pinnedCount={pinnedColors.length}
           onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
@@ -645,10 +659,8 @@ export default function Home() {
         />
       )}
 
-      {/* Session Palette Strip */}
       <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />
 
-      {/* Modals */}
       <PaletteManager
         isOpen={showPaletteManager}
         onClose={() => setShowPaletteManager(false)}
@@ -672,7 +684,6 @@ export default function Home() {
         initialSettings={canvasSettings}
       />
 
-      {/* Check My Values Full-Screen View */}
       {showCheckValues && (
         <CheckMyValuesView
           referenceImage={image}
@@ -680,7 +691,6 @@ export default function Home() {
         />
       )}
 
-      {/* Check My Drawing Full-Screen View */}
       {showCheckDrawing && (
         <CheckMyDrawingView
           referenceImage={image}

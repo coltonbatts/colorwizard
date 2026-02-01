@@ -92,9 +92,12 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
             <div className="w-full max-w-4xl mx-auto px-4 z-10 flex flex-col items-center">
                 <div className="text-center w-full">
                     {/* Wordmark - Responsive sizing for mobile */}
-                    <h1 className="font-wordmark-hero text-studio mb-4 md:mb-8 select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
-                        Color Wizard
-                    </h1>
+                    <div className="flex flex-col items-center mb-4 md:mb-8">
+                        <h1 className="font-wordmark-hero text-studio select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
+                            Color Wizard
+                        </h1>
+                        <span className="text-[10px] font-mono opacity-20 tracking-widest mt-1">MOBILE_UPLOAD_FIX_V1</span>
+                    </div>
 
                     <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-studio-secondary mb-6 md:mb-12 tracking-tight opacity-80 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 px-4">
                         The premium companion for light, value, and color analysis.
@@ -119,8 +122,11 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             <input
                                 type="file"
                                 accept="image/*"
-                                onChange={handleFileInput}
-                                className="hidden"
+                                onChange={(e) => {
+                                    console.log('[ImageDropzone] Input onChange fired');
+                                    handleFileInput(e);
+                                }}
+                                className="absolute w-1 h-1 opacity-0 pointer-events-none"
                             />
                         </label>
 

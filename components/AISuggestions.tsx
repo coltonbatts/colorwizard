@@ -97,7 +97,7 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
                                     <span className="font-black">CHROMA:</span> {analysis.chroma}
                                 </p>
                                 <p className="text-xs text-indigo-900/60 italic font-bold leading-relaxed pt-2 border-t border-indigo-200/50">
-                                    "{analysis.mixingTip}"
+                                    &quot;{analysis.mixingTip}&quot;
                                 </p>
                             </div>
                         </motion.div>

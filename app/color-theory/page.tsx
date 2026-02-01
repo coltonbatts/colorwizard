@@ -117,7 +117,7 @@ export default function ColorTheoryPage() {
                     </h1>
                 </div>
                 <p className="text-sm text-gray-500">
-                    Analyze colors against the traditional artist's color wheel
+                    Analyze colors against the traditional artist&apos;s color wheel
                 </p>
             </header>
 

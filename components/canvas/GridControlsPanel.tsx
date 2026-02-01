@@ -70,11 +70,11 @@ export default function GridControlsPanel({
                     onChange={(e) => onSquareSizeChange(Number(e.target.value))}
                     className="px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-sm"
                 >
-                    <option value="0.25">0.25"</option>
-                    <option value="0.5">0.5"</option>
-                    <option value="1">1"</option>
-                    <option value="2">2"</option>
-                    <option value="3">3"</option>
+                    <option value="0.25">0.25&quot;</option>
+                    <option value="0.5">0.5&quot;</option>
+                    <option value="1">1&quot;</option>
+                    <option value="2">2&quot;</option>
+                    <option value="3">3&quot;</option>
                 </select>
             </div>
         </div>

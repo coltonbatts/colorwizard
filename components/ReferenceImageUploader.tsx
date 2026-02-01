@@ -113,7 +113,7 @@ export function ReferenceImageUploader({
 
         if (selectedImageId === imageId) {
             setSelectedImageId(null);
-            onImageSelect?.(null as any);
+            onImageSelect?.(null as unknown as string);
         }
     };
 
@@ -131,11 +131,9 @@ export function ReferenceImageUploader({
             </div>
 
             {/* Upload button */}
-            <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!canUploadMore || isConverting}
-                className={`w-full py-3 rounded-lg border-2 border-dashed transition-colors mb-4 ${canUploadMore && !isConverting
-                    ? 'border-gray-600 hover:border-blue-500 text-gray-300 hover:text-blue-400 cursor-pointer'
+            <label
+                className={`w-full py-3 rounded-lg border-2 border-dashed transition-colors mb-4 block text-center cursor-pointer ${canUploadMore && !isConverting
+                    ? 'border-gray-600 hover:border-blue-500 text-gray-300 hover:text-blue-400'
                     : 'border-gray-700 text-gray-600 cursor-not-allowed'
                     }`}
             >
@@ -152,17 +150,18 @@ export function ReferenceImageUploader({
                         <span className="text-sm">
                             {canUploadMore ? 'Upload Reference Image' : 'Upgrade to Pro for unlimited images'}
                         </span>
+                        {canUploadMore && !isConverting && (
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileSelect}
+                                className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                            />
+                        )}
                     </>
                 )}
-            </button>
+            </label>
 
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-            />
 
             {/* Image grid */}
             {images.length > 0 ? (

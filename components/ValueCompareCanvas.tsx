@@ -307,9 +307,8 @@ export default function ValueCompareCanvas({
                         onTouchEnd={handleTouchEnd}
                     />
                 ) : showUpload ? (
-                    <div
+                    <label
                         className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 m-4 rounded-xl cursor-pointer hover:border-gray-500 transition-colors"
-                        onClick={() => fileInputRef.current?.click()}
                     >
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -319,13 +318,12 @@ export default function ValueCompareCanvas({
                         <span className="mt-3 text-sm font-medium">Upload WIP Photo</span>
                         <span className="mt-1 text-xs text-gray-600">Drag and drop or click to browse</span>
                         <input
-                            ref={fileInputRef}
                             type="file"
                             accept="image/*"
-                            className="hidden"
+                            className="absolute w-1 h-1 opacity-0 pointer-events-none"
                             onChange={handleInputChange}
                         />
-                    </div>
+                    </label>
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-gray-600">
                         <span className="text-sm">No reference image</span>

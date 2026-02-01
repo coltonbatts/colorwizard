@@ -40,7 +40,7 @@ export function findNearestColor(
     const entries = Object.entries(dataset);
 
     // Pass 1: Fast filtering
-    let candidates: Array<{ hex: string; name: string; fastDist: number }> = [];
+    const candidates: Array<{ hex: string; name: string; fastDist: number }> = [];
 
     for (const [hex, name] of entries) {
         const rgb = getRgb(hex);

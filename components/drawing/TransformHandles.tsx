@@ -72,9 +72,6 @@ function TransformHandles({
         startCorner: { x: number; y: number }
     } | null>(null)
 
-    // Don't show handles if not selected
-    if (!isSelected) return null
-
     // Calculate scaled dimensions
     const scaledWidth = imageDimensions.width * imageScale
     const scaledHeight = imageDimensions.height * imageScale
@@ -143,6 +140,9 @@ function TransformHandles({
             onInteractionEnd()
         }
     }, [onInteractionEnd])
+
+    // Don't show handles if not selected
+    if (!isSelected) return null
 
     // Render perspective corners
     const renderPerspectiveCorners = () => {

@@ -169,19 +169,17 @@ export default function ColorTheoryCanvas({ onColorSample }: ColorTheoryCanvasPr
                     </svg>
                     <p className="text-gray-400 text-lg mb-2">Drop an image here</p>
                     <p className="text-gray-500 text-sm mb-4">or</p>
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors"
+                    <label
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer"
                     >
-                        Browse Files
-                    </button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileInput}
-                        className="hidden"
-                    />
+                        <span>Browse Files</span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileInput}
+                            className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                        />
+                    </label>
                 </div>
             ) : (
                 <>

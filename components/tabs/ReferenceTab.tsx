@@ -17,6 +17,7 @@ export default function ReferenceTab() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
+            console.log('[ReferenceTab] File selected:', file.name)
             const reader = new FileReader()
             reader.onload = (event) => {
                 setReferenceImage(event.target?.result as string)
@@ -42,18 +43,26 @@ export default function ReferenceTab() {
                         <div className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                             <img src={referenceImage} alt="Reference" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="p-2 bg-white rounded-lg text-studio hover:bg-gray-100 transition-colors"
+                                <label
+                                    className="p-2 bg-white rounded-lg text-studio hover:bg-gray-100 transition-colors cursor-pointer"
                                     title="Change Image"
                                 >
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                                         <circle cx="12" cy="13" r="4" />
                                     </svg>
-                                </button>
+                                    <input
+                                        type="file"
+                                        className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                </label>
                                 <button
-                                    onClick={() => setReferenceImage(null)}
+                                    onClick={() => {
+                                        console.log('[ReferenceTab] Clearing reference image')
+                                        setReferenceImage(null)
+                                    }}
                                     className="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50 transition-colors"
                                     title="Clear Reference"
                                 >
@@ -169,8 +178,7 @@ export default function ReferenceTab() {
                         </div>
                     </div>
                 ) : (
-                    <div
-                        onClick={() => fileInputRef.current?.click()}
+                    <label
                         className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center p-6 text-center group"
                     >
                         <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -180,16 +188,14 @@ export default function ReferenceTab() {
                         </div>
                         <p className="text-xs font-bold text-studio mb-1">Upload Reference Image</p>
                         <p className="text-[10px] text-studio-dim">Drag and drop or click to browse</p>
-                    </div>
+                        <input
+                            type="file"
+                            className="absolute w-1 h-1 opacity-0 pointer-events-none"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                    </label>
                 )}
-
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                />
 
                 <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                     <p className="text-[10px] text-blue-700 leading-relaxed">
