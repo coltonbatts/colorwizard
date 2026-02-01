@@ -437,7 +437,7 @@ export default function Home() {
   }, [])
 
   return (
-    <main className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-white overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
+    <main className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-paper overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
       {/* Mobile Header - only show when image is loaded */}
       {image && (
         <MobileHeader
@@ -569,7 +569,7 @@ export default function Home() {
         >
           {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
           {!isMobile && (
-            <div className="flex border-b border-gray-100 bg-white items-stretch">
+            <div className="flex border-b border-ink-hairline bg-paper-elevated items-stretch">
               {(simpleMode
                 ? TABS.filter(tab => ['sample', 'oilmix', 'matches'].includes(tab.id))
                 : TABS
@@ -577,22 +577,22 @@ export default function Home() {
                 <button
                   key={tab.id}
                   className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
-                    ? 'text-blue-600'
-                    : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                    ? 'text-signal'
+                    : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
                     }`}
                   onClick={() => setActiveTab(tab.id)}
                   title={`${tab.tooltip} (${index + 1})`}
                 >
                   {tab.icon}
                   {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal animate-in fade-in zoom-in-95" />
                   )}
                 </button>
               ))}
               <button
                 className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
-                  ? 'text-blue-600'
-                  : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                  ? 'text-signal'
+                  : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
                   }`}
                 onClick={() => setActiveTab('pinned')}
                 title={`Pinned Colors (${pinnedColors.length})`}
@@ -602,19 +602,19 @@ export default function Home() {
                   <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
                 </svg>
                 {pinnedColors.length > 0 && (
-                  <span className="absolute top-2 right-2 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute top-2 right-2 w-4 h-4 bg-signal text-white text-[10px] rounded-sm flex items-center justify-center font-bold">
                     {pinnedColors.length > 9 ? '9+' : pinnedColors.length}
                   </span>
                 )}
                 {activeTab === 'pinned' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 animate-in fade-in zoom-in-95" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal animate-in fade-in zoom-in-95" />
                 )}
               </button>
               {!simpleMode && (
                 <button
                   className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
-                    ? 'text-purple-600'
-                    : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+                    ? 'text-subsignal'
+                    : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
                     }`}
                   onClick={() => setActiveTab('cards')}
                   title="Color Cards"
@@ -624,14 +624,14 @@ export default function Home() {
                     <path d="M3 9h18" />
                   </svg>
                   {activeTab === 'cards' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 animate-in fade-in zoom-in-95" />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-subsignal animate-in fade-in zoom-in-95" />
                   )}
                 </button>
               )}
             </div>
           )}
 
-          <div className="flex-1 min-h-0 overflow-y-auto bg-gray-50/30">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {isMobile && image && mobileShowDashboard ? (
               <MobileDashboard
                 sampledColor={sampledColor}

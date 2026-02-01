@@ -168,7 +168,7 @@ export default function CollapsibleSidebar({
     return (
         <div
             className={`
-                relative flex flex-col h-full bg-white border-l border-gray-100 shadow-xl z-10
+                relative flex flex-col h-full bg-paper-elevated border-l border-ink-hairline z-10
                 sidebar-collapsible
                 ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}
                 ${className}
@@ -211,7 +211,7 @@ export default function CollapsibleSidebar({
                         </button>
                     ))}
 
-                    <div className="w-6 h-px bg-gray-200 my-2" />
+                    <div className="w-6 h-px bg-ink-hairline my-2" />
 
                     {/* Pinned - only if not already in visible tabs */}
                     {!simpleMode && (
@@ -228,7 +228,7 @@ export default function CollapsibleSidebar({
                                 <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
                             </svg>
                             {pinnedCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-signal text-white text-[10px] rounded-sm flex items-center justify-center font-bold">
                                     {pinnedCount > 9 ? '9+' : pinnedCount}
                                 </span>
                             )}
@@ -252,7 +252,7 @@ export default function CollapsibleSidebar({
                         </button>
                     )}
 
-                    <div className="w-6 h-px bg-gray-200 my-2" />
+                    <div className="w-6 h-px bg-ink-hairline my-2" />
 
                     {/* Expand */}
                     <button
