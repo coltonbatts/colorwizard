@@ -37,7 +37,7 @@ export default function MatchesTab({ sampledColor, onColorSelect }: MatchesTabPr
 
     return (
         <div className="tab-content-scroll h-full">
-            <div className="p-4 lg:p-6 pb-20">
+            <div className="p-2.5 md:p-4 lg:p-6 pb-4 md:pb-20">
                 <ErrorBoundary
                     fallback={({ error, resetError }) => (
                         <SidebarErrorFallback error={error} resetError={resetError} />
