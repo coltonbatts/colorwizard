@@ -43,11 +43,43 @@ export function ReferenceImageUploader({
             try {
                 setIsConverting(true);
                 const heic2any = (await import('heic2any')).default;
-                const convertedBlob = await heic2any({
-                    blob: file,
-                    toType: 'image/jpeg',
-                    quality: 0.95
+                
+                let conversionPromise: Promise<Blob | Blob[]>;
+                try {
+                    conversionPromise = heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.95
+                    });
+                } catch (syncErr) {
+                    console.error('[ReferenceImageUploader] Synchronous error during heic2any call:', syncErr);
+                    throw new Error(`Failed to start HEIC conversion: ${syncErr instanceof Error ? syncErr.message : String(syncErr)}`);
+                }
+
+                // Wrap conversion promise to capture any errors
+                const wrappedConversionPromise = conversionPromise.catch((conversionErr) => {
+                    console.error('[ReferenceImageUploader] Conversion promise rejected:', conversionErr);
+                    console.error('[ReferenceImageUploader] Conversion error type:', typeof conversionErr);
+                    console.error('[ReferenceImageUploader] Conversion error constructor:', conversionErr?.constructor?.name);
+                    
+                    // Deep inspection of the "empty" object
+                    const allProps = conversionErr ? Object.getOwnPropertyNames(conversionErr) : [];
+                    console.error('[ReferenceImageUploader] Conversion error all properties:', allProps);
+                    
+                    let errorMsg = 'HEIC conversion failed';
+                    if (conversionErr instanceof Error) {
+                        errorMsg = conversionErr.message || 'Unknown conversion error';
+                    } else if (typeof conversionErr === 'string') {
+                        errorMsg = conversionErr;
+                    } else if (conversionErr && typeof conversionErr === 'object') {
+                        const errObj = conversionErr as any;
+                        errorMsg = errObj.message || errObj.error || errObj.code || errObj.toString?.() || 'Conversion error (details unavailable)';
+                    }
+                    
+                    throw new Error(`HEIC conversion failed: ${errorMsg}`);
                 });
+
+                const convertedBlob = await wrappedConversionPromise;
 
                 // heic2any can return an array if multiple images are in the HEIC
                 const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;

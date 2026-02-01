@@ -123,15 +123,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [minimapVisible, setMinimapVisible] = useState(false)
   const minimapTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
-  // On-screen debug panel (toggleable - set to true to enable)
-  const DEBUG_PANEL_ENABLED = false
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const addDebugLog = useCallback((message: string) => {
-    if (DEBUG_PANEL_ENABLED) {
-      setDebugLogs(prev => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${message}`])
-    }
-  }, [])
-
   const showMinimap = useCallback(() => {
     setMinimapVisible(true)
     if (minimapTimeoutRef.current) clearTimeout(minimapTimeoutRef.current)
@@ -354,19 +345,18 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.clearRect(0, 0, rectWidth, rectHeight)
 
     if ((!image && !surfaceImageElement) || !imageDrawInfo) {
-      // Debug: log why canvas isn't drawing
-      if (image && !imageDrawInfo) {
-        const msg = `drawCanvas skipped: imageDrawInfo is null, dims=${canvasDimensions.width}x${canvasDimensions.height}`
-        console.warn('[ImageCanvas]', msg)
-        addDebugLog(`⚠️ ${msg}`)
-      }
-      return
+    // Debug: log why canvas isn't drawing
+    if (image && !imageDrawInfo) {
+      const msg = `drawCanvas skipped: imageDrawInfo is null, dims=${canvasDimensions.width}x${canvasDimensions.height}`
+      console.warn('[ImageCanvas]', msg)
     }
-    
-    // Debug: log when canvas IS drawing
-    if (image && imageDrawInfo) {
-      addDebugLog(`🎨 Drawing canvas: ${canvasDimensions.width}x${canvasDimensions.height}, imageDrawInfo exists`)
-    }
+    return
+  }
+  
+  // Debug: log when canvas IS drawing
+  if (image && imageDrawInfo) {
+    // console.log('[ImageCanvas] Drawing canvas');
+  }
 
     // Save context state
     ctx.save()
@@ -675,7 +665,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         // Try multiple times with delays to catch layout
         const tryInit = (attempt = 0) => {
           const rect = canvasContainer.getBoundingClientRect()
-          addDebugLog(`Attempt ${attempt}: Container rect = ${rect.width}x${rect.height}`)
           
           if (rect.width > 0 && rect.height > 0) {
             const newDims = {
@@ -688,15 +677,13 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               { width: image.width, height: image.height }
             )
             setImageDrawInfo(info)
-            addDebugLog(`✅ Force-init success: ${newDims.width}x${newDims.height}`)
-            console.log('[ImageCanvas] Force-init dimensions:', newDims, 'imageDrawInfo:', info)
+            console.log('[ImageCanvas] Force-init success:', newDims)
           } else {
             // If height is still 0, try using parent's computed height
             const parent = canvasContainer.parentElement
             if (parent) {
               const parentRect = parent.getBoundingClientRect()
               const parentStyle = window.getComputedStyle(parent)
-              addDebugLog(`Parent rect: ${parentRect.width}x${parentRect.height}, computed height: ${parentStyle.height}`)
               
               // Try using parent height minus toolbar if available
               if (parentRect.height > 0 && rect.height === 0) {
@@ -712,7 +699,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
                   { width: image.width, height: image.height }
                 )
                 setImageDrawInfo(info)
-                addDebugLog(`✅ Using estimated height: ${newDims.width}x${newDims.height}`)
                 return
               }
             }
@@ -720,17 +706,13 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             if (attempt < 10) {
               // Retry up to 10 times with increasing delays
               setTimeout(() => tryInit(attempt + 1), 100 * (attempt + 1))
-            } else {
-              addDebugLog(`❌ Failed after 10 attempts - container still ${rect.width}x${rect.height}`)
             }
           }
         }
         tryInit()
-      } else {
-        addDebugLog(`❌ Container ref is null`)
       }
     }
-  }, [image, canvasDimensions.width, canvasDimensions.height, imageDrawInfo, addDebugLog])
+  }, [image, canvasDimensions.width, canvasDimensions.height, imageDrawInfo])
 
   // Report transform state changes to parent for RulerOverlay
   useEffect(() => {
@@ -1462,23 +1444,261 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   const isActualSizeEnabled = !!(props.calibration?.pxPerInch && props.canvasSettings?.enabled && imageDrawInfo)
 
+  // Check if file is an image by extension or MIME type
+  const isImageFile = useCallback((file: File): boolean => {
+    // Check MIME type first
+    if (file.type && file.type.startsWith('image/')) {
+      return true
+    }
+    
+    // Check by file extension (handles HEIC, WebP, etc. that might have wrong MIME type)
+    const extension = file.name.toLowerCase().split('.').pop()
+    const imageExtensions = [
+      'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico',
+      'heic', 'heif', 'avif', 'tiff', 'tif', 'raw', 'cr2', 'nef', 'orf', 'sr2'
+    ]
+    
+    return imageExtensions.includes(extension || '')
+  }, [])
+
   // Handle direct file input for mobile/desktop "New Image" action
-  const handleDirectFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const file = input.files?.[0]
     if (!file) {
       return
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      console.error('[ImageCanvas] Invalid file type:', file.type, 'Expected image/*')
+    // Validate file type (by extension or MIME type)
+    if (!isImageFile(file)) {
+      console.error('[ImageCanvas] Invalid file type:', file.type, 'File:', file.name)
+      alert(`"${file.name}" is not a supported image format. Please use JPEG, PNG, WebP, HEIC, or other common image formats.`)
       input.value = ''
       return
     }
 
-    console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
-    const objectUrl = URL.createObjectURL(file)
+    let processedFile = file
+    
+    // Handle HEIC/HEIF conversion
+    const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                  file.name.toLowerCase().endsWith('.heif') ||
+                  file.type === 'image/heic' || 
+                  file.type === 'image/heif'
+    
+    if (isHeic) {
+      // Ensure we're in browser environment
+      if (typeof window === 'undefined' || typeof Blob === 'undefined') {
+        console.error('[ImageCanvas] HEIC conversion requires browser environment')
+        alert('HEIC conversion is not available in this environment. Please convert your image to JPEG first.')
+        input.value = ''
+        return
+      }
+
+      // Validate file size (heic2any may struggle with very large files)
+      const maxHeicSize = 50 * 1024 * 1024 // 50MB
+      if (file.size > maxHeicSize) {
+        alert(`HEIC file is too large (${Math.round(file.size / 1024 / 1024)}MB). Please convert to JPEG first or use a smaller file.`)
+        input.value = ''
+        return
+      }
+
+      try {
+        console.log('[ImageCanvas] Converting HEIC file...', file.name, file.size, 'bytes')
+        
+        // Dynamic import with error handling
+        let heic2any
+        try {
+          const heic2anyModule = await import('heic2any')
+          heic2any = heic2anyModule.default || heic2anyModule
+          
+          if (typeof heic2any !== 'function') {
+            throw new Error(`heic2any is not a function: ${typeof heic2any}`)
+          }
+        } catch (importErr) {
+          console.error('[ImageCanvas] Failed to import heic2any:', importErr)
+          const importErrorMsg = importErr instanceof Error 
+            ? importErr.message 
+            : String(importErr)
+          throw new Error(`Failed to load HEIC converter: ${importErrorMsg}`)
+        }
+
+        // Check WebAssembly support (heic2any requires it)
+        if (typeof WebAssembly === 'undefined') {
+          throw new Error('WebAssembly is not supported in this browser. HEIC conversion requires WebAssembly support.')
+        }
+
+        // Convert HEIC to JPEG with timeout
+        // Wrap in try-catch to catch any synchronous errors
+        let conversionPromise: Promise<Blob | Blob[]>
+        try {
+          console.log('[ImageCanvas] Calling heic2any with file:', {
+            name: file.name,
+            size: file.size,
+            type: file.type
+          })
+          
+          conversionPromise = heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.95
+          })
+          
+          if (!(conversionPromise instanceof Promise)) {
+            throw new Error(`heic2any did not return a Promise, got: ${typeof conversionPromise}`)
+          }
+          
+          console.log('[ImageCanvas] heic2any promise created successfully')
+        } catch (syncErr) {
+          console.error('[ImageCanvas] Synchronous error during heic2any call:', syncErr)
+          throw new Error(`Failed to start HEIC conversion: ${syncErr instanceof Error ? syncErr.message : String(syncErr)}`)
+        }
+
+        // Add timeout (30 seconds)
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('HEIC conversion timed out after 30 seconds')), 30000)
+        )
+
+        // Wrap conversion promise to capture any errors
+        const wrappedConversionPromise = conversionPromise.catch((conversionErr) => {
+          console.error('[ImageCanvas] Conversion promise rejected:', conversionErr)
+          console.error('[ImageCanvas] Conversion error type:', typeof conversionErr)
+          console.error('[ImageCanvas] Conversion error constructor:', conversionErr?.constructor?.name)
+          
+          // Deep inspection of the "empty" object
+          const allProps = conversionErr ? Object.getOwnPropertyNames(conversionErr) : [];
+          console.error('[ImageCanvas] Conversion error all properties:', allProps);
+          
+          // Try to extract error message
+          let errorMsg = 'HEIC conversion failed'
+          if (conversionErr instanceof Error) {
+            errorMsg = conversionErr.message || 'Unknown conversion error'
+          } else if (typeof conversionErr === 'string') {
+            errorMsg = conversionErr
+          } else if (conversionErr && typeof conversionErr === 'object') {
+            // Try to get message property or any descriptive property
+            const errObj = conversionErr as any
+            errorMsg = errObj.message || errObj.error || errObj.code || errObj.toString?.() || 'Conversion error (details unavailable)'
+          }
+          
+          throw new Error(`HEIC conversion failed: ${errorMsg}`)
+        })
+
+        let convertedBlob: Blob | Blob[]
+        try {
+          convertedBlob = await Promise.race([wrappedConversionPromise, timeoutPromise])
+          console.log('[ImageCanvas] Conversion completed successfully')
+        } catch (raceErr) {
+          // Check if it's the timeout or the actual conversion error
+          if (raceErr instanceof Error && raceErr.message.includes('timed out')) {
+            throw raceErr
+          }
+          // The error should already be wrapped with context from wrappedConversionPromise
+          console.error('[ImageCanvas] Error during Promise.race:', raceErr)
+          console.error('[ImageCanvas] Race error type:', typeof raceErr)
+          console.error('[ImageCanvas] Race error constructor:', raceErr?.constructor?.name)
+          
+          // Re-throw with more context if not already wrapped
+          if (raceErr instanceof Error) {
+            throw raceErr
+          } else {
+            throw new Error(`HEIC conversion failed: ${String(raceErr) || 'Unknown error during conversion'}`)
+          }
+        }
+
+        if (!convertedBlob) {
+          throw new Error('HEIC conversion returned no result')
+        }
+
+        // heic2any can return an array if multiple images are in the HEIC
+        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob
+
+        if (!blob) {
+          throw new Error('HEIC conversion returned null or undefined')
+        }
+
+        if (!(blob instanceof Blob)) {
+          throw new Error(`Invalid conversion result: expected Blob, got ${typeof blob} (${Object.prototype.toString.call(blob)})`)
+        }
+
+        if (blob.size === 0) {
+          throw new Error('HEIC conversion returned empty blob')
+        }
+
+        processedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
+          type: 'image/jpeg',
+        })
+        console.log('[ImageCanvas] HEIC converted to JPEG:', processedFile.size, 'bytes')
+      } catch (err) {
+        // Extract error information with more aggressive error extraction
+        let errorMessage = 'Unknown error'
+        let errorDetails: any = {}
+        
+        // Log the raw error first
+        console.error('[ImageCanvas] Raw error caught:', err)
+        console.error('[ImageCanvas] Error type:', typeof err)
+        console.error('[ImageCanvas] Error constructor:', err?.constructor?.name)
+        console.error('[ImageCanvas] Error keys:', err ? Object.keys(err) : 'no keys')
+        
+        if (err instanceof Error) {
+          errorMessage = err.message || 'Error without message'
+          errorDetails = {
+            message: err.message,
+            name: err.name,
+            stack: err.stack?.split('\n').slice(0, 10).join('\n') // More stack lines
+          }
+        } else if (typeof err === 'string') {
+          errorMessage = err
+          errorDetails = { error: err }
+        } else if (err && typeof err === 'object') {
+          // Try to extract properties from the error object
+          try {
+            const errObj = err as Record<string, any>
+            errorMessage = errObj.message || errObj.error || errObj.toString?.() || 'Object error'
+            errorDetails = {
+              ...errObj,
+              type: typeof err,
+              constructor: err.constructor?.name,
+              stringified: JSON.stringify(err, Object.getOwnPropertyNames(err))
+            }
+          } catch (extractErr) {
+            // If we can't extract, try to stringify with replacer
+            try {
+              errorMessage = JSON.stringify(err, (key, value) => {
+                if (value instanceof Error) {
+                  return { message: value.message, name: value.name, stack: value.stack }
+                }
+                return value
+              })
+            } catch {
+              errorMessage = `Conversion failed - error type: ${typeof err}, constructor: ${err?.constructor?.name || 'unknown'}`
+            }
+            errorDetails = { 
+              error: 'Non-serializable error object',
+              type: typeof err,
+              constructor: err?.constructor?.name
+            }
+          }
+        } else {
+          errorMessage = String(err) || 'Unknown error type'
+          errorDetails = { 
+            error: String(err),
+            type: typeof err
+          }
+        }
+        
+        console.error('[ImageCanvas] HEIC conversion failed - errorDetails:', errorDetails)
+        console.error('[ImageCanvas] HEIC conversion failed - errorMessage:', errorMessage)
+        console.error('[ImageCanvas] Full error object (direct):', err)
+        console.error('[ImageCanvas] Full error object (JSON):', JSON.stringify(err, null, 2))
+        
+        alert(`Failed to convert HEIC image.\n\nError: ${errorMessage}\n\nPlease try:\n1. Converting the image to JPEG using your device's Photos app\n2. Using a different image format\n3. Trying a smaller HEIC file (under 50MB)`)
+        input.value = ''
+        return
+      }
+    }
+
+    console.log('[ImageCanvas] Direct file input selected:', processedFile.name, processedFile.type, processedFile.size)
+    const objectUrl = URL.createObjectURL(processedFile)
     const img = new Image()
     
     // Cleanup function to revoke object URL
@@ -1489,7 +1709,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     img.onload = () => {
       const logMsg1 = `✅ Image loaded: ${img.width}x${img.height}, src: ${img.src.substring(0, 30)}`
       console.log('[ImageCanvas]', logMsg1)
-      addDebugLog(logMsg1)
       
       // Convert to data URL to preserve image source (blob URLs get revoked)
       // This ensures the fallback image can display even if canvas isn't ready
@@ -1501,24 +1720,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         ctx.drawImage(img, 0, 0)
         try {
           const dataUrl = canvas.toDataURL('image/png')
-          const oldSrc = img.src
           img.src = dataUrl
           const logMsg2 = `✅ Converted to data URL (${dataUrl.length} chars)`
           console.log('[ImageCanvas]', logMsg2)
-          addDebugLog(logMsg2)
         } catch (e) {
           const logMsg3 = `❌ Data URL conversion failed: ${e}`
           console.error('[ImageCanvas]', logMsg3)
-          addDebugLog(logMsg3)
           // Keep blob URL alive - don't revoke yet
         }
       } else {
         const logMsg4 = '❌ Failed to get canvas context'
         console.error('[ImageCanvas]', logMsg4)
-        addDebugLog(logMsg4)
       }
       
-      addDebugLog(`Calling onImageLoad, final src: ${img.src.substring(0, 30)}`)
       props.onImageLoad(img)
       // Don't revoke blob URL immediately - let it stay alive
       // cleanup() will be called when component unmounts or new image loads
@@ -1612,72 +1826,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       }
       const logMsg = `🔍 Render: ${image.width}x${image.height}, fallback=${shouldShowFallback}`
       console.log('[ImageCanvas]', logMsg, renderState)
-      addDebugLog(logMsg)
       
       // Log fallback condition details
       if (shouldShowFallback) {
-        addDebugLog(`🎨 FALLBACK: imageDrawInfo=${imageDrawInfo ? 'exists' : 'null'}, dims=${canvasDimensions.width}x${canvasDimensions.height}`)
-        addDebugLog(`   Condition: !imageDrawInfo=${!imageDrawInfo}, width=0=${canvasDimensions.width === 0}, height=0=${canvasDimensions.height === 0}`)
+        // console.log('[ImageCanvas] FALLBACK triggered');
       } else {
-        addDebugLog(`✅ Canvas ready: imageDrawInfo exists, dims=${canvasDimensions.width}x${canvasDimensions.height}`)
+        // console.log('[ImageCanvas] Canvas ready');
       }
     }
-  }, [image, surfaceImage, canvasDimensions, imageDrawInfo, addDebugLog])
+  }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
 
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
-      {/* On-screen debug panel - scrollable (toggle DEBUG_PANEL_ENABLED to show) */}
-      {DEBUG_PANEL_ENABLED && debugLogs.length > 0 && (
-        <div style={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          background: 'rgba(0, 0, 0, 0.95)',
-          color: 'white',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          width: '400px',
-          maxHeight: '500px',
-          zIndex: 9999,
-          pointerEvents: 'auto',
-          border: '2px solid #00ff00',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div style={{ 
-            fontWeight: 'bold', 
-            marginBottom: '8px', 
-            color: '#00ff00',
-            position: 'sticky',
-            top: 0,
-            background: 'rgba(0, 0, 0, 0.95)',
-            paddingBottom: '4px',
-            borderBottom: '1px solid #00ff00',
-            zIndex: 1
-          }}>
-            DEBUG LOGS ({debugLogs.length}) - Scroll ↓
-          </div>
-          <div style={{ 
-            overflowY: 'auto', 
-            overflowX: 'hidden',
-            maxHeight: '450px',
-            paddingRight: '4px',
-            WebkitOverflowScrolling: 'touch'
-          }}>
-            {debugLogs.map((log, i) => (
-              <div key={i} style={{ 
-                marginBottom: '4px', 
-                wordBreak: 'break-word',
-                lineHeight: '1.4'
-              }}>{log}</div>
-            ))}
-          </div>
-        </div>
-      )}
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
@@ -1731,80 +1892,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               width: '100%'
             }}
           >
-            {/* Fallback: Show image directly if imageDrawInfo isn't ready yet (mobile fix) */}
-            {image && (!imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0) && image.src && (
-              <img
-                  key={`fallback-img-${Date.now()}`}
-                  src={image.src}
-                  alt="Reference preview"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                  style={{ 
-                    zIndex: 10,
-                    backgroundColor: 'transparent',
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain'
-                  }}
-                  onLoad={(e) => {
-                    const img = e.currentTarget
-                    const logMsg = `✅ Fallback loaded: ${img.width}x${img.height}, src=${img.src.substring(0, 30)}`
-                    console.log('[ImageCanvas]', logMsg)
-                    addDebugLog(logMsg)
-                    
-                    // Force dimension check after image loads
-                    const canvasContainer = canvasContainerRef.current
-                    if (canvasContainer && image) {
-                      const rect = canvasContainer.getBoundingClientRect()
-                      addDebugLog(`Container rect: ${rect.width}x${rect.height}`)
-                      if (rect.width > 0 && rect.height > 0) {
-                        const newDims = {
-                          width: Math.floor(rect.width),
-                          height: Math.floor(rect.height),
-                        }
-                        setCanvasDimensions(newDims)
-                        const info = calculateFit(
-                          newDims,
-                          { width: image.width, height: image.height }
-                        )
-                        setImageDrawInfo(info)
-                        addDebugLog(`✅ Dimensions set: ${newDims.width}x${newDims.height}`)
-                        // Trigger canvas redraw
-                        setTimeout(() => {
-                          drawCanvas()
-                        }, 0)
-                      } else {
-                        addDebugLog(`⚠️ Container 0x0, retrying...`)
-                        setTimeout(() => {
-                          const retryRect = canvasContainer.getBoundingClientRect()
-                          if (retryRect.width > 0 && retryRect.height > 0) {
-                            const newDims = {
-                              width: Math.floor(retryRect.width),
-                              height: Math.floor(retryRect.height),
-                            }
-                            setCanvasDimensions(newDims)
-                            const info = calculateFit(
-                              newDims,
-                              { width: image.width, height: image.height }
-                            )
-                            setImageDrawInfo(info)
-                            addDebugLog(`✅ Retry success: ${newDims.width}x${newDims.height}`)
-                          } else {
-                            addDebugLog(`❌ Retry failed - still 0x0`)
-                          }
-                        }, 100)
-                      }
-                    } else {
-                      addDebugLog(`❌ Container ref missing`)
-                    }
-                  }}
-                  onError={(e) => {
-                    const errorMsg = `❌ Fallback failed: ${image?.src?.substring(0, 30) || 'no src'}`
-                    console.error('[ImageCanvas]', errorMsg, e)
-                    addDebugLog(errorMsg)
-                  }}
-                />
-            )}
             {/* Loading indicator */}
             {isAnalyzing && (
               <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-xs text-white/70 bg-gray-900/80 px-2 py-1 rounded">
@@ -1895,7 +1982,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             <input
               id={desktopFileInputId}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
               onChange={handleDirectFileInput}
               className="sr-only"
             />
@@ -1915,7 +2002,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
             <input
               id={mobileFileInputId}
               type="file"
-              accept="image/*"
+              accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
               onChange={handleDirectFileInput}
               className="sr-only"
             />
