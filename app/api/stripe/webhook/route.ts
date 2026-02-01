@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { unlockProLifetime, createUserDoc } from '@/lib/db/userTier'
+import { unlockProLifetime } from '@/lib/db/userTier'
 import { sendEmail } from '@/lib/email/service'
 import { getUpgradeConfirmationEmail } from '@/lib/email/templates'
 import { validateServerEnv } from '@/lib/env-validator'

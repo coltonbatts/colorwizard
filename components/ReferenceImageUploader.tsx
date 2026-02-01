@@ -72,8 +72,8 @@ export function ReferenceImageUploader({
                     } else if (typeof conversionErr === 'string') {
                         errorMsg = conversionErr;
                     } else if (conversionErr && typeof conversionErr === 'object') {
-                        const errObj = conversionErr as any;
-                        errorMsg = errObj.message || errObj.error || errObj.code || errObj.toString?.() || 'Conversion error (details unavailable)';
+                        const errObj = conversionErr as Record<string, unknown>;
+                        errorMsg = (errObj.message as string) || (errObj.error as string) || (errObj.code as string) || errObj.toString?.() || 'Conversion error (details unavailable)';
                     }
                     
                     throw new Error(`HEIC conversion failed: ${errorMsg}`);

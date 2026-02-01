@@ -1,5 +1,4 @@
 import { DMCMatch } from '../dmcFloss'
-import { SpectralRecipe } from '../spectral/types'
 
 /**
  * Simplified paint match for card display

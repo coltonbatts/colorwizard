@@ -134,8 +134,8 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             errorMsg = conversionErr;
                         } else if (conversionErr && typeof conversionErr === 'object') {
                             // Try to get message property or any descriptive property
-                            const errObj = conversionErr as any;
-                            errorMsg = errObj.message || errObj.error || errObj.code || errObj.toString?.() || 'Conversion error (details unavailable)';
+                            const errObj = conversionErr as Record<string, unknown>;
+                            errorMsg = (errObj.message as string) || (errObj.error as string) || (errObj.code as string) || errObj.toString?.() || 'Conversion error (details unavailable)';
                         }
                         
                         throw new Error(`HEIC conversion failed: ${errorMsg}`);
@@ -189,12 +189,12 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                 } catch (err) {
                     // Extract error information with more aggressive error extraction
                     let errorMessage = 'Unknown error';
-                    let errorDetails: any = {};
+                    let errorDetails: Record<string, unknown> = {};
                     
                     // Log the raw error first
                     console.error('[ImageDropzone] Raw error caught:', err);
                     console.error('[ImageDropzone] Error type:', typeof err);
-                    console.error('[ImageDropzone] Error constructor:', err?.constructor?.name);
+                    console.error('[ImageDropzone] Error constructor:', (err as { constructor?: { name?: string } })?.constructor?.name);
                     console.error('[ImageDropzone] Error keys:', err ? Object.keys(err) : 'no keys');
                     
                     if (err instanceof Error) {
@@ -210,15 +210,15 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                     } else if (err && typeof err === 'object') {
                         // Try to extract properties from the error object
                         try {
-                            const errObj = err as Record<string, any>;
-                            errorMessage = errObj.message || errObj.error || errObj.toString?.() || 'Object error';
+                            const errObj = err as Record<string, unknown>;
+                            errorMessage = (errObj.message as string) || (errObj.error as string) || errObj.toString?.() || 'Object error';
                             errorDetails = {
                                 ...errObj,
                                 type: typeof err,
-                                constructor: err.constructor?.name,
+                                constructor: (err as { constructor?: { name?: string } }).constructor?.name,
                                 stringified: JSON.stringify(err, Object.getOwnPropertyNames(err))
                             };
-                        } catch (extractErr) {
+                        } catch {
                             // If we can't extract, try to stringify with replacer
                             try {
                                 errorMessage = JSON.stringify(err, (key, value) => {
@@ -228,12 +228,12 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                                     return value;
                                 });
                             } catch {
-                                errorMessage = `Conversion failed - error type: ${typeof err}, constructor: ${err?.constructor?.name || 'unknown'}`;
+                                errorMessage = `Conversion failed - error type: ${typeof err}, constructor: ${(err as { constructor?: { name?: string } })?.constructor?.name || 'unknown'}`;
                             }
                             errorDetails = { 
                                 error: 'Non-serializable error object',
                                 type: typeof err,
-                                constructor: err?.constructor?.name
+                                constructor: (err as { constructor?: { name?: string } })?.constructor?.name
                             };
                         }
                     } else {

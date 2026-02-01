@@ -61,9 +61,7 @@ export default function Home() {
   const activeHighlightColor = useStore(state => state.activeHighlightColor)
   const setActiveHighlightColor = useStore(state => state.setActiveHighlightColor)
   const highlightTolerance = useStore(state => state.highlightTolerance)
-  const setHighlightTolerance = useStore(state => state.setHighlightTolerance)
   const highlightMode = useStore(state => state.highlightMode)
-  const setHighlightMode = useStore(state => state.setHighlightMode)
   const image = useStore(state => state.image)
   const setImage = useStore(state => state.setImage)
   const activeTab = useStore(state => state.activeTab)
@@ -77,9 +75,7 @@ export default function Home() {
   const valueScaleSettings = useStore(state => state.valueScaleSettings)
   const setValueScaleSettings = useStore(state => state.setValueScaleSettings)
   const histogramBins = useStore(state => state.histogramBins)
-  const setHistogramBins = useStore(state => state.setHistogramBins)
   const valueScaleResult = useStore(state => state.valueScaleResult)
-  const setValueScaleResult = useStore(state => state.setValueScaleResult)
   const palettes = useStore(state => state.palettes)
   const createPalette = useStore(state => state.createPalette)
   const updatePalette = useStore(state => state.updatePalette)
@@ -195,16 +191,8 @@ export default function Home() {
   const canvasContainerRef = useRef<HTMLDivElement>(null)
 
   const {
-    labBuffer,
-    valueBuffer,
-    sortedLuminances,
     valueScaleResult: analyzerValueScaleResult,
     histogramBins: analyzerHistogramBins,
-    isAnalyzing,
-    breakdownBuffers,
-    generateBreakdown,
-    isGeneratingBreakdown,
-    generateHighlightOverlay
   } = useImageAnalyzer(image, valueScaleSettings)
 
   // Use the hook's results to update the store

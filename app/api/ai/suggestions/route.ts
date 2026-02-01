@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getColorHarmonies, getChromaLevel, getValueLevel, getMixingGuidance, RGB } from '@/lib/colorTheory';
+import { getColorHarmonies, getChromaLevel, getValueLevel, getMixingGuidance } from '@/lib/colorTheory';
 
 /**
  * AI Suggestions API - Generates professional color theory suggestions.
