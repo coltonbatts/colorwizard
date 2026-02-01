@@ -11,10 +11,11 @@ import { ZoomControlsBar, GridControlsPanel, ImageDropzone } from '@/components/
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
-import ProcessSlider from '@/components/ProcessSlider'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import { useStore } from '@/lib/store/useStore'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
+import { createSourceBuffer } from '@/lib/imagePipeline'
+import { DebugOverlay } from '@/components/DebugOverlay'
 
 interface ColorData {
   hex: string
@@ -28,7 +29,7 @@ interface ColorData {
   }
 }
 
-import { rgbToLab, deltaE, rgbToHsl } from '@/lib/colorUtils'
+import { rgbToHsl } from '@/lib/colorUtils'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
 // Define RGB interface locally if not exported
@@ -91,12 +92,10 @@ const DRAG_THRESHOLD = 3
 
 // Highlight overlay alpha values
 const HIGHLIGHT_ALPHA_SOLID = 180
-const HIGHLIGHT_ALPHA_MAX = 255
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
   const breakdownValue = useStore(state => state.breakdownValue)
-  const setBreakdownValue = useStore(state => state.setBreakdownValue)
   const valueModeEnabled = useStore(state => state.valueModeEnabled)
   const surfaceImage = useStore(state => state.surfaceImage)
   const gridOpacity = useStore(state => state.gridOpacity)
@@ -109,8 +108,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
   const breakdownCanvasRef = useRef<HTMLCanvasElement>(null)
+  const sourceBufferRef = useRef<HTMLCanvasElement | null>(null)
   const desktopFileInputId = useId()
   const mobileFileInputId = useId()
+
+  const debugModeEnabled = useStore(state => state.debugModeEnabled)
+  const [metrics, setMetrics] = useState<{
+    originalWidth: number;
+    originalHeight: number;
+    bufferWidth: number;
+    bufferHeight: number;
+    displayWidth: number;
+    displayHeight: number;
+    dpr: number;
+  } | null>(null)
 
   const [surfaceImageElement, setSurfaceImageElement] = useState<HTMLImageElement | null>(null)
 
@@ -139,7 +150,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   } = useImageAnalyzer(image, valueScaleSettings)
 
   // Use the hook's value scale result, but allow local override for settings changes
-  const [localValueScaleResult, setLocalValueScaleResult] = useState<ValueScaleResult | null>(null)
+  const [localValueScaleResult] = useState<ValueScaleResult | null>(null)
   const valueScaleResult = localValueScaleResult ?? analyzerValueScaleResult
 
   // Report histogram and value scale to parent when they change
@@ -162,6 +173,40 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
+
+  // Mobile Stabilization: Create source buffer when image changes
+  // Moved after canvasDimensions state to fix hoisting error
+  useEffect(() => {
+    if (!image) {
+      sourceBufferRef.current = null
+      setMetrics(null)
+      return
+    }
+
+    const initSourceBuffer = async () => {
+      try {
+        const buffer = await createSourceBuffer(image)
+        sourceBufferRef.current = buffer
+
+        // Update metrics for debug overlay
+        setMetrics({
+          originalWidth: image.width,
+          originalHeight: image.height,
+          bufferWidth: buffer.width,
+          bufferHeight: buffer.height,
+          displayWidth: canvasDimensions.width,
+          displayHeight: canvasDimensions.height,
+          dpr: window.devicePixelRatio || 1
+        })
+      } catch (err) {
+        console.error('[ImageCanvas] Source buffer creation failed:', err)
+        // Fallback to original image if buffer creation fails
+        sourceBufferRef.current = null
+      }
+    }
+
+    initSourceBuffer()
+  }, [image, canvasDimensions])
 
   // Value Mode overrides the canvas preview into grayscale
   useEffect(() => {
@@ -359,8 +404,12 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           activeBreakdownStep === 'Spectral Glaze' ||
           !currentBuffer;
 
-        if (showBaseUnderneath && image) {
-          ctx.drawImage(image, x, y, width, height)
+        if (showBaseUnderneath) {
+          // Mobile Stabilization: Draw from source buffer if available, fallback to image
+          const source = sourceBufferRef.current || image
+          if (source) {
+            ctx.drawImage(source as CanvasImageSource, x, y, width, height)
+          }
         }
 
         if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
@@ -639,12 +688,45 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const canvasX = (e.clientX - rect.left) * scaleX
     const canvasY = (e.clientY - rect.top) * scaleY
 
-    const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
-    const r = pixelData[0]
-    const g = pixelData[1]
-    const b = pixelData[2]
+    // Mobile Stabilization: Sample from source buffer for 1:1 pixel accuracy
+    const source = sourceBufferRef.current
+    let r, g, b, a;
 
-    if (pixelData[3] === 0) return
+    if (source) {
+      // Calculate coordinates in source buffer space
+      const { x, y, width, height } = imageDrawInfo!
+
+      // 1. Transform back to unpanned, unzoomed image-draw-info space
+      const screenRelX = (canvasX - panOffset.x) / zoomLevel
+      const screenRelY = (canvasY - panOffset.y) / zoomLevel
+
+      // 2. Transform to normalized 0-1 image coordinates
+      const normX = (screenRelX - x) / width
+      const normY = (screenRelY - y) / height
+
+      if (normX < 0 || normX > 1 || normY < 0 || normY > 1) return
+
+      // 3. Map to source buffer pixels
+      const sampleX = Math.floor(normX * source.width)
+      const sampleY = Math.floor(normY * source.height)
+
+      const sourceCtx = source.getContext('2d')
+      if (!sourceCtx) return
+      const pixel = sourceCtx.getImageData(sampleX, sampleY, 1, 1).data
+      r = pixel[0]
+      g = pixel[1]
+      b = pixel[2]
+      a = pixel[3]
+    } else {
+      // Fallback to display canvas (less accurate if filtered/scaled)
+      const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
+      r = pixelData[0]
+      g = pixelData[1]
+      b = pixelData[2]
+      a = pixelData[3]
+    }
+
+    if (a === 0) return
 
     const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
     const hsl = rgbToHsl(r, g, b)
@@ -1200,6 +1282,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
+      <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (

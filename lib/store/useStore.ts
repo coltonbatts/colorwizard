@@ -101,6 +101,9 @@ interface ColorState {
     // Modal State
     showCanvasSettingsModal: boolean
 
+    // Debug State
+    debugModeEnabled: boolean
+
     // Actions
     setSampledColor: (color: ColorState['sampledColor']) => void
     setLastSampleTime: (time: number) => void
@@ -167,6 +170,9 @@ interface ColorState {
 
     // Modal actions
     setShowCanvasSettingsModal: (show: boolean) => void
+
+    // Debug actions
+    setDebugModeEnabled: (enabled: boolean) => void
 
     // Derived / Complex Actions
     pinColor: (newPin: PinnedColor) => void
@@ -242,6 +248,9 @@ export const useStore = create<ColorState>()(
             // Modal State
             showCanvasSettingsModal: false,
 
+            // Debug State
+            debugModeEnabled: false,
+
             setSampledColor: (sampledColor) => {
                 const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768
                 if (isMobile && sampledColor) {
@@ -259,7 +268,7 @@ export const useStore = create<ColorState>()(
             setImage: (image) => {
                 const currentImage = get().image;
                 if (image === currentImage) return;
-                
+
                 console.log('[useStore] setImage called with:', image ? `${image.width}x${image.height}` : 'null');
                 set({ image, referenceImage: image ? image.src : null });
             },
@@ -367,6 +376,10 @@ export const useStore = create<ColorState>()(
             // Modal actions
             setShowCanvasSettingsModal: (showCanvasSettingsModal) => set({ showCanvasSettingsModal }),
 
+            // Debug actions
+            setDebugModeEnabled: (debugModeEnabled) => set({ debugModeEnabled }),
+
+            // Derived / Complex Actions
             pinColor: (newPin) => set((state) => {
                 const filtered = state.pinnedColors.filter(p => p.hex !== newPin.hex)
                 const next = [newPin, ...filtered].slice(0, 30)
@@ -414,6 +427,7 @@ export const useStore = create<ColorState>()(
                 sidebarWidth: state.sidebarWidth,
                 simpleMode: state.simpleMode,
                 canvasSettings: state.canvasSettings,
+                debugModeEnabled: state.debugModeEnabled,
                 // Persist grid settings
                 rulerGridEnabled: state.rulerGridEnabled,
                 rulerGridSpacing: state.rulerGridSpacing,

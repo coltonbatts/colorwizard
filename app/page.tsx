@@ -144,7 +144,7 @@ export default function Home() {
     if (referenceImage && !image && referenceImage !== lastProcessedRef.current) {
       console.log('[Home] Loading reference image from string...')
       lastProcessedRef.current = referenceImage
-      
+
       const img = new Image()
       img.crossOrigin = "anonymous"
       img.src = referenceImage
@@ -432,6 +432,19 @@ export default function Home() {
 
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Toggle debug mode with Alt+D
+      if (e.altKey && e.key.toLowerCase() === 'd') {
+        const current = useStore.getState().debugModeEnabled
+        useStore.getState().setDebugModeEnabled(!current)
+        console.log('[Home] Debug mode:', !current)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <main className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-white overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}>
