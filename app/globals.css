@@ -694,7 +694,7 @@ body {
 
 @media (max-width: 768px) {
     :root {
-        --mobile-preview-height: 65vh;
+        --mobile-preview-height: 70vh;
         --mobile-touch-target: 44px;
         --sidebar-width: 100%;
         --sidebar-collapsed-width: 0;
@@ -720,22 +720,26 @@ body {
         overflow-y: auto;
     }
 
-    /* Preview area */
+    /* Preview area - mobile-first: ensure at least 70% of screen */
     .mobile-preview-area {
         flex: 1 1 auto !important;
-        max-height: 65dvh;
+        min-height: 70dvh !important;
+        max-height: 70dvh !important;
+        height: 70dvh !important;
         padding: 0 !important;
         overflow: hidden;
         width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
     }
 
-    /* Controls area */
+    /* Controls area - takes remaining 30% of screen */
     .mobile-controls-area {
-        flex: 1 1 auto !important;
+        flex: 0 0 auto !important;
         width: 100% !important;
         min-width: 100% !important;
-        max-height: calc(100vh - var(--mobile-preview-height));
-        max-height: calc(100dvh - var(--mobile-preview-height));
+        max-height: calc(100vh - 70vh);
+        max-height: calc(100dvh - 70dvh);
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
@@ -812,6 +816,46 @@ body {
 
     main.flex:has(.mobile-hero-dropzone) .mobile-controls-area {
         display: none !important;
+    }
+
+    /* Canvas viewport - ensure it has height on mobile */
+    .canvas-viewport {
+        height: calc(70dvh - 120px) !important;
+        min-height: calc(70dvh - 120px) !important;
+        flex: 1 1 auto !important;
+    }
+
+    /* Ensure ALL flex containers in the chain have height - critical for mobile */
+    .mobile-preview-area > div.flex-1 {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        flex: 1 1 auto !important;
+    }
+
+    .mobile-preview-area > div.flex-1 > div.flex-1 {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        flex: 1 1 auto !important;
+    }
+
+    /* Main canvas area container - the one with ref={canvasContainerRef} */
+    .mobile-preview-area > div.flex-1 > div.flex-1 > div.flex-1.relative {
+        height: calc(70dvh - 120px) !important;
+        min-height: calc(70dvh - 120px) !important;
+        flex: 1 1 auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Canvas viewport inside the relative container */
+    .mobile-preview-area .canvas-viewport {
+        height: 100% !important;
+        min-height: 100% !important;
+        flex: 1 1 auto !important;
     }
 }
 

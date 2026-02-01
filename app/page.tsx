@@ -493,7 +493,11 @@ export default function Home() {
         <HighlightControls />
 
         {/* Main Canvas Area */}
-        <div className="flex-1 min-h-0 relative" ref={canvasContainerRef}>
+        <div 
+          className="flex-1 min-h-0 relative" 
+          ref={canvasContainerRef}
+          style={{ height: '100%', minHeight: '100%' }}
+        >
           <ErrorBoundary
             fallback={({ resetError }) => (
               <CanvasErrorFallback

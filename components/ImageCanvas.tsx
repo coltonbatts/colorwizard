@@ -122,6 +122,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
   const [minimapVisible, setMinimapVisible] = useState(false)
   const minimapTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // On-screen debug panel (toggleable - set to true to enable)
+  const DEBUG_PANEL_ENABLED = false
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const addDebugLog = useCallback((message: string) => {
+    if (DEBUG_PANEL_ENABLED) {
+      setDebugLogs(prev => [...prev.slice(-9), `${new Date().toLocaleTimeString()}: ${message}`])
+    }
+  }, [])
 
   const showMinimap = useCallback(() => {
     setMinimapVisible(true)
@@ -182,7 +191,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   }, [valueScaleResult, props.onValueScaleResult])
 
   // Canvas dimensions state
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 1000, height: 700 })
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
 
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
@@ -344,7 +353,20 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, rectWidth, rectHeight)
 
-    if ((!image && !surfaceImageElement) || !imageDrawInfo) return
+    if ((!image && !surfaceImageElement) || !imageDrawInfo) {
+      // Debug: log why canvas isn't drawing
+      if (image && !imageDrawInfo) {
+        const msg = `drawCanvas skipped: imageDrawInfo is null, dims=${canvasDimensions.width}x${canvasDimensions.height}`
+        console.warn('[ImageCanvas]', msg)
+        addDebugLog(`⚠️ ${msg}`)
+      }
+      return
+    }
+    
+    // Debug: log when canvas IS drawing
+    if (image && imageDrawInfo) {
+      addDebugLog(`🎨 Drawing canvas: ${canvasDimensions.width}x${canvasDimensions.height}, imageDrawInfo exists`)
+    }
 
     // Save context state
     ctx.save()
@@ -524,13 +546,36 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     const canvasContainer = canvasContainerRef.current
     if (!canvasContainer) return
 
+    // Initialize dimensions immediately (critical for mobile)
+    const updateDimensions = () => {
+      const rect = canvasContainer.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) {
+        setCanvasDimensions({
+          width: Math.floor(rect.width),
+          height: Math.floor(rect.height),
+        })
+        return true
+      }
+      return false
+    }
+
+    // Try immediate update
+    if (!updateDimensions()) {
+      // If dimensions are 0, wait for next frame (mobile layout might be delayed)
+      requestAnimationFrame(() => {
+        updateDimensions()
+      })
+    }
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
-        setCanvasDimensions({
-          width: Math.floor(width),
-          height: Math.floor(height),
-        })
+        if (width > 0 && height > 0) {
+          setCanvasDimensions({
+            width: Math.floor(width),
+            height: Math.floor(height),
+          })
+        }
       }
     })
 
@@ -542,6 +587,51 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   useEffect(() => {
     const mainImg = image || surfaceImageElement
     if (!mainImg) return
+    
+    // Wait for canvas dimensions to be set (critical for mobile)
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) {
+      // Force a re-check by reading container dimensions directly
+      const canvasContainer = canvasContainerRef.current
+      if (canvasContainer) {
+        const rect = canvasContainer.getBoundingClientRect()
+        if (rect.width > 0 && rect.height > 0) {
+          const newDims = {
+            width: Math.floor(rect.width),
+            height: Math.floor(rect.height),
+          }
+          setCanvasDimensions(newDims)
+          // Calculate imageDrawInfo immediately with new dimensions
+          const info = calculateFit(
+            newDims,
+            { width: mainImg.width, height: mainImg.height }
+          )
+          setImageDrawInfo(info)
+          setZoomLevel(1)
+          setPanOffset({ x: 0, y: 0 })
+          return
+        } else {
+          // If still 0, wait one more frame for layout
+          requestAnimationFrame(() => {
+            const retryRect = canvasContainer.getBoundingClientRect()
+            if (retryRect.width > 0 && retryRect.height > 0) {
+              const newDims = {
+                width: Math.floor(retryRect.width),
+                height: Math.floor(retryRect.height),
+              }
+              setCanvasDimensions(newDims)
+              const info = calculateFit(
+                newDims,
+                { width: mainImg.width, height: mainImg.height }
+              )
+              setImageDrawInfo(info)
+              setZoomLevel(1)
+              setPanOffset({ x: 0, y: 0 })
+            }
+          })
+        }
+      }
+      return
+    }
 
     const info = calculateFit(
       { width: canvasDimensions.width, height: canvasDimensions.height },
@@ -550,12 +640,17 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setImageDrawInfo(info)
     setZoomLevel(1)
     setPanOffset({ x: 0, y: 0 })
-  }, [image, surfaceImageElement])
+  }, [image, surfaceImageElement, canvasDimensions])
 
   // Update image draw info on resize without resetting zoom/pan
   useEffect(() => {
     const mainImg = image || surfaceImageElement
     if (!mainImg) return
+    
+    // Skip if dimensions are invalid
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) {
+      return
+    }
 
     const info = calculateFit(
       { width: canvasDimensions.width, height: canvasDimensions.height },
@@ -568,6 +663,74 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   useEffect(() => {
     drawCanvas()
   }, [drawCanvas, props.highlightMode, props.highlightColor, props.highlightTolerance])
+
+  // Force dimension initialization when image is set (mobile fix)
+  useEffect(() => {
+    if (!image) return
+    
+    // If dimensions are 0 or imageDrawInfo is missing, force initialization
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0 || !imageDrawInfo) {
+      const canvasContainer = canvasContainerRef.current
+      if (canvasContainer) {
+        // Try multiple times with delays to catch layout
+        const tryInit = (attempt = 0) => {
+          const rect = canvasContainer.getBoundingClientRect()
+          addDebugLog(`Attempt ${attempt}: Container rect = ${rect.width}x${rect.height}`)
+          
+          if (rect.width > 0 && rect.height > 0) {
+            const newDims = {
+              width: Math.floor(rect.width),
+              height: Math.floor(rect.height),
+            }
+            setCanvasDimensions(newDims)
+            const info = calculateFit(
+              newDims,
+              { width: image.width, height: image.height }
+            )
+            setImageDrawInfo(info)
+            addDebugLog(`✅ Force-init success: ${newDims.width}x${newDims.height}`)
+            console.log('[ImageCanvas] Force-init dimensions:', newDims, 'imageDrawInfo:', info)
+          } else {
+            // If height is still 0, try using parent's computed height
+            const parent = canvasContainer.parentElement
+            if (parent) {
+              const parentRect = parent.getBoundingClientRect()
+              const parentStyle = window.getComputedStyle(parent)
+              addDebugLog(`Parent rect: ${parentRect.width}x${parentRect.height}, computed height: ${parentStyle.height}`)
+              
+              // Try using parent height minus toolbar if available
+              if (parentRect.height > 0 && rect.height === 0) {
+                // Estimate: parent height minus toolbar (~60px)
+                const estimatedHeight = Math.max(100, parentRect.height - 100)
+                const newDims = {
+                  width: Math.floor(rect.width || parentRect.width),
+                  height: Math.floor(estimatedHeight),
+                }
+                setCanvasDimensions(newDims)
+                const info = calculateFit(
+                  newDims,
+                  { width: image.width, height: image.height }
+                )
+                setImageDrawInfo(info)
+                addDebugLog(`✅ Using estimated height: ${newDims.width}x${newDims.height}`)
+                return
+              }
+            }
+            
+            if (attempt < 10) {
+              // Retry up to 10 times with increasing delays
+              setTimeout(() => tryInit(attempt + 1), 100 * (attempt + 1))
+            } else {
+              addDebugLog(`❌ Failed after 10 attempts - container still ${rect.width}x${rect.height}`)
+            }
+          }
+        }
+        tryInit()
+      } else {
+        addDebugLog(`❌ Container ref is null`)
+      }
+    }
+  }, [image, canvasDimensions.width, canvasDimensions.height, imageDrawInfo, addDebugLog])
 
   // Report transform state changes to parent for RulerOverlay
   useEffect(() => {
@@ -1303,19 +1466,116 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   const handleDirectFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const file = input.files?.[0]
-    if (file) {
-      console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
-      const objectUrl = URL.createObjectURL(file)
-      const img = new Image()
-      img.onload = () => {
-        console.log('[ImageCanvas] Direct image loaded successfully')
-        props.onImageLoad(img)
-      }
-      img.onerror = () => {
-        console.error('[ImageCanvas] Direct image load error')
-      }
-      img.src = objectUrl
+    if (!file) {
+      return
     }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      console.error('[ImageCanvas] Invalid file type:', file.type, 'Expected image/*')
+      input.value = ''
+      return
+    }
+
+    console.log('[ImageCanvas] Direct file input selected:', file.name, file.type, file.size)
+    const objectUrl = URL.createObjectURL(file)
+    const img = new Image()
+    
+    // Cleanup function to revoke object URL
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl)
+    }
+
+    img.onload = () => {
+      const logMsg1 = `✅ Image loaded: ${img.width}x${img.height}, src: ${img.src.substring(0, 30)}`
+      console.log('[ImageCanvas]', logMsg1)
+      addDebugLog(logMsg1)
+      
+      // Convert to data URL to preserve image source (blob URLs get revoked)
+      // This ensures the fallback image can display even if canvas isn't ready
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(img, 0, 0)
+        try {
+          const dataUrl = canvas.toDataURL('image/png')
+          const oldSrc = img.src
+          img.src = dataUrl
+          const logMsg2 = `✅ Converted to data URL (${dataUrl.length} chars)`
+          console.log('[ImageCanvas]', logMsg2)
+          addDebugLog(logMsg2)
+        } catch (e) {
+          const logMsg3 = `❌ Data URL conversion failed: ${e}`
+          console.error('[ImageCanvas]', logMsg3)
+          addDebugLog(logMsg3)
+          // Keep blob URL alive - don't revoke yet
+        }
+      } else {
+        const logMsg4 = '❌ Failed to get canvas context'
+        console.error('[ImageCanvas]', logMsg4)
+        addDebugLog(logMsg4)
+      }
+      
+      addDebugLog(`Calling onImageLoad, final src: ${img.src.substring(0, 30)}`)
+      props.onImageLoad(img)
+      // Don't revoke blob URL immediately - let it stay alive
+      // cleanup() will be called when component unmounts or new image loads
+      
+      // Force dimension initialization after image loads (mobile fix)
+      requestAnimationFrame(() => {
+        const canvasContainer = canvasContainerRef.current
+        if (canvasContainer) {
+          const rect = canvasContainer.getBoundingClientRect()
+          if (rect.width > 0 && rect.height > 0) {
+            const newDims = {
+              width: Math.floor(rect.width),
+              height: Math.floor(rect.height),
+            }
+            setCanvasDimensions(newDims)
+            const info = calculateFit(
+              newDims,
+              { width: img.width, height: img.height }
+            )
+            setImageDrawInfo(info)
+            console.log('[ImageCanvas] Dimensions initialized:', newDims, 'imageDrawInfo:', info)
+            // Now safe to revoke blob URL since we have data URL
+            cleanup()
+          } else {
+            // Retry if dimensions aren't ready
+            setTimeout(() => {
+              const retryRect = canvasContainer.getBoundingClientRect()
+              if (retryRect.width > 0 && retryRect.height > 0) {
+                const newDims = {
+                  width: Math.floor(retryRect.width),
+                  height: Math.floor(retryRect.height),
+                }
+                setCanvasDimensions(newDims)
+                const info = calculateFit(
+                  newDims,
+                  { width: img.width, height: img.height }
+                )
+                setImageDrawInfo(info)
+                cleanup()
+              }
+            }, 100)
+          }
+        }
+      })
+    }
+    
+    img.onerror = (error) => {
+      console.error('[ImageCanvas] Direct image load error:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        error: error
+      })
+      cleanup()
+    }
+    
+    img.src = objectUrl
     input.value = ''
   }, [props.onImageLoad])
 
@@ -1326,13 +1586,102 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     return 'crosshair'
   }
 
+  // Debug logging for mobile issue
+  useEffect(() => {
+    if (image) {
+      const shouldShowFallback = !imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0
+      const renderState = {
+        hasImage: !!image,
+        imageSize: image ? `${image.width}x${image.height}` : 'null',
+        imageSrc: image.src?.substring(0, 50),
+        imageSrcType: image.src?.startsWith('data:') ? 'data URL' : image.src?.startsWith('blob:') ? 'blob URL' : 'other',
+        imageComplete: image.complete,
+        imageNaturalSize: `${image.naturalWidth}x${image.naturalHeight}`,
+        hasSurfaceImage: !!surfaceImage,
+        canvasDimensions,
+        imageDrawInfoValue: imageDrawInfo,
+        hasImageDrawInfo: !!imageDrawInfo,
+        containerRefExists: !!containerRef.current,
+        canvasContainerRefExists: !!canvasContainerRef.current,
+        shouldShowFallback,
+        conditionBreakdown: {
+          '!imageDrawInfo': !imageDrawInfo,
+          'width === 0': canvasDimensions.width === 0,
+          'height === 0': canvasDimensions.height === 0
+        }
+      }
+      const logMsg = `🔍 Render: ${image.width}x${image.height}, fallback=${shouldShowFallback}`
+      console.log('[ImageCanvas]', logMsg, renderState)
+      addDebugLog(logMsg)
+      
+      // Log fallback condition details
+      if (shouldShowFallback) {
+        addDebugLog(`🎨 FALLBACK: imageDrawInfo=${imageDrawInfo ? 'exists' : 'null'}, dims=${canvasDimensions.width}x${canvasDimensions.height}`)
+        addDebugLog(`   Condition: !imageDrawInfo=${!imageDrawInfo}, width=0=${canvasDimensions.width === 0}, height=0=${canvasDimensions.height === 0}`)
+      } else {
+        addDebugLog(`✅ Canvas ready: imageDrawInfo exists, dims=${canvasDimensions.width}x${canvasDimensions.height}`)
+      }
+    }
+  }, [image, surfaceImage, canvasDimensions, imageDrawInfo, addDebugLog])
+
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
+      {/* On-screen debug panel - scrollable (toggle DEBUG_PANEL_ENABLED to show) */}
+      {DEBUG_PANEL_ENABLED && debugLogs.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          background: 'rgba(0, 0, 0, 0.95)',
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          width: '400px',
+          maxHeight: '500px',
+          zIndex: 9999,
+          pointerEvents: 'auto',
+          border: '2px solid #00ff00',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div style={{ 
+            fontWeight: 'bold', 
+            marginBottom: '8px', 
+            color: '#00ff00',
+            position: 'sticky',
+            top: 0,
+            background: 'rgba(0, 0, 0, 0.95)',
+            paddingBottom: '4px',
+            borderBottom: '1px solid #00ff00',
+            zIndex: 1
+          }}>
+            DEBUG LOGS ({debugLogs.length}) - Scroll ↓
+          </div>
+          <div style={{ 
+            overflowY: 'auto', 
+            overflowX: 'hidden',
+            maxHeight: '450px',
+            paddingRight: '4px',
+            WebkitOverflowScrolling: 'touch'
+          }}>
+            {debugLogs.map((log, i) => (
+              <div key={i} style={{ 
+                marginBottom: '4px', 
+                wordBreak: 'break-word',
+                lineHeight: '1.4'
+              }}>{log}</div>
+            ))}
+          </div>
+        </div>
+      )}
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col" style={{ height: '100%', minHeight: '100%' }}>
           {/* Zoom Controls Bar */}
           <ZoomControlsBar
             zoomLevel={zoomLevel}
@@ -1376,13 +1725,85 @@ export default function ImageCanvas(props: ImageCanvasProps) {
           <div
             ref={canvasContainerRef}
             className="canvas-viewport flex-1 relative overflow-hidden md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
+            style={{
+              height: '100%',
+              minHeight: '100%',
+              width: '100%'
+            }}
           >
-            {image && (!imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0) && (
+            {/* Fallback: Show image directly if imageDrawInfo isn't ready yet (mobile fix) */}
+            {image && (!imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0) && image.src && (
               <img
-                src={image.src}
-                alt="Reference preview"
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              />
+                  key={`fallback-img-${Date.now()}`}
+                  src={image.src}
+                  alt="Reference preview"
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                  style={{ 
+                    zIndex: 10,
+                    backgroundColor: 'transparent',
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain'
+                  }}
+                  onLoad={(e) => {
+                    const img = e.currentTarget
+                    const logMsg = `✅ Fallback loaded: ${img.width}x${img.height}, src=${img.src.substring(0, 30)}`
+                    console.log('[ImageCanvas]', logMsg)
+                    addDebugLog(logMsg)
+                    
+                    // Force dimension check after image loads
+                    const canvasContainer = canvasContainerRef.current
+                    if (canvasContainer && image) {
+                      const rect = canvasContainer.getBoundingClientRect()
+                      addDebugLog(`Container rect: ${rect.width}x${rect.height}`)
+                      if (rect.width > 0 && rect.height > 0) {
+                        const newDims = {
+                          width: Math.floor(rect.width),
+                          height: Math.floor(rect.height),
+                        }
+                        setCanvasDimensions(newDims)
+                        const info = calculateFit(
+                          newDims,
+                          { width: image.width, height: image.height }
+                        )
+                        setImageDrawInfo(info)
+                        addDebugLog(`✅ Dimensions set: ${newDims.width}x${newDims.height}`)
+                        // Trigger canvas redraw
+                        setTimeout(() => {
+                          drawCanvas()
+                        }, 0)
+                      } else {
+                        addDebugLog(`⚠️ Container 0x0, retrying...`)
+                        setTimeout(() => {
+                          const retryRect = canvasContainer.getBoundingClientRect()
+                          if (retryRect.width > 0 && retryRect.height > 0) {
+                            const newDims = {
+                              width: Math.floor(retryRect.width),
+                              height: Math.floor(retryRect.height),
+                            }
+                            setCanvasDimensions(newDims)
+                            const info = calculateFit(
+                              newDims,
+                              { width: image.width, height: image.height }
+                            )
+                            setImageDrawInfo(info)
+                            addDebugLog(`✅ Retry success: ${newDims.width}x${newDims.height}`)
+                          } else {
+                            addDebugLog(`❌ Retry failed - still 0x0`)
+                          }
+                        }, 100)
+                      }
+                    } else {
+                      addDebugLog(`❌ Container ref missing`)
+                    }
+                  }}
+                  onError={(e) => {
+                    const errorMsg = `❌ Fallback failed: ${image?.src?.substring(0, 30) || 'no src'}`
+                    console.error('[ImageCanvas]', errorMsg, e)
+                    addDebugLog(errorMsg)
+                  }}
+                />
             )}
             {/* Loading indicator */}
             {isAnalyzing && (
@@ -1415,7 +1836,12 @@ export default function ImageCanvas(props: ImageCanvasProps) {
               onTouchEnd={handleTouchEnd}
               onContextMenu={(e) => e.preventDefault()}
               className="absolute top-0 left-0 w-full h-full touch-none"
-              style={{ cursor: getCursorStyle() }}
+              style={{ 
+                cursor: getCursorStyle(),
+                zIndex: imageDrawInfo ? 20 : 5,
+                backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
+                pointerEvents: imageDrawInfo ? 'auto' : 'none'
+              }}
             />
 
             {/* Highlight Overlay Canvas */}

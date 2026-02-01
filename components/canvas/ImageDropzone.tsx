@@ -23,11 +23,30 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
             img.onerror = () => {
                 console.error('Failed to load image from file');
+                URL.revokeObjectURL(objectUrl);
             };
 
             img.onload = () => {
                 console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
+                
+                // Convert to data URL to preserve image source (blob URLs get revoked)
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0);
+                    try {
+                        const dataUrl = canvas.toDataURL('image/png');
+                        img.src = dataUrl;
+                        console.log('[ImageDropzone] Converted image to data URL');
+                    } catch (e) {
+                        console.warn('[ImageDropzone] Failed to convert to data URL:', e);
+                    }
+                }
+                
                 onImageLoad(img);
+                URL.revokeObjectURL(objectUrl);
             };
 
             img.src = objectUrl;
