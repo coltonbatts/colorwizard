@@ -29,11 +29,9 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
         img.onload = () => {
             onImageLoad(img)
             setIsLoading(false)
-            URL.revokeObjectURL(objectUrl)
         }
         img.onerror = () => {
             setIsLoading(false)
-            URL.revokeObjectURL(objectUrl)
         }
         img.src = objectUrl
     }, [onImageLoad])

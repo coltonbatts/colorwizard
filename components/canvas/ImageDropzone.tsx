@@ -23,13 +23,11 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
             img.onerror = () => {
                 console.error('Failed to load image from file');
-                URL.revokeObjectURL(objectUrl);
             };
 
             img.onload = () => {
                 console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
                 onImageLoad(img);
-                URL.revokeObjectURL(objectUrl);
             };
 
             img.src = objectUrl;

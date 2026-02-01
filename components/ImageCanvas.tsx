@@ -1162,11 +1162,9 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       img.onload = () => {
         console.log('[ImageCanvas] Direct image loaded successfully')
         props.onImageLoad(img)
-        URL.revokeObjectURL(objectUrl)
       }
       img.onerror = () => {
         console.error('[ImageCanvas] Direct image load error')
-        URL.revokeObjectURL(objectUrl)
       }
       img.src = objectUrl
     }
