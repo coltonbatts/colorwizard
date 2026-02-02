@@ -1144,6 +1144,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       touchStateRef.current.lastDistance = getTouchDistance(e.touches[0], e.touches[1])
       touchStateRef.current.lastCenter = getTouchCenter(e.touches[0], e.touches[1], rect)
     } else if (e.touches.length === 1) {
+      // Prevent browser default behaviors like scrolling when using the color picker
+      e.preventDefault()
+
       // Single finger: potential tap or pan
       touchStateRef.current.isPinching = false
       hasDraggedRef.current = false
@@ -1194,7 +1197,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       touchStateRef.current.lastDistance = newDistance
       touchStateRef.current.lastCenter = newCenter
     } else if (e.touches.length === 1 && !touchStateRef.current.isPinching) {
-      // Single finger drag: check if we've moved enough to consider it a pan
+      // Single finger interaction
+      e.preventDefault()
+
       const touch = e.touches[0]
       const dist = Math.hypot(
         touch.clientX - dragStartRef.current.x,
@@ -1208,12 +1213,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         const deltaY = touch.clientY - (lastPanPoint.current.y || touch.clientY)
         setPanOffset(prev => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
         showMinimap()
-      } else {
-        // Precise sampling within threshold
-        if (!props.measureMode) {
-          sampleColorFromTouch(touch)
-        }
       }
+
+      // Always sample color during move/pan for an "eyedropper" feel
+      if (!props.measureMode) {
+        sampleColorFromTouch(touch)
+      }
+
       lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
     }
   }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, sampleColorFromTouch])
@@ -1246,6 +1252,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         }
       }
     }
+
+    // Always prevent default on touch end to avoid ghost clicks/scrolling
+    if (e.cancelable) e.preventDefault()
 
     // Reset drag state
     hasDraggedRef.current = false
@@ -1877,7 +1886,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               className="absolute top-0 left-0 w-full h-full touch-none"
               style={{
                 cursor: getCursorStyle(),
-                zIndex: imageDrawInfo ? 20 : 5,
+                zIndex: imageDrawInfo ? 60 : 5,
                 backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
                 pointerEvents: imageDrawInfo ? 'auto' : 'none'
               }}
