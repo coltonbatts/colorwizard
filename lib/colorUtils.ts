@@ -5,8 +5,6 @@
 import {
   converter,
   differenceCiede2000,
-  wcagContrast,
-  formatHex,
   Color,
   Lab,
   Rgb,
@@ -15,9 +13,7 @@ import {
 import { RGB, HSL } from './color/types';
 import { hexToRgb as canonicalHexToRgb, rgbToHsl as canonicalRgbToHsl } from './color/conversions';
 
-// Converters
 const toLab = converter('lab');
-const toRgb = converter('rgb');
 
 // Difference function factory
 const ciede2000 = differenceCiede2000();

@@ -150,7 +150,6 @@ function determineIngredients(hsl: {
   // Determine saturation level
   const isDesaturated = s < 20
   const isModeratelySaturated = s >= 20 && s < 60
-  const isHighlySaturated = s >= 60
 
   // Handle near-black colors
   if (isVeryDark && s < 10) {

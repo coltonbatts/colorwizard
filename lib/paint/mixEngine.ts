@@ -8,16 +8,10 @@
  * Both modes currently use spectral.js under the hood. The PHYSICAL mode
  * will diverge when we have real spectral/K-M data for paints.
  */
-import type { Paint } from './types/Paint';
-import { getPaint, paintToPigment } from './catalog';
+import { getPaint } from './catalog';
 import {
-    mixPigments,
-    mixPigmentsSync,
     deltaEOK,
     isSpectralAvailable,
-    getPaletteColors,
-    getSpectralSync,
-    getCachedColorSync,
 } from '../spectral/adapter';
 import type { Color as SpectralColor } from 'spectral.js';
 

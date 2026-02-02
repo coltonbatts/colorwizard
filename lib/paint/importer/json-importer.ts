@@ -5,7 +5,7 @@
  * Includes schema validation for data integrity.
  */
 
-import type { PaintDataFile, Paint, PaintBrand, PaintLine } from '../types/Paint';
+import type { PaintDataFile, Paint } from '../types/Paint';
 import type {
     PaintImporter,
     PaintImportResult,

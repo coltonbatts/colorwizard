@@ -5,7 +5,7 @@
  * Maps their specific field names to our paint schema.
  */
 
-import type { Paint, PaintBrand, PaintLine, Medium } from '../types/Paint';
+import type { Paint, PaintBrand, PaintLine } from '../types/Paint';
 import type {
     PaintImporter,
     PaintImportResult,

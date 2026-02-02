@@ -8,7 +8,7 @@
  * a different weight configuration. The algorithm iteratively improves
  * the worst vertex through reflection, expansion, contraction, and shrinkage.
  */
-import { mixPigmentsSync, deltaESync, getCachedColorSync } from '../spectral/adapter';
+import { mixPigmentsSync, deltaESync } from '../spectral/adapter';
 import type { MixInput } from '../spectral/types';
 import type { Color as SpectralColor } from 'spectral.js';
 

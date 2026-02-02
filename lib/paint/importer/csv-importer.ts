@@ -5,7 +5,7 @@
  * Useful for importing from spreadsheets or custom databases.
  */
 
-import type { Paint, PaintBrand, PaintLine } from '../types/Paint';
+import type { Paint } from '../types/Paint';
 import type {
     PaintImporter,
     PaintImportResult,

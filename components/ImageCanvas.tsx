@@ -1977,6 +1977,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         onClose={() => setShowImageFullScreen(false)}
       >
         {image && (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={image.src}
             alt="Full screen reference"
