@@ -5,7 +5,7 @@
  * Refactored to use extracted sub-components and hooks for maintainability.
  */
 
-import { useRef, useState, useEffect, useCallback, useMemo, useId } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo, useId, forwardRef, useImperativeHandle } from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
 import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -91,7 +91,11 @@ const ZOOM_WHEEL_SENSITIVITY = 0.001
 // Drag detection threshold (pixels)
 const DRAG_THRESHOLD = 3
 
-export default function ImageCanvas(props: ImageCanvasProps) {
+export interface ImageCanvasHandle {
+  resetView: () => void
+}
+
+const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref) => {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
   const isMobile = useIsMobile()
   const breakdownValue = useStore(state => state.breakdownValue)
@@ -154,6 +158,12 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     img.onload = () => setSurfaceImageElement(img)
   }, [surfaceImage])
 
+  // Canvas dimensions state
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
+
+  // analysisSource state to ensure useImageAnalyzer updates when source buffer is ready
+  const [analysisSource, setAnalysisSource] = useState<CanvasImageSource | null>(image)
+
   // Use the image analyzer hook for worker-based processing
   const {
     labBuffer,
@@ -165,7 +175,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     breakdownBuffers,
     generateBreakdown,
     isGeneratingBreakdown,
-  } = useImageAnalyzer(image, valueScaleSettings)
+  } = useImageAnalyzer(analysisSource, valueScaleSettings)
 
   // Use the hook's value scale result, but allow local override for settings changes
   const [localValueScaleResult] = useState<ValueScaleResult | null>(null)
@@ -184,9 +194,6 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }, [valueScaleResult, props.onValueScaleResult])
 
-  // Canvas dimensions state
-  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
-
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
@@ -198,6 +205,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     // Immediate reset when image changes to prevent stale display
     sourceBufferRef.current = null
     setMetrics(null) // Clears debug overlay data
+    setAnalysisSource(image) // Fallback to raw image during buffer creation
 
     if (!image || image.width === 0 || image.height === 0) {
       return
@@ -214,6 +222,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         }
 
         sourceBufferRef.current = buffer
+        setAnalysisSource(buffer) // Update analyzer with stabilized buffer
 
         // Update metrics for debug overlay
         setMetrics({
@@ -229,6 +238,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         console.error('[ImageCanvas] Source buffer creation failed:', err)
         // Fallback to original image if buffer creation fails
         sourceBufferRef.current = null
+        setAnalysisSource(image)
       }
     }
 
@@ -846,6 +856,11 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     setPanOffset({ x: 0, y: 0 })
   }, [])
 
+  // Expose methods to parent
+  useImperativeHandle(ref, () => ({
+    resetView
+  }))
+
   // Mobile Stabilization: Bound the pan offset so the image doesn't disappear
   const getClampedPan = useCallback((x: number, y: number, zoom: number) => {
     if (!imageDrawInfo) return { x, y }
@@ -872,27 +887,24 @@ export default function ImageCanvas(props: ImageCanvasProps) {
     }
   }, [imageDrawInfo, canvasDimensions])
 
-  const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !image) return
+  // Shared sampling logic for both mouse and touch
+  const performSampling = useCallback((clientX: number, clientY: number) => {
+    if (!canvasRef.current || !image || !imageDrawInfo) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
 
-    const canvasX = (e.clientX - rect.left) * scaleX
-    const canvasY = (e.clientY - rect.top) * scaleY
+    const canvasX = (clientX - rect.left) * scaleX
+    const canvasY = (clientY - rect.top) * scaleY
 
-    // Mobile Stabilization: Sample from source buffer for 1:1 pixel accuracy
     const source = sourceBufferRef.current
-    let r, g, b, a;
+    let r, g, b, a
 
     if (source) {
       // Calculate coordinates in source buffer space
-      const { x, y, width, height } = imageDrawInfo!
+      const { x, y, width, height } = imageDrawInfo
 
       // 1. Transform back to unpanned, unzoomed image-draw-info space
       const screenRelX = (canvasX - panOffset.x) / zoomLevel
@@ -908,7 +920,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       const sampleX = Math.floor(normX * source.width)
       const sampleY = Math.floor(normY * source.height)
 
-      const sourceCtx = source.getContext('2d')
+      const sourceCtx = source.getContext('2d', { willReadFrequently: true })
       if (!sourceCtx) return
       const pixel = sourceCtx.getImageData(sampleX, sampleY, 1, 1).data
       r = pixel[0]
@@ -917,6 +929,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       a = pixel[3]
     } else {
       // Fallback to display canvas (less accurate if filtered/scaled)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
       const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
       r = pixelData[0]
       g = pixelData[1]
@@ -931,8 +945,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
 
     let valueMetadata = undefined
     if (valueScaleResult) {
-      const y = getRelativeLuminance(r, g, b)
-      const stepIdx = getStepIndex(y, valueScaleResult.thresholds)
+      const luminance = getRelativeLuminance(r, g, b)
+      const stepIdx = getStepIndex(luminance, valueScaleResult.thresholds)
       const step = valueScaleResult.steps[stepIdx]
 
       let percentile = 0
@@ -941,7 +955,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         let high = sortedLuminances.length - 1
         while (low <= high) {
           const mid = (low + high) >> 1
-          if (sortedLuminances[mid] < y) {
+          if (sortedLuminances[mid] < luminance) {
             low = mid + 1
           } else {
             high = mid - 1
@@ -951,7 +965,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       }
 
       valueMetadata = {
-        y,
+        y: luminance,
         step: stepIdx + 1,
         range: [step.min, step.max] as [number, number],
         percentile
@@ -964,7 +978,15 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       hsl,
       valueMetadata
     })
-  }, [image, valueScaleResult, sortedLuminances, onColorSample])
+  }, [image, imageDrawInfo, zoomLevel, panOffset, valueScaleResult, sortedLuminances, onColorSample])
+
+  const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    performSampling(e.clientX, e.clientY)
+  }, [performSampling])
+
+  const sampleColorFromTouch = useCallback((touch: React.Touch) => {
+    performSampling(touch.clientX, touch.clientY)
+  }, [performSampling])
 
   // Handle mouse down
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1096,66 +1118,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   }
 
   // Sample color from touch position (similar to sampleColor but for touch events)
-  const sampleColorFromTouch = useCallback((touch: React.Touch) => {
-    if (!canvasRef.current || !image) return
-
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const canvasX = (touch.clientX - rect.left) * scaleX
-    const canvasY = (touch.clientY - rect.top) * scaleY
-
-    const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
-    const r = pixelData[0]
-    const g = pixelData[1]
-    const b = pixelData[2]
-
-    if (pixelData[3] === 0) return
-
-    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
-    const hsl = rgbToHsl(r, g, b)
-
-    let valueMetadata = undefined
-    if (valueScaleResult) {
-      const y = getRelativeLuminance(r, g, b)
-      const stepIdx = getStepIndex(y, valueScaleResult.thresholds)
-      const step = valueScaleResult.steps[stepIdx]
-
-      let percentile = 0
-      if (sortedLuminances) {
-        let low = 0
-        let high = sortedLuminances.length - 1
-        while (low <= high) {
-          const mid = (low + high) >> 1
-          if (sortedLuminances[mid] < y) {
-            low = mid + 1
-          } else {
-            high = mid - 1
-          }
-        }
-        percentile = low / sortedLuminances.length
-      }
-
-      valueMetadata = {
-        y,
-        step: stepIdx + 1,
-        range: [step.min, step.max] as [number, number],
-        percentile
-      }
-    }
-
-    onColorSample({
-      hex,
-      rgb: { r, g, b },
-      hsl,
-      valueMetadata
-    })
-  }, [image, valueScaleResult, sortedLuminances, onColorSample])
+  // Handle touch interactions unified in other handlers
 
   // Handle touch start
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -2004,4 +1967,8 @@ export default function ImageCanvas(props: ImageCanvasProps) {
       </FullScreenOverlay>
     </div>
   )
-}
+})
+
+ImageCanvas.displayName = 'ImageCanvas'
+
+export default ImageCanvas

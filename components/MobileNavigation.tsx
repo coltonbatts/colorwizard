@@ -83,7 +83,7 @@ export default function MobileNavigation({
                     <>
                         {/* Backdrop */}
                         <motion.div
-                            className="mobile-nav-backdrop"
+                            className="mobile-nav-backdrop backdrop-blur-md bg-paper/40"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -93,14 +93,14 @@ export default function MobileNavigation({
 
                         {/* Drawer */}
                         <motion.div
-                            className="mobile-nav-drawer"
+                            className="mobile-nav-drawer safe-area-bottom"
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                         >
                             {/* Header */}
-                            <div className="mobile-nav-header">
+                            <div className="mobile-nav-header safe-area-top">
                                 <Link
                                     href="/"
                                     className="cursor-pointer hover:opacity-80 transition-opacity"

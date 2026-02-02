@@ -800,6 +800,15 @@ body {
         display: none !important;
     }
 
+    /* Safe Area Utilities */
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .safe-area-top {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
     /* Hero dropzone mode */
     .mobile-hero-dropzone {
         min-height: 70vh;

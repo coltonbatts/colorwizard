@@ -7,7 +7,7 @@
  */
 
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
-import ImageCanvas from '@/components/ImageCanvas'
+import ImageCanvas, { ImageCanvasHandle } from '@/components/ImageCanvas'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
@@ -46,15 +46,11 @@ export default function Home() {
   const setActiveTab = useStore(state => state.setActiveTab)
   const pinnedColors = useStore(state => state.pinnedColors)
   const pinColor = useStore(state => state.pinColor)
-  const unpinColor = useStore(state => state.unpinColor)
-  const clearPinned = useStore(state => state.clearPinned)
   const lastSampleTime = useStore(state => state.lastSampleTime)
 
   const valueScaleSettings = useStore(state => state.valueScaleSettings)
   const setValueScaleSettings = useStore(state => state.setValueScaleSettings)
-  const histogramBins = useStore(state => state.histogramBins)
   const setHistogramBins = useStore(state => state.setHistogramBins)
-  const valueScaleResult = useStore(state => state.valueScaleResult)
   const setValueScaleResult = useStore(state => state.setValueScaleResult)
   const palettes = useStore(state => state.palettes)
   const createPalette = useStore(state => state.createPalette)
@@ -99,7 +95,6 @@ export default function Home() {
   const setBreakdownValue = useStore(state => state.setBreakdownValue)
   const showCanvasSettingsModal = useStore(state => state.showCanvasSettingsModal)
   const setShowCanvasSettingsModal = useStore(state => state.setShowCanvasSettingsModal)
-  const simpleMode = useStore(state => state.simpleMode)
   const toggleSimpleMode = useStore(state => state.toggleSimpleMode)
   const toggleValueMode = useStore(state => state.toggleValueMode)
 
@@ -179,6 +174,7 @@ export default function Home() {
 
   // Canvas container ref
   const canvasContainerRef = useRef<HTMLDivElement>(null)
+  const imageCanvasRef = useRef<ImageCanvasHandle>(null)
 
   const {
     valueScaleResult: analyzerValueScaleResult,
@@ -366,6 +362,7 @@ export default function Home() {
             hasImage={!!image}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            onResetView={() => imageCanvasRef.current?.resetView()}
           />
         </div>
 
@@ -373,8 +370,8 @@ export default function Home() {
         <HighlightControls />
 
         {/* Main Canvas Area */}
-        <div 
-          className="flex-1 min-h-0 relative" 
+        <div
+          className="flex-1 min-h-0 relative"
           ref={canvasContainerRef}
           style={{ height: '100%', minHeight: '100%' }}
         >
@@ -387,6 +384,7 @@ export default function Home() {
             )}
           >
             <ImageCanvas
+              ref={imageCanvasRef}
               image={image}
               onImageLoad={handleImageLoad}
               onReset={handleClearImage}

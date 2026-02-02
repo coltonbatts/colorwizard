@@ -77,7 +77,7 @@ async function getWorker(): Promise<Remote<ImageProcessorWorker>> {
 }
 
 export function useImageAnalyzer(
-    image: HTMLImageElement | null,
+    image: CanvasImageSource | null,
     valueScaleSettings?: ValueScaleSettings
 ): UseImageAnalyzerReturn {
     const [labBuffer, setLabBuffer] = useState<LabBuffer | null>(null);
@@ -107,7 +107,10 @@ export function useImageAnalyzer(
 
     // Process image when it changes
     useEffect(() => {
-        if (!image || image.width === 0 || image.height === 0) {
+        const imgWidth = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
+        const imgHeight = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
+
+        if (!image || imgWidth === 0 || imgHeight === 0) {
             setLabBuffer(null);
             setValueBuffer(null);
             setSortedLuminances(null);
@@ -124,16 +127,19 @@ export function useImageAnalyzer(
             return;
         }
 
-        // Track current image for race condition handling
-        currentImageRef.current = image;
+        // Track current image source for race condition handling
+        // We use the image itself as the key
+        (currentImageRef.current as any) = image;
         setIsAnalyzing(true);
         setError(null);
-        console.log('[useImageAnalyzer] Starting analysis for image:', image.width, 'x', image.height);
+        const currentWidth = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
+        const currentHeight = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
+        console.log('[useImageAnalyzer] Starting analysis for image:', currentWidth, 'x', currentHeight);
 
         // Create a temporary canvas to read pixel data
         const canvas = document.createElement('canvas');
-        let width = image.width;
-        let height = image.height;
+        let width = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
+        let height = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
 
         // Limit processing resolution for performance
         if (width > MAX_PROCESS_DIM || height > MAX_PROCESS_DIM) {

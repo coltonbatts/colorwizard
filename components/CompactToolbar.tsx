@@ -47,17 +47,8 @@ interface CompactToolbarProps {
     hasImage: boolean
     activeTab?: TabType
     onTabChange?: (tab: TabType) => void
+    onResetView?: () => void
 }
-
-// Icon components for cleaner rendering
-const ScaleIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3v18" />
-        <path d="M5 8h14" />
-        <path d="M5 8l-2 8h6l-2-8" />
-        <path d="M19 8l-2 8h6l-2-8" />
-    </svg>
-)
 
 const GridIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -75,16 +66,6 @@ const ValueIcon = () => (
     </svg>
 )
 
-const RulerIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 12h20" />
-        <path d="M6 8v4" />
-        <path d="M10 6v6" />
-        <path d="M14 8v4" />
-        <path d="M18 6v6" />
-    </svg>
-)
-
 const MeasureIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
@@ -92,24 +73,6 @@ const MeasureIcon = () => (
         <path d="M12 18v4" />
         <path d="M2 12h4" />
         <path d="M18 12h4" />
-    </svg>
-)
-
-const CanvasIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <path d="M3 9h18" />
-        <path d="M15 3v6" />
-    </svg>
-)
-
-const CalibrationIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 12h4" />
-        <path d="M18 12h4" />
-        <path d="M12 2v4" />
-        <path d="M12 18v4" />
-        <rect x="6" y="6" width="12" height="12" rx="2" />
     </svg>
 )
 
@@ -130,15 +93,12 @@ const LayoutIcon = () => (
     </svg>
 )
 
-const ToolsIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M12 5v14M5 12h14" />
-    </svg>
-)
-
-const ChevronDownIcon = () => (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M6 9l6 6 6-6" />
+const FitIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 3h6v6" />
+        <path d="M9 21H3v-6" />
+        <path d="M21 3l-7 7" />
+        <path d="M3 21l7-7" />
     </svg>
 )
 
@@ -167,7 +127,8 @@ export default function CompactToolbar({
     onOpenCanvasSettings,
     hasImage,
     activeTab,
-    onTabChange
+    onTabChange,
+    onResetView
 }: CompactToolbarProps) {
     const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
@@ -190,9 +151,72 @@ export default function CompactToolbar({
         }
     }, [menuOpen])
 
-    // Mobile: Ultra-minimal - no toolbar (header has wordmark)
+    // Mobile: Ergonomic Bottom-Anchored Toolbar
     if (isMobile) {
-        return null
+        if (!hasImage) return null;
+
+        return (
+            <div className="fixed bottom-0 left-0 right-0 z-[60] safe-area-bottom">
+                <div className="mx-3 mb-3 paper-panel-raised flex items-center justify-around h-14 px-2 shadow-2xl border-ink-hairline bg-paper-elevated/95 backdrop-blur-md">
+                    {/* Snap to Fit - Critical for mobile navigation sanity */}
+                    <button
+                        onClick={onResetView}
+                        className="flex flex-col items-center justify-center w-12 h-12 text-ink-secondary hover:text-signal transition-colors"
+                        aria-label="Snap to Fit"
+                    >
+                        <FitIcon />
+                        <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">Fit</span>
+                    </button>
+
+                    {/* Value Mode Toggle */}
+                    <button
+                        onClick={() => toggleValueMode()}
+                        className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${valueModeEnabled ? 'text-signal' : 'text-ink-secondary'
+                            }`}
+                        aria-label="Toggle Value Mode"
+                    >
+                        <ValueIcon />
+                        <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">Value</span>
+                    </button>
+
+                    {/* Grid Toggle */}
+                    <button
+                        onClick={onToggleRulerGrid}
+                        disabled={!calibration}
+                        className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${rulerGridEnabled ? 'text-subsignal' : 'text-ink-secondary'
+                            } ${!calibration ? 'opacity-30' : ''}`}
+                        aria-label="Toggle Grid"
+                    >
+                        <GridIcon />
+                        <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">Grid</span>
+                    </button>
+
+                    {/* Measure Mode Toggle */}
+                    <button
+                        onClick={onToggleMeasure}
+                        disabled={!calibration}
+                        className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${measureMode ? 'text-signal' : 'text-ink-secondary'
+                            } ${!calibration ? 'opacity-30' : ''}`}
+                        aria-label="Toggle Measure"
+                    >
+                        <MeasureIcon />
+                        <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">Measure</span>
+                    </button>
+
+                    {/* Navigation Tab Switcher Shorthand */}
+                    <button
+                        onClick={() => onTabChange?.(activeTab === 'sample' ? 'matches' : 'sample')}
+                        className="flex flex-col items-center justify-center w-12 h-12 text-ink-secondary hover:text-subsignal transition-colors"
+                        aria-label="Switch Tab"
+                    >
+                        <LayoutIcon />
+                        <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">
+                            {activeTab === 'sample' ? 'Match' : 'Pick'}
+                        </span>
+                    </button>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -236,11 +260,10 @@ export default function CompactToolbar({
                                                 }
                                                 setMenuOpen(false)
                                             }}
-                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
-                                                valueModeEnabled
-                                                    ? 'bg-signal-muted text-signal'
-                                                    : 'text-ink hover:bg-paper-recessed'
-                                            }`}
+                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${valueModeEnabled
+                                                ? 'bg-signal-muted text-signal'
+                                                : 'text-ink hover:bg-paper-recessed'
+                                                }`}
                                         >
                                             Value Mode {valueModeEnabled && `(${valueModeSteps} steps)`}
                                         </button>
@@ -253,11 +276,10 @@ export default function CompactToolbar({
                                                             setValueModeSteps(steps)
                                                             setMenuOpen(false)
                                                         }}
-                                                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
-                                                            valueModeSteps === steps
-                                                                ? 'bg-signal-muted text-signal'
-                                                                : 'text-ink hover:bg-paper-recessed'
-                                                        }`}
+                                                        className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${valueModeSteps === steps
+                                                            ? 'bg-signal-muted text-signal'
+                                                            : 'text-ink hover:bg-paper-recessed'
+                                                            }`}
                                                     >
                                                         {steps} steps
                                                     </button>
@@ -278,11 +300,10 @@ export default function CompactToolbar({
                                                 onOpenCalibration()
                                                 setMenuOpen(false)
                                             }}
-                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
-                                                calibration
-                                                    ? 'bg-subsignal-muted text-subsignal'
-                                                    : 'text-ink hover:bg-paper-recessed'
-                                            }`}
+                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${calibration
+                                                ? 'bg-subsignal-muted text-subsignal'
+                                                : 'text-ink hover:bg-paper-recessed'
+                                                }`}
                                         >
                                             {calibration ? '✓ Calibrated' : 'Calibrate'}
                                         </button>
@@ -302,11 +323,10 @@ export default function CompactToolbar({
                                                 onOpenCanvasSettings()
                                                 setMenuOpen(false)
                                             }}
-                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
-                                                canvasSettings.enabled
-                                                    ? 'bg-signal-muted text-signal'
-                                                    : 'text-ink hover:bg-paper-recessed'
-                                            }`}
+                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${canvasSettings.enabled
+                                                ? 'bg-signal-muted text-signal'
+                                                : 'text-ink hover:bg-paper-recessed'
+                                                }`}
                                         >
                                             Canvas Settings
                                         </button>
@@ -316,11 +336,10 @@ export default function CompactToolbar({
                                                 setMenuOpen(false)
                                             }}
                                             disabled={!calibration}
-                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
-                                                rulerGridEnabled && calibration
-                                                    ? 'bg-signal-muted text-signal'
-                                                    : 'text-ink hover:bg-paper-recessed'
-                                            } ${!calibration ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${rulerGridEnabled && calibration
+                                                ? 'bg-signal-muted text-signal'
+                                                : 'text-ink hover:bg-paper-recessed'
+                                                } ${!calibration ? 'opacity-40 cursor-not-allowed' : ''}`}
                                         >
                                             Ruler Grid
                                         </button>
@@ -330,11 +349,10 @@ export default function CompactToolbar({
                                                 setMenuOpen(false)
                                             }}
                                             disabled={!calibration}
-                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${
-                                                measureMode && calibration
-                                                    ? 'bg-signal-muted text-signal'
-                                                    : 'text-ink hover:bg-paper-recessed'
-                                            } ${!calibration ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                            className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${measureMode && calibration
+                                                ? 'bg-signal-muted text-signal'
+                                                : 'text-ink hover:bg-paper-recessed'
+                                                } ${!calibration ? 'opacity-40 cursor-not-allowed' : ''}`}
                                         >
                                             Measure
                                         </button>
