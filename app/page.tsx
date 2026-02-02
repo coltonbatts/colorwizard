@@ -290,6 +290,7 @@ export default function Home() {
             valueScaleSettings={valueScaleSettings}
             lastSampleTime={lastSampleTime}
             onAddToSession={handleAddToSession}
+            onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
           />
         )
       case 'matches':

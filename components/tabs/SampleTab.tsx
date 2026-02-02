@@ -37,6 +37,7 @@ interface SampleTabProps {
     valueScaleSettings?: ValueScaleSettings
     lastSampleTime?: number
     onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
+    onSwitchToMatches?: () => void
 }
 
 export default function SampleTab({
@@ -45,7 +46,8 @@ export default function SampleTab({
     isPinned,
     valueScaleSettings,
     lastSampleTime,
-    onAddToSession
+    onAddToSession,
+    onSwitchToMatches
 }: SampleTabProps) {
     const [label, setLabel] = useState('')
     const [isPinning, setIsPinning] = useState(false)
@@ -101,17 +103,23 @@ export default function SampleTab({
                 </div>
             )}
 
-            {/* Giant Hero Swatch */}
+            {/* Giant Hero Swatch - Larger, clearer, with hex overlay */}
             <div
-                className="w-full aspect-[2/1] rounded-xl shadow-md border border-ink-hairline relative overflow-hidden group transition-all duration-500 cursor-pointer"
+                className="w-full aspect-[4/3] rounded-2xl shadow-lg border-2 border-ink-hairline relative overflow-hidden group transition-all duration-500 cursor-pointer"
                 style={{ backgroundColor: valueModeEnabled ? grayscaleHex : hex }}
                 onClick={() => setShowColorFullScreen(true)}
             >
+                {/* Hex overlay for clarity */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+                        <span className="text-white font-mono text-2xl font-black tracking-tighter">{hex.toUpperCase()}</span>
+                    </div>
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
-                <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-xl"></div>
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl"></div>
                 <button
                     onClick={(e) => { e.stopPropagation(); setShowColorFullScreen(true) }}
-                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white/70 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
+                    className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
                     title="View full screen"
                 >
                     <span className="text-lg">⛶</span>
@@ -120,6 +128,21 @@ export default function SampleTab({
 
             {/* Color Name */}
             <ColorNamingDisplay hex={hex} key={lastSampleTime} />
+
+            {/* Prominent DMC Threads Button - Mobile-first */}
+            {onSwitchToMatches && (
+                <button
+                    onClick={onSwitchToMatches}
+                    className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
+                        <circle cx="20.5" cy="3.5" r="1.5" />
+                        <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
+                    </svg>
+                    <span>Match DMC Threads</span>
+                </button>
+            )}
 
             {/* Primary Readout */}
             {valueModeEnabled && valueModeMeta ? (

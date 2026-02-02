@@ -190,13 +190,9 @@ export default function CompactToolbar({
         }
     }, [menuOpen])
 
-    // Mobile: Ultra-minimal - just wordmark, no controls
+    // Mobile: Ultra-minimal - no toolbar (header has wordmark)
     if (isMobile) {
-        return (
-            <div className="p-3 paper-panel-raised flex items-center justify-center">
-                <WordmarkCompact />
-            </div>
-        )
+        return null
     }
 
     return (
