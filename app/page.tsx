@@ -173,6 +173,7 @@ export default function Home() {
   }, [handleMouseMove, stopResizing])
 
   // Canvas container ref
+  const [isNavOpen, setIsNavOpen] = useState(false)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const imageCanvasRef = useRef<ImageCanvasHandle>(null)
 
@@ -331,6 +332,7 @@ export default function Home() {
         <MobileHeader
           hasImage={!!image}
           onClearImage={handleClearImage}
+          onOpenMenu={() => setIsNavOpen(true)}
         />
       )}
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
@@ -475,14 +477,14 @@ export default function Home() {
 
       {isMobile && (
         <MobileNavigation
+          isOpen={isNavOpen}
+          onOpenChange={setIsNavOpen}
           activeTab={activeTab}
           onTabChange={(tab) => {
             setActiveTab(tab)
           }}
-          pinnedCount={pinnedColors.length}
           onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
           onOpenCalibration={() => setShowCalibrationModal(true)}
-          hasImage={!!image}
         />
       )}
 

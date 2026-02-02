@@ -211,7 +211,7 @@ export default function CompactToolbar({
                     >
                         <LayoutIcon />
                         <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">
-                            {activeTab === 'sample' ? 'Match' : 'Pick'}
+                            {activeTab === 'sample' ? 'DMC' : 'Color'}
                         </span>
                     </button>
                 </div>

@@ -835,7 +835,7 @@ body {
     }
 
     /* Ensure ALL flex containers in the chain have height - critical for mobile */
-    .mobile-preview-area > div.flex-1 {
+    .mobile-preview-area>div.flex-1 {
         display: flex !important;
         flex-direction: column !important;
         height: 100% !important;
@@ -843,7 +843,7 @@ body {
         flex: 1 1 auto !important;
     }
 
-    .mobile-preview-area > div.flex-1 > div.flex-1 {
+    .mobile-preview-area>div.flex-1>div.flex-1 {
         display: flex !important;
         flex-direction: column !important;
         height: 100% !important;
@@ -852,7 +852,7 @@ body {
     }
 
     /* Main canvas area container - the one with ref={canvasContainerRef} */
-    .mobile-preview-area > div.flex-1 > div.flex-1 > div.flex-1.relative {
+    .mobile-preview-area>div.flex-1>div.flex-1>div.flex-1.relative {
         height: calc(70dvh - 120px) !important;
         min-height: calc(70dvh - 120px) !important;
         flex: 1 1 auto !important;
@@ -881,7 +881,7 @@ body {
         display: block;
         position: sticky;
         top: 0;
-        z-index: 45;
+        z-index: 50;
         background: rgba(250, 250, 247, 0.95);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -950,7 +950,7 @@ body {
 .mobile-nav-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 48;
+    z-index: 75;
     background: rgba(26, 26, 26, 0.4);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -961,7 +961,7 @@ body {
     top: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 80;
     width: 85%;
     max-width: 320px;
     background: var(--paper-elevated);

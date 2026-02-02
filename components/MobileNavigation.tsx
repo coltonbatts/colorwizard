@@ -8,26 +8,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { TABS, TabType } from './CollapsibleSidebar'
+import { TabType } from './CollapsibleSidebar'
 
 interface MobileNavigationProps {
+    isOpen: boolean
+    onOpenChange: (open: boolean) => void
     activeTab: TabType
     onTabChange: (tab: TabType) => void
-    pinnedCount?: number
     onOpenCanvasSettings?: () => void
     onOpenCalibration?: () => void
-    hasImage?: boolean
 }
 
 export default function MobileNavigation({
+    isOpen,
+    onOpenChange,
     activeTab,
     onTabChange,
-    pinnedCount = 0,
     onOpenCanvasSettings,
     onOpenCalibration,
-    hasImage = false
 }: MobileNavigationProps) {
-    const [isOpen, setIsOpen] = useState(false)
+    const setIsOpen = (open: boolean) => onOpenChange(open)
 
     // Close drawer on escape key
     useEffect(() => {
@@ -64,19 +64,6 @@ export default function MobileNavigation({
 
     return (
         <>
-            {/* Floating Hamburger Button */}
-            <button
-                onClick={() => setIsOpen(true)}
-                className="mobile-nav-hamburger"
-                aria-label="Open navigation menu"
-            >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M4 6h16" />
-                    <path d="M4 12h16" />
-                    <path d="M4 18h16" />
-                </svg>
-            </button>
-
             {/* Drawer + Backdrop */}
             <AnimatePresence>
                 {isOpen && (
@@ -157,7 +144,7 @@ export default function MobileNavigation({
                                                 <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
                                             </svg>
                                         </span>
-                                        <span className="mobile-nav-label">Threads / DMC</span>
+                                        <span className="mobile-nav-label">DMC Threads</span>
                                         {activeTab === 'matches' && (
                                             <span className="mobile-nav-active-indicator" />
                                         )}

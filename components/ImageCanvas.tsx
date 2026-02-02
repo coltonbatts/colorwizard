@@ -1148,8 +1148,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       touchStateRef.current.isPinching = false
       hasDraggedRef.current = false
       dragStartRef.current = { x: touch.clientX, y: touch.clientY }
+
+      // Sample color immediately on touch start for feedback
+      if (!props.measureMode) {
+        sampleColorFromTouch(touch)
+      }
     }
-  }, [image])
+  }, [image, props.measureMode, sampleColorFromTouch])
 
   // Handle touch move  
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -1203,10 +1208,15 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         const deltaY = touch.clientY - (lastPanPoint.current.y || touch.clientY)
         setPanOffset(prev => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
         showMinimap()
+      } else {
+        // Precise sampling within threshold
+        if (!props.measureMode) {
+          sampleColorFromTouch(touch)
+        }
       }
       lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
     }
-  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan])
+  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, sampleColorFromTouch])
 
   // Handle touch end
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
