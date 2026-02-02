@@ -91,6 +91,39 @@ const ZOOM_WHEEL_SENSITIVITY = 0.001
 // Drag detection threshold (pixels)
 const DRAG_THRESHOLD = 3
 
+interface PointerCoord {
+  x: number
+  y: number
+}
+
+interface CanvasCoords {
+  cssX: number
+  cssY: number
+  canvasX: number
+  canvasY: number
+  dprScaleX: number
+  dprScaleY: number
+}
+
+const clientToCanvas = (clientX: number, clientY: number, canvas: HTMLCanvasElement): CanvasCoords => {
+  const rect = canvas.getBoundingClientRect()
+  const dprScaleX = rect.width > 0 ? canvas.width / rect.width : 1
+  const dprScaleY = rect.height > 0 ? canvas.height / rect.height : 1
+  const cssX = clientX - rect.left
+  const cssY = clientY - rect.top
+  return {
+    cssX,
+    cssY,
+    canvasX: cssX * dprScaleX,
+    canvasY: cssY * dprScaleY,
+    dprScaleX,
+    dprScaleY,
+  }
+}
+
+const getPointerDistance = (p1: PointerCoord, p2: PointerCoord) =>
+  Math.hypot(p1.x - p2.x, p1.y - p2.y)
+
 export interface ImageCanvasHandle {
   resetView: () => void
 }
@@ -278,6 +311,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     lastTapTime: 0,
     touchStartPos: { x: 0, y: 0 },
   })
+  const activePointersRef = useRef<Map<number, PointerCoord>>(new Map())
+  const sampleRafRef = useRef<number | null>(null)
+  const pendingSampleRef = useRef<{ x: number; y: number } | null>(null)
+  const skipNextSinglePointerSampleRef = useRef(false)
+  const initialFitKeyRef = useRef<string | null>(null)
 
   // Image dimensions after initial fit
   const [imageDrawInfo, setImageDrawInfo] = useState<{
@@ -334,16 +372,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!ctx) return
 
     const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    const rectWidth = Math.floor(rect.width)
-    const rectHeight = Math.floor(rect.height)
-    if (
-      rectWidth > 0 &&
-      rectHeight > 0 &&
-      (canvasDimensions.width !== rectWidth || canvasDimensions.height !== rectHeight)
-    ) {
-      setCanvasDimensions({ width: rectWidth, height: rectHeight })
-    }
+    const rectWidth = canvasDimensions.width
+    const rectHeight = canvasDimensions.height
+    if (rectWidth <= 0 || rectHeight <= 0) return
 
     // Set internal resolution (DPR aware)
     if (canvas.width !== rectWidth * dpr || canvas.height !== rectHeight * dpr) {
@@ -586,64 +617,31 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     return () => resizeObserver.disconnect()
   }, []) // Removed dependency on image to avoid observer churn
 
-  // Update image draw info when image changes (reset zoom/pan)
+  // Initial fit: run once per image after dimensions are known
   useEffect(() => {
     const mainImg = image || surfaceImageElement
-    if (!mainImg) return
-
-    // Wait for canvas dimensions to be set (critical for mobile)
-    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) {
-      // Force a re-check by reading container dimensions directly
-      const canvasContainer = canvasContainerRef.current
-      if (canvasContainer) {
-        const rect = canvasContainer.getBoundingClientRect()
-        if (rect.width > 0 && rect.height > 0) {
-          const newDims = {
-            width: Math.floor(rect.width),
-            height: Math.floor(rect.height),
-          }
-          setCanvasDimensions(newDims)
-          // Calculate imageDrawInfo immediately with new dimensions
-          const info = calculateFit(
-            newDims,
-            { width: mainImg.width, height: mainImg.height }
-          )
-          setImageDrawInfo(info)
-          setZoomLevel(1)
-          setPanOffset({ x: 0, y: 0 })
-          return
-        } else {
-          // If still 0, wait one more frame for layout
-          requestAnimationFrame(() => {
-            const retryRect = canvasContainer.getBoundingClientRect()
-            if (retryRect.width > 0 && retryRect.height > 0) {
-              const newDims = {
-                width: Math.floor(retryRect.width),
-                height: Math.floor(retryRect.height),
-              }
-              setCanvasDimensions(newDims)
-              const info = calculateFit(
-                newDims,
-                { width: mainImg.width, height: mainImg.height }
-              )
-              setImageDrawInfo(info)
-              setZoomLevel(1)
-              setPanOffset({ x: 0, y: 0 })
-            }
-          })
-        }
-      }
+    if (!mainImg || mainImg.width === 0 || mainImg.height === 0) {
+      initialFitKeyRef.current = null
       return
     }
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) return
 
-    const info = calculateFit(
-      { width: canvasDimensions.width, height: canvasDimensions.height },
-      { width: mainImg.width, height: mainImg.height }
-    )
-    setImageDrawInfo(info)
-    setZoomLevel(1)
-    setPanOffset({ x: 0, y: 0 })
-  }, [image, surfaceImageElement, canvasDimensions])
+    const fitKey = `${mainImg.src || 'inline'}:${mainImg.width}x${mainImg.height}:${canvasDimensions.width}x${canvasDimensions.height}`
+    if (initialFitKeyRef.current === fitKey) return
+
+    const raf = requestAnimationFrame(() => {
+      const info = calculateFit(
+        { width: canvasDimensions.width, height: canvasDimensions.height },
+        { width: mainImg.width, height: mainImg.height }
+      )
+      setImageDrawInfo(info)
+      setZoomLevel(1)
+      setPanOffset({ x: 0, y: 0 })
+      initialFitKeyRef.current = fitKey
+    })
+
+    return () => cancelAnimationFrame(raf)
+  }, [image, surfaceImageElement, canvasDimensions.width, canvasDimensions.height])
 
   // Update image draw info on resize without resetting zoom/pan
   useEffect(() => {
@@ -660,71 +658,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       { width: mainImg.width, height: mainImg.height }
     )
     setImageDrawInfo(info)
-  }, [canvasDimensions, image, surfaceImageElement])
+  }, [canvasDimensions.width, canvasDimensions.height, image, surfaceImageElement])
 
   // Redraw canvas when zoom, pan, or image changes
   useEffect(() => {
     drawCanvas()
   }, [drawCanvas, props.highlightMode, props.highlightColor, props.highlightTolerance])
-
-  // Force dimension initialization when image is set (mobile fix)
-  useEffect(() => {
-    if (!image) return
-
-    // If dimensions are 0 or imageDrawInfo is missing, force initialization
-    if (canvasDimensions.width === 0 || canvasDimensions.height === 0 || !imageDrawInfo) {
-      const canvasContainer = canvasContainerRef.current
-      if (canvasContainer) {
-        // Try multiple times with delays to catch layout
-        const tryInit = (attempt = 0) => {
-          const rect = canvasContainer.getBoundingClientRect()
-
-          if (rect.width > 0 && rect.height > 0) {
-            const newDims = {
-              width: Math.floor(rect.width),
-              height: Math.floor(rect.height),
-            }
-            setCanvasDimensions(newDims)
-            const info = calculateFit(
-              newDims,
-              { width: image.width, height: image.height }
-            )
-            setImageDrawInfo(info)
-            console.log('[ImageCanvas] Force-init success:', newDims)
-          } else {
-            // If height is still 0, try using parent's computed height
-            const parent = canvasContainer.parentElement
-            if (parent) {
-              const parentRect = parent.getBoundingClientRect()
-
-              // Try using parent height minus toolbar if available
-              if (parentRect.height > 0 && rect.height === 0) {
-                // Estimate: parent height minus toolbar (~60px)
-                const estimatedHeight = Math.max(100, parentRect.height - 100)
-                const newDims = {
-                  width: Math.floor(rect.width || parentRect.width),
-                  height: Math.floor(estimatedHeight),
-                }
-                setCanvasDimensions(newDims)
-                const info = calculateFit(
-                  newDims,
-                  { width: image.width, height: image.height }
-                )
-                setImageDrawInfo(info)
-                return
-              }
-            }
-
-            if (attempt < 10) {
-              // Retry up to 10 times with increasing delays
-              setTimeout(() => tryInit(attempt + 1), 100 * (attempt + 1))
-            }
-          }
-        }
-        tryInit()
-      }
-    }
-  }, [image, canvasDimensions.width, canvasDimensions.height, imageDrawInfo])
 
   // Report transform state changes to parent for RulerOverlay
   useEffect(() => {
@@ -784,11 +723,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const canvasX = (clientX - rect.left) * scaleX
-    const canvasY = (clientY - rect.top) * scaleY
+    if (rect.width <= 0 || rect.height <= 0) return
+    const { cssX, cssY, canvasX, canvasY } = clientToCanvas(clientX, clientY, canvas)
 
     const source = sourceBufferRef.current
     let r, g, b, a
@@ -798,8 +734,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       const { x, y, width, height } = imageDrawInfo
 
       // 1. Transform back to unpanned, unzoomed image-draw-info space
-      const screenRelX = (canvasX - panOffset.x) / zoomLevel
-      const screenRelY = (canvasY - panOffset.y) / zoomLevel
+      const screenRelX = (cssX - panOffset.x) / zoomLevel
+      const screenRelY = (cssY - panOffset.y) / zoomLevel
 
       // 2. Transform to normalized 0-1 image coordinates
       const normX = (screenRelX - x) / width
@@ -822,7 +758,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       // Fallback to display canvas (less accurate if filtered/scaled)
       const ctx = canvas.getContext('2d')
       if (!ctx) return
-      const pixelData = ctx.getImageData(Math.floor(canvasX), Math.floor(canvasY), 1, 1).data
+      const pixelData = ctx.getImageData(
+        Math.floor(canvasX),
+        Math.floor(canvasY),
+        1,
+        1
+      ).data
       r = pixelData[0]
       g = pixelData[1]
       b = pixelData[2]
@@ -875,160 +816,181 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     performSampling(e.clientX, e.clientY)
   }, [performSampling])
 
-  const sampleColorFromTouch = useCallback((touch: React.Touch) => {
-    performSampling(touch.clientX, touch.clientY)
+  const clearPendingSampling = useCallback(() => {
+    pendingSampleRef.current = null
+    if (sampleRafRef.current !== null) {
+      cancelAnimationFrame(sampleRafRef.current)
+      sampleRafRef.current = null
+    }
+  }, [])
+
+  const queueSampling = useCallback((clientX: number, clientY: number) => {
+    pendingSampleRef.current = { x: clientX, y: clientY }
+    if (sampleRafRef.current !== null) return
+
+    sampleRafRef.current = requestAnimationFrame(() => {
+      sampleRafRef.current = null
+      const pending = pendingSampleRef.current
+      if (!pending) return
+      pendingSampleRef.current = null
+      performSampling(pending.x, pending.y)
+    })
   }, [performSampling])
 
-  // Helper functions for pinch-to-zoom
-  const getTouchDistance = (t1: Touch, t2: Touch) => {
-    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
-  }
-
-  const getTouchCenter = (t1: Touch, t2: Touch, rect: DOMRect) => {
-    return {
-      x: (t1.clientX + t2.clientX) / 2 - rect.left,
-      y: (t1.clientY + t2.clientY) / 2 - rect.top,
+  useEffect(() => {
+    return () => {
+      clearPendingSampling()
+      activePointersRef.current.clear()
     }
-  }
+  }, [clearPendingSampling])
 
-  // Handle touch interactions
-  const handleTouchStart = useCallback((e: TouchEvent) => {
+  // Unified touch input path using pointer events
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.pointerType !== 'touch') return
     if (!image) return
 
     const canvas = canvasRef.current
     if (!canvas) return
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    canvas.setPointerCapture(e.pointerId)
 
     const now = Date.now()
-    const touch = e.touches[0]
-
-    // Store touch start info
     touchStateRef.current.touchStartTime = now
-    touchStateRef.current.touchStartPos = { x: touch.clientX, y: touch.clientY }
+    touchStateRef.current.touchStartPos = { x: e.clientX, y: e.clientY }
 
-    const rect = canvas.getBoundingClientRect()
+    const pointers = Array.from(activePointersRef.current.values())
 
-    if (e.touches.length === 2) {
-      // Two fingers: init pinch/pan
-      e.preventDefault()
-
+    if (pointers.length === 2) {
       touchStateRef.current.isPinching = true
-      touchStateRef.current.lastDistance = getTouchDistance(e.touches[0], e.touches[1])
-      touchStateRef.current.lastCenter = getTouchCenter(e.touches[0], e.touches[1], rect)
-    } else if (e.touches.length === 1) {
-      // Prevent browser default behaviors like scrolling when using the color picker
-      e.preventDefault()
-
-      // Single finger: potential tap or pan
-      touchStateRef.current.isPinching = false
-      hasDraggedRef.current = false
-      dragStartRef.current = { x: touch.clientX, y: touch.clientY }
-
-      // Sample color immediately on touch start for feedback
-      if (!props.measureMode) {
-        sampleColorFromTouch(touch as unknown as React.Touch)
-      }
+      skipNextSinglePointerSampleRef.current = true
+      touchStateRef.current.lastDistance = getPointerDistance(pointers[0], pointers[1])
+      const centerClientX = (pointers[0].x + pointers[1].x) / 2
+      const centerClientY = (pointers[0].y + pointers[1].y) / 2
+      const { cssX, cssY } = clientToCanvas(centerClientX, centerClientY, canvas)
+      touchStateRef.current.lastCenter = { x: cssX, y: cssY }
+      clearPendingSampling()
+      if (e.cancelable) e.preventDefault()
+      return
     }
-  }, [image, props.measureMode, sampleColorFromTouch])
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (pointers.length > 2) {
+      touchStateRef.current.isPinching = false
+      touchStateRef.current.lastDistance = 0
+      touchStateRef.current.lastCenter = { x: 0, y: 0 }
+      clearPendingSampling()
+      if (e.cancelable) e.preventDefault()
+      return
+    }
+
+    touchStateRef.current.isPinching = false
+    touchStateRef.current.lastDistance = 0
+    touchStateRef.current.lastCenter = { x: 0, y: 0 }
+    hasDraggedRef.current = false
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+
+    if (!props.measureMode && !skipNextSinglePointerSampleRef.current) {
+      performSampling(e.clientX, e.clientY)
+    }
+    skipNextSinglePointerSampleRef.current = false
+
+    if (e.cancelable) e.preventDefault()
+  }, [image, props.measureMode, performSampling, clearPendingSampling])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.pointerType !== 'touch') return
     if (!image) return
 
     const canvas = canvasRef.current
     if (!canvas) return
+    if (!activePointersRef.current.has(e.pointerId)) return
 
-    const rect = canvas.getBoundingClientRect()
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
-    if (e.touches.length === 2) {
-      // Two-finger gesture: pinch-to-zoom and pan
-      e.preventDefault()
+    const pointers = Array.from(activePointersRef.current.values())
 
-      const newDistance = getTouchDistance(e.touches[0], e.touches[1])
-      const newCenter = getTouchCenter(e.touches[0], e.touches[1], rect)
+    if (pointers.length === 2) {
+      if (e.cancelable) e.preventDefault()
+      touchStateRef.current.isPinching = true
+      const newDistance = getPointerDistance(pointers[0], pointers[1])
+      const centerClientX = (pointers[0].x + pointers[1].x) / 2
+      const centerClientY = (pointers[0].y + pointers[1].y) / 2
+      const { cssX, cssY } = clientToCanvas(centerClientX, centerClientY, canvas)
+      const newCenter = { x: cssX, y: cssY }
 
       if (touchStateRef.current.isPinching && touchStateRef.current.lastDistance > 0) {
-        // Calculate zoom
         const zoomDelta = newDistance / touchStateRef.current.lastDistance
         const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * zoomDelta))
 
-        // Apply zoom centered on pinch point (logical coordinates)
         const zoomRatio = targetZoom / zoomLevel
         const newPanX = newCenter.x - (newCenter.x - panOffset.x) * zoomRatio
         const newPanY = newCenter.y - (newCenter.y - panOffset.y) * zoomRatio
 
-        // Apply pan delta (logical coordinates)
         const panDeltaX = newCenter.x - touchStateRef.current.lastCenter.x
         const panDeltaY = newCenter.y - touchStateRef.current.lastCenter.y
 
         setZoomLevel(targetZoom)
         const clampedPan = getClampedPan(newPanX + panDeltaX, newPanY + panDeltaY, targetZoom)
         setPanOffset(clampedPan)
+        showMinimap()
       }
 
       touchStateRef.current.lastDistance = newDistance
       touchStateRef.current.lastCenter = newCenter
-    } else if (e.touches.length === 1 && !touchStateRef.current.isPinching) {
-      // Single finger interaction
-      e.preventDefault()
+      return
+    }
 
-      const touch = e.touches[0]
-      const dist = Math.hypot(
-        touch.clientX - dragStartRef.current.x,
-        touch.clientY - dragStartRef.current.y
-      )
+    touchStateRef.current.isPinching = false
+    touchStateRef.current.lastDistance = 0
+    touchStateRef.current.lastCenter = { x: 0, y: 0 }
 
-      if (dist > DRAG_THRESHOLD) {
-        hasDraggedRef.current = true
-        // Pan the canvas - removing scaleX/Y for 1:1 logical pixel panning
-        const deltaX = touch.clientX - (lastPanPoint.current.x || touch.clientX)
-        const deltaY = touch.clientY - (lastPanPoint.current.y || touch.clientY)
-        setPanOffset(prev => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
-        showMinimap()
+    if (pointers.length > 1) {
+      clearPendingSampling()
+      if (e.cancelable) e.preventDefault()
+      return
+    }
+
+    if (!touchStateRef.current.isPinching) {
+      if (skipNextSinglePointerSampleRef.current) {
+        skipNextSinglePointerSampleRef.current = false
+        if (e.cancelable) e.preventDefault()
+        return
       }
-
-      // Always sample color during move/pan for an "eyedropper" feel
       if (!props.measureMode) {
-        sampleColorFromTouch(touch as unknown as React.Touch)
+        queueSampling(e.clientX, e.clientY)
       }
-
-      lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
+      if (e.cancelable) e.preventDefault()
     }
-  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, sampleColorFromTouch])
+  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, queueSampling, clearPendingSampling])
 
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
-    if (!image) return
+  const handlePointerUpOrCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.pointerType !== 'touch') return
 
-    const now = Date.now()
-    const touchDuration = now - touchStateRef.current.touchStartTime
+    const canvas = canvasRef.current
+    if (canvas && canvas.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId)
+    }
 
-    // Reset pinching state if all fingers lifted
-    if (e.touches.length === 0) {
+    activePointersRef.current.delete(e.pointerId)
+
+    if (activePointersRef.current.size < 2) {
+      const wasPinching = touchStateRef.current.isPinching
       touchStateRef.current.isPinching = false
-
-      // Check for taps (short duration, no significant drag)
-      if (touchDuration < 300 && !hasDraggedRef.current) {
-        const timeSinceLastTap = now - touchStateRef.current.lastTapTime
-
-        if (timeSinceLastTap < 300) {
-          // Double-tap: reset view
-          resetView()
-          touchStateRef.current.lastTapTime = 0
-        } else {
-          // Single tap: sample color (if not in measure mode)
-          if (!props.measureMode && e.changedTouches.length > 0) {
-            sampleColorFromTouch(e.changedTouches[0] as unknown as React.Touch)
-          }
-          touchStateRef.current.lastTapTime = now
-        }
+      touchStateRef.current.lastDistance = 0
+      touchStateRef.current.lastCenter = { x: 0, y: 0 }
+      clearPendingSampling()
+      if (wasPinching) {
+        skipNextSinglePointerSampleRef.current = true
       }
+    } else if (activePointersRef.current.size !== 2) {
+      touchStateRef.current.isPinching = false
+      touchStateRef.current.lastDistance = 0
+      touchStateRef.current.lastCenter = { x: 0, y: 0 }
+      clearPendingSampling()
     }
 
-    // Always prevent default on touch end to avoid ghost clicks/scrolling
-    // But check if it's cancelable first
     if (e.cancelable) e.preventDefault()
-
-    // Reset drag state
-    hasDraggedRef.current = false
-  }, [image, props.measureMode, sampleColorFromTouch, resetView])
+  }, [clearPendingSampling])
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {
@@ -1038,17 +1000,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       const canvas = canvasRef.current
       if (!canvas) return
 
-      const rect = canvas.getBoundingClientRect()
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
-
-      const cursorX = (e.clientX - rect.left) * scaleX
-      const cursorY = (e.clientY - rect.top) * scaleY
+      const { cssX, cssY } = clientToCanvas(e.clientX, e.clientY, canvas)
 
       const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
       const newZoom = zoomLevel * (1 + delta)
 
-      zoomAtPoint(newZoom, cursorX, cursorY)
+      zoomAtPoint(newZoom, cssX, cssY)
       showMinimap()
     },
     [image, zoomLevel, zoomAtPoint, showMinimap]
@@ -1059,19 +1016,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // Explicitly non-passive listeners to allow preventDefault() on mobile
     canvas.addEventListener('wheel', handleWheel, { passive: false })
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
 
     return () => {
       canvas.removeEventListener('wheel', handleWheel)
-      canvas.removeEventListener('touchstart', handleTouchStart)
-      canvas.removeEventListener('touchmove', handleTouchMove)
-      canvas.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd])
+  }, [handleWheel])
 
   // Handle keyboard events
   useEffect(() => {
@@ -1087,7 +1037,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         e.preventDefault()
         const canvas = canvasRef.current
         if (canvas) {
-          zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+          const rect = canvas.getBoundingClientRect()
+          zoomAtPoint(zoomLevel + ZOOM_STEP, rect.width / 2, rect.height / 2)
         }
       }
 
@@ -1095,7 +1046,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         e.preventDefault()
         const canvas = canvasRef.current
         if (canvas) {
-          zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+          const rect = canvas.getBoundingClientRect()
+          zoomAtPoint(zoomLevel - ZOOM_STEP, rect.width / 2, rect.height / 2)
         }
       }
 
@@ -1154,11 +1106,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const screenX = (e.clientX - rect.left) * scaleX
-    const screenY = (e.clientY - rect.top) * scaleY
+    const screenX = e.clientX - rect.left
+    const screenY = e.clientY - rect.top
 
     // Measurement Mode
     if (props.measureMode && e.button === 0 && !isSpaceDown) {
@@ -1189,11 +1138,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const screenX = (e.clientX - rect.left) * scaleX
-    const screenY = (e.clientY - rect.top) * scaleY
+    const screenX = e.clientX - rect.left
+    const screenY = e.clientY - rect.top
 
     // Measurement Drag Preview
     if (isMeasuring && onMeasurePointsChange && measureStartPointRef.current) {
@@ -1237,11 +1183,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         if (!canvas || !image) return
 
         const rect = canvas.getBoundingClientRect()
-        const scaleX = canvas.width / rect.width
-        const scaleY = canvas.height / rect.height
-
-        const screenX = (e.clientX - rect.left) * scaleX
-        const screenY = (e.clientY - rect.top) * scaleY
+        const screenX = e.clientX - rect.left
+        const screenY = e.clientY - rect.top
 
         const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
         if (imagePoint) {
@@ -1393,14 +1336,16 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const handleZoomIn = () => {
     const canvas = canvasRef.current
     if (canvas) {
-      zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+      const rect = canvas.getBoundingClientRect()
+      zoomAtPoint(zoomLevel + ZOOM_STEP, rect.width / 2, rect.height / 2)
     }
   }
 
   const handleZoomOut = () => {
     const canvas = canvasRef.current
     if (canvas) {
-      zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+      const rect = canvas.getBoundingClientRect()
+      zoomAtPoint(zoomLevel - ZOOM_STEP, rect.width / 2, rect.height / 2)
     }
   }
 
@@ -1695,49 +1640,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       }
 
       props.onImageLoad(img)
-      // Don't revoke blob URL immediately - let it stay alive
-      // cleanup() will be called when component unmounts or new image loads
-
-      // Force dimension initialization after image loads (mobile fix)
-      requestAnimationFrame(() => {
-        const canvasContainer = canvasContainerRef.current
-        if (canvasContainer) {
-          const rect = canvasContainer.getBoundingClientRect()
-          if (rect.width > 0 && rect.height > 0) {
-            const newDims = {
-              width: Math.floor(rect.width),
-              height: Math.floor(rect.height),
-            }
-            setCanvasDimensions(newDims)
-            const info = calculateFit(
-              newDims,
-              { width: img.width, height: img.height }
-            )
-            setImageDrawInfo(info)
-            console.log('[ImageCanvas] Dimensions initialized:', newDims, 'imageDrawInfo:', info)
-            // Now safe to revoke blob URL since we have data URL
-            cleanup()
-          } else {
-            // Retry if dimensions aren't ready
-            setTimeout(() => {
-              const retryRect = canvasContainer.getBoundingClientRect()
-              if (retryRect.width > 0 && retryRect.height > 0) {
-                const newDims = {
-                  width: Math.floor(retryRect.width),
-                  height: Math.floor(retryRect.height),
-                }
-                setCanvasDimensions(newDims)
-                const info = calculateFit(
-                  newDims,
-                  { width: img.width, height: img.height }
-                )
-                setImageDrawInfo(info)
-                cleanup()
-              }
-            }, 100)
-          }
-        }
-      })
+      // Once converted to data URL, blob URL can be revoked immediately.
+      if (img.src.startsWith('data:')) {
+        cleanup()
+      }
     }
 
     img.onerror = (error) => {
@@ -1821,7 +1727,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
-            className="canvas-viewport flex-1 relative overflow-hidden md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
+            className="canvas-viewport flex-1 relative overflow-hidden overscroll-contain select-none md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
             style={{
               height: '100%',
               minHeight: '100%',
@@ -1854,16 +1760,21 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
-              onTouchStart={undefined}
-              onTouchMove={undefined}
-              onTouchEnd={undefined}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUpOrCancel}
+              onPointerCancel={handlePointerUpOrCancel}
               onContextMenu={(e) => e.preventDefault()}
-              className="absolute top-0 left-0 w-full h-full touch-none"
+              className="absolute top-0 left-0 w-full h-full touch-none select-none"
               style={{
                 cursor: getCursorStyle(),
                 zIndex: imageDrawInfo ? 60 : 5,
                 backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
-                pointerEvents: imageDrawInfo ? 'auto' : 'none'
+                pointerEvents: imageDrawInfo ? 'auto' : 'none',
+                touchAction: 'none',
+                overscrollBehavior: 'contain',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
               }}
             />
 
