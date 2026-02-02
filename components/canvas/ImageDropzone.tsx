@@ -373,7 +373,6 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                         <h1 className="font-wordmark-hero text-studio select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
                             Color Wizard
                         </h1>
-                        <span className="text-[10px] font-mono opacity-20 tracking-widest mt-1">MOBILE_UPLOAD_FIX_V1</span>
                     </div>
 
                     <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-studio-secondary mb-6 md:mb-12 tracking-tight opacity-80 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 px-4">
