@@ -77,7 +77,7 @@ interface ColorState {
     highlightTolerance: number
     highlightMode: 'solid' | 'heatmap'
     image: HTMLImageElement | null
-    activeTab: 'surface' | 'structure' | 'reference' | 'sample' | 'oilmix' | 'palette' | 'matches' | 'advanced' | 'pinned' | 'cards' | 'library'
+    activeTab: 'sample' | 'matches'
     pinnedColors: PinnedColor[]
     valueScaleSettings: ValueScaleSettings
     histogramBins: number[]
