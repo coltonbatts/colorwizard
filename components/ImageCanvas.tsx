@@ -615,7 +615,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     resizeObserver.observe(canvasContainer)
     return () => resizeObserver.disconnect()
-  }, []) // Removed dependency on image to avoid observer churn
+  }, [!!(image || surfaceImageElement)]) // Re-run when canvas container existence changes
 
   // Initial fit: run once per image after dimensions are known
   useEffect(() => {
