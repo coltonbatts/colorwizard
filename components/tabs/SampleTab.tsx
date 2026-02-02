@@ -126,7 +126,7 @@ export default function SampleTab({
                             {colorName || 'Analyzing...'}
                         </h2>
                         <p className="text-sm text-ink-muted">
-                            {valueBand} • {chroma}
+                            {valueBand} • {chroma.label}
                         </p>
                     </div>
 
