@@ -195,7 +195,7 @@ export function useImageAnalyzer(
             }
         })();
 
-    }, [image, valueScaleSettings?.steps, valueScaleSettings?.mode, valueScaleSettings?.clip]);
+    }, [image, valueScaleSettings]);
 
     // Recompute value scale when settings change
     useEffect(() => {
@@ -208,7 +208,7 @@ export function useImageAnalyzer(
             valueScaleSettings?.clip || 0
         );
         setValueScaleResult(result);
-    }, [valueScaleSettings?.steps, valueScaleSettings?.mode, valueScaleSettings?.clip, valueBuffer]);
+    }, [valueScaleSettings, valueBuffer]);
 
     const recomputeValueScale = useCallback(() => {
         if (!valueBuffer) return;
