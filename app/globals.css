@@ -733,13 +733,11 @@ body {
         flex-direction: column !important;
     }
 
-    /* Controls area - takes remaining 30% of screen */
+    /* Controls area - takes remaining space, scrollable if needed */
     .mobile-controls-area {
-        flex: 0 0 auto !important;
+        flex: 1 1 auto !important;
         width: 100% !important;
         min-width: 100% !important;
-        max-height: calc(100vh - 70vh);
-        max-height: calc(100dvh - 70dvh);
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;

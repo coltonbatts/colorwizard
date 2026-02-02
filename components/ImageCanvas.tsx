@@ -96,11 +96,10 @@ export interface ImageCanvasHandle {
 }
 
 const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref) => {
-  const { onColorSample, image, onImageLoad, valueScaleSettings } = props
+  const { onColorSample, image, onImageLoad, valueScaleSettings, onHistogramComputed, onValueScaleResult, onTransformChange, onMeasureClick, onMeasurePointsChange, generateHighlightOverlay } = props
   const isMobile = useIsMobile()
   const breakdownValue = useStore(state => state.breakdownValue)
   const valueModeEnabled = useStore(state => state.valueModeEnabled)
-  const toggleValueMode = useStore(state => state.toggleValueMode)
   const surfaceImage = useStore(state => state.surfaceImage)
   const gridOpacity = useStore(state => state.gridOpacity)
   const referenceOpacity = useStore(state => state.referenceOpacity)
@@ -183,16 +182,16 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
   // Report histogram and value scale to parent when they change
   useEffect(() => {
-    if (histogramBins.length > 0 && props.onHistogramComputed) {
-      props.onHistogramComputed(histogramBins)
+    if (histogramBins.length > 0 && onHistogramComputed) {
+      onHistogramComputed(histogramBins)
     }
-  }, [histogramBins, props.onHistogramComputed])
+  }, [histogramBins, onHistogramComputed])
 
   useEffect(() => {
-    if (valueScaleResult && props.onValueScaleResult) {
-      props.onValueScaleResult(valueScaleResult)
+    if (valueScaleResult && onValueScaleResult) {
+      onValueScaleResult(valueScaleResult)
     }
-  }, [valueScaleResult, props.onValueScaleResult])
+  }, [valueScaleResult, onValueScaleResult])
 
   // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
@@ -543,7 +542,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     // Restore global context state
     ctx.restore()
-  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep, breakdownBuffers, breakdownCanvasRef, overlayCanvasRef, sourceBufferRef, valueMapCanvasRef])
+  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep, breakdownBuffers, breakdownCanvasRef, overlayCanvasRef, sourceBufferRef, valueMapCanvasRef, canvasDimensions.width, canvasDimensions.height])
 
   // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
@@ -697,7 +696,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             const parent = canvasContainer.parentElement
             if (parent) {
               const parentRect = parent.getBoundingClientRect()
-              const parentStyle = window.getComputedStyle(parent)
 
               // Try using parent height minus toolbar if available
               if (parentRect.height > 0 && rect.height === 0) {
@@ -730,10 +728,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
   // Report transform state changes to parent for RulerOverlay
   useEffect(() => {
-    if (props.onTransformChange && imageDrawInfo) {
-      props.onTransformChange({ zoomLevel, panOffset, imageDrawInfo })
+    if (onTransformChange && imageDrawInfo) {
+      onTransformChange({ zoomLevel, panOffset, imageDrawInfo })
     }
-  }, [zoomLevel, panOffset, imageDrawInfo, props.onTransformChange])
+  }, [zoomLevel, panOffset, imageDrawInfo, onTransformChange])
 
   // Zoom function centered on a point
   const zoomAtPoint = useCallback(
@@ -752,114 +750,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   )
 
   // Handle mouse wheel for zoom
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      if (!image) return
-      e.preventDefault()
-
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const rect = canvas.getBoundingClientRect()
-      const scaleX = canvas.width / rect.width
-      const scaleY = canvas.height / rect.height
-
-      const cursorX = (e.clientX - rect.left) * scaleX
-      const cursorY = (e.clientY - rect.top) * scaleY
-
-      const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
-      const newZoom = zoomLevel * (1 + delta)
-
-      zoomAtPoint(newZoom, cursorX, cursorY)
-      showMinimap()
-    },
-    [image, zoomLevel, zoomAtPoint, showMinimap]
-  )
-
-  // Add wheel event listener
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    canvas.addEventListener('wheel', handleWheel, { passive: false })
-    return () => canvas.removeEventListener('wheel', handleWheel)
-  }, [handleWheel])
-
-  // Handle keyboard events
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!image) return
-
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        setIsSpaceDown(true)
-      }
-
-      if (e.key === '+' || e.key === '=') {
-        e.preventDefault()
-        const canvas = canvasRef.current
-        if (canvas) {
-          zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
-        }
-      }
-
-      if (e.key === '-') {
-        e.preventDefault()
-        const canvas = canvasRef.current
-        if (canvas) {
-          zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
-        }
-      }
-
-      if (e.key === '0') {
-        e.preventDefault()
-        resetView()
-      }
-
-      if (e.key.toLowerCase() === 'v' && !e.repeat) {
-        if (props.onValueScaleChange && props.valueScaleSettings) {
-          props.onValueScaleChange({
-            ...props.valueScaleSettings,
-            enabled: !props.valueScaleSettings.enabled
-          })
-        }
-      }
-
-      if (e.key.toLowerCase() === 's' && !e.repeat) {
-        setSplitMode(prev => !prev)
-      }
-
-      if (e.key.toLowerCase() === 'g' && !e.repeat) {
-        setInternalGridEnabled(prev => !prev)
-      }
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        setIsSpaceDown(false)
-        setIsPanning(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [image, zoomLevel, zoomAtPoint, props.onValueScaleChange, props.valueScaleSettings])
-
   // Reset view to initial state
   const resetView = useCallback(() => {
     setZoomLevel(1)
     setPanOffset({ x: 0, y: 0 })
   }, [])
-
-  // Expose methods to parent
-  useImperativeHandle(ref, () => ({
-    resetView
-  }))
 
   // Mobile Stabilization: Bound the pan offset so the image doesn't disappear
   const getClampedPan = useCallback((x: number, y: number, zoom: number) => {
@@ -874,10 +769,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     const th = imgH * zoom
 
     // Ensure at least 20% of the image remains visible
-    const minVisible = 0.2
-
-    // Logically: we want [imgX*zoom + panX, imgX*zoom + panX + tw] to overlap with [0, viewportW]
-    // Simplified:
     const limitX = Math.max(viewportW, tw) * 0.8
     const limitY = Math.max(viewportH, th) * 0.8
 
@@ -988,140 +879,20 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     performSampling(touch.clientX, touch.clientY)
   }, [performSampling])
 
-  // Handle mouse down
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!image) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const screenX = (e.clientX - rect.left) * scaleX
-    const screenY = (e.clientY - rect.top) * scaleY
-
-    // Measurement Mode
-    if (props.measureMode && e.button === 0 && !isSpaceDown) {
-      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-      if (imagePoint && props.onMeasurePointsChange) {
-        setIsMeasuring(true)
-        measureStartPointRef.current = imagePoint
-        props.onMeasurePointsChange(imagePoint, imagePoint)
-      }
-      return
-    }
-
-    // Panning Mode
-    if (e.button === 0 || e.button === 1 || isSpaceDown) {
-      e.preventDefault()
-      setIsPanning(true)
-      lastPanPoint.current = { x: e.clientX, y: e.clientY }
-      dragStartRef.current = { x: e.clientX, y: e.clientY }
-      hasDraggedRef.current = false
-    }
+  // Helper functions for pinch-to-zoom
+  const getTouchDistance = (t1: Touch, t2: Touch) => {
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY)
   }
 
-  // Handle mouse move
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!image) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-
-    const screenX = (e.clientX - rect.left) * scaleX
-    const screenY = (e.clientY - rect.top) * scaleY
-
-    // Measurement Drag Preview
-    if (isMeasuring && props.onMeasurePointsChange && measureStartPointRef.current) {
-      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-      if (imagePoint) {
-        props.onMeasurePointsChange(measureStartPointRef.current, imagePoint)
-      }
-      return
-    }
-
-    if (isPanning) {
-      if (!hasDraggedRef.current) {
-        const dist = Math.hypot(
-          e.clientX - dragStartRef.current.x,
-          e.clientY - dragStartRef.current.y
-        )
-        if (dist > DRAG_THRESHOLD) hasDraggedRef.current = true
-      }
-
-      const deltaX = e.clientX - lastPanPoint.current.x
-      const deltaY = e.clientY - lastPanPoint.current.y
-
-      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
-
-      lastPanPoint.current = { x: e.clientX, y: e.clientY }
-      showMinimap()
-    }
-  }
-
-  // Handle mouse up
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isMeasuring) {
-      setIsMeasuring(false)
-      return
-    }
-
-    setIsPanning(false)
-    if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
-      if (props.measureMode && props.onMeasureClick) {
-        const canvas = canvasRef.current
-        if (!canvas || !image) return
-
-        const rect = canvas.getBoundingClientRect()
-        const scaleX = canvas.width / rect.width
-        const scaleY = canvas.height / rect.height
-
-        const screenX = (e.clientX - rect.left) * scaleX
-        const screenY = (e.clientY - rect.top) * scaleY
-
-        const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-        if (imagePoint) {
-          props.onMeasureClick(imagePoint)
-        }
-      } else {
-        sampleColor(e)
-      }
-    }
-  }
-
-  // Handle mouse leave
-  const handleMouseLeave = () => {
-    setIsPanning(false)
-  }
-
-  // ============================================
-  // TOUCH EVENT HANDLERS (Mobile Support)
-  // ============================================
-
-  // Helper: Get distance between two touch points
-  const getTouchDistance = (t1: React.Touch, t2: React.Touch) => {
-    return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
-  }
-
-  // Helper: Get center point between two touches (logical pixels)
-  const getTouchCenter = (t1: React.Touch, t2: React.Touch, rect: DOMRect) => {
+  const getTouchCenter = (t1: Touch, t2: Touch, rect: DOMRect) => {
     return {
       x: (t1.clientX + t2.clientX) / 2 - rect.left,
       y: (t1.clientY + t2.clientY) / 2 - rect.top,
     }
   }
 
-  // Sample color from touch position (similar to sampleColor but for touch events)
-  // Handle touch interactions unified in other handlers
-
-  // Handle touch start
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+  // Handle touch interactions
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!image) return
 
     const canvas = canvasRef.current
@@ -1154,13 +925,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
       // Sample color immediately on touch start for feedback
       if (!props.measureMode) {
-        sampleColorFromTouch(touch)
+        sampleColorFromTouch(touch as unknown as React.Touch)
       }
     }
   }, [image, props.measureMode, sampleColorFromTouch])
 
-  // Handle touch move  
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!image) return
 
     const canvas = canvasRef.current
@@ -1217,15 +987,14 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
       // Always sample color during move/pan for an "eyedropper" feel
       if (!props.measureMode) {
-        sampleColorFromTouch(touch)
+        sampleColorFromTouch(touch as unknown as React.Touch)
       }
 
       lastPanPoint.current = { x: touch.clientX, y: touch.clientY }
     }
   }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, sampleColorFromTouch])
 
-  // Handle touch end
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
     if (!image) return
 
     const now = Date.now()
@@ -1246,7 +1015,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         } else {
           // Single tap: sample color (if not in measure mode)
           if (!props.measureMode && e.changedTouches.length > 0) {
-            sampleColorFromTouch(e.changedTouches[0])
+            sampleColorFromTouch(e.changedTouches[0] as unknown as React.Touch)
           }
           touchStateRef.current.lastTapTime = now
         }
@@ -1254,12 +1023,241 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
 
     // Always prevent default on touch end to avoid ghost clicks/scrolling
+    // But check if it's cancelable first
     if (e.cancelable) e.preventDefault()
 
     // Reset drag state
     hasDraggedRef.current = false
-    lastPanPoint.current = { x: 0, y: 0 }
-  }, [getClampedPan, imageDrawInfo, canvasDimensions, image, zoomLevel, props.measureMode, sampleColorFromTouch, resetView])
+  }, [image, props.measureMode, sampleColorFromTouch, resetView])
+
+  const handleWheel = useCallback(
+    (e: WheelEvent) => {
+      if (!image) return
+      e.preventDefault()
+
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width
+      const scaleY = canvas.height / rect.height
+
+      const cursorX = (e.clientX - rect.left) * scaleX
+      const cursorY = (e.clientY - rect.top) * scaleY
+
+      const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
+      const newZoom = zoomLevel * (1 + delta)
+
+      zoomAtPoint(newZoom, cursorX, cursorY)
+      showMinimap()
+    },
+    [image, zoomLevel, zoomAtPoint, showMinimap]
+  )
+
+  // Add wheel event listener
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    // Explicitly non-passive listeners to allow preventDefault() on mobile
+    canvas.addEventListener('wheel', handleWheel, { passive: false })
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false })
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false })
+
+    return () => {
+      canvas.removeEventListener('wheel', handleWheel)
+      canvas.removeEventListener('touchstart', handleTouchStart)
+      canvas.removeEventListener('touchmove', handleTouchMove)
+      canvas.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd])
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!image) return
+
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        setIsSpaceDown(true)
+      }
+
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        const canvas = canvasRef.current
+        if (canvas) {
+          zoomAtPoint(zoomLevel + ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+        }
+      }
+
+      if (e.key === '-') {
+        e.preventDefault()
+        const canvas = canvasRef.current
+        if (canvas) {
+          zoomAtPoint(zoomLevel - ZOOM_STEP, canvas.width / 2, canvas.height / 2)
+        }
+      }
+
+      if (e.key === '0') {
+        e.preventDefault()
+        resetView()
+      }
+
+      if (e.key.toLowerCase() === 'v' && !e.repeat) {
+        if (props.onValueScaleChange && props.valueScaleSettings) {
+          props.onValueScaleChange({
+            ...props.valueScaleSettings,
+            enabled: !props.valueScaleSettings.enabled
+          })
+        }
+      }
+
+      if (e.key.toLowerCase() === 's' && !e.repeat) {
+        setSplitMode(prev => !prev)
+      }
+
+      if (e.key.toLowerCase() === 'g' && !e.repeat) {
+        setInternalGridEnabled(prev => !prev)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpaceDown(false)
+        setIsPanning(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [image, zoomLevel, zoomAtPoint, props.onValueScaleChange, props.valueScaleSettings])
+
+
+  // Expose methods to parent
+  useImperativeHandle(ref, () => ({
+    resetView
+  }))
+
+
+
+  // Handle mouse down
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+
+    // Measurement Mode
+    if (props.measureMode && e.button === 0 && !isSpaceDown) {
+      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+      if (imagePoint && onMeasurePointsChange) {
+        setIsMeasuring(true)
+        measureStartPointRef.current = imagePoint
+        onMeasurePointsChange(imagePoint, imagePoint)
+      }
+      return
+    }
+
+    // Panning Mode
+    if (e.button === 0 || e.button === 1 || isSpaceDown) {
+      e.preventDefault()
+      setIsPanning(true)
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
+      dragStartRef.current = { x: e.clientX, y: e.clientY }
+      hasDraggedRef.current = false
+    }
+  }
+
+  // Handle mouse move
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    const screenX = (e.clientX - rect.left) * scaleX
+    const screenY = (e.clientY - rect.top) * scaleY
+
+    // Measurement Drag Preview
+    if (isMeasuring && onMeasurePointsChange && measureStartPointRef.current) {
+      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+      if (imagePoint) {
+        onMeasurePointsChange(measureStartPointRef.current, imagePoint)
+      }
+      return
+    }
+
+    if (isPanning) {
+      if (!hasDraggedRef.current) {
+        const dist = Math.hypot(
+          e.clientX - dragStartRef.current.x,
+          e.clientY - dragStartRef.current.y
+        )
+        if (dist > DRAG_THRESHOLD) hasDraggedRef.current = true
+      }
+
+      const deltaX = e.clientX - lastPanPoint.current.x
+      const deltaY = e.clientY - lastPanPoint.current.y
+
+      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
+
+      lastPanPoint.current = { x: e.clientX, y: e.clientY }
+      showMinimap()
+    }
+  }
+
+  // Handle mouse up
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isMeasuring) {
+      setIsMeasuring(false)
+      return
+    }
+
+    setIsPanning(false)
+    if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
+      if (props.measureMode && onMeasureClick) {
+        const canvas = canvasRef.current
+        if (!canvas || !image) return
+
+        const rect = canvas.getBoundingClientRect()
+        const scaleX = canvas.width / rect.width
+        const scaleY = canvas.height / rect.height
+
+        const screenX = (e.clientX - rect.left) * scaleX
+        const screenY = (e.clientY - rect.top) * scaleY
+
+        const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
+        if (imagePoint) {
+          onMeasureClick(imagePoint)
+        }
+      } else {
+        sampleColor(e)
+      }
+    }
+  }
+
+  // Handle mouse leave
+  const handleMouseLeave = () => {
+    setIsPanning(false)
+  }
+
 
   // Draw value map overlay
   useEffect(() => {
@@ -1313,7 +1311,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     let isSubscribed = true
 
     const updateHighlight = async () => {
-      const overlayData = await props.generateHighlightOverlay?.(
+      const overlayData = await generateHighlightOverlay?.(
         highlightColor.r,
         highlightColor.g,
         highlightColor.b,
@@ -1345,7 +1343,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     return () => {
       isSubscribed = false
     }
-  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode, props.generateHighlightOverlay, drawCanvas])
+  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode, generateHighlightOverlay, drawCanvas])
 
   // Draw breakdown layers to offscreen canvas
   useEffect(() => {
@@ -1406,29 +1404,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }
 
-  const handleActualSize = useCallback(() => {
-    if (!props.calibration || !props.canvasSettings?.enabled || !image || !imageDrawInfo) return
-
-    const { pxPerInch } = props.calibration
-    const { width: physicalWidth, unit } = props.canvasSettings
-
-    // Convert physical width to inches if it's in cm
-    const widthInInches = unit === 'cm' ? physicalWidth / 2.54 : physicalWidth
-
-    // To get actual size: targetScale * baseImageWidth (px) = physicalWidth (inches) * pxPerInch
-    // targetScale = (physicalWidth (inches) * pxPerInch) / baseImageWidth
-    // Note: imageDrawInfo.width is the "fit-to-canvas" width (base width before zoom)
-
-    const targetZoom = (widthInInches * pxPerInch) / imageDrawInfo.width
-
-    const canvas = canvasRef.current
-    if (canvas) {
-      // Zoom centered on the middle of the canvas
-      zoomAtPoint(targetZoom, canvas.width / 2, canvas.height / 2)
-    }
-  }, [props.calibration, props.canvasSettings, image, imageDrawInfo, zoomAtPoint])
-
-  const isActualSizeEnabled = !!(props.calibration?.pxPerInch && props.canvasSettings?.enabled && imageDrawInfo)
 
   // Check if file is an image by extension or MIME type
   const isImageFile = useCallback((file: File): boolean => {
@@ -1879,9 +1854,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              onTouchStart={undefined}
+              onTouchMove={undefined}
+              onTouchEnd={undefined}
               onContextMenu={(e) => e.preventDefault()}
               className="absolute top-0 left-0 w-full h-full touch-none"
               style={{

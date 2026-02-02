@@ -9,14 +9,13 @@ import { useState, useEffect } from 'react'
 import ColorNamingDisplay from '../ColorNamingDisplay'
 import FullScreenOverlay from '../FullScreenOverlay'
 import ColorCardModal from '../ColorCardModal'
-import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
+import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { getColorName } from '@/lib/colorNaming'
-import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { useStore } from '@/lib/store/useStore'
 import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -35,7 +34,6 @@ interface SampleTabProps {
     } | null
     onPin: (newPin: PinnedColor) => void
     isPinned: boolean
-    valueScaleSettings?: ValueScaleSettings
     lastSampleTime?: number
     onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
     onSwitchToMatches?: () => void
@@ -45,7 +43,6 @@ export default function SampleTab({
     sampledColor,
     onPin,
     isPinned,
-    valueScaleSettings,
     lastSampleTime,
     onAddToSession,
     onSwitchToMatches
@@ -73,7 +70,7 @@ export default function SampleTab({
         getColorName(sampledColor.hex)
             .then(result => setColorName(result.name))
             .catch(() => setColorName(''))
-    }, [sampledColor?.hex])
+    }, [sampledColor])
 
     if (!sampledColor) {
         return (
@@ -104,46 +101,110 @@ export default function SampleTab({
         setTimeout(() => setCopied(null), 1500)
     }
 
-    // Mobile-first, art-forward layout
+    // Mobile-first, art-forward layout - COMPACT
     if (isMobile) {
         return (
-            <div className="bg-paper-elevated text-ink font-sans min-h-full flex flex-col">
-                {/* Large, prominent color swatch - no hex overlay, just pure color */}
-                <div
-                    className="w-full flex-shrink-0"
-                    style={{ 
-                        height: '40vh',
-                        minHeight: '300px',
-                        backgroundColor: valueModeEnabled ? grayscaleHex : hex 
-                    }}
-                />
-
-                {/* Color info - simple, art-forward */}
-                <div className="flex-1 p-6 space-y-6">
-                    {/* Color Name - prominent */}
-                    <div>
-                        <h2 className="text-3xl font-black text-ink tracking-tight leading-tight mb-2">
+            <div className="bg-paper-elevated text-ink font-sans min-h-full flex flex-col p-4 space-y-4">
+                {/* Header-like row: Swatch + Name */}
+                <div className="flex items-center gap-4">
+                    <div
+                        className="w-16 h-16 rounded-xl shadow-inner border border-ink-hairline flex-shrink-0"
+                        style={{ backgroundColor: valueModeEnabled ? grayscaleHex : hex }}
+                    />
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-xl font-bold text-ink truncate leading-tight">
                             {colorName || 'Analyzing...'}
                         </h2>
-                        <p className="text-sm text-ink-muted">
+                        <p className="text-xs text-ink-muted uppercase tracking-wider font-bold">
                             {valueBand} • {chroma.label}
                         </p>
                     </div>
+                    <div className="text-right">
+                        <div className="text-sm font-mono font-bold text-ink">{hex}</div>
+                    </div>
+                </div>
 
-                    {/* DMC Threads Button - prominent */}
+                {/* Primary Readout Row: Value Step (if active) */}
+                {valueModeEnabled && valueModeMeta && (
+                    <div className="bg-paper-recessed rounded-xl p-3 flex items-center justify-between border border-ink-hairline">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-signal rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-signal">Value Step</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-black text-ink">{valueModeMeta.step}</span>
+                            <span className="text-xs font-bold text-ink-faint">/ {valueModeSteps}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Main Actions Row */}
+                <div className="grid grid-cols-2 gap-3">
+                    <button
+                        onClick={async () => {
+                            if (isPinned) return
+                            setIsPinning(true)
+                            try {
+                                const spectral = await solveRecipe(hex)
+                                const fallback = generatePaintRecipe(hsl)
+                                const dmc = findClosestDMCColors(rgb, 5)
+
+                                onPin({
+                                    id: crypto.randomUUID(),
+                                    hex,
+                                    rgb,
+                                    hsl,
+                                    label: label.trim() || `Color ${hex}`,
+                                    timestamp: Date.now(),
+                                    spectralRecipe: spectral,
+                                    fallbackRecipe: fallback,
+                                    dmcMatches: dmc
+                                })
+                                setLabel('')
+                            } catch (e) {
+                                console.error('Failed to pin color', e)
+                            } finally {
+                                setIsPinning(false)
+                            }
+                        }}
+                        disabled={isPinning || isPinned}
+                        className={`flex items-center justify-center gap-2 py-4 px-4 rounded-xl text-sm font-bold transition-all ${isPinned
+                            ? 'bg-subsignal-muted text-subsignal border border-subsignal'
+                            : 'bg-signal text-white shadow-lg active:scale-95'
+                            }`}
+                    >
+                        {isPinning ? '...' : isPinned ? '✓ Pinned' : '📌 Pin'}
+                    </button>
+
                     {onSwitchToMatches && (
                         <button
                             onClick={onSwitchToMatches}
-                            className="w-full py-5 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                            className="flex items-center justify-center gap-2 py-4 px-4 bg-ink text-white rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all"
                         >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19.5 4.5 L6.5 17.5" />
                                 <circle cx="20.5" cy="3.5" r="1.5" />
                                 <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
                             </svg>
-                            <span>Match DMC Threads</span>
+                            <span>Threads</span>
                         </button>
                     )}
+                </div>
+
+                {/* Sub-actions / Copy */}
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => copyToClipboard(hex, 'hex')}
+                        className="flex-1 py-2 rounded-lg bg-paper-recessed text-[11px] font-bold text-ink-secondary hover:text-ink transition-colors border border-ink-hairline"
+                    >
+                        {copied === 'hex' ? '✓ Copied' : `Copy HEX`}
+                    </button>
+                    <button
+                        onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')}
+                        className="flex-1 py-2 rounded-lg bg-paper-recessed text-[11px] font-bold text-ink-secondary hover:text-ink transition-colors border border-ink-hairline"
+                    >
+                        {copied === 'rgb' ? '✓ Copied' : `Copy RGB`}
+                    </button>
                 </div>
             </div>
         )
