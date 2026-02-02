@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth/useAuth'
-import Script from 'next/script'
 import './globals.css'
 
 /**
@@ -59,10 +58,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <Script src="https://cdn.jsdelivr.net/npm/eruda" strategy="beforeInteractive" />
-        <Script id="eruda-init" strategy="afterInteractive">
-          {`if (typeof window !== 'undefined') { eruda.init(); }`}
-        </Script>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
