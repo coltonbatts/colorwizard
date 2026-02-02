@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
 import { Palette, DEFAULT_PALETTE } from '../types/palette'
@@ -14,6 +14,46 @@ import {
     clearCalibration as removeCalibration,
     isCalibrationStale
 } from '../calibration'
+
+// Safe storage wrapper for mobile Safari compatibility
+const createSafeStorage = () => {
+    // Memory fallback for when localStorage is unavailable
+    let memoryStorage: Record<string, string> = {}
+    
+    const safeStorage = {
+        getItem: (name: string): string | null => {
+            try {
+                if (typeof window === 'undefined') return null
+                return window.localStorage.getItem(name) ?? memoryStorage[name] ?? null
+            } catch {
+                return memoryStorage[name] ?? null
+            }
+        },
+        setItem: (name: string, value: string): void => {
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(name, value)
+                }
+                memoryStorage[name] = value
+            } catch {
+                // Fall back to memory only
+                memoryStorage[name] = value
+            }
+        },
+        removeItem: (name: string): void => {
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.removeItem(name)
+                }
+                delete memoryStorage[name]
+            } catch {
+                delete memoryStorage[name]
+            }
+        },
+    }
+    
+    return safeStorage
+}
 
 // Point type for measurement
 interface Point {
@@ -417,6 +457,7 @@ export const useStore = create<ColorState>()(
         }),
         {
             name: 'colorwizard-storage',
+            storage: createJSONStorage(() => createSafeStorage()),
             partialize: (state) => ({
                 pinnedColors: state.pinnedColors,
                 palettes: state.palettes,
@@ -440,6 +481,20 @@ export const useStore = create<ColorState>()(
                 surfaceBounds: state.surfaceBounds,
                 gridOpacity: state.gridOpacity,
             }),
+            // Add error handling for mobile Safari localStorage issues
+            onRehydrateStorage: () => (state, error) => {
+                if (error) {
+                    console.warn('Failed to rehydrate store from localStorage:', error)
+                    // Clear corrupted storage
+                    try {
+                        if (typeof window !== 'undefined') {
+                            window.localStorage.removeItem('colorwizard-storage')
+                        }
+                    } catch (e) {
+                        // localStorage not available, ignore
+                    }
+                }
+            },
         }
     )
 )

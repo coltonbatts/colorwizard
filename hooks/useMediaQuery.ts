@@ -4,19 +4,35 @@ import { useState, useEffect } from 'react'
 
 /**
  * Hook to detect media queries in a performant way
+ * SSR-safe: initializes with actual value to prevent hydration mismatches
  */
 export function useMediaQuery(query: string): boolean {
-    const [matches, setMatches] = useState(false)
+    // Initialize with actual value if available (SSR-safe)
+    const [matches, setMatches] = useState(() => {
+        if (typeof window === 'undefined') return false
+        try {
+            return window.matchMedia(query).matches
+        } catch {
+            return false
+        }
+    })
 
     useEffect(() => {
-        const media = window.matchMedia(query)
-        if (media.matches !== matches) {
-            setMatches(media.matches)
-        }
+        // Guard for SSR
+        if (typeof window === 'undefined') return
 
-        const listener = () => setMatches(media.matches)
-        media.addEventListener('change', listener)
-        return () => media.removeEventListener('change', listener)
+        try {
+            const media = window.matchMedia(query)
+            if (media.matches !== matches) {
+                setMatches(media.matches)
+            }
+
+            const listener = () => setMatches(media.matches)
+            media.addEventListener('change', listener)
+            return () => media.removeEventListener('change', listener)
+        } catch (error) {
+            console.warn('matchMedia not available:', error)
+        }
     }, [matches, query])
 
     return matches
