@@ -7,15 +7,8 @@ import { useState, useEffect } from 'react'
  * SSR-safe: initializes with actual value to prevent hydration mismatches
  */
 export function useMediaQuery(query: string): boolean {
-    // Initialize with actual value if available (SSR-safe)
-    const [matches, setMatches] = useState(() => {
-        if (typeof window === 'undefined') return false
-        try {
-            return window.matchMedia(query).matches
-        } catch {
-            return false
-        }
-    })
+    // Initialize to false to prevent hydration mismatch
+    const [matches, setMatches] = useState(false)
 
     useEffect(() => {
         // Guard for SSR

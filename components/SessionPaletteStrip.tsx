@@ -28,17 +28,20 @@ type SessionPaletteWindow = Window & { __sessionPaletteAdd?: SessionPaletteAddFn
 
 export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStripProps) {
     // Load from localStorage on mount - using initializer function for state
-    const [colors, setColors] = useState<SessionColor[]>(() => {
-        if (typeof window === 'undefined') return []
+    const [colors, setColors] = useState<SessionColor[]>([])
+    const [editingId, setEditingId] = useState<string | null>(null)
+
+    // Load from localStorage on mount safely
+    useEffect(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY)
-            return saved ? JSON.parse(saved) : []
+            if (saved) {
+                setColors(JSON.parse(saved))
+            }
         } catch (e) {
             console.error('Failed to load session palette', e)
-            return []
         }
-    })
-    const [editingId, setEditingId] = useState<string | null>(null)
+    }, [])
     const [editLabel, setEditLabel] = useState('')
     const [copied, setCopied] = useState<string | null>(null)
     const [activePopup, setActivePopup] = useState<string | null>(null)

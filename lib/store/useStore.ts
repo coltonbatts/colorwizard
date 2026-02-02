@@ -18,8 +18,8 @@ import {
 // Safe storage wrapper for mobile Safari compatibility
 const createSafeStorage = () => {
     // Memory fallback for when localStorage is unavailable
-    let memoryStorage: Record<string, string> = {}
-    
+    const memoryStorage: Record<string, string> = {}
+
     const safeStorage = {
         getItem: (name: string): string | null => {
             try {
@@ -51,7 +51,7 @@ const createSafeStorage = () => {
             }
         },
     }
-    
+
     return safeStorage
 }
 
@@ -490,7 +490,7 @@ export const useStore = create<ColorState>()(
                         if (typeof window !== 'undefined') {
                             window.localStorage.removeItem('colorwizard-storage')
                         }
-                    } catch (e) {
+                    } catch {
                         // localStorage not available, ignore
                     }
                 }
