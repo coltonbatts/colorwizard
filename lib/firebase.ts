@@ -15,17 +15,32 @@ const isConfigValid = !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY && process.env.
 
 // Getter functions to avoid initialization during build-time module evaluation
 export function getFirebaseApp() {
-    if (getApps().length > 0) return getApp();
-    if (isConfigValid) return initializeApp(firebaseConfig);
-    return null;
+    try {
+        if (getApps().length > 0) return getApp();
+        if (isConfigValid) return initializeApp(firebaseConfig);
+        return null;
+    } catch (error) {
+        console.warn('Firebase app initialization failed:', error);
+        return null;
+    }
 }
 
 export function getFirestoreDb() {
-    const app = getFirebaseApp();
-    return app ? getFirestore(app) : null;
+    try {
+        const app = getFirebaseApp();
+        return app ? getFirestore(app) : null;
+    } catch (error) {
+        console.warn('Firestore initialization failed:', error);
+        return null;
+    }
 }
 
 export function getFirebaseAuth() {
-    const app = getFirebaseApp();
-    return app ? getAuth(app) : null;
+    try {
+        const app = getFirebaseApp();
+        return app ? getAuth(app) : null;
+    } catch (error) {
+        console.warn('Firebase Auth initialization failed:', error);
+        return null;
+    }
 }
