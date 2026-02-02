@@ -23,27 +23,27 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
         if (file.type && file.type.startsWith('image/')) {
             return true;
         }
-        
+
         // Check by file extension (handles HEIC, WebP, etc. that might have wrong MIME type)
         const extension = file.name.toLowerCase().split('.').pop();
         const imageExtensions = [
             'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico',
             'heic', 'heif', 'avif', 'tiff', 'tif', 'raw', 'cr2', 'nef', 'orf', 'sr2'
         ];
-        
+
         return imageExtensions.includes(extension || '');
     }, []);
 
     const loadImage = useCallback(
         async (file: File) => {
             let processedFile = file;
-            
+
             // Handle HEIC/HEIF conversion
-            const isHeic = file.name.toLowerCase().endsWith('.heic') || 
-                          file.name.toLowerCase().endsWith('.heif') ||
-                          file.type === 'image/heic' || 
-                          file.type === 'image/heif';
-            
+            const isHeic = file.name.toLowerCase().endsWith('.heic') ||
+                file.name.toLowerCase().endsWith('.heif') ||
+                file.type === 'image/heic' ||
+                file.type === 'image/heif';
+
             if (isHeic) {
                 // Ensure we're in browser environment
                 if (typeof window === 'undefined' || typeof Blob === 'undefined') {
@@ -62,20 +62,20 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                 try {
                     setIsConverting(true);
                     console.log('[ImageDropzone] Starting HEIC conversion for:', file.name, file.size, 'bytes');
-                    
+
                     // Dynamic import with error handling
                     let heic2any;
                     try {
                         const heic2anyModule = await import('heic2any');
                         heic2any = heic2anyModule.default || heic2anyModule;
-                        
+
                         if (typeof heic2any !== 'function') {
                             throw new Error(`heic2any is not a function: ${typeof heic2any}`);
                         }
                     } catch (importErr) {
                         console.error('[ImageDropzone] Failed to import heic2any:', importErr);
-                        const importErrorMsg = importErr instanceof Error 
-                            ? importErr.message 
+                        const importErrorMsg = importErr instanceof Error
+                            ? importErr.message
                             : String(importErr);
                         throw new Error(`Failed to load HEIC converter: ${importErrorMsg}`);
                     }
@@ -94,17 +94,17 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             size: file.size,
                             type: file.type
                         });
-                        
+
                         conversionPromise = heic2any({
                             blob: file,
                             toType: 'image/jpeg',
                             quality: 0.95
                         });
-                        
+
                         if (!(conversionPromise instanceof Promise)) {
                             throw new Error(`heic2any did not return a Promise, got: ${typeof conversionPromise}`);
                         }
-                        
+
                         console.log('[ImageDropzone] heic2any promise created successfully');
                     } catch (syncErr) {
                         console.error('[ImageDropzone] Synchronous error during heic2any call:', syncErr);
@@ -112,7 +112,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                     }
 
                     // Add timeout (30 seconds)
-                    const timeoutPromise = new Promise<never>((_, reject) => 
+                    const timeoutPromise = new Promise<never>((_, reject) =>
                         setTimeout(() => reject(new Error('HEIC conversion timed out after 30 seconds')), 30000)
                     );
 
@@ -121,11 +121,11 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                         console.error('[ImageDropzone] Conversion promise rejected:', conversionErr);
                         console.error('[ImageDropzone] Conversion error type:', typeof conversionErr);
                         console.error('[ImageDropzone] Conversion error constructor:', conversionErr?.constructor?.name);
-                        
+
                         // Deep inspection of the "empty" object
                         const allProps = conversionErr ? Object.getOwnPropertyNames(conversionErr) : [];
                         console.error('[ImageDropzone] Conversion error all properties:', allProps);
-                        
+
                         // Try to extract error message
                         let errorMsg = 'HEIC conversion failed';
                         if (conversionErr instanceof Error) {
@@ -137,7 +137,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             const errObj = conversionErr as Record<string, unknown>;
                             errorMsg = (errObj.message as string) || (errObj.error as string) || (errObj.code as string) || errObj.toString?.() || 'Conversion error (details unavailable)';
                         }
-                        
+
                         throw new Error(`HEIC conversion failed: ${errorMsg}`);
                     });
 
@@ -154,7 +154,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                         console.error('[ImageDropzone] Error during Promise.race:', raceErr);
                         console.error('[ImageDropzone] Race error type:', typeof raceErr);
                         console.error('[ImageDropzone] Race error constructor:', raceErr?.constructor?.name);
-                        
+
                         // Re-throw with more context if not already wrapped
                         if (raceErr instanceof Error) {
                             throw raceErr;
@@ -190,13 +190,13 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                     // Extract error information with more aggressive error extraction
                     let errorMessage = 'Unknown error';
                     let errorDetails: Record<string, unknown> = {};
-                    
+
                     // Log the raw error first
                     console.error('[ImageDropzone] Raw error caught:', err);
                     console.error('[ImageDropzone] Error type:', typeof err);
                     console.error('[ImageDropzone] Error constructor:', (err as { constructor?: { name?: string } })?.constructor?.name);
                     console.error('[ImageDropzone] Error keys:', err ? Object.keys(err) : 'no keys');
-                    
+
                     if (err instanceof Error) {
                         errorMessage = err.message || 'Error without message';
                         errorDetails = {
@@ -230,7 +230,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                             } catch {
                                 errorMessage = `Conversion failed - error type: ${typeof err}, constructor: ${(err as { constructor?: { name?: string } })?.constructor?.name || 'unknown'}`;
                             }
-                            errorDetails = { 
+                            errorDetails = {
                                 error: 'Non-serializable error object',
                                 type: typeof err,
                                 constructor: (err as { constructor?: { name?: string } })?.constructor?.name
@@ -238,17 +238,17 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                         }
                     } else {
                         errorMessage = String(err) || 'Unknown error type';
-                        errorDetails = { 
+                        errorDetails = {
                             error: String(err),
                             type: typeof err
                         };
                     }
-                    
+
                     console.error('[ImageDropzone] HEIC conversion failed - errorDetails:', errorDetails);
                     console.error('[ImageDropzone] HEIC conversion failed - errorMessage:', errorMessage);
                     console.error('[ImageDropzone] Full error object (direct):', err);
                     console.error('[ImageDropzone] Full error object (JSON):', JSON.stringify(err, null, 2));
-                    
+
                     alert(`Failed to convert HEIC image.\n\nError: ${errorMessage}\n\nPlease try:\n1. Converting the image to JPEG using your device's Photos app\n2. Using a different image format\n3. Trying a smaller HEIC file (under 50MB)`);
                     setIsConverting(false);
                     return;
@@ -273,25 +273,38 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
             img.onload = () => {
                 console.log('[ImageDropzone] Image loaded successfully:', img.width, 'x', img.height);
-                
-                // Convert to data URL to preserve image source (blob URLs get revoked)
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(img, 0, 0);
-                    try {
-                        const dataUrl = canvas.toDataURL('image/png');
-                        img.src = dataUrl;
-                        console.log('[ImageDropzone] Converted image to data URL');
-                    } catch (e) {
-                        console.warn('[ImageDropzone] Failed to convert to data URL:', e);
+
+                // If this is the initial blob URL load, convert to data URL for persistence
+                if (img.src.startsWith('blob:')) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0);
+                        try {
+                            const dataUrl = canvas.toDataURL('image/png');
+                            console.log('[ImageDropzone] Converted image to data URL, trigger re-load');
+                            // This will trigger img.onload again with the data URL
+                            img.src = dataUrl;
+                            URL.revokeObjectURL(objectUrl);
+                            return; // Stop here, wait for the next onload
+                        } catch (e) {
+                            console.warn('[ImageDropzone] Failed to convert to data URL:', e);
+                        }
                     }
                 }
-                
-                onImageLoad(img);
-                URL.revokeObjectURL(objectUrl);
+
+                // If we reach here, either data URL conversion failed/skipped 
+                // OR this is the second onload (after data URL assignment)
+                if (img.width > 0 && img.height > 0) {
+                    onImageLoad(img);
+                    if (img.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(objectUrl);
+                    }
+                } else {
+                    console.warn('[ImageDropzone] Skipping onImageLoad for 0x0 image');
+                }
             };
 
             img.src = objectUrl;

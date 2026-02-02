@@ -107,7 +107,7 @@ export function useImageAnalyzer(
 
     // Process image when it changes
     useEffect(() => {
-        if (!image) {
+        if (!image || image.width === 0 || image.height === 0) {
             setLabBuffer(null);
             setValueBuffer(null);
             setSortedLuminances(null);
@@ -195,7 +195,7 @@ export function useImageAnalyzer(
             }
         })();
 
-    }, [image]);
+    }, [image, valueScaleSettings?.steps, valueScaleSettings?.mode, valueScaleSettings?.clip]);
 
     // Recompute value scale when settings change
     useEffect(() => {
