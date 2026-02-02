@@ -5,7 +5,7 @@
  * Shows the sampled color with hero swatch, value/chroma readouts, and actions
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ColorNamingDisplay from '../ColorNamingDisplay'
 import FullScreenOverlay from '../FullScreenOverlay'
 import ColorCardModal from '../ColorCardModal'
@@ -19,6 +19,7 @@ import { getColorName } from '@/lib/colorNaming'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { useStore } from '@/lib/store/useStore'
 import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 
 interface SampleTabProps {
     sampledColor: {
@@ -49,17 +50,30 @@ export default function SampleTab({
     onAddToSession,
     onSwitchToMatches
 }: SampleTabProps) {
+    const isMobile = useIsMobile()
     const [label, setLabel] = useState('')
     const [isPinning, setIsPinning] = useState(false)
     const [showColorFullScreen, setShowColorFullScreen] = useState(false)
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
+    const [colorName, setColorName] = useState<string>('')
     const {
         simpleMode,
         valueModeEnabled,
         valueModeSteps
     } = useStore()
+
+    // Fetch color name for mobile display
+    useEffect(() => {
+        if (!sampledColor) {
+            setColorName('')
+            return
+        }
+        getColorName(sampledColor.hex)
+            .then(result => setColorName(result.name))
+            .catch(() => setColorName(''))
+    }, [sampledColor?.hex])
 
     if (!sampledColor) {
         return (
@@ -90,6 +104,52 @@ export default function SampleTab({
         setTimeout(() => setCopied(null), 1500)
     }
 
+    // Mobile-first, art-forward layout
+    if (isMobile) {
+        return (
+            <div className="bg-paper-elevated text-ink font-sans min-h-full flex flex-col">
+                {/* Large, prominent color swatch - no hex overlay, just pure color */}
+                <div
+                    className="w-full flex-shrink-0"
+                    style={{ 
+                        height: '40vh',
+                        minHeight: '300px',
+                        backgroundColor: valueModeEnabled ? grayscaleHex : hex 
+                    }}
+                />
+
+                {/* Color info - simple, art-forward */}
+                <div className="flex-1 p-6 space-y-6">
+                    {/* Color Name - prominent */}
+                    <div>
+                        <h2 className="text-3xl font-black text-ink tracking-tight leading-tight mb-2">
+                            {colorName || 'Analyzing...'}
+                        </h2>
+                        <p className="text-sm text-ink-muted">
+                            {valueBand} • {chroma}
+                        </p>
+                    </div>
+
+                    {/* DMC Threads Button - prominent */}
+                    {onSwitchToMatches && (
+                        <button
+                            onClick={onSwitchToMatches}
+                            className="w-full py-5 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
+                                <circle cx="20.5" cy="3.5" r="1.5" />
+                                <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
+                            </svg>
+                            <span>Match DMC Threads</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
+    // Desktop layout (unchanged for now)
     return (
         <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-4">
             {/* Value Mode Active Indicator - shows when enabled via toolbar */}
@@ -103,18 +163,12 @@ export default function SampleTab({
                 </div>
             )}
 
-            {/* Giant Hero Swatch - Larger, clearer, with hex overlay */}
+            {/* Giant Hero Swatch - No hex overlay, clean */}
             <div
                 className="w-full aspect-[4/3] rounded-2xl shadow-lg border-2 border-ink-hairline relative overflow-hidden group transition-all duration-500 cursor-pointer"
                 style={{ backgroundColor: valueModeEnabled ? grayscaleHex : hex }}
                 onClick={() => setShowColorFullScreen(true)}
             >
-                {/* Hex overlay for clarity */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
-                        <span className="text-white font-mono text-2xl font-black tracking-tighter">{hex.toUpperCase()}</span>
-                    </div>
-                </div>
                 <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl"></div>
                 <button
@@ -128,21 +182,6 @@ export default function SampleTab({
 
             {/* Color Name */}
             <ColorNamingDisplay hex={hex} key={lastSampleTime} />
-
-            {/* Prominent DMC Threads Button - Mobile-first */}
-            {onSwitchToMatches && (
-                <button
-                    onClick={onSwitchToMatches}
-                    className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-                >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
-                        <circle cx="20.5" cy="3.5" r="1.5" />
-                        <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
-                    </svg>
-                    <span>Match DMC Threads</span>
-                </button>
-            )}
 
             {/* Primary Readout */}
             {valueModeEnabled && valueModeMeta ? (
