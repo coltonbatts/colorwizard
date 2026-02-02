@@ -284,7 +284,6 @@ export default function Home() {
             sampledColor={sampledColor}
             onPin={pinColor}
             isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
-            valueScaleSettings={valueScaleSettings}
             lastSampleTime={lastSampleTime}
             onAddToSession={handleAddToSession}
             onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
