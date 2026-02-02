@@ -1,19 +1,15 @@
 /**
- * Pricing Page
- * Standalone page showing pricing tiers
+ * Pricing Page - QUARANTINED (PR2: Thin Core)
+ * This route has been removed from Thin Core.
  */
 
-'use client'
-
-import { useState } from 'react'
-import PricingModal from '@/components/PricingModal'
-
 export default function PricingPage() {
-  const [showPricingModal, setShowPricingModal] = useState(true)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      <PricingModal isOpen={showPricingModal} onClose={() => window.history.back()} />
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Pricing</h1>
+        <p className="text-gray-600">This feature has been temporarily removed as part of Thin Core minimalization.</p>
+      </div>
     </div>
   )
 }

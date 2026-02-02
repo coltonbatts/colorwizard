@@ -71,16 +71,24 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
                 {copiedCode === match.number ? (
                   <span className="text-[10px] font-bold text-green-600 animate-in fade-in slide-in-from-bottom-1">COPIED</span>
                 ) : (
-                  <button
+                  <div
                     onClick={(e) => handleCopyCode(e, match.number)}
-                    className="p-1 md:p-1.5 text-studio-dim hover:text-blue-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                    className="p-1 md:p-1.5 text-studio-dim hover:text-blue-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer"
                     title="Copy DMC Code"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleCopyCode(e as any, match.number)
+                      }
+                    }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                     </svg>
-                  </button>
+                  </div>
                 )}
               </div>
               <div className="text-[13px] md:text-sm text-studio-secondary font-medium truncate">{match.name}</div>

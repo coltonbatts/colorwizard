@@ -7,7 +7,8 @@
 
 import { useRef, useState, useEffect, useCallback, useMemo, useId } from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
-import { ZoomControlsBar, GridControlsPanel, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
+import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
+import { useIsMobile } from '@/hooks/useMediaQuery'
 import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
@@ -92,8 +93,10 @@ const DRAG_THRESHOLD = 3
 
 export default function ImageCanvas(props: ImageCanvasProps) {
   const { onColorSample, image, onImageLoad, valueScaleSettings } = props
+  const isMobile = useIsMobile()
   const breakdownValue = useStore(state => state.breakdownValue)
   const valueModeEnabled = useStore(state => state.valueModeEnabled)
+  const toggleValueMode = useStore(state => state.toggleValueMode)
   const surfaceImage = useStore(state => state.surfaceImage)
   const gridOpacity = useStore(state => state.gridOpacity)
   const referenceOpacity = useStore(state => state.referenceOpacity)
@@ -233,6 +236,7 @@ export default function ImageCanvas(props: ImageCanvasProps) {
   }, [image, canvasDimensions])
 
   // Value Mode overrides the canvas preview into grayscale
+  // Always sync isGrayscale with valueModeEnabled - they should never be out of sync
   useEffect(() => {
     setIsGrayscale(valueModeEnabled)
   }, [valueModeEnabled])
@@ -1843,44 +1847,19 @@ export default function ImageCanvas(props: ImageCanvasProps) {
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
         <div className="flex-1 flex flex-col" style={{ height: '100%', minHeight: '100%' }}>
-          {/* Zoom Controls Bar */}
-          <ZoomControlsBar
-            zoomLevel={zoomLevel}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onFit={resetView}
-            onActualSize={handleActualSize}
-            isActualSizeEnabled={isActualSizeEnabled}
-            isGrayscale={isGrayscale}
-            onToggleGrayscale={() => setIsGrayscale(!isGrayscale)}
-            valueOverlayEnabled={valueScaleSettings?.enabled || false}
-            onToggleValueOverlay={() => {
-              if (props.onValueScaleChange && props.valueScaleSettings) {
-                props.onValueScaleChange({
-                  ...props.valueScaleSettings,
-                  enabled: !props.valueScaleSettings.enabled
-                })
-              }
-            }}
-            splitViewEnabled={splitMode}
-            onToggleSplitView={() => setSplitMode(!splitMode)}
-            minZoom={MIN_ZOOM}
-            maxZoom={MAX_ZOOM}
-          />
+          {/* Zoom Controls Bar - Hidden on mobile/tablet for art-first simplicity */}
+          {!isMobile && (
+            <ZoomControlsBar
+              zoomLevel={zoomLevel}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onFit={resetView}
+              minZoom={MIN_ZOOM}
+              maxZoom={MAX_ZOOM}
+            />
+          )}
 
-          {/* Grid Controls */}
-          <GridControlsPanel
-            gridEnabled={internalGridEnabled}
-            onToggleGrid={setInternalGridEnabled}
-            physicalWidth={gridPhysicalWidth}
-            physicalHeight={gridPhysicalHeight}
-            onDimensionsChange={(w, h) => {
-              setGridPhysicalWidth(w)
-              setGridPhysicalHeight(h)
-            }}
-            squareSize={gridSquareSize}
-            onSquareSizeChange={setGridSquareSize}
-          />
+          {/* Grid Controls removed - keeping UI minimal */}
 
           {/* Canvas Container */}
           <div

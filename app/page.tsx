@@ -7,7 +7,6 @@
  */
 
 import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
-import dynamic from 'next/dynamic'
 import ImageCanvas from '@/components/ImageCanvas'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
@@ -16,44 +15,23 @@ import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
-import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 
-// Tab content components
+// Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
-import OilMixTab from '@/components/tabs/OilMixTab'
-import PaletteTab from '@/components/tabs/PaletteTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
-import AdvancedTab from '@/components/tabs/AdvancedTab'
-import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
-import PinnedColorsPanel from '@/components/PinnedColorsPanel'
-import MyCardsPanel from '@/components/MyCardsPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
-import SurfaceTab from '@/components/tabs/SurfaceTab'
-import StructureTab from '@/components/tabs/StructureTab'
-import ReferenceTab from '@/components/tabs/ReferenceTab'
-
 import { useStore } from '@/lib/store/useStore'
-
-// Dynamic imports for heavy full-screen views to optimize bundle size
-const CheckMyValuesView = dynamic(() => import('@/components/CheckMyValuesView'), { ssr: false })
-const CheckMyDrawingView = dynamic(() => import('@/components/CheckMyDrawingView'), { ssr: false })
 
 export default function Home() {
   const isMobile = useIsMobile()
-  // Track whether mobile user is viewing dashboard vs browsing tabs
-  const [mobileShowDashboard, setMobileShowDashboard] = useState(true)
-  // Track Check My Values full-screen view
-  const [showCheckValues, setShowCheckValues] = useState(false)
-  // Track Check My Drawing full-screen view
-  const [showCheckDrawing, setShowCheckDrawing] = useState(false)
 
   // Optimized selectors: Grouped by logical domain to reduce re-render cascades
   const sampledColor = useStore(state => state.sampledColor)
@@ -125,6 +103,15 @@ export default function Home() {
   const toggleSimpleMode = useStore(state => state.toggleSimpleMode)
   const toggleValueMode = useStore(state => state.toggleValueMode)
 
+  const setValueModeEnabled = useStore(state => state.setValueModeEnabled)
+
+  // Wrapper for setImage that always resets value mode
+  const handleImageLoad = useCallback((img: HTMLImageElement) => {
+    console.log('[Home] Image loaded, resetting value mode')
+    setImage(img)
+    setValueModeEnabled(false) // Always reset value mode when new image loads
+  }, [setImage, setValueModeEnabled])
+
   // Clear image and reset view
   const handleClearImage = useCallback(() => {
     console.log('[Home] Clearing image and resetting state')
@@ -133,7 +120,8 @@ export default function Home() {
     setSampledColor(null)
     setActiveHighlightColor(null)
     setBreakdownValue(0)
-  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue])
+    setValueModeEnabled(false) // Reset value mode when clearing image
+  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue, setValueModeEnabled])
 
   const lastProcessedRef = useRef<string | null>(null)
 
@@ -148,7 +136,7 @@ export default function Home() {
       img.src = referenceImage
       img.onload = () => {
         console.log('[Home] Reference image loaded successfully')
-        setImage(img)
+        handleImageLoad(img) // Use wrapper that resets value mode
       }
       img.onerror = (e) => {
         console.error('[Home] Failed to load reference image:', e)
@@ -157,7 +145,7 @@ export default function Home() {
     } else if (!referenceImage) {
       lastProcessedRef.current = null
     }
-  }, [referenceImage, image, setImage])
+  }, [referenceImage, image, handleImageLoad])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -229,33 +217,15 @@ export default function Home() {
         if (sidebarCollapsed) toggleSidebar()
       }
 
-      // 1-9 for tab switching
+      // 1-2 for tab switching (Thin Core)
       const tabKeys: { [key: string]: TabType } = {
-        '1': 'surface',
-        '2': 'structure',
-        '3': 'reference',
-        '4': 'sample',
-        '5': 'oilmix',
-        '6': 'palette',
-        '7': 'matches',
-        '8': 'advanced',
-        '9': 'pinned',
-        '0': 'library',
+        '1': 'sample',
+        '2': 'matches',
       }
       if (tabKeys[e.key]) {
         e.preventDefault()
         setActiveTab(tabKeys[e.key])
         if (sidebarCollapsed) toggleSidebar()
-      }
-      // Alt + 9 for Check My Values full-screen
-      if (e.altKey && e.key === '9' && image) {
-        e.preventDefault()
-        setShowCheckValues(true)
-      }
-      // Alt + 0 for Check My Drawing full-screen
-      if (e.altKey && e.key === '0' && image) {
-        e.preventDefault()
-        setShowCheckDrawing(true)
       }
 
       // Shift+S for Simple/Pro mode toggle
@@ -273,7 +243,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode, image])
+  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -308,15 +278,9 @@ export default function Home() {
     setActiveTab('sample')
   }
 
-  // Render tab content
+  // Render tab content - Thin Core only
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'surface':
-        return <SurfaceTab />
-      case 'structure':
-        return <StructureTab />
-      case 'reference':
-        return <ReferenceTab />
       case 'sample':
         return (
           <SampleTab
@@ -328,83 +292,10 @@ export default function Home() {
             onAddToSession={handleAddToSession}
           />
         )
-      case 'oilmix':
-        return (
-          <OilMixTab
-            sampledColor={sampledColor}
-            activePalette={activePalette}
-            onColorSelect={(color) => {
-              const rgb = typeof color === 'object' ? color : undefined
-              if (rgb) {
-                setSampledColor({
-                  rgb,
-                  hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                  hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-                })
-                setActiveHighlightColor(rgb)
-              }
-            }}
-          />
-        )
-      case 'palette':
-        return <PaletteTab />
       case 'matches':
         return (
           <MatchesTab
             sampledColor={sampledColor}
-            onColorSelect={(rgb) => {
-              setSampledColor({
-                rgb,
-                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-              })
-              setActiveHighlightColor(rgb)
-            }}
-          />
-        )
-      case 'advanced':
-        return (
-          <AdvancedTab
-            sampledColor={sampledColor}
-            onColorSelect={(rgb) => {
-              setSampledColor({
-                rgb,
-                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-              })
-              setActiveHighlightColor(rgb)
-            }}
-            valueScaleSettings={valueScaleSettings}
-            onValueScaleChange={setValueScaleSettings}
-            histogramBins={histogramBins}
-            valueScaleResult={valueScaleResult}
-            breakdownValue={breakdownValue}
-            onBreakdownChange={setBreakdownValue}
-          />
-        )
-      case 'pinned':
-        return (
-          <PinnedColorsPanel
-            pinnedColors={pinnedColors}
-            activeHighlightColor={activeHighlightColor}
-            onUnpin={unpinColor}
-            onClearAll={clearPinned}
-            onExport={handleExportPalette}
-            onSelect={(rgb) => {
-              setSampledColor({
-                rgb,
-                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-              })
-              setActiveHighlightColor(rgb)
-            }}
-          />
-        )
-      case 'cards':
-        return <MyCardsPanel />
-      case 'library':
-        return (
-          <PaintLibraryTab
             onColorSelect={(rgb) => {
               setSampledColor({
                 rgb,
@@ -474,8 +365,6 @@ export default function Home() {
             hasImage={!!image}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            onOpenCheckValues={() => setShowCheckValues(true)}
-            onOpenCheckDrawing={() => setShowCheckDrawing(true)}
           />
         </div>
 
@@ -498,7 +387,7 @@ export default function Home() {
           >
             <ImageCanvas
               image={image}
-              onImageLoad={setImage}
+              onImageLoad={handleImageLoad}
               onReset={handleClearImage}
               onColorSample={(color) => {
                 if (measureMode && calibration) {
@@ -526,24 +415,6 @@ export default function Home() {
             />
           </ErrorBoundary>
 
-          {/* Quick Access: Threads Button - Mobile only */}
-          {isMobile && image && mobileShowDashboard && (
-            <button
-              onClick={() => {
-                setActiveTab('matches')
-                setMobileShowDashboard(false)
-              }}
-              className="mobile-quick-threads-btn"
-              aria-label="Open Threads / DMC Floss"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
-                <circle cx="20.5" cy="3.5" r="1.5" />
-                <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
-              </svg>
-              <span>Threads</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -567,13 +438,10 @@ export default function Home() {
           width={sidebarWidth}
           className="mobile-controls-area"
         >
-          {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode */}
+          {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode - Thin Core only */}
           {!isMobile && (
             <div className="flex border-b border-ink-hairline bg-paper-elevated items-stretch">
-              {(simpleMode
-                ? TABS.filter(tab => ['sample', 'oilmix', 'matches'].includes(tab.id))
-                : TABS
-              ).map((tab, index) => (
+              {TABS.map((tab, index) => (
                 <button
                   key={tab.id}
                   className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
@@ -589,64 +457,19 @@ export default function Home() {
                   )}
                 </button>
               ))}
-              <button
-                className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'pinned'
-                  ? 'text-signal'
-                  : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
-                  }`}
-                onClick={() => setActiveTab('pinned')}
-                title={`Pinned Colors (${pinnedColors.length})`}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 17v5" />
-                  <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76Z" />
-                </svg>
-                {pinnedColors.length > 0 && (
-                  <span className="absolute top-2 right-2 w-4 h-4 bg-signal text-white text-[10px] rounded-sm flex items-center justify-center font-bold">
-                    {pinnedColors.length > 9 ? '9+' : pinnedColors.length}
-                  </span>
-                )}
-                {activeTab === 'pinned' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal animate-in fade-in zoom-in-95" />
-                )}
-              </button>
-              {!simpleMode && (
-                <button
-                  className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === 'cards'
-                    ? 'text-subsignal'
-                    : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
-                    }`}
-                  onClick={() => setActiveTab('cards')}
-                  title="Color Cards"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <path d="M3 9h18" />
-                  </svg>
-                  {activeTab === 'cards' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-subsignal animate-in fade-in zoom-in-95" />
-                  )}
-                </button>
-              )}
             </div>
           )}
 
           <div className="flex-1 min-h-0 overflow-y-auto">
-            {isMobile && image && mobileShowDashboard ? (
-              <MobileDashboard
-                sampledColor={sampledColor}
-                activePalette={palettes.find(p => p.id === activePalette.id)}
-              />
-            ) : (
-              <ErrorBoundary
-                fallback={({ error, resetError }) => (
-                  <SidebarErrorFallback error={error} resetError={resetError} />
-                )}
-                key={activeTab}
-              >
-                {renderTabContent()}
-              </ErrorBoundary>
-            )}
+            {/* Thin Core: Always show tabs directly, no dashboard */}
+            <ErrorBoundary
+              fallback={({ error, resetError }) => (
+                <SidebarErrorFallback error={error} resetError={resetError} />
+              )}
+              key={activeTab}
+            >
+              {renderTabContent()}
+            </ErrorBoundary>
           </div>
         </CollapsibleSidebar>
       )}
@@ -656,13 +479,10 @@ export default function Home() {
           activeTab={activeTab}
           onTabChange={(tab) => {
             setActiveTab(tab)
-            setMobileShowDashboard(false)
           }}
           pinnedCount={pinnedColors.length}
           onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
           onOpenCalibration={() => setShowCalibrationModal(true)}
-          showDashboard={mobileShowDashboard}
-          onReturnToDashboard={() => setMobileShowDashboard(true)}
           hasImage={!!image}
         />
       )}
@@ -692,19 +512,6 @@ export default function Home() {
         initialSettings={canvasSettings}
       />
 
-      {showCheckValues && (
-        <CheckMyValuesView
-          referenceImage={image}
-          onClose={() => setShowCheckValues(false)}
-        />
-      )}
-
-      {showCheckDrawing && (
-        <CheckMyDrawingView
-          referenceImage={image}
-          onClose={() => setShowCheckDrawing(false)}
-        />
-      )}
     </main>
   )
 }
