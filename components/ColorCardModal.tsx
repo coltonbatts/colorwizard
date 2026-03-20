@@ -60,6 +60,31 @@ export default function ColorCardModal({
         }
     }
 
+    const handleSaveCopy = async () => {
+        setIsSaving(true)
+        try {
+            const baseName = cardName.trim() || card.name
+            const copyName = baseName.toLowerCase().startsWith('copy of ')
+                ? baseName
+                : `Copy of ${baseName}`
+
+            saveCard({
+                ...card,
+                id: crypto.randomUUID(),
+                name: copyName,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            })
+
+            onCardSaved?.()
+            onClose()
+        } catch (e) {
+            console.error('Failed to duplicate card:', e)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     const handleExport = async () => {
         if (!cardRef.current) return
         setIsExporting(true)
@@ -151,6 +176,16 @@ export default function ColorCardModal({
                 >
                     {isSaving ? 'Saving…' : isNewCard ? 'Save to Deck' : 'Update Card'}
                 </button>
+                {!isNewCard && (
+                    <button
+                        onClick={handleSaveCopy}
+                        type="button"
+                        disabled={isSaving}
+                        className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 font-bold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {isSaving ? 'Copying…' : 'Save Copy'}
+                    </button>
+                )}
                 <button
                     onClick={handleExport}
                     type="button"
