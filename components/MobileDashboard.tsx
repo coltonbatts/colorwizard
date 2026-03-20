@@ -164,7 +164,7 @@ export default function MobileDashboard({
 
     return (
         <>
-            <div className="h-full flex flex-col bg-white overflow-hidden dashboard-mode rounded-t-[28px] shadow-[0_-20px_50px_rgba(0,0,0,0.14)] border-t border-gray-100">
+            <div className="h-full min-h-0 flex flex-col bg-white overflow-hidden dashboard-mode rounded-t-[28px] shadow-[0_-20px_50px_rgba(0,0,0,0.14)] border-t border-gray-100">
                 <section className="p-4 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white">
                     <div className="flex items-center gap-4">
                         <motion.div
@@ -248,7 +248,7 @@ export default function MobileDashboard({
                     </div>
                 </section>
 
-                <div className="flex-1 overflow-y-auto pb-8">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-8">
                     <div className="p-4">
                         <div className="space-y-3">
                             <div className="flex items-end justify-between gap-3 px-1">
@@ -267,7 +267,7 @@ export default function MobileDashboard({
                                 activePalette={activePalette || DEFAULT_PALETTE}
                                 useCatalog={hasPaintPalette}
                                 paintIds={hasPaintPalette ? selectedPaintIds : undefined}
-                                variant="dashboard"
+                                variant="standard"
                                 showExportButton={false}
                             />
                         </div>

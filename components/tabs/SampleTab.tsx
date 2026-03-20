@@ -17,7 +17,7 @@ import { DEFAULT_PALETTE } from '@/lib/types/palette'
 import { getColorName } from '@/lib/colorNaming'
 import { useStore } from '@/lib/store/useStore'
 import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
-import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useIsMobile, useMediaQuery } from '@/hooks/useMediaQuery'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
 
 interface SampleTabProps {
@@ -48,6 +48,7 @@ export default function SampleTab({
     onSwitchToMatches
 }: SampleTabProps) {
     const isMobile = useIsMobile()
+    const isShortViewport = useMediaQuery('(max-height: 920px)')
     const [label, setLabel] = useState('')
     const [isPinning, setIsPinning] = useState(false)
     const [showColorFullScreen, setShowColorFullScreen] = useState(false)
@@ -108,7 +109,7 @@ export default function SampleTab({
     const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
     const valueModeGrayHex = valueModeMeta ? luminanceToGrayHex(valueModeMeta.y) : null
     const grayscaleHex = valueModeGrayHex ?? `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
-    const recipeVariant = isMobile ? 'standard' : 'dashboard'
+    const recipeVariant = isMobile ? 'standard' : isShortViewport ? 'compact' : 'standard'
 
     const recipePanel = (
         <div className="space-y-3">

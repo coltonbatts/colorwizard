@@ -28,7 +28,7 @@ interface PuddleRecipeDisplayProps {
     /** Delta E error value */
     error: number
     /** Display variant */
-    variant?: 'standard' | 'dashboard'
+    variant?: 'standard' | 'dashboard' | 'compact'
 }
 
 export default function PuddleRecipeDisplay({
@@ -58,18 +58,18 @@ export default function PuddleRecipeDisplay({
             />
 
             {/* Section header */}
-            <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+            <div className={`flex items-center justify-between ${variant === 'compact' ? 'mb-2' : 'mb-4'}`}>
+                <h4 className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs'} font-bold text-gray-300 uppercase tracking-wider`}>
                     Ingredients
                 </h4>
-                <span className="text-[10px] text-gray-500">
+                <span className={`${variant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500`}>
                     {ingredients.length} {ingredients.length === 1 ? 'paint' : 'paints'}
                 </span>
             </div>
 
             {/* Puddle grid - RPG inventory style */}
             <motion.div
-                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3"
+                className={`grid grid-cols-2 ${variant === 'compact' ? 'gap-2' : 'sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3'}`}
                 layout
             >
                 {sortedIngredients.map((ingredient, index) => (
@@ -84,21 +84,21 @@ export default function PuddleRecipeDisplay({
                             damping: 25
                         }}
                     >
-                        <PaintPuddle
-                            color={ingredient.pigment.hex}
-                            weight={ingredient.weight}
-                            name={ingredient.pigment.name}
-                            percentage={ingredient.percentage}
-                            maxSize={72}
-                            minSize={28}
-                        />
-                    </motion.div>
-                ))}
+                            <PaintPuddle
+                                color={ingredient.pigment.hex}
+                                weight={ingredient.weight}
+                                name={ingredient.pigment.name}
+                                percentage={ingredient.percentage}
+                                maxSize={variant === 'compact' ? 52 : 72}
+                                minSize={variant === 'compact' ? 20 : 28}
+                            />
+                        </motion.div>
+                    ))}
             </motion.div>
 
             {/* Ratio visualization bar */}
-            <div className={`mt-6 ${variant === 'dashboard' ? 'space-y-4' : ''}`}>
-                <div className={`${variant === 'dashboard' ? 'text-sm' : 'text-[10px]'} text-gray-500 uppercase tracking-wider mb-2 font-black`}>
+            <div className={`${variant === 'compact' ? 'mt-4' : 'mt-6'} ${variant === 'dashboard' ? 'space-y-4' : ''}`}>
+                <div className={`${variant === 'dashboard' ? 'text-sm' : variant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 uppercase tracking-wider mb-2 font-black`}>
                     Mix Ratio
                 </div>
 
@@ -138,7 +138,7 @@ export default function PuddleRecipeDisplay({
                     </div>
                 ) : (
                     /* Standard thin bar */
-                    <div className="h-3 rounded-full overflow-hidden flex bg-gray-800 shadow-inner">
+                    <div className={`${variant === 'compact' ? 'h-2.5' : 'h-3'} rounded-full overflow-hidden flex bg-gray-800 shadow-inner`}>
                         {sortedIngredients.map((ingredient, index) => (
                             <motion.div
                                 key={ingredient.pigment.id}

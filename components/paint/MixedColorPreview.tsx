@@ -15,6 +15,8 @@ interface MixedColorPreviewProps {
     matchQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor'
     /** Delta E error value */
     error: number
+    /** Layout density */
+    variant?: 'standard' | 'dashboard' | 'compact'
 }
 
 // Match quality styling
@@ -50,13 +52,14 @@ export default function MixedColorPreview({
     targetHex,
     matchQuality,
     error,
+    variant = 'standard',
 }: MixedColorPreviewProps) {
     const styles = QUALITY_STYLES[matchQuality]
 
     return (
-        <div className="mb-6">
+        <div className={variant === 'compact' ? 'mb-4' : 'mb-6'}>
             {/* Color comparison swatches */}
-            <div className="flex gap-3 mb-4">
+            <div className={`flex gap-3 ${variant === 'compact' ? 'mb-3' : 'mb-4'}`}>
                 {/* Predicted Mix - larger, primary */}
                 <motion.div
                     className="flex-1"
@@ -64,11 +67,11 @@ export default function MixedColorPreview({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <div className="text-[10px] text-gray-400 mb-1.5 uppercase tracking-widest font-bold">
+                    <div className={`${variant === 'compact' ? 'text-[9px] mb-1' : 'text-[10px] mb-1.5'} text-gray-400 uppercase tracking-widest font-bold`}>
                         Mixed Result
                     </div>
                     <div
-                        className="h-20 rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden"
+                        className={`${variant === 'compact' ? 'h-14' : 'h-20'} rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden`}
                         style={{ backgroundColor: predictedHex }}
                     >
                         {/* Subtle gradient overlay for depth */}
@@ -78,16 +81,16 @@ export default function MixedColorPreview({
 
                 {/* Target - smaller, reference */}
                 <motion.div
-                    className="w-20"
+                    className={variant === 'compact' ? 'w-16' : 'w-20'}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <div className="text-[10px] text-gray-400 mb-1.5 uppercase tracking-widest font-bold">
+                    <div className={`${variant === 'compact' ? 'text-[9px] mb-1' : 'text-[10px] mb-1.5'} text-gray-400 uppercase tracking-widest font-bold`}>
                         Target
                     </div>
                     <div
-                        className="h-20 rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden"
+                        className={`${variant === 'compact' ? 'h-14' : 'h-20'} rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden`}
                         style={{ backgroundColor: targetHex }}
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
@@ -97,16 +100,16 @@ export default function MixedColorPreview({
 
             {/* Match quality badge */}
             <motion.div
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${styles.bg} ${styles.border} border`}
+                className={`inline-flex items-center gap-2 ${variant === 'compact' ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-full ${styles.bg} ${styles.border} border`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
             >
                 <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
-                <span className={`text-sm font-medium ${styles.text}`}>
+                <span className={`${variant === 'compact' ? 'text-xs' : 'text-sm'} font-medium ${styles.text}`}>
                     {matchQuality} Match
                 </span>
-                <span className="text-xs text-gray-500 ml-1">
+                <span className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs'} text-gray-500 ml-1`}>
                     ΔE {error.toFixed(1)}
                 </span>
             </motion.div>

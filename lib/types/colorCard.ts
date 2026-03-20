@@ -25,6 +25,7 @@ export interface ColorCard {
     }
     valueStep?: number
     colorName?: string
+    mixingSteps?: string[]
     dmcMatches: DMCMatch[]
     paintMatches: PaintCardMatch[]
 }

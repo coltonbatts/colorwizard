@@ -64,6 +64,7 @@ export function createColorCard(
             luminance: getLuminance(sampledColor.rgb.r, sampledColor.rgb.g, sampledColor.rgb.b) / 100,
         },
         valueStep,
+        mixingSteps: generatePaintRecipe(sampledColor.hsl).steps,
         dmcMatches: findClosestDMCColors(sampledColor.rgb, 5),
         paintMatches: [],
     }

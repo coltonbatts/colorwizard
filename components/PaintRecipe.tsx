@@ -28,7 +28,7 @@ interface PaintRecipeProps {
   /** Specific paint IDs to use (overrides brandId/lineId filter) */
   paintIds?: string[]
   /** Display variant */
-  variant?: 'standard' | 'dashboard'
+  variant?: 'standard' | 'dashboard' | 'compact'
   /** Whether to show the Procreate export button */
   showExportButton?: boolean
 }
@@ -178,8 +178,8 @@ export default function PaintRecipe({
 
   return (
     <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700">
-      <div className="flex items-center justify-between mb-3 lg:mb-4">
-        <h3 className="text-lg lg:text-xl font-bold text-gray-100">Oil Paint Recipe</h3>
+      <div className={`flex items-center justify-between ${variant === 'compact' ? 'mb-2' : 'mb-3 lg:mb-4'}`}>
+        <h3 className={`${variant === 'compact' ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-100`}>Oil Paint Recipe</h3>
         {isFallback && !isEmptyCatalog && (
           <span className="text-[10px] lg:text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 lg:py-1 rounded border border-blue-500/30">
             Heuristic Match
@@ -210,11 +210,11 @@ export default function PaintRecipe({
           />
 
           {/* Mixing Steps */}
-          <div className="mt-6 mb-4 lg:mb-6">
-            <h4 className="text-xs lg:text-sm font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider">
+          <div className={`${variant === 'compact' ? 'mt-4 mb-3' : 'mt-6 mb-4 lg:mb-6'}`}>
+            <h4 className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs lg:text-sm'} font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider`}>
               Mixing Steps
             </h4>
-            <ol className="list-decimal list-outside ml-4 space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm text-gray-300">
+            <ol className={`list-decimal list-outside ml-4 ${variant === 'compact' ? 'space-y-1 text-[11px]' : 'space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm'} text-gray-300`}>
               {recipe.steps.map((step, i) => (
                 <li
                   key={i}
@@ -229,22 +229,22 @@ export default function PaintRecipe({
         </>
       )}
 
-      <div className="mt-4 pt-4 border-t border-gray-700">
+      <div className={`${variant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-700`}>
         {isEmptyCatalog ? (
-          <p className="text-[10px] text-gray-500 italic">
+          <p className={`${variant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 italic`}>
             Add paints to build your active palette.
           </p>
         ) : useCatalog && paintIds && paintIds.length > 0 ? (
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Paint Library:</span>
-            <span className="text-xs text-blue-400 font-medium">
+          <div className={`flex items-center gap-2 ${variant === 'compact' ? 'mb-1' : 'mb-2'}`}>
+            <span className={`${variant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 uppercase tracking-wide`}>Using Paint Library:</span>
+            <span className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs'} text-blue-400 font-medium`}>
               {paintIds.length} paint{paintIds.length !== 1 ? 's' : ''} selected
             </span>
           </div>
         ) : activePalette && (
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wide">Using Palette:</span>
-            <span className="text-xs text-blue-400 font-medium">{activePalette.name}</span>
+          <div className={`flex items-center gap-2 ${variant === 'compact' ? 'mb-1' : 'mb-2'}`}>
+            <span className={`${variant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 uppercase tracking-wide`}>Using Palette:</span>
+            <span className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs'} text-blue-400 font-medium`}>{activePalette.name}</span>
             {!activePalette.isDefault && (
               <span className="text-[9px] bg-blue-900/30 text-blue-300 px-1.5 py-0.5 rounded">
                 {activePalette.colors.length} colors
@@ -254,14 +254,25 @@ export default function PaintRecipe({
         )}
         {!isEmptyCatalog && (
           <>
-            <p className="text-xs text-gray-500 mb-3">
-              {useCatalog && paintIds && paintIds.length > 0
-                ? 'Recipe uses only paints from your Paint Library selection'
-                : activePalette && !activePalette.isDefault
-                  ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
-                  : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
-              }
-            </p>
+            {variant !== 'compact' ? (
+              <p className="text-xs text-gray-500 mb-3">
+                {useCatalog && paintIds && paintIds.length > 0
+                  ? 'Recipe uses only paints from your Paint Library selection'
+                  : activePalette && !activePalette.isDefault
+                    ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
+                    : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
+                }
+              </p>
+            ) : (
+              <p className="text-[9px] text-gray-500 mb-2">
+                {useCatalog && paintIds && paintIds.length > 0
+                  ? 'Using your Paint Library selection'
+                  : activePalette && !activePalette.isDefault
+                    ? `Using ${activePalette.colors.length} paints`
+                    : 'Core six-color mix'
+                }
+              </p>
+            )}
 
             {showExportButton && (
               <ProcreateExportButton

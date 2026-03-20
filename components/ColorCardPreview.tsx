@@ -2,6 +2,7 @@
 
 import { forwardRef } from 'react'
 import { ColorCard } from '@/lib/types/colorCard'
+import { generatePaintRecipe } from '@/lib/colorMixer'
 
 interface ColorCardPreviewProps {
     card: ColorCard
@@ -13,12 +14,14 @@ interface ColorCardPreviewProps {
  */
 const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
     function ColorCardPreview({ card }, ref) {
-        const { color, name, colorName, dmcMatches, paintMatches, valueStep } = card
+        const { color, name, colorName, dmcMatches, paintMatches, valueStep, mixingSteps } = card
 
-        // Calculate contrast color for text
         const isDark = color.luminance < 0.5
         const textColor = isDark ? '#ffffff' : '#1a1a1a'
-        const mutedTextColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)'
+        const stepTextColor = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.72)'
+        const normalizedSteps = (mixingSteps ?? generatePaintRecipe(color.hsl).steps)
+            .filter(Boolean)
+            .map(step => step.replace(/\*\*(.*?)\*\*/g, '$1'))
 
         return (
             <div
@@ -78,6 +81,30 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Value Step</span>
                                 <span className="text-sm font-mono text-gray-700">Step {valueStep}</span>
                             </div>
+                        )}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-100" />
+
+                    {/* Mixing Steps */}
+                    <div>
+                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Mixing Steps</h3>
+                        {normalizedSteps.length > 0 ? (
+                            <ol className="space-y-2">
+                                {normalizedSteps.map((step, index) => (
+                                    <li key={`${index}-${step}`} className="flex gap-3">
+                                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-600">
+                                            {index + 1}
+                                        </span>
+                                        <span className="text-xs leading-5" style={{ color: stepTextColor }}>
+                                            {step}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        ) : (
+                            <p className="text-xs text-gray-400 italic">Mixing steps not available yet</p>
                         )}
                     </div>
 
