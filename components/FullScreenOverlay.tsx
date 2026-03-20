@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { type ReactNode } from 'react'
+import OverlaySurface from '@/components/ui/Overlay'
 
 interface FullScreenOverlayProps {
   isOpen: boolean
   onClose: () => void
-  children?: React.ReactNode
+  children?: ReactNode
   backgroundColor?: string
 }
 
@@ -20,36 +21,20 @@ export default function FullScreenOverlay({
   children,
   backgroundColor
 }: FullScreenOverlayProps) {
-  
-  // Handle ESC key to close
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose()
-    }
-  }, [onClose])
-
-  useEffect(() => {
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown)
-      // Prevent body scroll while overlay is open
-      document.body.style.overflow = 'hidden'
-    }
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = ''
-    }
-  }, [isOpen, handleKeyDown])
-
-  if (!isOpen) return null
-
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[9999] flex items-center justify-center cursor-pointer animate-in fade-in duration-200"
-      style={{ backgroundColor: backgroundColor || 'rgba(0, 0, 0, 0.95)' }}
+    <OverlaySurface
+      isOpen={isOpen}
+      onClose={onClose}
+      preset="fullscreen"
+      ariaLabel="Full screen preview"
+      closeOnBackdrop={false}
+      closeOnPanelClick
+      rootClassName="fixed inset-0 z-[9999]"
+      backdropClassName="absolute inset-0 bg-transparent"
+      panelClassName="relative flex h-full w-full items-center justify-center cursor-pointer"
+      panelStyle={{ backgroundColor: backgroundColor || 'rgba(0, 0, 0, 0.95)' }}
     >
       {children}
-    </div>
+    </OverlaySurface>
   )
 }

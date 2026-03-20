@@ -159,6 +159,31 @@ body {
     overflow: hidden;
 }
 
+:where(a, button, input, select, textarea, summary, [role='button']):focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+}
+
+.skip-link {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    transform: translateY(-200%);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    z-index: 2000;
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+    transform: translateY(0);
+}
+
 /* No decorative background effects — let the paper breathe */
 
 /* ============================================
@@ -990,7 +1015,9 @@ body {
     color: var(--ink-secondary);
     border: none;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease,
+        color var(--duration-fast) ease,
+        transform var(--duration-fast) ease;
 }
 
 .mobile-nav-close:active {
@@ -1033,7 +1060,9 @@ body {
     font-weight: 500;
     color: var(--ink-secondary);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition: background-color var(--duration-fast) ease,
+        color var(--duration-fast) ease,
+        transform var(--duration-fast) ease;
     position: relative;
 }
 

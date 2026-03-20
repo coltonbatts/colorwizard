@@ -1,7 +1,6 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { useStore } from '@/lib/store/useStore'
 
 // Thin Core: Only sample and matches tabs
 type TabType = 'sample' | 'matches'
@@ -78,9 +77,11 @@ export default function CollapsibleSidebar({
         >
             {/* Toggle Button */}
             <button
+                type="button"
                 onClick={onToggle}
                 className="sidebar-toggle"
-                title={collapsed ? 'Expand panel ([)' : 'Collapse panel (])'}
+                aria-label={`${collapsed ? 'Expand panel' : 'Collapse panel'}${pinnedCount ? `, ${pinnedCount} pinned colors` : ''}`}
+                title={`${collapsed ? 'Expand panel ([)' : 'Collapse panel (])'}${pinnedCount ? ` · ${pinnedCount} pinned colors` : ''}`}
             >
                 <svg
                     width="12"
@@ -98,6 +99,7 @@ export default function CollapsibleSidebar({
                 <div className="sidebar-icon-bar pt-4">
                     {visibleTabs.map((tab, index) => (
                         <button
+                            type="button"
                             key={tab.id}
                             onClick={() => {
                                 onTabChange?.(tab.id)
@@ -105,6 +107,8 @@ export default function CollapsibleSidebar({
                             }}
                             className={`sidebar-icon-btn tooltip-wrapper ${activeTab === tab.id ? 'active' : ''}`}
                             data-tooltip={`${tab.tooltip} (${index + 1})`}
+                            aria-label={tab.tooltip}
+                            aria-pressed={activeTab === tab.id}
                         >
                             {tab.icon}
                         </button>
@@ -114,9 +118,11 @@ export default function CollapsibleSidebar({
 
                     {/* Expand */}
                     <button
+                        type="button"
                         onClick={onToggle}
                         className="sidebar-icon-btn tooltip-wrapper"
                         data-tooltip="Expand Panel"
+                        aria-label="Expand panel"
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M15 3h6v6" />

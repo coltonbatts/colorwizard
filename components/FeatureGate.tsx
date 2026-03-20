@@ -54,17 +54,18 @@ export default function FeatureGate({
   // If showPromptOnClick, wrap children with click handler
   return (
     <>
-      <div
-        onClick={() => setShowUpgradePrompt(true)}
-        className="cursor-pointer relative"
-        title={`Upgrade to Pro to access ${featureConfig.label}`}
-      >
+      <div className="relative">
         {children}
-        <div className="absolute inset-0 bg-black/5 rounded opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+        <button
+          type="button"
+          onClick={() => setShowUpgradePrompt(true)}
+          className="absolute inset-0 z-10 flex items-center justify-center rounded bg-black/5 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+          aria-label={`Upgrade to Pro to access ${featureConfig.label}`}
+        >
           <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
             Upgrade to Pro
           </span>
-        </div>
+        </button>
       </div>
 
       <UpgradePrompt
