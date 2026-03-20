@@ -2,8 +2,8 @@
 
 import { ReactNode } from 'react'
 
-// Thin Core: Only sample and matches tabs
-type TabType = 'sample' | 'matches'
+// Thin Core: Sample, matches, and deck tabs
+type TabType = 'sample' | 'matches' | 'deck'
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -45,6 +45,18 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
             </svg>
         )
     },
+    {
+        id: 'deck',
+        label: 'Deck',
+        tooltip: 'Saved Card Deck',
+        icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="5" width="16" height="14" rx="3" />
+                <path d="M7 9h10" />
+                <path d="M7 13h6" />
+            </svg>
+        )
+    },
 ]
 
 /**
@@ -60,7 +72,7 @@ export default function CollapsibleSidebar({
     width = 400,
     className = ''
 }: CollapsibleSidebarProps) {
-    // Thin Core: Always show all tabs (sample + matches only)
+    // Thin Core: Always show all tabs (sample + matches + deck)
     const visibleTabs = TABS
 
     return (

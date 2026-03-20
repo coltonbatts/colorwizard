@@ -189,13 +189,25 @@ export default function CompactToolbar({
 
                     {/* Navigation Tab Switcher Shorthand */}
                     <button
-                        onClick={() => onTabChange?.(activeTab === 'sample' ? 'matches' : 'sample')}
+                        onClick={() => {
+                            const nextTab =
+                                activeTab === 'sample'
+                                    ? 'matches'
+                                    : activeTab === 'matches'
+                                        ? 'deck'
+                                        : 'sample'
+                            onTabChange?.(nextTab)
+                        }}
                         className="flex flex-col items-center justify-center w-12 h-12 text-ink-secondary hover:text-subsignal transition-colors"
                         aria-label="Switch Tab"
                     >
                         <LayoutIcon />
                         <span className="text-[9px] mt-0.5 font-bold uppercase tracking-tighter">
-                            {activeTab === 'sample' ? 'DMC' : 'Color'}
+                            {activeTab === 'sample'
+                                ? 'DMC'
+                                : activeTab === 'matches'
+                                    ? 'Deck'
+                                    : 'Color'}
                         </span>
                     </button>
                 </div>

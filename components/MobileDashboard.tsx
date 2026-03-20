@@ -27,6 +27,7 @@ interface MobileDashboardProps {
     onPin?: (newPin: PinnedColor) => void
     isPinned?: boolean
     onSwitchToMatches?: () => void
+    onOpenDeck?: () => void
 }
 
 export default function MobileDashboard({
@@ -35,6 +36,7 @@ export default function MobileDashboard({
     onPin,
     isPinned = false,
     onSwitchToMatches,
+    onOpenDeck,
 }: MobileDashboardProps) {
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
@@ -44,6 +46,7 @@ export default function MobileDashboard({
     const [isLoadingName, setIsLoadingName] = useState(false)
     const [copied, setCopied] = useState<string | null>(null)
     const [isPinning, setIsPinning] = useState(false)
+    const [isCreatingCard, setIsCreatingCard] = useState(false)
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
 
@@ -144,22 +147,35 @@ export default function MobileDashboard({
     }
 
     const handleCreateCard = async () => {
-        let descriptiveName = ''
+        setIsCreatingCard(true)
         try {
-            const nameMatch = await getColorName(sampledColor.hex)
-            descriptiveName = nameMatch.name
-        } catch (err) {
-            console.error('Failed to get color name for card', err)
-        }
-
-        setPendingCard(createColorCard(
-            sampledColor,
-            {
-                name: sampledColor.label?.trim() || descriptiveName || `Color ${sampledColor.hex}`,
-                colorName: descriptiveName,
+            let descriptiveName = sampledColor.label?.trim() || colorName
+            if (!descriptiveName) {
+                try {
+                    const nameMatch = await getColorName(sampledColor.hex)
+                    descriptiveName = nameMatch.name
+                } catch (err) {
+                    console.error('Failed to get color name for card', err)
+                }
             }
-        ))
-        setShowCardModal(true)
+
+            const newCard = await createColorCard(
+                sampledColor,
+                {
+                    name: descriptiveName || `Color ${sampledColor.hex}`,
+                    colorName: descriptiveName || undefined,
+                    solveOptions,
+                    recipeLabel: paletteLabel,
+                }
+            )
+
+            setPendingCard(newCard)
+            setShowCardModal(true)
+        } catch (err) {
+            console.error('Failed to create color card', err)
+        } finally {
+            setIsCreatingCard(false)
+        }
     }
 
     return (
@@ -218,9 +234,17 @@ export default function MobileDashboard({
 
                         <button
                             onClick={handleCreateCard}
+                            disabled={isCreatingCard}
                             className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg active:scale-95"
                         >
-                            🎴 Save Card
+                            {isCreatingCard ? (
+                                <>
+                                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Saving…
+                                </>
+                            ) : (
+                                <>🎴 Save Card</>
+                            )}
                         </button>
 
                         <button
@@ -246,6 +270,15 @@ export default function MobileDashboard({
                             </button>
                         )}
                     </div>
+
+                    {onOpenDeck && (
+                        <button
+                            onClick={onOpenDeck}
+                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-100 bg-paper-recessed px-4 py-3 text-sm font-bold text-studio-secondary transition-all active:scale-95"
+                        >
+                            🎴 Open Deck
+                        </button>
+                    )}
                 </section>
 
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-8">

@@ -98,9 +98,14 @@ export default function ColorCardModal({
         >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 p-4">
-                <h2 id={titleId} className="text-lg font-bold text-gray-900">
-                    {isNewCard ? 'Create Color Card' : 'View Color Card'}
-                </h2>
+                <div>
+                    <h2 id={titleId} className="text-lg font-bold text-gray-900">
+                        {isNewCard ? 'Save to Deck' : 'Card Detail'}
+                    </h2>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">
+                        Local deck record
+                    </p>
+                </div>
                 <button
                     onClick={onClose}
                     type="button"
@@ -114,7 +119,7 @@ export default function ColorCardModal({
             {/* Card Name Input */}
             <div className="px-4 pt-4">
                 <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Card Name
+                    Deck Name
                 </label>
                 <input
                     ref={nameInputRef}
@@ -144,7 +149,7 @@ export default function ColorCardModal({
                     disabled={isSaving}
                     className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    {isSaving ? 'Saving…' : isNewCard ? 'Save Card' : 'Update Name'}
+                    {isSaving ? 'Saving…' : isNewCard ? 'Save to Deck' : 'Update Card'}
                 </button>
                 <button
                     onClick={handleExport}
@@ -152,7 +157,7 @@ export default function ColorCardModal({
                     disabled={isExporting}
                     className="flex-1 rounded-xl bg-gray-900 px-4 py-3 font-bold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    {isExporting ? 'Exporting…' : 'Download PNG'}
+                    {isExporting ? 'Exporting…' : 'Export PNG'}
                 </button>
             </div>
         </OverlaySurface>

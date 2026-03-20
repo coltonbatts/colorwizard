@@ -22,6 +22,7 @@ import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { ValueScaleResult } from '@/lib/valueScale'
 import ColorNamingDisplay from './ColorNamingDisplay'
 import { getColorName } from '@/lib/colorNaming'
+import { createColorCard } from '@/lib/colorArtifacts'
 
 type MixSection = 'recipe' | 'mixlab' | 'harmonies' | 'value'
 
@@ -56,6 +57,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const [openSections, setOpenSections] = useState<Set<MixSection>>(new Set(['recipe']))
   const [label, setLabel] = useState('')
   const [isPinning, setIsPinning] = useState(false)
+  const [isCreatingCard, setIsCreatingCard] = useState(false)
   const [showColorFullScreen, setShowColorFullScreen] = useState(false)
   const [showCardModal, setShowCardModal] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
@@ -182,34 +184,63 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
               </button>
               <button
                 onClick={async () => {
-                  const dmc = findClosestDMCColors(rgb, 5)
-                  const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
-
-                  // Fetch descriptive name
-                  let descriptiveName = ''
+                  setIsCreatingCard(true)
                   try {
-                    const nameMatch = await getColorName(hex)
-                    descriptiveName = nameMatch.name
-                  } catch (e) {
-                    console.error('Failed to get color name for card', e)
-                  }
+                    const dmc = findClosestDMCColors(rgb, 5)
+                    const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
 
-                  const newCard: ColorCard = {
-                    id: crypto.randomUUID(),
-                    name: label.trim() || descriptiveName || `Color ${hex}`,
-                    colorName: descriptiveName,
-                    createdAt: Date.now(),
-                    color: { hex, rgb, hsl, luminance },
-                    valueStep: sampledColor.valueMetadata?.step,
-                    dmcMatches: dmc,
-                    paintMatches: [], // Paint matches not computed at this point for MVP
+                    // Fetch descriptive name
+                    let descriptiveName = ''
+                    try {
+                      const nameMatch = await getColorName(hex)
+                      descriptiveName = nameMatch.name
+                    } catch (e) {
+                      console.error('Failed to get color name for card', e)
+                    }
+
+                    const newCard = await createColorCard(
+                      { hex, rgb, hsl },
+                      {
+                        name: label.trim() || descriptiveName || `Color ${hex}`,
+                        colorName: descriptiveName || undefined,
+                        valueStep: sampledColor.valueMetadata?.step,
+                        recipeLabel: activePalette?.isDefault ? 'Core six-color mix' : activePalette?.name || 'Active palette',
+                        solveOptions: activePalette && !activePalette.isDefault ? { paletteColorIds: activePalette.colors.map(color => color.id) } : undefined,
+                      }
+                    )
+
+                    // Preserve the cached luminance from this panel's local analysis.
+                    setPendingCard({
+                      ...newCard,
+                      color: {
+                        ...newCard.color,
+                        luminance,
+                      },
+                      matches: {
+                        ...newCard.matches,
+                        dmc,
+                      },
+                    })
+                    setShowCardModal(true)
+                  } catch (e) {
+                    console.error('Failed to create color card', e)
+                  } finally {
+                    setIsCreatingCard(false)
                   }
-                  setPendingCard(newCard)
-                  setShowCardModal(true)
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg"
+                disabled={isCreatingCard}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <span>🎴</span> Make Card
+                {isCreatingCard ? (
+                  <>
+                    <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <span>🎴</span> Make Card
+                  </>
+                )}
               </button>
             </div>
 

@@ -63,6 +63,7 @@ export default function SampleTab({
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
     const [colorName, setColorName] = useState<string>('')
+    const [isCreatingCard, setIsCreatingCard] = useState(false)
 
     // Fetch color name for mobile display
     useEffect(() => {
@@ -385,28 +386,47 @@ export default function SampleTab({
                 {!simpleMode && (
                     <button
                         onClick={async () => {
-                            let descriptiveName = ''
+                            setIsCreatingCard(true)
                             try {
-                                const nameMatch = await getColorName(hex)
-                                descriptiveName = nameMatch.name
-                            } catch (e) {
-                                console.error('Failed to get color name', e)
-                            }
-
-                            const newCard: ColorCard = createColorCard(
-                                { hex, rgb, hsl },
-                                {
-                                    name: label.trim() || descriptiveName || `Color ${hex}`,
-                                    colorName: descriptiveName,
-                                    valueStep: valueModeEnabled && valueModeMeta ? valueModeMeta.step : sampledColor.valueMetadata?.step,
+                                let descriptiveName = colorName
+                                if (!descriptiveName) {
+                                    try {
+                                        const nameMatch = await getColorName(hex)
+                                        descriptiveName = nameMatch.name
+                                    } catch (e) {
+                                        console.error('Failed to get color name', e)
+                                    }
                                 }
-                            )
-                            setPendingCard(newCard)
-                            setShowCardModal(true)
+
+                                const newCard = await createColorCard(
+                                    { hex, rgb, hsl },
+                                    {
+                                        name: label.trim() || descriptiveName || `Color ${hex}`,
+                                        colorName: descriptiveName || undefined,
+                                        valueStep: valueModeEnabled && valueModeMeta ? valueModeMeta.step : sampledColor.valueMetadata?.step,
+                                        solveOptions: recipeOptions,
+                                        recipeLabel: activePalette.isDefault ? 'Core six-color mix' : activePalette.name,
+                                    }
+                                )
+                                setPendingCard(newCard)
+                                setShowCardModal(true)
+                            } catch (e) {
+                                console.error('Failed to create color card', e)
+                            } finally {
+                                setIsCreatingCard(false)
+                            }
                         }}
+                        disabled={isCreatingCard}
                         className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg"
                     >
-                        🎴 Card
+                        {isCreatingCard ? (
+                            <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Saving…
+                            </span>
+                        ) : (
+                            <>🎴 Card</>
+                        )}
                     </button>
                 )}
 

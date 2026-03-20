@@ -118,6 +118,28 @@ export default function MobileNavigation({
                     </button>
                 </div>
 
+                <div className="mobile-nav-section">
+                    <span className="mobile-nav-section-label">Organize Saved Cards</span>
+                    <button
+                        type="button"
+                        onClick={() => handleTabSelect('deck')}
+                        className={`mobile-nav-item ${activeTab === 'deck' ? 'active' : ''}`}
+                        aria-pressed={activeTab === 'deck'}
+                    >
+                        <span className="mobile-nav-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="4" y="5" width="16" height="14" rx="3" />
+                                <path d="M7 9h10" />
+                                <path d="M7 13h6" />
+                            </svg>
+                        </span>
+                        <span className="mobile-nav-label">Card Deck</span>
+                        {activeTab === 'deck' && (
+                            <span className="mobile-nav-active-indicator" />
+                        )}
+                    </button>
+                </div>
+
                 {/* Settings */}
                 <div className="mobile-nav-section">
                     <span className="mobile-nav-section-label">Settings</span>

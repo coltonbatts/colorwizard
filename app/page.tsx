@@ -30,6 +30,7 @@ import { useSessionStore } from '@/lib/store/useSessionStore'
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
+import ColorDeckPanel from '@/components/ColorDeckPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
@@ -223,10 +224,11 @@ export default function Home() {
         if (sidebarCollapsed) toggleSidebar()
       }
 
-      // 1-2 for tab switching (Thin Core)
+      // 1-3 for tab switching (Thin Core)
       const tabKeys: { [key: string]: TabType } = {
         '1': 'sample',
         '2': 'matches',
+        '3': 'deck',
       }
       if (tabKeys[e.key]) {
         e.preventDefault()
@@ -302,6 +304,14 @@ export default function Home() {
               })
               setActiveHighlightColor(rgb)
             }}
+          />
+        )
+      case 'deck':
+        return (
+          <ColorDeckPanel
+            sampledColor={sampledColor}
+            activePaletteName={activePalette.name}
+            onGoToSample={() => setActiveTab('sample')}
           />
         )
       default:
@@ -445,6 +455,13 @@ export default function Home() {
                     onPin={pinColor}
                     isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
                     onSwitchToMatches={() => setActiveTab('matches')}
+                    onOpenDeck={() => setActiveTab('deck')}
+                  />
+                ) : activeTab === 'deck' ? (
+                  <ColorDeckPanel
+                    sampledColor={sampledColor}
+                    activePaletteName={activePalette.name}
+                    onGoToSample={() => setActiveTab('sample')}
                   />
                 ) : (
                   <MatchesTab
