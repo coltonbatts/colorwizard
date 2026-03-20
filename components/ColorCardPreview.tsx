@@ -18,7 +18,6 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
 
         const isDark = color.luminance < 0.5
         const textColor = isDark ? '#ffffff' : '#1a1a1a'
-        const stepTextColor = isDark ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.72)'
         const normalizedSteps = recipe.steps
             .filter(Boolean)
             .map(step => step.replace(/\*\*(.*?)\*\*/g, '$1'))
@@ -66,8 +65,8 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                 {/* Color Data Section */}
                 <div className="space-y-5 p-6">
                     <div className="space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">Collectible record</p>
-                        <p className="text-sm leading-6 text-gray-600">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500">Collectible record</p>
+                        <p className="text-sm leading-6 text-slate-600">
                             {recipe.summary}
                         </p>
                     </div>
@@ -109,55 +108,55 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
 
                     {/* Recipe Ingredients */}
                     <div>
-                        <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Recipe Mix</h3>
+                        <h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-500">Recipe Mix</h3>
                         {recipe.ingredients.length > 0 ? (
                             <div className="grid gap-2 sm:grid-cols-2">
                                 {recipe.ingredients.map((ingredient) => (
                                     <div
                                         key={`${ingredient.name}-${ingredient.amount}`}
-                                        className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2"
+                                        className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.03)]"
                                     >
                                         <div
                                             className="h-5 w-5 shrink-0 rounded-sm border border-gray-200"
                                             style={{ backgroundColor: ingredient.hex }}
                                         />
                                         <div className="min-w-0 flex-1">
-                                            <div className="truncate text-xs font-bold text-gray-800">
+                                            <div className="truncate text-xs font-bold text-slate-800">
                                                 {ingredient.name}
                                             </div>
-                                            <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                                            <div className="text-[10px] uppercase tracking-wide text-slate-500">
                                                 {ingredient.amount}
                                             </div>
                                         </div>
-                                        <div className="text-[10px] font-mono font-bold text-gray-500">
+                                        <div className="text-[10px] font-mono font-bold text-slate-600">
                                             {ingredient.ratio}%
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs italic text-gray-400">Recipe ingredients not available yet</p>
+                            <p className="text-xs italic text-slate-500">Recipe ingredients not available yet</p>
                         )}
                     </div>
 
                     {/* Mixing Steps */}
-                    <div>
-                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Mixing Steps</h3>
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Mixing Steps</h3>
                         {normalizedSteps.length > 0 ? (
                             <ol className="space-y-2">
                                 {normalizedSteps.map((step, index) => (
                                     <li key={`${index}-${step}`} className="flex gap-3">
-                                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-black text-gray-600">
+                                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-700">
                                             {index + 1}
                                         </span>
-                                        <span className="text-xs leading-5" style={{ color: stepTextColor }}>
+                                        <span className="text-xs font-medium leading-5 text-slate-700">
                                             {step}
                                         </span>
                                     </li>
                                 ))}
                             </ol>
                         ) : (
-                            <p className="text-xs text-gray-400 italic">Mixing steps not available yet</p>
+                            <p className="text-xs italic text-slate-500">Mixing steps not available yet</p>
                         )}
                     </div>
 
@@ -166,59 +165,59 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
 
                     {/* DMC Matches */}
                     <div>
-                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">DMC Floss Matches</h3>
+                        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">DMC Floss Matches</h3>
                         {dmc.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                                 {dmc.slice(0, 5).map((match) => (
                                     <div
                                         key={match.number}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100"
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100"
                                     >
                                         <div
                                             className="w-4 h-4 rounded-sm border border-gray-200"
                                             style={{ backgroundColor: match.hex }}
                                         />
-                                        <span className="text-xs font-bold text-gray-700">{match.number}</span>
-                                        <span className="text-xs text-gray-400">{Math.round(match.similarity)}%</span>
+                                        <span className="text-xs font-bold text-slate-700">{match.number}</span>
+                                        <span className="text-xs text-slate-500">{Math.round(match.similarity)}%</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-gray-400 italic">Not available yet</p>
+                            <p className="text-xs italic text-slate-500">Not available yet</p>
                         )}
                     </div>
 
                     {/* Paint Matches */}
                     <div>
-                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Paint Matches</h3>
+                        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Paint Matches</h3>
                         {paints.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                                 {paints.slice(0, 5).map((match, i) => (
                                     <div
                                         key={i}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100"
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100"
                                     >
                                         <div
                                             className="w-4 h-4 rounded-sm border border-gray-200"
                                             style={{ backgroundColor: match.hex }}
                                         />
                                         <div className="min-w-0">
-                                            <span className="block truncate text-xs font-medium text-gray-700">{match.name}</span>
-                                            <span className="text-[10px] text-gray-400 uppercase tracking-wide">{match.brand}</span>
+                                            <span className="block truncate text-xs font-medium text-slate-700">{match.name}</span>
+                                            <span className="text-[10px] uppercase tracking-wide text-slate-500">{match.brand}</span>
                                         </div>
-                                        <span className="text-xs font-bold text-gray-500">{match.ratio}%</span>
+                                        <span className="text-xs font-bold text-slate-600">{match.ratio}%</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-xs text-gray-400 italic">Not available yet</p>
+                            <p className="text-xs italic text-slate-500">Not available yet</p>
                         )}
                     </div>
 
                     {/* Footer */}
                     <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                        <span className="text-[10px] text-gray-300 font-medium">{recipe.sourceLabel}</span>
-                        <span className="text-[10px] text-gray-300 font-mono">
+                        <span className="text-[10px] font-medium text-slate-400">{recipe.sourceLabel}</span>
+                        <span className="text-[10px] font-mono text-slate-400">
                             {new Date(card.updatedAt || card.createdAt).toLocaleDateString()}
                         </span>
                     </div>
