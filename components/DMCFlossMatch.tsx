@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { findClosestDMCColors, DMCMatch } from '@/lib/dmcFloss'
+import { findClosestDMCColors } from '@/lib/dmcFloss'
+import type { KeyboardEvent, MouseEvent } from 'react'
 
 interface DMCFlossMatchProps {
   rgb: { r: number; g: number; b: number }
@@ -22,7 +23,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
     }
   }, [rgb])
 
-  const handleCopyCode = useCallback((e: React.MouseEvent, code: string) => {
+  const handleCopyCode = useCallback((e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>, code: string) => {
     e.stopPropagation()
     navigator.clipboard.writeText(code)
     setCopiedCode(code)
@@ -80,7 +81,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
-                        handleCopyCode(e as any, match.number)
+                        handleCopyCode(e, match.number)
                       }
                     }}
                   >

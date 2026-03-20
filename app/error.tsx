@@ -65,7 +65,7 @@ export default function Error({
             marginBottom: '24px',
           }}
         >
-          We're sorry - something went wrong. This has been logged and we'll investigate.
+          We&apos;re sorry - something went wrong. This has been logged and we&apos;ll investigate.
         </p>
 
         {process.env.NODE_ENV === 'development' && (
