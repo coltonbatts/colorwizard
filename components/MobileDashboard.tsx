@@ -14,10 +14,7 @@ import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import { getColorName } from '@/lib/colorNaming'
-import { getLuminance } from '@/lib/paintingMath'
-import { findClosestDMCColors } from '@/lib/dmcFloss'
-import { generatePaintRecipe } from '@/lib/colorMixer'
-import { solveRecipe } from '@/lib/paint/solveRecipe'
+import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
 
 interface MobileDashboardProps {
     sampledColor: {
@@ -50,12 +47,19 @@ export default function MobileDashboard({
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
 
-    const recipeOptions = useMemo(() => {
+    const solveOptions = useMemo(() => {
+        if (hasPaintPalette && selectedPaintIds.length > 0) {
+            return {
+                useCatalog: true as const,
+                paintIds: selectedPaintIds,
+            }
+        }
+
         if (!activePalette || activePalette.isDefault) return undefined
         return {
             paletteColorIds: activePalette.colors.map(color => color.id),
         }
-    }, [activePalette])
+    }, [activePalette, hasPaintPalette, selectedPaintIds])
 
     useEffect(() => {
         if (!sampledColor) {
@@ -109,7 +113,11 @@ export default function MobileDashboard({
     }
 
     const displayName = colorName || sampledColor.hex.toUpperCase()
-    const paletteLabel = activePalette?.isDefault ? 'Core six-color mix' : activePalette?.name || 'Active palette'
+    const paletteLabel = hasPaintPalette
+        ? `Paint library (${selectedPaintIds.length})`
+        : activePalette?.isDefault
+            ? 'Core six-color mix'
+            : activePalette?.name || 'Active palette'
 
     const copyToClipboard = async (text: string, type: string) => {
         await navigator.clipboard.writeText(text)
@@ -121,32 +129,21 @@ export default function MobileDashboard({
         if (!onPin || isPinned) return
         setIsPinning(true)
         try {
-            const spectral = await solveRecipe(sampledColor.hex, recipeOptions)
-            const fallback = generatePaintRecipe(sampledColor.hsl)
-            const dmc = findClosestDMCColors(sampledColor.rgb, 5)
+            const pinnedColor = await createPinnedColor(
+                sampledColor,
+                {
+                    label: sampledColor.label?.trim() || colorName || `Color ${sampledColor.hex}`,
+                    solveOptions,
+                }
+            )
 
-            onPin({
-                id: crypto.randomUUID(),
-                hex: sampledColor.hex,
-                rgb: sampledColor.rgb,
-                hsl: sampledColor.hsl,
-                label: sampledColor.label?.trim() || colorName || `Color ${sampledColor.hex}`,
-                timestamp: Date.now(),
-                spectralRecipe: spectral,
-                fallbackRecipe: fallback,
-                dmcMatches: dmc,
-            })
-        } catch (err) {
-            console.error('Failed to pin sampled color:', err)
+            onPin(pinnedColor)
         } finally {
             setIsPinning(false)
         }
     }
 
     const handleCreateCard = async () => {
-        const dmc = findClosestDMCColors(sampledColor.rgb, 5)
-        const luminance = getLuminance(sampledColor.rgb.r, sampledColor.rgb.g, sampledColor.rgb.b) / 100
-
         let descriptiveName = ''
         try {
             const nameMatch = await getColorName(sampledColor.hex)
@@ -155,20 +152,13 @@ export default function MobileDashboard({
             console.error('Failed to get color name for card', err)
         }
 
-        setPendingCard({
-            id: crypto.randomUUID(),
-            name: sampledColor.label?.trim() || descriptiveName || `Color ${sampledColor.hex}`,
-            colorName: descriptiveName,
-            createdAt: Date.now(),
-            color: {
-                hex: sampledColor.hex,
-                rgb: sampledColor.rgb,
-                hsl: sampledColor.hsl,
-                luminance,
-            },
-            dmcMatches: dmc,
-            paintMatches: [],
-        })
+        setPendingCard(createColorCard(
+            sampledColor,
+            {
+                name: sampledColor.label?.trim() || descriptiveName || `Color ${sampledColor.hex}`,
+                colorName: descriptiveName,
+            }
+        ))
         setShowCardModal(true)
     }
 
@@ -217,7 +207,7 @@ export default function MobileDashboard({
                             {isPinning ? (
                                 <>
                                     <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Pinning...
+                                    Pinning…
                                 </>
                             ) : isPinned ? (
                                 <>✓ Pinned</>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { toPng } from 'html-to-image'
 import ColorCardPreview from './ColorCardPreview'
@@ -25,6 +25,8 @@ export default function ColorCardModal({
     isNewCard = false,
     onCardSaved,
 }: ColorCardModalProps) {
+    const titleId = useId()
+    const inputId = useId()
     const [cardName, setCardName] = useState('')
     const [isSaving, setIsSaving] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
@@ -43,10 +45,19 @@ export default function ColorCardModal({
         const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
 
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose()
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+
         return () => {
             document.body.style.overflow = previousOverflow
+            document.removeEventListener('keydown', handleKeyDown)
         }
-    }, [isOpen])
+    }, [isOpen, onClose])
 
     if (!isOpen || !card) return null
 
@@ -94,15 +105,26 @@ export default function ColorCardModal({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900">
+                    <h2 id={titleId} className="text-lg font-bold text-gray-900">
                         {isNewCard ? 'Create Color Card' : 'View Color Card'}
                     </h2>
                     <button
                         onClick={onClose}
+                        type="button"
+                        aria-label="Close color card modal"
                         className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                         ✕
@@ -111,20 +133,23 @@ export default function ColorCardModal({
 
                 {/* Card Name Input */}
                 <div className="px-4 pt-4">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    <label htmlFor={inputId} className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                         Card Name
                     </label>
                     <input
+                        id={inputId}
+                        name="cardName"
                         type="text"
                         value={cardName}
                         onChange={(e) => setCardName(e.target.value)}
-                        placeholder="Enter card name..."
+                        autoComplete="off"
+                        placeholder="Enter card name…"
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                 </div>
 
                 {/* Card Preview */}
-                <div className="flex-1 overflow-auto p-4 flex items-start justify-center">
+                <div className="flex flex-1 items-start justify-center overflow-auto overscroll-contain p-4">
                     <div className="transform scale-[0.85] origin-top">
                         <ColorCardPreview ref={cardRef} card={{ ...card, name: cardName || card.name }} />
                     </div>
@@ -134,17 +159,19 @@ export default function ColorCardModal({
                 <div className="flex gap-3 p-4 border-t border-gray-100 bg-gray-50">
                     <button
                         onClick={handleSave}
+                        type="button"
                         disabled={isSaving}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isSaving ? 'Saving...' : isNewCard ? 'Save Card' : 'Update Name'}
+                        {isSaving ? 'Saving…' : isNewCard ? 'Save Card' : 'Update Name'}
                     </button>
                     <button
                         onClick={handleExport}
+                        type="button"
                         disabled={isExporting}
                         className="flex-1 px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isExporting ? 'Exporting...' : 'Download PNG'}
+                        {isExporting ? 'Exporting…' : 'Download PNG'}
                     </button>
                 </div>
             </div>

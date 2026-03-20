@@ -14,13 +14,11 @@ import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
 import { DEFAULT_PALETTE } from '@/lib/types/palette'
-import { generatePaintRecipe } from '@/lib/colorMixer'
-import { solveRecipe } from '@/lib/paint/solveRecipe'
-import { findClosestDMCColors } from '@/lib/dmcFloss'
 import { getColorName } from '@/lib/colorNaming'
 import { useStore } from '@/lib/store/useStore'
 import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
 
 interface SampleTabProps {
     sampledColor: {
@@ -140,6 +138,26 @@ export default function SampleTab({
         setTimeout(() => setCopied(null), 1500)
     }
 
+    const handlePin = async () => {
+        if (isPinned) return
+
+        setIsPinning(true)
+        try {
+            const pinnedColor = await createPinnedColor(
+                { hex, rgb, hsl },
+                {
+                    label: label.trim() || colorName || `Color ${hex}`,
+                    solveOptions: recipeOptions,
+                }
+            )
+
+            onPin(pinnedColor)
+            setLabel('')
+        } finally {
+            setIsPinning(false)
+        }
+    }
+
     // Mobile-first, art-forward layout - COMPACT
     if (isMobile) {
         return (
@@ -183,39 +201,14 @@ export default function SampleTab({
                 {/* Main Actions Row */}
                 <div className="grid grid-cols-2 gap-3">
                     <button
-                        onClick={async () => {
-                            if (isPinned) return
-                            setIsPinning(true)
-                            try {
-                                const spectral = await solveRecipe(hex, recipeOptions)
-                                const fallback = generatePaintRecipe(hsl)
-                                const dmc = findClosestDMCColors(rgb, 5)
-
-                                onPin({
-                                    id: crypto.randomUUID(),
-                                    hex,
-                                    rgb,
-                                    hsl,
-                                    label: label.trim() || `Color ${hex}`,
-                                    timestamp: Date.now(),
-                                    spectralRecipe: spectral,
-                                    fallbackRecipe: fallback,
-                                    dmcMatches: dmc
-                                })
-                                setLabel('')
-                            } catch (e) {
-                                console.error('Failed to pin color', e)
-                            } finally {
-                                setIsPinning(false)
-                            }
-                        }}
+                        onClick={handlePin}
                         disabled={isPinning || isPinned}
                         className={`flex items-center justify-center gap-2 py-4 px-4 rounded-xl text-sm font-bold transition-all ${isPinned
                             ? 'bg-subsignal-muted text-subsignal border border-subsignal'
                             : 'bg-signal text-white shadow-lg active:scale-95'
                             }`}
                     >
-                        {isPinning ? '...' : isPinned ? '✓ Pinned' : '📌 Pin'}
+                        {isPinning ? 'Pinning…' : isPinned ? '✓ Pinned' : '📌 Pin'}
                     </button>
 
                     {onSwitchToMatches && (
@@ -371,32 +364,7 @@ export default function SampleTab({
             {/* Action Buttons */}
             <div className="flex gap-2">
                 <button
-                    onClick={async () => {
-                        if (isPinned) return
-                        setIsPinning(true)
-                        try {
-                            const spectral = await solveRecipe(hex, recipeOptions)
-                            const fallback = generatePaintRecipe(hsl)
-                            const dmc = findClosestDMCColors(rgb, 5)
-
-                            onPin({
-                                id: crypto.randomUUID(),
-                                hex,
-                                rgb,
-                                hsl,
-                                label: label.trim() || `Color ${hex}`,
-                                timestamp: Date.now(),
-                                spectralRecipe: spectral,
-                                fallbackRecipe: fallback,
-                                dmcMatches: dmc
-                            })
-                            setLabel('')
-                        } catch (e) {
-                            console.error('Failed to pin color', e)
-                        } finally {
-                            setIsPinning(false)
-                        }
-                    }}
+                    onClick={handlePin}
                     disabled={isPinning || isPinned}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all ${isPinned
                         ? 'bg-subsignal-muted text-subsignal border border-subsignal'
@@ -419,9 +387,6 @@ export default function SampleTab({
                 {!simpleMode && (
                     <button
                         onClick={async () => {
-                            const dmc = findClosestDMCColors(rgb, 5)
-                            const luminance = (valueModeMeta?.y ?? (getLuminance(rgb.r, rgb.g, rgb.b) / 100))
-
                             let descriptiveName = ''
                             try {
                                 const nameMatch = await getColorName(hex)
@@ -430,16 +395,14 @@ export default function SampleTab({
                                 console.error('Failed to get color name', e)
                             }
 
-                            const newCard: ColorCard = {
-                                id: crypto.randomUUID(),
-                                name: label.trim() || descriptiveName || `Color ${hex}`,
-                                colorName: descriptiveName,
-                                createdAt: Date.now(),
-                                color: { hex, rgb, hsl, luminance },
-                                valueStep: valueModeEnabled && valueModeMeta ? valueModeMeta.step : sampledColor.valueMetadata?.step,
-                                dmcMatches: dmc,
-                                paintMatches: [],
-                            }
+                            const newCard: ColorCard = createColorCard(
+                                { hex, rgb, hsl },
+                                {
+                                    name: label.trim() || descriptiveName || `Color ${hex}`,
+                                    colorName: descriptiveName,
+                                    valueStep: valueModeEnabled && valueModeMeta ? valueModeMeta.step : sampledColor.valueMetadata?.step,
+                                }
+                            )
                             setPendingCard(newCard)
                             setShowCardModal(true)
                         }}
