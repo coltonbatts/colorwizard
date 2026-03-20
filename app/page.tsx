@@ -20,6 +20,12 @@ import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
+import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
+import { useDebugStore } from '@/lib/store/useDebugStore'
+import { useLayoutStore } from '@/lib/store/useLayoutStore'
+import { usePaletteStore } from '@/lib/store/usePaletteStore'
+import { useSessionStore } from '@/lib/store/useSessionStore'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -29,77 +35,71 @@ import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
-import { useStore } from '@/lib/store/useStore'
-
 export default function Home() {
   const isMobile = useIsMobile()
+  const [activeTab, setActiveTab] = useState<TabType>('sample')
+  const [showPaletteManager, setShowPaletteManager] = useState(false)
+  const [showCalibrationModal, setShowCalibrationModal] = useState(false)
+  const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
 
-  // Optimized selectors: Grouped by logical domain to reduce re-render cascades
-  const sampledColor = useStore(state => state.sampledColor)
-  const setSampledColor = useStore(state => state.setSampledColor)
-  const activeHighlightColor = useStore(state => state.activeHighlightColor)
-  const setActiveHighlightColor = useStore(state => state.setActiveHighlightColor)
-  const highlightTolerance = useStore(state => state.highlightTolerance)
-  const highlightMode = useStore(state => state.highlightMode)
-  const image = useStore(state => state.image)
-  const setImage = useStore(state => state.setImage)
-  const activeTab = useStore(state => state.activeTab)
-  const setActiveTab = useStore(state => state.setActiveTab)
-  const pinnedColors = useStore(state => state.pinnedColors)
-  const pinColor = useStore(state => state.pinColor)
-  const lastSampleTime = useStore(state => state.lastSampleTime)
+  const sampledColor = useSessionStore(state => state.sampledColor)
+  const setSampledColor = useSessionStore(state => state.setSampledColor)
+  const activeHighlightColor = useSessionStore(state => state.activeHighlightColor)
+  const setActiveHighlightColor = useSessionStore(state => state.setActiveHighlightColor)
+  const highlightTolerance = useSessionStore(state => state.highlightTolerance)
+  const highlightMode = useSessionStore(state => state.highlightMode)
+  const pinnedColors = useSessionStore(state => state.pinnedColors)
+  const pinColor = useSessionStore(state => state.pinColor)
+  const lastSampleTime = useSessionStore(state => state.lastSampleTime)
+  const valueModeEnabled = useSessionStore(state => state.valueModeEnabled)
+  const valueModeSteps = useSessionStore(state => state.valueModeSteps)
+  const toggleValueMode = useSessionStore(state => state.toggleValueMode)
+  const setValueModeEnabled = useSessionStore(state => state.setValueModeEnabled)
+  const setValueModeSteps = useSessionStore(state => state.setValueModeSteps)
 
-  const valueScaleSettings = useStore(state => state.valueScaleSettings)
-  const setValueScaleSettings = useStore(state => state.setValueScaleSettings)
-  const setHistogramBins = useStore(state => state.setHistogramBins)
-  const setValueScaleResult = useStore(state => state.setValueScaleResult)
-  const palettes = useStore(state => state.palettes)
-  const createPalette = useStore(state => state.createPalette)
-  const updatePalette = useStore(state => state.updatePalette)
-  const deletePalette = useStore(state => state.deletePalette)
-  const setActivePalette = useStore(state => state.setActivePalette)
-  const showPaletteManager = useStore(state => state.showPaletteManager)
-  const setShowPaletteManager = useStore(state => state.setShowPaletteManager)
-  const canvasSettings = useStore(state => state.canvasSettings)
-  const setCanvasSettings = useStore(state => state.setCanvasSettings)
+  const image = useCanvasStore(state => state.image)
+  const setImage = useCanvasStore(state => state.setImage)
+  const referenceImage = useCanvasStore(state => state.referenceImage)
+  const setReferenceImage = useCanvasStore(state => state.setReferenceImage)
+  const valueScaleSettings = useCanvasStore(state => state.valueScaleSettings)
+  const setValueScaleSettings = useCanvasStore(state => state.setValueScaleSettings)
+  const setHistogramBins = useCanvasStore(state => state.setHistogramBins)
+  const setValueScaleResult = useCanvasStore(state => state.setValueScaleResult)
+  const setBreakdownValue = useCanvasStore(state => state.setBreakdownValue)
+  const palettes = usePaletteStore(state => state.palettes)
+  const createPalette = usePaletteStore(state => state.createPalette)
+  const updatePalette = usePaletteStore(state => state.updatePalette)
+  const deletePalette = usePaletteStore(state => state.deletePalette)
+  const setActivePalette = usePaletteStore(state => state.setActivePalette)
+  const canvasSettings = useCanvasStore(state => state.canvasSettings)
+  const setCanvasSettings = useCanvasStore(state => state.setCanvasSettings)
 
-  const calibration = useStore(state => state.calibration)
-  const calibrationStale = useStore(state => state.calibrationStale)
-  const showCalibrationModal = useStore(state => state.showCalibrationModal)
-  const setShowCalibrationModal = useStore(state => state.setShowCalibrationModal)
-  const saveCalibration = useStore(state => state.saveCalibration)
-  const resetCalibration = useStore(state => state.resetCalibration)
-  const loadCalibrationFromStorage = useStore(state => state.loadCalibrationFromStorage)
-  const measureMode = useStore(state => state.measureMode)
-  const measurePointA = useStore(state => state.measurePointA)
-  const measurePointB = useStore(state => state.measurePointB)
-  const measurementLayer = useStore(state => state.measurementLayer)
+  const calibration = useCalibrationStore(state => state.calibration)
+  const saveCalibration = useCalibrationStore(state => state.saveCalibration)
+  const resetCalibration = useCalibrationStore(state => state.resetCalibration)
+  const loadCalibrationFromStorage = useCalibrationStore(state => state.loadCalibrationFromStorage)
+  const measureMode = useCalibrationStore(state => state.measureMode)
+  const measurePointA = useCalibrationStore(state => state.measurePointA)
+  const measurePointB = useCalibrationStore(state => state.measurePointB)
+  const measurementLayer = useCalibrationStore(state => state.measurementLayer)
+  const setMeasurePoints = useCalibrationStore(state => state.setMeasurePoints)
+  const toggleMeasureMode = useCalibrationStore(state => state.toggleMeasureMode)
+  const rulerGridEnabled = useCalibrationStore(state => state.rulerGridEnabled)
+  const rulerGridSpacing = useCalibrationStore(state => state.rulerGridSpacing)
+  const toggleRulerGrid = useCalibrationStore(state => state.toggleRulerGrid)
+  const setTransformState = useCalibrationStore(state => state.setTransformState)
 
-  const referenceImage = useStore(state => state.referenceImage)
-  const setReferenceImage = useStore(state => state.setReferenceImage)
+  const sidebarCollapsed = useLayoutStore(state => state.sidebarCollapsed)
+  const toggleSidebar = useLayoutStore(state => state.toggleSidebar)
+  const setSidebarCollapsed = useLayoutStore(state => state.setSidebarCollapsed)
+  const sidebarWidth = useLayoutStore(state => state.sidebarWidth)
+  const setSidebarWidth = useLayoutStore(state => state.setSidebarWidth)
+  const compactMode = useLayoutStore(state => state.compactMode)
+  const simpleMode = useLayoutStore(state => state.simpleMode)
+  const toggleSimpleMode = useLayoutStore(state => state.toggleSimpleMode)
 
-  const setMeasurePoints = useStore(state => state.setMeasurePoints)
-  const toggleMeasureMode = useStore(state => state.toggleMeasureMode)
-  const toggleMeasurementLayer = useStore(state => state.toggleMeasurementLayer)
-  const rulerGridEnabled = useStore(state => state.rulerGridEnabled)
-  const rulerGridSpacing = useStore(state => state.rulerGridSpacing)
-  const toggleRulerGrid = useStore(state => state.toggleRulerGrid)
-  const setRulerGridSpacing = useStore(state => state.setRulerGridSpacing)
-  const setTransformState = useStore(state => state.setTransformState)
-  const sidebarCollapsed = useStore(state => state.sidebarCollapsed)
-  const toggleSidebar = useStore(state => state.toggleSidebar)
-  const sidebarWidth = useStore(state => state.sidebarWidth)
-  const setSidebarWidth = useStore(state => state.setSidebarWidth)
-  const compactMode = useStore(state => state.compactMode)
-  const toggleCompactMode = useStore(state => state.toggleCompactMode)
-  const breakdownValue = useStore(state => state.breakdownValue)
-  const setBreakdownValue = useStore(state => state.setBreakdownValue)
-  const showCanvasSettingsModal = useStore(state => state.showCanvasSettingsModal)
-  const setShowCanvasSettingsModal = useStore(state => state.setShowCanvasSettingsModal)
-  const toggleSimpleMode = useStore(state => state.toggleSimpleMode)
-  const toggleValueMode = useStore(state => state.toggleValueMode)
-
-  const setValueModeEnabled = useStore(state => state.setValueModeEnabled)
+  const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
+  const toggleDebugMode = useDebugStore(state => state.toggleDebugMode)
 
   // Wrapper for setImage that always resets value mode
   const handleImageLoad = useCallback((img: HTMLImageElement) => {
@@ -117,7 +117,15 @@ export default function Home() {
     setActiveHighlightColor(null)
     setBreakdownValue(0)
     setValueModeEnabled(false) // Reset value mode when clearing image
-  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue, setValueModeEnabled])
+    setActiveTab('sample')
+  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue, setValueModeEnabled, setActiveTab])
+
+  const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
+    setSampledColor(color)
+    if (isMobile) {
+      setSidebarCollapsed(false)
+    }
+  }, [isMobile, setSampledColor, setSidebarCollapsed])
 
   const lastProcessedRef = useRef<string | null>(null)
 
@@ -149,14 +157,6 @@ export default function Home() {
   // Resize logic
   const isResizing = useRef(false)
 
-  const stopResizing = useCallback(() => {
-    isResizing.current = false
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', stopResizing)
-    document.body.style.cursor = 'default'
-    document.body.style.userSelect = 'auto'
-  }, [])
-
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return
     const newWidth = window.innerWidth - e.clientX
@@ -165,7 +165,15 @@ export default function Home() {
     }
   }, [setSidebarWidth])
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
+  const stopResizing = useCallback(() => {
+    isResizing.current = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'default'
+    document.body.style.userSelect = 'auto'
+  }, [handleMouseMove])
+
+  const startResizing = useCallback(() => {
     isResizing.current = true
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', stopResizing)
@@ -248,18 +256,6 @@ export default function Home() {
     return palettes.find(p => p.isActive) || palettes[0] || { id: 'default', name: 'Default', colors: [], isActive: true, isDefault: true }
   }, [palettes])
 
-  // Export palette handler
-  const handleExportPalette = () => {
-    const data = JSON.stringify(pinnedColors, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `colorwizard_palette_${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   // Session palette add handler
   const handleAddToSession = (color: { hex: string; rgb: { r: number; g: number; b: number } }) => {
     addToSession(color.hex, color.rgb)
@@ -268,7 +264,7 @@ export default function Home() {
   // Session color select handler
   const handleSessionColorSelect = (color: SessionColor) => {
     // Convert session color to sampled color format
-    setSampledColor({
+    applySampleColor({
       hex: color.hex,
       rgb: color.rgb,
       hsl: { h: 0, s: 0, l: 0 }
@@ -281,13 +277,17 @@ export default function Home() {
     switch (activeTab) {
       case 'sample':
         return (
-          <SampleTab
-            sampledColor={sampledColor}
-            onPin={pinColor}
-            isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
-            lastSampleTime={lastSampleTime}
-            onAddToSession={handleAddToSession}
-            onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
+            <SampleTab
+              sampledColor={sampledColor}
+              activePalette={activePalette}
+              simpleMode={simpleMode}
+              valueModeEnabled={valueModeEnabled}
+              valueModeSteps={valueModeSteps}
+              onPin={pinColor}
+              isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
+              lastSampleTime={lastSampleTime}
+              onAddToSession={handleAddToSession}
+              onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
           />
         )
       case 'matches':
@@ -295,7 +295,7 @@ export default function Home() {
           <MatchesTab
             sampledColor={sampledColor}
             onColorSelect={(rgb) => {
-              setSampledColor({
+              applySampleColor({
                 rgb,
                 hex: rgbToHex(rgb.r, rgb.g, rgb.b),
                 hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
@@ -316,14 +316,14 @@ export default function Home() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle debug mode with Alt+D
       if (e.altKey && e.key.toLowerCase() === 'd') {
-        const current = useStore.getState().debugModeEnabled
-        useStore.getState().setDebugModeEnabled(!current)
-        console.log('[Home] Debug mode:', !current)
+        const next = !debugModeEnabled
+        toggleDebugMode()
+        console.log('[Home] Debug mode:', next)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [debugModeEnabled, toggleDebugMode])
 
   return (
     <main
@@ -344,31 +344,26 @@ export default function Home() {
         <div className="mb-4">
           <CompactToolbar
             calibration={calibration}
-            calibrationStale={calibrationStale}
             onOpenCalibration={() => setShowCalibrationModal(true)}
             onResetCalibration={resetCalibration}
             rulerGridEnabled={rulerGridEnabled}
-            rulerGridSpacing={rulerGridSpacing}
             onToggleRulerGrid={toggleRulerGrid}
-            onRulerGridSpacingChange={setRulerGridSpacing}
             measureMode={measureMode}
-            measurePointA={measurePointA}
-            measurePointB={measurePointB}
             onToggleMeasure={toggleMeasureMode}
-            measurementLayer={measurementLayer}
-            onToggleMeasurementLayer={toggleMeasurementLayer}
             palettes={palettes}
             activePalette={activePalette}
             onSelectPalette={setActivePalette}
             onOpenPaletteManager={() => setShowPaletteManager(true)}
-            compactMode={compactMode}
-            onToggleCompactMode={toggleCompactMode}
             canvasSettings={canvasSettings}
             onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
             hasImage={!!image}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onResetView={() => imageCanvasRef.current?.resetView()}
+            valueModeEnabled={valueModeEnabled}
+            valueModeSteps={valueModeSteps}
+            onToggleValueMode={toggleValueMode}
+            onValueModeStepsChange={setValueModeSteps}
           />
         </div>
 
@@ -398,7 +393,7 @@ export default function Home() {
                 if (measureMode && calibration) {
                   return
                 }
-                setSampledColor(color)
+                applySampleColor(color)
               }}
               highlightColor={activeHighlightColor}
               highlightTolerance={highlightTolerance}
@@ -455,7 +450,7 @@ export default function Home() {
                   <MatchesTab
                     sampledColor={sampledColor}
                     onColorSelect={(rgb) => {
-                      setSampledColor({
+                      applySampleColor({
                         rgb,
                         hex: rgbToHex(rgb.r, rgb.g, rgb.b),
                         hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)

@@ -1,16 +1,16 @@
 import { useRef } from 'react'
-import { useStore } from '@/lib/store/useStore'
+import { useCanvasStore } from '@/lib/store/useCanvasStore'
 
 export default function ReferenceTab() {
-    const referenceImage = useStore(state => state.referenceImage)
-    const setReferenceImage = useStore(state => state.setReferenceImage)
-    const referenceOpacity = useStore(state => state.referenceOpacity)
-    const setReferenceOpacity = useStore(state => state.setReferenceOpacity)
-    const referenceLocked = useStore(state => state.referenceLocked)
-    const setReferenceLocked = useStore(state => state.setReferenceLocked)
-    const referenceTransform = useStore(state => state.referenceTransform)
-    const setReferenceTransform = useStore(state => state.setReferenceTransform)
-    const resetReferenceTransform = useStore(state => state.resetReferenceTransform)
+    const referenceImage = useCanvasStore(state => state.referenceImage)
+    const setReferenceImage = useCanvasStore(state => state.setReferenceImage)
+    const referenceOpacity = useCanvasStore(state => state.referenceOpacity)
+    const setReferenceOpacity = useCanvasStore(state => state.setReferenceOpacity)
+    const referenceLocked = useCanvasStore(state => state.referenceLocked)
+    const setReferenceLocked = useCanvasStore(state => state.setReferenceLocked)
+    const referenceTransform = useCanvasStore(state => state.referenceTransform)
+    const setReferenceTransform = useCanvasStore(state => state.setReferenceTransform)
+    const resetReferenceTransform = useCanvasStore(state => state.resetReferenceTransform)
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 

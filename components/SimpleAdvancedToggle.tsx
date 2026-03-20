@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/lib/store/useStore'
+import { useLayoutStore } from '@/lib/store/useLayoutStore'
 
 interface SimpleAdvancedToggleProps {
     className?: string
@@ -12,7 +12,8 @@ interface SimpleAdvancedToggleProps {
  * Keyboard shortcut: Shift+S
  */
 export default function SimpleAdvancedToggle({ className = '' }: SimpleAdvancedToggleProps) {
-    const { simpleMode, toggleSimpleMode } = useStore()
+    const simpleMode = useLayoutStore(state => state.simpleMode)
+    const toggleSimpleMode = useLayoutStore(state => state.toggleSimpleMode)
 
     return (
         <div className={`flex items-center gap-2 ${className}`}>

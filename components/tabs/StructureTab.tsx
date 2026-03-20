@@ -1,14 +1,14 @@
 'use client'
 
-import { useStore } from '@/lib/store/useStore'
+import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 
 export default function StructureTab() {
-    const rulerGridEnabled = useStore(state => state.rulerGridEnabled)
-    const setRulerGridEnabled = useStore(state => state.setRulerGridEnabled)
-    const rulerGridSpacing = useStore(state => state.rulerGridSpacing)
-    const setRulerGridSpacing = useStore(state => state.setRulerGridSpacing)
-    const gridOpacity = useStore(state => state.gridOpacity)
-    const setGridOpacity = useStore(state => state.setGridOpacity)
+    const rulerGridEnabled = useCalibrationStore(state => state.rulerGridEnabled)
+    const setRulerGridEnabled = useCalibrationStore(state => state.setRulerGridEnabled)
+    const rulerGridSpacing = useCalibrationStore(state => state.rulerGridSpacing)
+    const setRulerGridSpacing = useCalibrationStore(state => state.setRulerGridSpacing)
+    const gridOpacity = useCalibrationStore(state => state.gridOpacity)
+    const setGridOpacity = useCalibrationStore(state => state.setGridOpacity)
 
     return (
         <div className="p-4 space-y-6">

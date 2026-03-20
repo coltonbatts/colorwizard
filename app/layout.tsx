@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth/useAuth'
+import StoreBootstrap from '@/components/StoreBootstrap'
 import './globals.css'
 
 /**
@@ -60,6 +61,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
+        <StoreBootstrap />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

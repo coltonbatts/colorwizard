@@ -13,9 +13,8 @@ import PaintRecipe from '../PaintRecipe'
 import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
-import { DEFAULT_PALETTE } from '@/lib/types/palette'
+import { Palette } from '@/lib/types/palette'
 import { getColorName } from '@/lib/colorNaming'
-import { useStore } from '@/lib/store/useStore'
 import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 import { useIsMobile, useMediaQuery } from '@/hooks/useMediaQuery'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
@@ -35,6 +34,10 @@ interface SampleTabProps {
     onPin: (newPin: PinnedColor) => void
     isPinned: boolean
     lastSampleTime?: number
+    activePalette: Palette
+    simpleMode: boolean
+    valueModeEnabled: boolean
+    valueModeSteps: 5 | 7 | 9 | 11
     onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
     onSwitchToMatches?: () => void
 }
@@ -44,6 +47,10 @@ export default function SampleTab({
     onPin,
     isPinned,
     lastSampleTime,
+    activePalette,
+    simpleMode,
+    valueModeEnabled,
+    valueModeSteps,
     onAddToSession,
     onSwitchToMatches
 }: SampleTabProps) {
@@ -56,12 +63,6 @@ export default function SampleTab({
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
     const [colorName, setColorName] = useState<string>('')
-    const palettes = useStore(state => state.palettes)
-    const {
-        simpleMode,
-        valueModeEnabled,
-        valueModeSteps
-    } = useStore()
 
     // Fetch color name for mobile display
     useEffect(() => {
@@ -73,10 +74,6 @@ export default function SampleTab({
             .then(result => setColorName(result.name))
             .catch(() => setColorName(''))
     }, [sampledColor])
-
-    const activePalette = useMemo(() => {
-        return palettes.find(p => p.isActive) || palettes[0] || DEFAULT_PALETTE
-    }, [palettes])
 
     const recipeOptions = useMemo(() => {
         if (activePalette.isDefault) return undefined

@@ -1,20 +1,18 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { useStore } from '@/lib/store/useStore'
+import { useLayoutStore } from '@/lib/store/useLayoutStore'
 
 /**
  * Hook to manage layout preferences with responsive behavior and keyboard shortcuts
  */
 export function useLayoutPreferences() {
-    const {
-        sidebarCollapsed,
-        compactMode,
-        toggleSidebar,
-        toggleCompactMode,
-        setSidebarCollapsed,
-        setCompactMode
-    } = useStore()
+    const sidebarCollapsed = useLayoutStore(state => state.sidebarCollapsed)
+    const compactMode = useLayoutStore(state => state.compactMode)
+    const toggleSidebar = useLayoutStore(state => state.toggleSidebar)
+    const toggleCompactMode = useLayoutStore(state => state.toggleCompactMode)
+    const setSidebarCollapsed = useLayoutStore(state => state.setSidebarCollapsed)
+    const setCompactMode = useLayoutStore(state => state.setCompactMode)
 
     // Auto-collapse sidebar on small screens
     useEffect(() => {

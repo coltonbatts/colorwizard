@@ -1,14 +1,14 @@
 'use client'
 
-import { useStore } from '@/lib/store/useStore'
+import { useSessionStore } from '@/lib/store/useSessionStore'
 
 export default function HighlightControls() {
-    const activeHighlightColor = useStore(state => state.activeHighlightColor)
-    const setActiveHighlightColor = useStore(state => state.setActiveHighlightColor)
-    const highlightTolerance = useStore(state => state.highlightTolerance)
-    const setHighlightTolerance = useStore(state => state.setHighlightTolerance)
-    const highlightMode = useStore(state => state.highlightMode)
-    const setHighlightMode = useStore(state => state.setHighlightMode)
+    const activeHighlightColor = useSessionStore(state => state.activeHighlightColor)
+    const setActiveHighlightColor = useSessionStore(state => state.setActiveHighlightColor)
+    const highlightTolerance = useSessionStore(state => state.highlightTolerance)
+    const setHighlightTolerance = useSessionStore(state => state.setHighlightTolerance)
+    const highlightMode = useSessionStore(state => state.highlightMode)
+    const setHighlightMode = useSessionStore(state => state.setHighlightMode)
 
     if (!activeHighlightColor) return null
 

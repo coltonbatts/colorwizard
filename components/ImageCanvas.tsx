@@ -13,7 +13,6 @@ import { CalibrationData } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import type { BreakdownStep } from '@/components/ProcessSlider'
-import { useStore } from '@/lib/store/useStore'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
 import { createSourceBuffer } from '@/lib/imagePipeline'
 import { DebugOverlay } from '@/components/DebugOverlay'
@@ -37,6 +36,10 @@ import { getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from
 import { TransformState, screenToImage } from '@/lib/calibration'
 import { CanvasSettings as AppCanvasSettings } from '@/lib/types/canvas'
 import { calculateFit } from '@/lib/canvasRendering'
+import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
+import { useDebugStore } from '@/lib/store/useDebugStore'
+import { useSessionStore } from '@/lib/store/useSessionStore'
 
 interface RGB {
   r: number
@@ -131,12 +134,12 @@ export interface ImageCanvasHandle {
 const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref) => {
   const { onColorSample, image, onImageLoad, valueScaleSettings, onHistogramComputed, onValueScaleResult, onTransformChange, onMeasureClick, onMeasurePointsChange, generateHighlightOverlay } = props
   const isMobile = useIsMobile()
-  const breakdownValue = useStore(state => state.breakdownValue)
-  const valueModeEnabled = useStore(state => state.valueModeEnabled)
-  const surfaceImage = useStore(state => state.surfaceImage)
-  const gridOpacity = useStore(state => state.gridOpacity)
-  const referenceOpacity = useStore(state => state.referenceOpacity)
-  const referenceTransform = useStore(state => state.referenceTransform)
+  const breakdownValue = useCanvasStore(state => state.breakdownValue)
+  const surfaceImage = useCanvasStore(state => state.surfaceImage)
+  const referenceOpacity = useCanvasStore(state => state.referenceOpacity)
+  const referenceTransform = useCanvasStore(state => state.referenceTransform)
+  const valueModeEnabled = useSessionStore(state => state.valueModeEnabled)
+  const gridOpacity = useCalibrationStore(state => state.gridOpacity)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -148,7 +151,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const desktopFileInputId = useId()
   const mobileFileInputId = useId()
 
-  const debugModeEnabled = useStore(state => state.debugModeEnabled)
+  const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
   const [metrics, setMetrics] = useState<{
     originalWidth: number;
     originalHeight: number;

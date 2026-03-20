@@ -14,40 +14,33 @@
 import { useState, useRef, useEffect } from 'react'
 import { Palette } from '@/lib/types/palette'
 import { CalibrationData } from '@/lib/calibration'
-import { MeasurementLayer } from '@/lib/types/measurement'
 import { CanvasSettings } from '@/lib/types/canvas'
-import { TABS, TabType } from './CollapsibleSidebar'
+import { TabType } from './CollapsibleSidebar'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { useStore } from '@/lib/store/useStore'
 import { WordmarkCompact } from './Wordmark'
 
 interface CompactToolbarProps {
     calibration: CalibrationData | null
-    calibrationStale: boolean
     onOpenCalibration: () => void
     onResetCalibration: () => void
     rulerGridEnabled: boolean
-    rulerGridSpacing: 0.25 | 0.5 | 1 | 2
     onToggleRulerGrid: () => void
-    onRulerGridSpacingChange: (spacing: 0.25 | 0.5 | 1 | 2) => void
     canvasSettings: CanvasSettings
     onOpenCanvasSettings: () => void
     measureMode: boolean
-    measurePointA: { x: number; y: number } | null
-    measurePointB: { x: number; y: number } | null
     onToggleMeasure: () => void
-    measurementLayer: MeasurementLayer
-    onToggleMeasurementLayer: () => void
     palettes: Palette[]
     activePalette: Palette
     onSelectPalette: (id: string) => void
     onOpenPaletteManager: () => void
-    compactMode: boolean
-    onToggleCompactMode: () => void
     hasImage: boolean
     activeTab?: TabType
     onTabChange?: (tab: TabType) => void
     onResetView?: () => void
+    valueModeEnabled: boolean
+    valueModeSteps: 5 | 7 | 9 | 11
+    onToggleValueMode: () => void
+    onValueModeStepsChange: (steps: 5 | 7 | 9 | 11) => void
 }
 
 const GridIcon = () => (
@@ -104,39 +97,30 @@ const FitIcon = () => (
 
 export default function CompactToolbar({
     calibration,
-    calibrationStale,
     onOpenCalibration,
     onResetCalibration,
     rulerGridEnabled,
-    rulerGridSpacing,
     onToggleRulerGrid,
-    onRulerGridSpacingChange,
     measureMode,
-    measurePointA,
-    measurePointB,
     onToggleMeasure,
-    measurementLayer,
-    onToggleMeasurementLayer,
     palettes,
     activePalette,
     onSelectPalette,
     onOpenPaletteManager,
-    compactMode,
-    onToggleCompactMode,
     canvasSettings,
     onOpenCanvasSettings,
     hasImage,
     activeTab,
     onTabChange,
-    onResetView
+    onResetView,
+    valueModeEnabled,
+    valueModeSteps,
+    onToggleValueMode,
+    onValueModeStepsChange
 }: CompactToolbarProps) {
     const isMobile = useIsMobile()
     const [menuOpen, setMenuOpen] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
-    const valueModeEnabled = useStore(state => state.valueModeEnabled)
-    const valueModeSteps = useStore(state => state.valueModeSteps)
-    const toggleValueMode = useStore(state => state.toggleValueMode)
-    const setValueModeSteps = useStore(state => state.setValueModeSteps)
 
     // Close menu on click outside
     useEffect(() => {
@@ -170,7 +154,7 @@ export default function CompactToolbar({
 
                     {/* Value Mode Toggle */}
                     <button
-                        onClick={() => toggleValueMode()}
+                        onClick={onToggleValueMode}
                         className={`flex flex-col items-center justify-center w-12 h-12 transition-colors ${valueModeEnabled ? 'text-signal' : 'text-ink-secondary'
                             }`}
                         aria-label="Toggle Value Mode"
@@ -253,11 +237,7 @@ export default function CompactToolbar({
                                     <div className="space-y-1">
                                         <button
                                             onClick={() => {
-                                                if (!valueModeEnabled) {
-                                                    toggleValueMode()
-                                                } else {
-                                                    toggleValueMode()
-                                                }
+                                                onToggleValueMode()
                                                 setMenuOpen(false)
                                             }}
                                             className={`w-full px-4 py-2 text-left text-sm font-medium transition-colors ${valueModeEnabled
@@ -273,7 +253,7 @@ export default function CompactToolbar({
                                                     <button
                                                         key={steps}
                                                         onClick={() => {
-                                                            setValueModeSteps(steps)
+                                                            onValueModeStepsChange(steps)
                                                             setMenuOpen(false)
                                                         }}
                                                         className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${valueModeSteps === steps
