@@ -137,6 +137,7 @@ export default function ColorDeckPanel({
                         <h3 className="text-lg font-black text-ink">No cards in deck yet</h3>
                         <p className="mt-2 max-w-sm text-sm text-ink-muted">
                             Sample a color, save it to the deck, and it will show up here with its paint recipe and match data.
+                            This deck is stored in this browser, so a fresh browser or profile starts empty.
                         </p>
                         <button
                             type="button"

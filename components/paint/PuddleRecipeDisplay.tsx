@@ -70,7 +70,7 @@ export default function PuddleRecipeDisplay({
 
             {/* Puddle grid - RPG inventory style */}
             <motion.div
-                className={`grid grid-cols-2 justify-items-center ${variant === 'compact' ? 'gap-2 sm:grid-cols-3 xl:grid-cols-4' : 'gap-3 sm:grid-cols-3 xl:grid-cols-4'}`}
+                className={`grid grid-cols-1 justify-items-start ${variant === 'compact' ? 'gap-2 sm:grid-cols-2' : 'gap-3 sm:grid-cols-2'}`}
                 layout
             >
                 {sortedIngredients.map((ingredient, index) => (

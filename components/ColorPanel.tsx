@@ -24,6 +24,7 @@ import ColorNamingDisplay from './ColorNamingDisplay'
 import { getColorName } from '@/lib/colorNaming'
 import { createColorCard } from '@/lib/colorArtifacts'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import ColorDeckPanel from './ColorDeckPanel'
 
 type MixSection = 'recipe' | 'mixlab' | 'harmonies' | 'value'
 
@@ -51,7 +52,7 @@ interface ColorPanelProps {
   lastSampleTime?: number
 }
 
-type Tab = 'painter' | 'thread'
+type Tab = 'painter' | 'thread' | 'deck'
 
 export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinned, valueScaleSettings, onValueScaleChange, activePalette, histogramBins, valueScaleResult, lastSampleTime }: ColorPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('painter')
@@ -312,6 +313,15 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         >
           Threads
         </button>
+        <button
+          onClick={() => setActiveTab('deck')}
+          className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'deck'
+            ? 'text-studio border-b-2 border-emerald-600 bg-white'
+            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
+            }`}
+        >
+          Deck
+        </button>
       </div>
 
 
@@ -566,6 +576,16 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         {activeTab === 'thread' && (
           <div className="animate-in fade-in duration-300">
             <DMCFlossMatch rgb={rgb} onColorSelect={onColorSelect} />
+          </div>
+        )}
+
+        {activeTab === 'deck' && (
+          <div className="animate-in fade-in duration-300">
+            <ColorDeckPanel
+              sampledColor={sampledColor}
+              activePaletteName={activePalette?.name}
+              onGoToSample={() => setActiveTab('painter')}
+            />
           </div>
         )}
 
