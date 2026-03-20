@@ -15,6 +15,7 @@ import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
 import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
+import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -427,19 +428,45 @@ export default function Home() {
         />
       )}
 
-      {/* Sidebar - only show when image exists */}
+      {/* Results panel - mobile gets a dedicated dashboard, desktop keeps sidebar */}
       {image && (
-        <CollapsibleSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={toggleSidebar}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          pinnedCount={pinnedColors.length}
-          width={sidebarWidth}
-          className="mobile-controls-area"
-        >
-          {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode - Thin Core only */}
-          {!isMobile && (
+        isMobile ? (
+          <div className="mobile-controls-area flex min-h-0 flex-col bg-paper-elevated border-t border-ink-hairline">
+            <ErrorBoundary
+              fallback={({ error, resetError }) => (
+                <SidebarErrorFallback error={error} resetError={resetError} />
+              )}
+              key={activeTab}
+            >
+              {activeTab === 'sample' ? (
+                <MobileDashboard sampledColor={sampledColor} activePalette={activePalette} />
+              ) : (
+                <MatchesTab
+                  sampledColor={sampledColor}
+                  onColorSelect={(rgb) => {
+                    setSampledColor({
+                      rgb,
+                      hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                      hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+                    })
+                    setActiveHighlightColor(rgb)
+                    setActiveTab('sample')
+                  }}
+                />
+              )}
+            </ErrorBoundary>
+          </div>
+        ) : (
+          <CollapsibleSidebar
+            collapsed={sidebarCollapsed}
+            onToggle={toggleSidebar}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            pinnedCount={pinnedColors.length}
+            width={sidebarWidth}
+            className="mobile-controls-area"
+          >
+            {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode - Thin Core only */}
             <div className="flex border-b border-ink-hairline bg-paper-elevated items-stretch">
               {TABS.map((tab, index) => (
                 <button
@@ -458,20 +485,20 @@ export default function Home() {
                 </button>
               ))}
             </div>
-          )}
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            {/* Thin Core: Always show tabs directly, no dashboard */}
-            <ErrorBoundary
-              fallback={({ error, resetError }) => (
-                <SidebarErrorFallback error={error} resetError={resetError} />
-              )}
-              key={activeTab}
-            >
-              {renderTabContent()}
-            </ErrorBoundary>
-          </div>
-        </CollapsibleSidebar>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {/* Thin Core: Always show tabs directly, no dashboard */}
+              <ErrorBoundary
+                fallback={({ error, resetError }) => (
+                  <SidebarErrorFallback error={error} resetError={resetError} />
+                )}
+                key={activeTab}
+              >
+                {renderTabContent()}
+              </ErrorBoundary>
+            </div>
+          </CollapsibleSidebar>
+        )
       )}
 
       {isMobile && (
