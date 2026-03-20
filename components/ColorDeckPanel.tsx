@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import ColorCardModal from './ColorCardModal'
-import { deleteCard, getCards } from '@/lib/colorCardStorage'
+import ColorCardPreview from './ColorCardPreview'
+import { deleteCard, getCards, saveCard, updateCardName } from '@/lib/colorCardStorage'
 import { ColorCard } from '@/lib/types/colorCard'
 
 interface ColorDeckPanelProps {
@@ -31,7 +31,13 @@ export default function ColorDeckPanel({
     onGoToSample,
 }: ColorDeckPanelProps) {
     const [cards, setCards] = useState<ColorCard[]>([])
-    const [selectedCard, setSelectedCard] = useState<ColorCard | null>(null)
+    const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+    const [draftName, setDraftName] = useState('')
+
+    const selectedCard = useMemo(
+        () => cards.find((card) => card.id === selectedCardId) ?? null,
+        [cards, selectedCardId],
+    )
 
     const refreshCards = () => {
         setCards(getCards().sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)))
@@ -65,9 +71,48 @@ export default function ColorDeckPanel({
         deleteCard(id)
         refreshCards()
 
-        if (selectedCard?.id === id) {
-            setSelectedCard(null)
+        if (selectedCardId === id) {
+            setSelectedCardId(null)
+            setDraftName('')
         }
+    }
+
+    const openCard = (card: ColorCard) => {
+        setSelectedCardId(card.id)
+        setDraftName(card.name)
+    }
+
+    const closeCard = () => {
+        setSelectedCardId(null)
+        setDraftName('')
+    }
+
+    const handleUpdateSelectedCard = () => {
+        if (!selectedCard) return
+
+        const nextName = draftName.trim() || `Color ${selectedCard.color.hex}`
+        updateCardName(selectedCard.id, nextName)
+        refreshCards()
+        setSelectedCardId(selectedCard.id)
+        setDraftName(nextName)
+    }
+
+    const handleSaveCopy = () => {
+        if (!selectedCard) return
+
+        const nextName = draftName.trim() || selectedCard.name
+        const copyName = nextName.toLowerCase().startsWith('copy of ')
+            ? nextName
+            : `Copy of ${nextName}`
+
+        saveCard({
+            ...selectedCard,
+            id: crypto.randomUUID(),
+            name: copyName,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+        })
+        refreshCards()
     }
 
     return (
@@ -129,7 +174,64 @@ export default function ColorDeckPanel({
             )}
 
             <div className="flex-1 min-h-0 overflow-y-auto p-4">
-                {cards.length === 0 ? (
+                {selectedCard ? (
+                    <div className="flex h-full min-h-[280px] flex-col gap-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <button
+                                type="button"
+                                onClick={closeCard}
+                                className="rounded-xl border border-ink-hairline bg-paper-recessed px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-ink-muted transition-colors hover:text-ink"
+                            >
+                                Back to deck
+                            </button>
+                            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink-faint">
+                                Card detail
+                            </div>
+                        </div>
+
+                        <div className="mx-auto w-full max-w-[400px]">
+                            <ColorCardPreview card={selectedCard} />
+                        </div>
+
+                        <div className="space-y-3 rounded-3xl border border-ink-hairline bg-paper-elevated p-4 shadow-sm">
+                            <div>
+                                <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-ink-faint">
+                                    Deck Name
+                                </label>
+                                <input
+                                    type="text"
+                                    value={draftName}
+                                    onChange={(event) => setDraftName(event.target.value)}
+                                    className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
+                                />
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-3">
+                                <button
+                                    type="button"
+                                    onClick={handleUpdateSelectedCard}
+                                    className="rounded-xl bg-signal px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-signal-hover"
+                                >
+                                    Update Card
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveCopy}
+                                    className="rounded-xl border border-ink-hairline bg-paper-recessed px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-paper"
+                                >
+                                    Save Copy
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleDelete(selectedCard.id)}
+                                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-100"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : cards.length === 0 ? (
                     <div className="flex h-full min-h-[280px] flex-col items-center justify-center rounded-3xl border border-dashed border-ink-hairline bg-paper-recessed px-6 py-10 text-center">
                         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-ink-hairline bg-paper-elevated text-2xl">
                             🎴
@@ -156,7 +258,7 @@ export default function ColorDeckPanel({
                             >
                                 <button
                                     type="button"
-                                    onClick={() => setSelectedCard(card)}
+                                    onClick={() => openCard(card)}
                                     className="block w-full text-left"
                                 >
                                     <div className="relative h-28 overflow-hidden" style={{ backgroundColor: card.color.hex }}>
@@ -218,7 +320,7 @@ export default function ColorDeckPanel({
                                         type="button"
                                         onClick={(event) => {
                                             event.stopPropagation()
-                                            setSelectedCard(card)
+                                            openCard(card)
                                         }}
                                         className="rounded-lg border border-ink-hairline bg-paper-elevated px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink"
                                     >
@@ -240,14 +342,6 @@ export default function ColorDeckPanel({
                     </div>
                 )}
             </div>
-
-            <ColorCardModal
-                isOpen={!!selectedCard}
-                onClose={() => setSelectedCard(null)}
-                card={selectedCard}
-                isNewCard={false}
-                onCardSaved={refreshCards}
-            />
         </div>
     )
 }
