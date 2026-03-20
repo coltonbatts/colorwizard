@@ -21,7 +21,7 @@ interface ColorWheelTabProps {
 export default function ColorWheelTab({ sampledColor, onColorSelect }: ColorWheelTabProps) {
     if (!sampledColor) {
         return (
-            <div className="tab-empty-state">
+            <div className="tab-empty-state h-full">
                 <div className="tab-empty-icon">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
@@ -53,7 +53,7 @@ export default function ColorWheelTab({ sampledColor, onColorSelect }: ColorWhee
     }
 
     return (
-        <div className="tab-content-scroll">
+        <div className="tab-content-scroll h-full min-h-0">
             {/* Color Wheel */}
             <section className="mb-6">
                 <PhotoshopColorWheel

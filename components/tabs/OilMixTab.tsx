@@ -12,6 +12,7 @@ import { Palette } from '@/lib/types/palette'
 import ErrorBoundary from '../ErrorBoundary'
 import { RecipeSolverErrorFallback } from '../errors/RecipeSolverErrorFallback'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import AISuggestions from '../AISuggestions'
 import ColorHarmonies from '../ColorHarmonies'
 
@@ -30,6 +31,7 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
     const hasPaintPalette = isUsingPaintPalette()
+    const isShortViewport = useMediaQuery('(max-height: 900px)')
 
     if (!sampledColor) {
         return (
@@ -44,9 +46,10 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
     }
 
     const { hex, hsl } = sampledColor
+    const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
     return (
-        <div className="bg-paper-elevated text-ink font-sans min-h-full p-4 lg:p-6 space-y-6">
+        <div className="bg-paper-elevated text-ink font-sans min-h-full min-h-0 p-4 lg:p-6 space-y-6">
             {/* Color Wheel - Compact */}
             <section>
                 <h3 className="text-[10px] font-black text-ink-faint uppercase tracking-widest mb-3">Color Position</h3>
@@ -99,6 +102,7 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
                         activePalette={activePalette}
                         useCatalog={hasPaintPalette}
                         paintIds={hasPaintPalette ? selectedPaintIds : undefined}
+                        variant={recipeVariant}
                     />
                 </ErrorBoundary>
             </section>

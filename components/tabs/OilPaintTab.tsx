@@ -28,7 +28,7 @@ export default function OilPaintTab({ sampledColor, activePalette }: OilPaintTab
 
     if (!sampledColor) {
         return (
-            <div className="tab-empty-state">
+            <div className="tab-empty-state h-full">
                 <div className="tab-empty-icon">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 2v20" />
@@ -46,7 +46,7 @@ export default function OilPaintTab({ sampledColor, activePalette }: OilPaintTab
     const { hex, hsl } = sampledColor
 
     return (
-        <div className="tab-content-scroll">
+        <div className="tab-content-scroll h-full min-h-0">
             {/* Paint Recipe */}
             <ErrorBoundary
                 fallback={({ error, resetError }) => (

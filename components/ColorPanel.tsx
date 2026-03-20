@@ -23,6 +23,7 @@ import { ValueScaleResult } from '@/lib/valueScale'
 import ColorNamingDisplay from './ColorNamingDisplay'
 import { getColorName } from '@/lib/colorNaming'
 import { createColorCard } from '@/lib/colorArtifacts'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type MixSection = 'recipe' | 'mixlab' | 'harmonies' | 'value'
 
@@ -61,6 +62,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const [showColorFullScreen, setShowColorFullScreen] = useState(false)
   const [showCardModal, setShowCardModal] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
+  const isShortViewport = useMediaQuery('(max-height: 900px)')
 
   // Section toggle handlers
   const toggleSection = useCallback((section: MixSection) => {
@@ -99,6 +101,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const { hex, rgb, hsl } = sampledColor
   const value = getPainterValue(hex)
   const chroma = getPainterChroma(hex)
+  const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
   // Value First Data
   const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
@@ -366,7 +369,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 isOpen={openSections.has('recipe')}
                 onToggle={() => toggleSection('recipe')}
               >
-                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} />
+                <PaintRecipe hsl={hsl} targetHex={hex} activePalette={activePalette} variant={recipeVariant} />
               </CollapsibleSection>
 
               {/* 2. Mix Lab */}

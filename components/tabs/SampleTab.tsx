@@ -107,7 +107,7 @@ export default function SampleTab({
     const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
     const valueModeGrayHex = valueModeMeta ? luminanceToGrayHex(valueModeMeta.y) : null
     const grayscaleHex = valueModeGrayHex ?? `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
-    const recipeVariant = isMobile ? 'standard' : isShortViewport ? 'compact' : 'standard'
+    const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
     const recipePanel = (
         <div className="space-y-3">

@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import ColorCardModal from './ColorCardModal'
 import PaintRecipe from './PaintRecipe'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ColorCard } from '@/lib/types/colorCard'
 import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
 import { PinnedColor } from '@/lib/types/pinnedColor'
@@ -41,6 +42,7 @@ export default function MobileDashboard({
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
     const hasPaintPalette = isUsingPaintPalette()
+    const isShortViewport = useMediaQuery('(max-height: 860px)')
 
     const [colorName, setColorName] = useState<string>('')
     const [isLoadingName, setIsLoadingName] = useState(false)
@@ -121,6 +123,7 @@ export default function MobileDashboard({
         : activePalette?.isDefault
             ? 'Core six-color mix'
             : activePalette?.name || 'Active palette'
+    const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
     const copyToClipboard = async (text: string, type: string) => {
         await navigator.clipboard.writeText(text)
@@ -300,7 +303,7 @@ export default function MobileDashboard({
                                 activePalette={activePalette || DEFAULT_PALETTE}
                                 useCatalog={hasPaintPalette}
                                 paintIds={hasPaintPalette ? selectedPaintIds : undefined}
-                                variant="standard"
+                                variant={recipeVariant}
                                 showExportButton={false}
                             />
                         </div>

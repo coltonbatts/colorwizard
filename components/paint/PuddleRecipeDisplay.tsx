@@ -44,7 +44,7 @@ export default function PuddleRecipeDisplay({
 
     return (
         <motion.div
-            className="puddle-recipe"
+            className="puddle-recipe w-full min-w-0 max-w-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -55,6 +55,7 @@ export default function PuddleRecipeDisplay({
                 targetHex={targetHex}
                 matchQuality={matchQuality}
                 error={error}
+                variant={variant}
             />
 
             {/* Section header */}
@@ -69,7 +70,7 @@ export default function PuddleRecipeDisplay({
 
             {/* Puddle grid - RPG inventory style */}
             <motion.div
-                className={`grid grid-cols-2 ${variant === 'compact' ? 'gap-2' : 'sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-3'}`}
+                className={`grid grid-cols-2 justify-items-center ${variant === 'compact' ? 'gap-2 sm:grid-cols-3 xl:grid-cols-4' : 'gap-3 sm:grid-cols-3 xl:grid-cols-4'}`}
                 layout
             >
                 {sortedIngredients.map((ingredient, index) => (
@@ -84,16 +85,16 @@ export default function PuddleRecipeDisplay({
                             damping: 25
                         }}
                     >
-                            <PaintPuddle
-                                color={ingredient.pigment.hex}
-                                weight={ingredient.weight}
-                                name={ingredient.pigment.name}
-                                percentage={ingredient.percentage}
-                                maxSize={variant === 'compact' ? 52 : 72}
-                                minSize={variant === 'compact' ? 20 : 28}
-                            />
-                        </motion.div>
-                    ))}
+                        <PaintPuddle
+                            color={ingredient.pigment.hex}
+                            weight={ingredient.weight}
+                            name={ingredient.pigment.name}
+                            percentage={ingredient.percentage}
+                            maxSize={variant === 'compact' ? 52 : 72}
+                            minSize={variant === 'compact' ? 20 : 28}
+                        />
+                    </motion.div>
+                ))}
             </motion.div>
 
             {/* Ratio visualization bar */}
