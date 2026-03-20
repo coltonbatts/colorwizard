@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { toPng } from 'html-to-image'
 import ColorCardPreview from './ColorCardPreview'
 import { ColorCard } from '@/lib/types/colorCard'
@@ -35,6 +36,17 @@ export default function ColorCardModal({
             setCardName(card.name)
         }
     }, [card])
+
+    useEffect(() => {
+        if (!isOpen) return
+
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+
+        return () => {
+            document.body.style.overflow = previousOverflow
+        }
+    }, [isOpen])
 
     if (!isOpen || !card) return null
 
@@ -81,8 +93,8 @@ export default function ColorCardModal({
         }
     }
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -136,6 +148,7 @@ export default function ColorCardModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

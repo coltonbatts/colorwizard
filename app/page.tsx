@@ -431,29 +431,37 @@ export default function Home() {
       {/* Results panel - mobile gets a dedicated dashboard, desktop keeps sidebar */}
       {image && (
         isMobile ? (
-          <div className="mobile-controls-area flex min-h-0 flex-col bg-paper-elevated border-t border-ink-hairline">
+          <div className="mobile-controls-area fixed inset-x-0 bottom-0 z-[60] flex min-h-0 flex-col items-center px-2 pb-[env(safe-area-inset-bottom,0px)] pointer-events-none">
             <ErrorBoundary
               fallback={({ error, resetError }) => (
                 <SidebarErrorFallback error={error} resetError={resetError} />
               )}
               key={activeTab}
             >
-              {activeTab === 'sample' ? (
-                <MobileDashboard sampledColor={sampledColor} activePalette={activePalette} />
-              ) : (
-                <MatchesTab
-                  sampledColor={sampledColor}
-                  onColorSelect={(rgb) => {
-                    setSampledColor({
-                      rgb,
-                      hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                      hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-                    })
-                    setActiveHighlightColor(rgb)
-                    setActiveTab('sample')
-                  }}
-                />
-              )}
+              <div className="pointer-events-auto w-full max-w-3xl h-[56dvh] max-h-[56dvh] overflow-hidden rounded-t-[28px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-20px_50px_rgba(0,0,0,0.18)]">
+                {activeTab === 'sample' ? (
+                  <MobileDashboard
+                    sampledColor={sampledColor}
+                    activePalette={activePalette}
+                    onPin={pinColor}
+                    isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
+                    onSwitchToMatches={() => setActiveTab('matches')}
+                  />
+                ) : (
+                  <MatchesTab
+                    sampledColor={sampledColor}
+                    onColorSelect={(rgb) => {
+                      setSampledColor({
+                        rgb,
+                        hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                        hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
+                      })
+                      setActiveHighlightColor(rgb)
+                      setActiveTab('sample')
+                    }}
+                  />
+                )}
+              </div>
             </ErrorBoundary>
           </div>
         ) : (
