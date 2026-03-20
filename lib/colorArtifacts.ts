@@ -8,6 +8,7 @@ import {
     ColorRecipeIngredient,
     PaintCardMatch,
 } from './types/colorCard'
+import type { CardPriority, CardStatus } from './cardMeta'
 import { PinnedColor } from './types/pinnedColor'
 
 interface SampledColorInput {
@@ -27,6 +28,11 @@ interface CreateColorCardOptions {
     valueStep?: number
     solveOptions?: SolveOptions
     recipeLabel?: string
+    project?: string
+    tags?: string[]
+    status?: CardStatus
+    priority?: CardPriority
+    notes?: string
 }
 
 export const HEURISTIC_PIGMENT_HEX: Record<string, string> = {
@@ -155,6 +161,11 @@ export async function createColorCard(
         name: options.name,
         updatedAt: now,
         createdAt: now,
+        project: options.project?.trim() || undefined,
+        tags: options.tags?.length ? options.tags : [],
+        status: options.status ?? 'idea',
+        priority: options.priority ?? 'medium',
+        notes: options.notes?.trim() || undefined,
         color: {
             hex: sampledColor.hex,
             rgb: sampledColor.rgb,

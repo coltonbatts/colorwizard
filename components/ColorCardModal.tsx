@@ -4,8 +4,11 @@ import { useState, useRef, useEffect, useId } from 'react'
 import { toPng } from 'html-to-image'
 import ColorCardPreview from './ColorCardPreview'
 import { ColorCard } from '@/lib/types/colorCard'
-import { saveCard, updateCardName } from '@/lib/colorCardStorage'
+import { duplicateCard, saveCard, updateCard } from '@/lib/colorCardStorage'
 import OverlaySurface from '@/components/ui/Overlay'
+import CardMetadataFields from './CardMetadataFields'
+import { parseCardTags, stringifyCardTags } from '@/lib/cardMeta'
+import type { CardPriority, CardStatus } from '@/lib/cardMeta'
 
 interface ColorCardModalProps {
     isOpen: boolean
@@ -28,6 +31,11 @@ export default function ColorCardModal({
     const titleId = useId()
     const inputId = useId()
     const [cardName, setCardName] = useState('')
+    const [project, setProject] = useState('')
+    const [status, setStatus] = useState<CardStatus>('idea')
+    const [priority, setPriority] = useState<CardPriority>('medium')
+    const [tagsText, setTagsText] = useState('')
+    const [notes, setNotes] = useState('')
     const [isSaving, setIsSaving] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
     const cardRef = useRef<HTMLDivElement>(null)
@@ -37,19 +45,42 @@ export default function ColorCardModal({
     useEffect(() => {
         if (card) {
             setCardName(card.name)
+            setProject(card.project ?? '')
+            setStatus(card.status ?? 'idea')
+            setPriority(card.priority ?? 'medium')
+            setTagsText(stringifyCardTags(card.tags))
+            setNotes(card.notes ?? '')
         }
     }, [card])
 
     if (!isOpen || !card) return null
 
+    const previewCard = {
+        ...card,
+        name: cardName || card.name,
+        project: project.trim() || undefined,
+        status,
+        priority,
+        tags: parseCardTags(tagsText),
+        notes: notes.trim() || undefined,
+    }
+
     const handleSave = async () => {
         setIsSaving(true)
         try {
-            const updatedCard = { ...card, name: cardName.trim() || `Color ${card.color.hex}` }
+            const updatedCard = {
+                ...card,
+                name: cardName.trim() || `Color ${card.color.hex}`,
+                project: project.trim() || undefined,
+                status,
+                priority,
+                tags: parseCardTags(tagsText),
+                notes: notes.trim() || undefined,
+            }
             if (isNewCard) {
                 saveCard(updatedCard)
             } else {
-                updateCardName(card.id, updatedCard.name)
+                updateCard(card.id, updatedCard)
             }
             onCardSaved?.()
             onClose()
@@ -68,12 +99,13 @@ export default function ColorCardModal({
                 ? baseName
                 : `Copy of ${baseName}`
 
-            saveCard({
-                ...card,
-                id: crypto.randomUUID(),
+            duplicateCard(card, {
                 name: copyName,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
+                project: project.trim() || undefined,
+                status,
+                priority,
+                tags: parseCardTags(tagsText),
+                notes: notes.trim() || undefined,
             })
 
             onCardSaved?.()
@@ -159,10 +191,25 @@ export default function ColorCardModal({
                 />
             </div>
 
+            <div className="px-4 pt-4">
+                <CardMetadataFields
+                    project={project}
+                    onProjectChange={setProject}
+                    status={status}
+                    onStatusChange={setStatus}
+                    priority={priority}
+                    onPriorityChange={setPriority}
+                    tagsText={tagsText}
+                    onTagsTextChange={setTagsText}
+                    notes={notes}
+                    onNotesChange={setNotes}
+                />
+            </div>
+
             {/* Card Preview */}
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
                 <div className="mx-auto w-full max-w-[400px] origin-top scale-[0.85] transform">
-                    <ColorCardPreview ref={cardRef} card={{ ...card, name: cardName || card.name }} />
+                    <ColorCardPreview ref={cardRef} card={previewCard} />
                 </div>
             </div>
 

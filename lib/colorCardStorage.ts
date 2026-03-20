@@ -2,12 +2,20 @@ import { generatePaintRecipe } from './colorMixer'
 import { findClosestDMCColors } from './dmcFloss'
 import { ColorCard, ColorCardRecipeSnapshot, PaintCardMatch } from './types/colorCard'
 import { mapHeuristicRecipeIngredients } from './colorArtifacts'
+import { parseCardTags } from './cardMeta'
+import type { CardPriority, CardStatus } from './cardMeta'
 
-const STORAGE_KEY = 'colorwizard.cardDeck.v2'
+export const CARD_DECK_STORAGE_KEYS = {
+    current: 'colorwizard.cardDeck.v3',
+    legacy: 'colorwizard.cardDeck.v2',
+    ancient: 'colorwizard.cards.v1',
+} as const
+
+const STORAGE_KEY = CARD_DECK_STORAGE_KEYS.current
 const LEGACY_STORAGE_KEY = 'colorwizard.cards.v1'
 
 interface CardDeckRecord {
-    version: 2
+    version: 3
     cards: ColorCard[]
 }
 
@@ -38,6 +46,24 @@ function isColorCard(value: unknown): value is ColorCard {
         'recipe' in value &&
         'matches' in value,
     )
+}
+
+function normalizeCardTagsValue(tags: unknown): string[] {
+    if (!Array.isArray(tags)) return []
+
+    return parseCardTags(
+        tags
+            .filter((tag): tag is string => typeof tag === 'string')
+            .join(', '),
+    )
+}
+
+function normalizeStatus(value: unknown): CardStatus {
+    return value === 'in-progress' || value === 'blocked' || value === 'done' ? value : 'idea'
+}
+
+function normalizePriority(value: unknown): CardPriority {
+    return value === 'low' || value === 'high' || value === 'urgent' ? value : 'medium'
 }
 
 function safeParse<T>(data: string | null): T | null {
@@ -75,6 +101,11 @@ function normalizeLegacyCard(card: LegacyColorCard): ColorCard {
         name: card.name,
         createdAt: card.createdAt,
         updatedAt: card.createdAt,
+        project: undefined,
+        tags: [],
+        status: 'idea',
+        priority: 'medium',
+        notes: undefined,
         color: {
             hex: card.color.hex,
             rgb: card.color.rgb,
@@ -94,9 +125,15 @@ function normalizeLegacyCard(card: LegacyColorCard): ColorCard {
 function normalizeCard(card: unknown): ColorCard | null {
     if (!card || typeof card !== 'object') return null
     if (isColorCard(card)) {
+        const typed = card as ColorCard
         return {
-            ...card,
-            updatedAt: card.updatedAt ?? card.createdAt,
+            ...typed,
+            updatedAt: typed.updatedAt ?? typed.createdAt,
+            project: typed.project?.trim() || undefined,
+            tags: normalizeCardTagsValue(typed.tags),
+            status: normalizeStatus(typed.status),
+            priority: normalizePriority(typed.priority),
+            notes: typed.notes?.trim() || undefined,
         }
     }
 
@@ -119,11 +156,20 @@ function normalizeCard(card: unknown): ColorCard | null {
 
 function readStoredDeck(): CardDeckRecord | null {
     const next = safeParse<CardDeckRecord>(localStorage.getItem(STORAGE_KEY))
-    if (next && next.version === 2 && Array.isArray(next.cards)) {
+    if (next && next.version === 3 && Array.isArray(next.cards)) {
         return {
-            version: 2,
+            version: 3,
             cards: next.cards.map(normalizeCard).filter((card): card is ColorCard => Boolean(card)),
         }
+    }
+
+    const v2 = safeParse<{ version: number; cards?: unknown[] }>(localStorage.getItem(CARD_DECK_STORAGE_KEYS.legacy))
+    if (v2 && Array.isArray(v2.cards)) {
+        const cards = v2.cards
+            .map(normalizeCard)
+            .filter((card): card is ColorCard => Boolean(card))
+        persistDeck(cards)
+        return { version: 3, cards }
     }
 
     const legacy = safeParse<unknown[]>(localStorage.getItem(LEGACY_STORAGE_KEY))
@@ -132,7 +178,7 @@ function readStoredDeck(): CardDeckRecord | null {
             .map(normalizeCard)
             .filter((card): card is ColorCard => Boolean(card))
         persistDeck(cards)
-        return { version: 2, cards }
+        return { version: 3, cards }
     }
 
     return null
@@ -140,7 +186,7 @@ function readStoredDeck(): CardDeckRecord | null {
 
 function persistDeck(cards: ColorCard[]): void {
     const record: CardDeckRecord = {
-        version: 2,
+        version: 3,
         cards,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(record))
@@ -162,7 +208,7 @@ export function getCards(): ColorCard[] {
 /**
  * Save a new color card.
  */
-export function saveCard(card: ColorCard): void {
+export function saveCard(card: ColorCard): ColorCard {
     const cards = getCards()
     const nextCard = {
         ...card,
@@ -171,30 +217,58 @@ export function saveCard(card: ColorCard): void {
 
     cards.unshift(nextCard)
     persistDeck(cards)
+    return nextCard
 }
 
 /**
- * Update an existing card's name.
+ * Update an existing card with the provided fields.
  */
-export function updateCardName(id: string, name: string): void {
+export function updateCard(id: string, updates: Partial<Omit<ColorCard, 'id' | 'createdAt' | 'updatedAt'>>): ColorCard | null {
     const cards = getCards()
     const idx = cards.findIndex((c) => c.id === id)
     if (idx !== -1) {
         cards[idx] = {
             ...cards[idx],
-            name,
+            ...updates,
             updatedAt: Date.now(),
         }
         persistDeck(cards)
+        return cards[idx]
     }
+
+    return null
+}
+
+/**
+ * Update an existing card's name.
+ */
+export function updateCardName(id: string, name: string): ColorCard | null {
+    return updateCard(id, { name })
 }
 
 /**
  * Delete a card by ID.
  */
-export function deleteCard(id: string): void {
+export function deleteCard(id: string): boolean {
     const cards = getCards().filter((c) => c.id !== id)
     persistDeck(cards)
+    return true
+}
+
+/**
+ * Duplicate an existing card, preserving metadata and content.
+ */
+export function duplicateCard(card: ColorCard, overrides: Partial<Omit<ColorCard, 'id' | 'createdAt' | 'updatedAt'>> = {}): ColorCard {
+    const copy: ColorCard = {
+        ...card,
+        ...overrides,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    }
+
+    saveCard(copy)
+    return copy
 }
 
 /**

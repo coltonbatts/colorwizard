@@ -1,5 +1,6 @@
 import { DMCMatch } from '../dmcFloss'
 import { SpectralRecipe } from '../spectral/types'
+import type { CardPriority, CardStatus } from '../cardMeta'
 
 /**
  * Simplified paint match for card display
@@ -45,6 +46,11 @@ export interface ColorCard {
     name: string
     createdAt: number
     updatedAt: number
+    project?: string
+    tags?: string[]
+    status?: CardStatus
+    priority?: CardPriority
+    notes?: string
     color: {
         hex: string
         rgb: { r: number; g: number; b: number }

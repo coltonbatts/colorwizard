@@ -2,6 +2,7 @@
 
 import { forwardRef } from 'react'
 import { ColorCard } from '@/lib/types/colorCard'
+import { CARD_PRIORITY_OPTIONS, CARD_PRIORITY_STYLES, CARD_STATUS_OPTIONS, CARD_STATUS_STYLES, getProjectLabel } from '@/lib/cardMeta'
 
 interface ColorCardPreviewProps {
     card: ColorCard
@@ -15,6 +16,9 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
     function ColorCardPreview({ card }, ref) {
         const { color, name, recipe, matches } = card
         const { dmc, paints } = matches
+        const tags = card.tags ?? []
+        const statusLabel = CARD_STATUS_OPTIONS.find((option) => option.value === (card.status ?? 'idea'))?.label ?? 'Idea'
+        const priorityLabel = CARD_PRIORITY_OPTIONS.find((option) => option.value === (card.priority ?? 'medium'))?.label ?? 'Medium'
 
         const isDark = color.luminance < 0.5
         const textColor = isDark ? '#ffffff' : '#1a1a1a'
@@ -69,6 +73,27 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                         <p className="text-sm leading-6 text-slate-600">
                             {recipe.summary}
                         </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">
+                                {getProjectLabel(card.project)}
+                            </span>
+                            <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${CARD_STATUS_STYLES[card.status ?? 'idea']}`}>
+                                {statusLabel}
+                            </span>
+                            <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${CARD_PRIORITY_STYLES[card.priority ?? 'medium']}`}>
+                                {priorityLabel}
+                            </span>
+                            {tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                        {card.notes && (
+                            <p className="text-xs leading-5 text-slate-500">
+                                {card.notes}
+                            </p>
+                        )}
                     </div>
 
                     {/* Primary Color Values */}
