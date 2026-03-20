@@ -29,6 +29,8 @@ interface PaintRecipeProps {
   paintIds?: string[]
   /** Display variant */
   variant?: 'standard' | 'dashboard'
+  /** Whether to show the Procreate export button */
+  showExportButton?: boolean
 }
 
 // Match quality colors
@@ -58,6 +60,7 @@ export default function PaintRecipe({
   lineId,
   paintIds,
   variant = 'standard',
+  showExportButton = true,
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -260,24 +263,25 @@ export default function PaintRecipe({
               }
             </p>
 
-            {/* Procreate Export Button */}
-            <ProcreateExportButton
-              colors={recipe.ingredients.map((ing): ProcreateColor => ({
-                hex: ing.pigment.hex,
-                name: ing.pigment.name,
-              }))}
-              paletteName={`${targetHex.replace('#', '')} Recipe`}
-              variant="secondary"
-              className="w-full"
-              onExportSuccess={() => {
-                // Optional: Show success toast
-                console.log('Recipe exported to Procreate successfully!');
-              }}
-              onExportError={(error) => {
-                // Optional: Show error toast
-                console.error('Export failed:', error);
-              }}
-            />
+            {showExportButton && (
+              <ProcreateExportButton
+                colors={recipe.ingredients.map((ing): ProcreateColor => ({
+                  hex: ing.pigment.hex,
+                  name: ing.pigment.name,
+                }))}
+                paletteName={`${targetHex.replace('#', '')} Recipe`}
+                variant="secondary"
+                className="w-full"
+                onExportSuccess={() => {
+                  // Optional: Show success toast
+                  console.log('Recipe exported to Procreate successfully!');
+                }}
+                onExportError={(error) => {
+                  // Optional: Show error toast
+                  console.error('Export failed:', error);
+                }}
+              />
+            )}
           </>
         )}
       </div>

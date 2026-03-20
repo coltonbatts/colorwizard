@@ -5,13 +5,15 @@
  * Shows the sampled color with hero swatch, value/chroma readouts, and actions
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import ColorNamingDisplay from '../ColorNamingDisplay'
 import FullScreenOverlay from '../FullScreenOverlay'
 import ColorCardModal from '../ColorCardModal'
+import PaintRecipe from '../PaintRecipe'
 import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
+import { DEFAULT_PALETTE } from '@/lib/types/palette'
 import { generatePaintRecipe } from '@/lib/colorMixer'
 import { solveRecipe } from '@/lib/paint/solveRecipe'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
@@ -55,6 +57,7 @@ export default function SampleTab({
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const [copied, setCopied] = useState<string | null>(null)
     const [colorName, setColorName] = useState<string>('')
+    const palettes = useStore(state => state.palettes)
     const {
         simpleMode,
         valueModeEnabled,
@@ -72,14 +75,27 @@ export default function SampleTab({
             .catch(() => setColorName(''))
     }, [sampledColor])
 
+    const activePalette = useMemo(() => {
+        return palettes.find(p => p.isActive) || palettes[0] || DEFAULT_PALETTE
+    }, [palettes])
+
+    const recipeOptions = useMemo(() => {
+        if (activePalette.isDefault) return undefined
+        return {
+            paletteColorIds: activePalette.colors.map(color => color.id),
+        }
+    }, [activePalette])
+
     if (!sampledColor) {
         return (
             <div className="h-full p-6 flex flex-col items-center justify-center bg-paper-elevated text-ink-secondary">
                 <div className="w-16 h-16 rounded-full border-2 border-ink-hairline flex items-center justify-center mb-4">
                     <span className="text-2xl text-ink-faint">?</span>
                 </div>
-                <p className="text-center font-semibold text-ink">Click image to sample</p>
-                <p className="text-sm text-ink-muted mt-2">Pick a color to analyze</p>
+                <p className="text-center font-semibold text-ink">Tap or click the image to sample</p>
+                <p className="text-sm text-ink-muted mt-2 text-center max-w-xs">
+                    I’ll show you the paint mix, thread matches, and color name for that spot.
+                </p>
             </div>
         )
     }
@@ -94,6 +110,29 @@ export default function SampleTab({
     const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
     const valueModeGrayHex = valueModeMeta ? luminanceToGrayHex(valueModeMeta.y) : null
     const grayscaleHex = valueModeGrayHex ?? `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
+    const recipeVariant = isMobile ? 'standard' : 'dashboard'
+
+    const recipePanel = (
+        <div className="space-y-3">
+            <div className="flex items-end justify-between gap-3 px-1">
+                <div>
+                    <div className="text-[10px] uppercase tracking-[0.25em] font-black text-signal">Oil Paint Recipe</div>
+                    <p className="text-xs text-ink-muted mt-1">A starting mix you can put on the palette right away.</p>
+                </div>
+                <div className="text-[10px] font-bold text-ink-faint uppercase tracking-widest text-right">
+                    {activePalette.isDefault ? 'Core six-color mix' : activePalette.name}
+                </div>
+            </div>
+
+            <PaintRecipe
+                hsl={hsl}
+                targetHex={hex}
+                activePalette={activePalette}
+                variant={recipeVariant}
+                showExportButton={false}
+            />
+        </div>
+    )
 
     const copyToClipboard = (text: string, type: string) => {
         navigator.clipboard.writeText(text)
@@ -138,6 +177,9 @@ export default function SampleTab({
                     </div>
                 )}
 
+                {/* Oil Paint Recipe */}
+                {recipePanel}
+
                 {/* Main Actions Row */}
                 <div className="grid grid-cols-2 gap-3">
                     <button
@@ -145,7 +187,7 @@ export default function SampleTab({
                             if (isPinned) return
                             setIsPinning(true)
                             try {
-                                const spectral = await solveRecipe(hex)
+                                const spectral = await solveRecipe(hex, recipeOptions)
                                 const fallback = generatePaintRecipe(hsl)
                                 const dmc = findClosestDMCColors(rgb, 5)
 
@@ -312,6 +354,9 @@ export default function SampleTab({
                 </div>
             </div>
 
+            {/* Oil Paint Recipe */}
+            {recipePanel}
+
             {/* Label Input - Hidden in Simple Mode */}
             {!simpleMode && (
                 <input
@@ -330,7 +375,7 @@ export default function SampleTab({
                         if (isPinned) return
                         setIsPinning(true)
                         try {
-                            const spectral = await solveRecipe(hex)
+                            const spectral = await solveRecipe(hex, recipeOptions)
                             const fallback = generatePaintRecipe(hsl)
                             const dmc = findClosestDMCColors(rgb, 5)
 
