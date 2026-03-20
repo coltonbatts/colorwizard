@@ -487,8 +487,9 @@ body {
 
 /* Sidebar */
 .sidebar-collapsible {
-    width: var(--computed-sidebar-width, var(--sidebar-width));
-    min-width: var(--computed-sidebar-width, var(--sidebar-width));
+    width: min(var(--computed-sidebar-width, var(--sidebar-width)), 40vw, 560px);
+    min-width: min(var(--computed-sidebar-width, var(--sidebar-width)), 40vw, 560px);
+    max-width: 560px;
     transition: width var(--duration-normal) var(--ease-out),
         min-width var(--duration-normal) var(--ease-out);
     overflow: hidden;
