@@ -119,7 +119,7 @@ export default function ColorCardModal({
             initialFocusRef={nameInputRef}
             rootClassName="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             backdropClassName="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            panelClassName="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none"
+            panelClassName="flex max-h-[90dvh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none"
         >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 p-4">
@@ -160,14 +160,14 @@ export default function ColorCardModal({
             </div>
 
             {/* Card Preview */}
-            <div className="flex flex-1 items-start justify-center overflow-auto overscroll-contain p-4">
-                <div className="origin-top scale-[0.85] transform">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+                <div className="mx-auto w-full max-w-[400px] origin-top scale-[0.85] transform">
                     <ColorCardPreview ref={cardRef} card={{ ...card, name: cardName || card.name }} />
                 </div>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 border-t border-gray-100 bg-gray-50 p-4">
+            <div className="flex shrink-0 gap-3 border-t border-gray-100 bg-gray-50 p-4">
                 <button
                     onClick={handleSave}
                     type="button"
