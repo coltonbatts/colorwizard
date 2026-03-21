@@ -5,7 +5,7 @@
  * Drag in circular motion to rotate the image.
  */
 
-import { useState, useCallback, useRef, memo } from 'react'
+import { useState, useCallback, useRef, useMemo, memo } from 'react'
 
 interface RotationHandleProps {
     /** Center position of the image in canvas coordinates */
@@ -54,10 +54,10 @@ function RotationHandle({
     }
 
     // Calculate center of image in screen coordinates
-    const imageCenterScreen = {
+    const imageCenterScreen = useMemo(() => ({
         x: imageCenter.x * canvasTransform.zoom + canvasTransform.pan.x,
         y: imageCenter.y * canvasTransform.zoom + canvasTransform.pan.y
-    }
+    }), [canvasTransform.pan.x, canvasTransform.pan.y, canvasTransform.zoom, imageCenter.x, imageCenter.y])
 
     // Calculate angle from image center to a point
     const getAngle = useCallback((x: number, y: number): number => {

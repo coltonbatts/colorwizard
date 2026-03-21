@@ -1,13 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 
 export default function SurfaceTab() {
     const surfaceImage = useCanvasStore(state => state.surfaceImage)
     const setSurfaceImage = useCanvasStore(state => state.setSurfaceImage)
-    const fileInputRef = useRef<HTMLInputElement>(null)
-
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {

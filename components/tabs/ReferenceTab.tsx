@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 
 export default function ReferenceTab() {
@@ -11,8 +10,6 @@ export default function ReferenceTab() {
     const referenceTransform = useCanvasStore(state => state.referenceTransform)
     const setReferenceTransform = useCanvasStore(state => state.setReferenceTransform)
     const resetReferenceTransform = useCanvasStore(state => state.resetReferenceTransform)
-
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]

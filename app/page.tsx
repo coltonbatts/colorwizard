@@ -42,6 +42,7 @@ export default function Home() {
   const [showPaletteManager, setShowPaletteManager] = useState(false)
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
+  const [isNavOpen, setIsNavOpen] = useState(false)
 
   const sampledColor = useSessionStore(state => state.sampledColor)
   const setSampledColor = useSessionStore(state => state.setSampledColor)
@@ -200,7 +201,6 @@ export default function Home() {
   }, [handleMouseMove, stopResizing])
 
   // Canvas container ref
-  const [isNavOpen, setIsNavOpen] = useState(false)
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const imageCanvasRef = useRef<ImageCanvasHandle>(null)
 

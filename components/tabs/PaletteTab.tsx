@@ -12,7 +12,6 @@ import dynamic from 'next/dynamic'
 import ProcreateExportButton from '../ProcreateExportButton'
 const SharePaletteButton = dynamic(() => import('../SharePaletteButton'), { ssr: false })
 import type { ProcreateColor } from '@/lib/types/procreate'
-import { getPaint } from '@/lib/paint/catalog'
 
 interface PaletteTabProps {
     onPaletteChange?: (brandId: string, lineId: string, paintIds: string[]) => void

@@ -3,7 +3,7 @@ import { xkcdColors } from './datasets/xkcd';
 import { loadExtendedColors } from './datasets/extended';
 import { findNearestColor } from './match';
 import { getCachedMatch, setCachedMatch } from './cache';
-import { ColorNameMatch, ColorSource, GetColorNameOptions } from './types';
+import { ColorNameMatch, GetColorNameOptions } from './types';
 
 let extendedColorsCache: Record<string, string> | null = null;
 

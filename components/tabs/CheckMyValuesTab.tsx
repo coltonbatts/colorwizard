@@ -6,7 +6,7 @@
  * highlighting areas where values differ.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ValueCompareCanvas from '@/components/ValueCompareCanvas'
 import { compareValues, ComparisonResult } from '@/lib/valueComparison'
 

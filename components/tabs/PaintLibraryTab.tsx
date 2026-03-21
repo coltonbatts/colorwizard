@@ -7,8 +7,8 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { getCatalog, getPaints, getBrands } from '@/lib/paint/catalog'
-import type { Paint, PaintBrand, PaintLine, Opacity, Permanence, Medium } from '@/lib/paint/types/Paint'
+import { getPaints, getBrands } from '@/lib/paint/catalog'
+import type { Paint, PaintBrand, Opacity, Permanence, Medium } from '@/lib/paint/types/Paint'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import PaletteIndicator from '../paint/PaletteIndicator'
 import PaletteSwitcher from '../paint/PaletteSwitcher'
@@ -53,7 +53,7 @@ interface PaintCardProps {
 function PaintCard({ paint, onSelect, isSelected, isInPalette, onTogglePalette }: PaintCardProps) {
     return (
         <button
-            onClick={(e) => {
+            onClick={() => {
                 // Toggle palette selection
                 onTogglePalette()
                 onSelect(paint)

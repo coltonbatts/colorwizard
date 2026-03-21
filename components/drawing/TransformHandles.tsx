@@ -88,12 +88,6 @@ function TransformHandles({
         y: point.y * canvasTransform.zoom + canvasTransform.pan.y
     }), [canvasTransform])
 
-    // Convert screen coords to canvas coords
-    const toCanvas = useCallback((screenPoint: { x: number; y: number }) => ({
-        x: (screenPoint.x - canvasTransform.pan.x) / canvasTransform.zoom,
-        y: (screenPoint.y - canvasTransform.pan.y) / canvasTransform.zoom
-    }), [canvasTransform])
-
     // Handle perspective corner drag
     const handleCornerPointerDown = useCallback((
         corner: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight',

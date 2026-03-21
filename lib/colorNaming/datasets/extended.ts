@@ -1,5 +1,3 @@
-import { ColorSource } from '../types';
-
 /**
  * Lazy loads the extended color dataset from the public colornames.json.
  */
