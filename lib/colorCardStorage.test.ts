@@ -8,14 +8,16 @@ describe('colorCardStorage', () => {
         originalWindow = globalThis.window as typeof globalThis.window | undefined
 
         const localStorageData: Record<string, string> = {}
-        globalThis.window = {
+        const windowMock = {
             localStorage: {
                 getItem: (key: string) => localStorageData[key] ?? null,
                 setItem: (key: string, value: string) => { localStorageData[key] = value },
                 removeItem: (key: string) => { delete localStorageData[key] },
                 clear: () => { Object.keys(localStorageData).forEach((key) => delete localStorageData[key]) },
-            } as any,
-        } as any
+            },
+        } as unknown as Window & typeof globalThis
+
+        globalThis.window = windowMock
 
         // @ts-expect-error test shim
         globalThis.localStorage = globalThis.window.localStorage
