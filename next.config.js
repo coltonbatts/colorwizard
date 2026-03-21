@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Optimize package imports to reduce bundle size
@@ -23,6 +25,9 @@ const nextConfig = {
 
   // Enable strict mode for better error detection in development
   reactStrictMode: true,
+
+  // Pin tracing to this repo so Next does not infer the parent folder as a workspace root.
+  outputFileTracingRoot: path.join(__dirname),
 }
 
 module.exports = nextConfig
