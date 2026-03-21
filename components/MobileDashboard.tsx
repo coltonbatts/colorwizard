@@ -7,15 +7,13 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import ColorCardModal from './ColorCardModal'
 import PaintRecipe from './PaintRecipe'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { ColorCard } from '@/lib/types/colorCard'
 import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import { getColorName } from '@/lib/colorNaming'
-import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
+import { createPinnedColor } from '@/lib/colorArtifacts'
 
 interface MobileDashboardProps {
     sampledColor: {
@@ -28,7 +26,6 @@ interface MobileDashboardProps {
     onPin?: (newPin: PinnedColor) => void
     isPinned?: boolean
     onSwitchToMatches?: () => void
-    onOpenDeck?: () => void
 }
 
 export default function MobileDashboard({
@@ -37,7 +34,6 @@ export default function MobileDashboard({
     onPin,
     isPinned = false,
     onSwitchToMatches,
-    onOpenDeck,
 }: MobileDashboardProps) {
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
@@ -46,11 +42,7 @@ export default function MobileDashboard({
 
     const [colorName, setColorName] = useState<string>('')
     const [isLoadingName, setIsLoadingName] = useState(false)
-    const [copied, setCopied] = useState<string | null>(null)
     const [isPinning, setIsPinning] = useState(false)
-    const [isCreatingCard, setIsCreatingCard] = useState(false)
-    const [showCardModal, setShowCardModal] = useState(false)
-    const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
     const sampledHex = sampledColor?.hex
     const sampledLabel = sampledColor?.label
 
@@ -129,13 +121,6 @@ export default function MobileDashboard({
     const shellPadding = isShortViewport ? 'p-3' : 'p-4'
     const swatchSize = isShortViewport ? 'w-16 h-16' : 'w-20 h-20'
     const titleSize = isShortViewport ? 'text-xl' : 'text-2xl'
-    const actionPadding = isShortViewport ? 'px-3 py-2.5' : 'px-4 py-3'
-
-    const copyToClipboard = async (text: string, type: string) => {
-        await navigator.clipboard.writeText(text)
-        setCopied(type)
-        window.setTimeout(() => setCopied(null), 1500)
-    }
 
     const handlePin = async () => {
         if (!onPin || isPinned) return
@@ -152,38 +137,6 @@ export default function MobileDashboard({
             onPin(pinnedColor)
         } finally {
             setIsPinning(false)
-        }
-    }
-
-    const handleCreateCard = async () => {
-        setIsCreatingCard(true)
-        try {
-            let descriptiveName = sampledColor.label?.trim() || colorName
-            if (!descriptiveName) {
-                try {
-                    const nameMatch = await getColorName(sampledColor.hex)
-                    descriptiveName = nameMatch.name
-                } catch (err) {
-                    console.error('Failed to get color name for card', err)
-                }
-            }
-
-            const newCard = await createColorCard(
-                sampledColor,
-                {
-                    name: descriptiveName || `Color ${sampledColor.hex}`,
-                    colorName: descriptiveName || undefined,
-                    solveOptions,
-                    recipeLabel: paletteLabel,
-                }
-            )
-
-            setPendingCard(newCard)
-            setShowCardModal(true)
-        } catch (err) {
-            console.error('Failed to create color card', err)
-        } finally {
-            setIsCreatingCard(false)
         }
     }
 
@@ -217,77 +170,28 @@ export default function MobileDashboard({
                             </div>
                         </div>
                     </div>
-                </section>
 
-                <section className={`${shellPadding} border-b border-gray-100 bg-white`}>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
-                            onClick={handlePin}
-                            disabled={!onPin || isPinning || isPinned}
-                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all ${isPinned
-                                ? 'bg-subsignal-muted text-subsignal border border-subsignal'
-                                : 'bg-signal text-white shadow-lg active:scale-95'
-                                }`}
+                            type="button"
+                            aria-pressed={true}
+                            className="flex items-center justify-center gap-2 rounded-xl border border-studio bg-studio px-3 py-2.5 text-sm font-bold text-white"
                         >
-                            {isPinning ? (
-                                <>
-                                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Pinning…
-                                </>
-                            ) : isPinned ? (
-                                <>✓ Pinned</>
-                            ) : (
-                                <>📌 Pin Color</>
-                            )}
+                            Paint
                         </button>
-
                         <button
-                            onClick={handleCreateCard}
-                            disabled={isCreatingCard}
-                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg active:scale-95`}
+                            type="button"
+                            onClick={() => onSwitchToMatches?.()}
+                            aria-pressed={false}
+                            className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition-all ${
+                                onSwitchToMatches
+                                    ? 'border-gray-200 bg-white text-studio-secondary active:scale-95'
+                                    : 'border-gray-200 bg-gray-100 text-gray-400'
+                            }`}
                         >
-                            {isCreatingCard ? (
-                                <>
-                                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Saving…
-                                </>
-                            ) : (
-                                <>🎴 Save Card</>
-                            )}
+                            Threads
                         </button>
-
-                        <button
-                            onClick={() => copyToClipboard(sampledColor.hex.toUpperCase(), 'hex')}
-                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-paper-recessed text-studio-secondary border border-gray-100 active:scale-95`}
-                        >
-                            {copied === 'hex' ? '✓ Copied' : 'Copy HEX'}
-                        </button>
-
-                        {onSwitchToMatches ? (
-                            <button
-                                onClick={onSwitchToMatches}
-                                className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-studio text-white shadow-lg active:scale-95`}
-                            >
-                                Threads
-                            </button>
-                        ) : (
-                            <button
-                                disabled
-                                className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-gray-100 text-gray-400`}
-                            >
-                                Threads
-                            </button>
-                        )}
                     </div>
-
-                    {onOpenDeck && (
-                        <button
-                            onClick={onOpenDeck}
-                            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-100 bg-paper-recessed ${actionPadding} text-sm font-bold text-studio-secondary transition-all active:scale-95`}
-                        >
-                            🎴 Open Deck
-                        </button>
-                    )}
                 </section>
 
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-4">
@@ -312,21 +216,33 @@ export default function MobileDashboard({
                                 variant={recipeVariant}
                                 showExportButton={false}
                             />
+
+                            {onPin && (
+                                <button
+                                    onClick={handlePin}
+                                    disabled={isPinning || isPinned}
+                                    className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+                                        isPinned
+                                            ? 'border border-subsignal bg-subsignal-muted text-subsignal'
+                                            : 'bg-signal text-white shadow-lg active:scale-95'
+                                    }`}
+                                >
+                                    {isPinning ? (
+                                        <>
+                                            <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Pinning…
+                                        </>
+                                    ) : isPinned ? (
+                                        <>✓ Pinned</>
+                                    ) : (
+                                        <>📌 Pin Color</>
+                                    )}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-
-            <ColorCardModal
-                isOpen={showCardModal}
-                onClose={() => {
-                    setShowCardModal(false)
-                    setPendingCard(null)
-                }}
-                card={pendingCard}
-                isNewCard={true}
-                onCardSaved={() => {}}
-            />
         </>
     )
 }

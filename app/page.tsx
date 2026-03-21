@@ -340,7 +340,7 @@ export default function Home() {
   const hasSessionColors = useHasSessionColors()
   const mobileSheetHeightClass =
     activeTab === 'sample'
-      ? 'h-[48dvh] max-h-[48dvh]'
+      ? 'h-[42dvh] max-h-[42dvh]'
       : 'h-[56dvh] max-h-[56dvh]'
   // Keyboard shortcuts
   useEffect(() => {
@@ -478,7 +478,6 @@ export default function Home() {
                     onPin={pinColor}
                     isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
                     onSwitchToMatches={() => setActiveTab('matches')}
-                    onOpenDeck={() => setActiveTab('deck')}
                   />
                 ) : activeTab === 'deck' ? (
                   <ColorDeckPanel
