@@ -62,6 +62,8 @@ export default function Home() {
   const setImage = useCanvasStore(state => state.setImage)
   const referenceImage = useCanvasStore(state => state.referenceImage)
   const setReferenceImage = useCanvasStore(state => state.setReferenceImage)
+  const setSurfaceImage = useCanvasStore(state => state.setSurfaceImage)
+  const setSurfaceBounds = useCanvasStore(state => state.setSurfaceBounds)
   const setReferenceOpacity = useCanvasStore(state => state.setReferenceOpacity)
   const resetReferenceTransform = useCanvasStore(state => state.resetReferenceTransform)
   const valueScaleSettings = useCanvasStore(state => state.valueScaleSettings)
@@ -118,14 +120,23 @@ export default function Home() {
     console.log('[Home] Clearing image and resetting state')
     setImage(null)
     setReferenceImage(null)
+    setSurfaceImage(null)
+    setSurfaceBounds(null)
     setReferenceOpacity(1)
     resetReferenceTransform()
     setSampledColor(null)
     setActiveHighlightColor(null)
     setBreakdownValue(0)
+    setHistogramBins([])
+    setValueScaleResult(null)
     setValueModeEnabled(false) // Reset value mode when clearing image
     setActiveTab('sample')
-  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setValueModeEnabled])
+    setIsNavOpen(false)
+    setShowPaletteManager(false)
+    setShowCalibrationModal(false)
+    setShowCanvasSettingsModal(false)
+    lastProcessedRef.current = null
+  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setHistogramBins, setImage, setIsNavOpen, setReferenceImage, setReferenceOpacity, setSampledColor, setShowCalibrationModal, setShowCanvasSettingsModal, setShowPaletteManager, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
 
   const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
     setSampledColor(color)
@@ -363,6 +374,7 @@ export default function Home() {
               calibration={calibration}
               onOpenCalibration={() => setShowCalibrationModal(true)}
               onResetCalibration={resetCalibration}
+              onGoHome={handleClearImage}
               rulerGridEnabled={rulerGridEnabled}
               onToggleRulerGrid={toggleRulerGrid}
               measureMode={measureMode}

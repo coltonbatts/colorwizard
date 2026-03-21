@@ -52,12 +52,13 @@ export default function MobileHeader({
             <button
               onClick={onClearImage}
               className="mobile-header-btn flex items-center justify-center -mr-2 hover:bg-paper-recessed rounded-full w-10 h-10 text-ink-secondary transition-colors"
-              aria-label="Clear image"
+              aria-label="Back to home"
+              title="Back to home"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18" />
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5 10.5V20h14v-9.5" />
+                <path d="M9 20v-6h6v6" />
               </svg>
             </button>
           )}
