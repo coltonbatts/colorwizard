@@ -339,7 +339,7 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`flex flex-col ${image ? 'md:flex-row' : ''} min-h-screen min-h-dvh bg-paper overflow-x-hidden ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}
+      className={`flex flex-col ${image ? 'md:flex-row' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}
     >
       {/* Mobile Header - only show when image is loaded */}
       {image && (
@@ -351,7 +351,7 @@ export default function Home() {
       )}
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
-        <div className="mb-4">
+        <div className="mb-0 md:mb-4">
           <CompactToolbar
             calibration={calibration}
             onOpenCalibration={() => setShowCalibrationModal(true)}
@@ -375,7 +375,7 @@ export default function Home() {
             onToggleValueMode={toggleValueMode}
             onValueModeStepsChange={setValueModeSteps}
           />
-        </div>
+      </div>
 
         {/* Highlight Controls - contextual */}
         <HighlightControls />
@@ -384,7 +384,6 @@ export default function Home() {
         <div
           className="flex-1 min-h-0 relative"
           ref={canvasContainerRef}
-          style={{ height: '100%', minHeight: '100%' }}
         >
           <ErrorBoundary
             fallback={({ resetError }) => (

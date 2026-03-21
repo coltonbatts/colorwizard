@@ -1707,12 +1707,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
 
   return (
-    <div className="h-full flex flex-col" ref={containerRef}>
+    <div className="flex min-h-0 flex-col" ref={containerRef}>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
-        <div className="flex-1 flex flex-col" style={{ height: '100%', minHeight: '100%' }}>
+        <div className="flex-1 flex min-h-0 flex-col">
           {/* Zoom Controls Bar - Hidden on mobile/tablet for art-first simplicity */}
           {!isMobile && (
             <ZoomControlsBar
@@ -1730,12 +1730,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
-            className="canvas-viewport flex-1 relative overflow-hidden overscroll-contain select-none md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
-            style={{
-              height: '100%',
-              minHeight: '100%',
-              width: '100%'
-            }}
+            className="canvas-viewport flex-1 min-h-0 relative overflow-hidden overscroll-contain select-none md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
           >
             {/* Loading indicator */}
             {isAnalyzing && (
