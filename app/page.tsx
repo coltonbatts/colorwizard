@@ -340,8 +340,10 @@ export default function Home() {
   const hasSessionColors = useHasSessionColors()
   const mobileSheetHeightClass =
     activeTab === 'sample'
-      ? 'h-[42dvh] max-h-[42dvh]'
-      : 'h-[56dvh] max-h-[56dvh]'
+      ? 'h-[clamp(15rem,30dvh,20rem)]'
+      : activeTab === 'matches'
+        ? 'h-[clamp(18rem,38dvh,24rem)]'
+        : 'h-[clamp(19rem,40dvh,26rem)]'
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -463,14 +465,14 @@ export default function Home() {
       {/* Results panel - mobile gets a dedicated dashboard, desktop keeps sidebar */}
       {image && (
         isMobile ? (
-          <div className="mobile-controls-area fixed inset-x-0 bottom-0 z-[60] flex min-h-0 flex-col items-center px-2 pb-[env(safe-area-inset-bottom,0px)] pointer-events-none">
+          <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-2 pt-2 pb-[env(safe-area-inset-bottom,0px)]">
             <ErrorBoundary
               fallback={({ error, resetError }) => (
                 <SidebarErrorFallback error={error} resetError={resetError} />
               )}
               key={activeTab}
             >
-              <div className={`pointer-events-auto w-full max-w-3xl ${mobileSheetHeightClass} overflow-hidden rounded-t-[28px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-20px_50px_rgba(0,0,0,0.18)]`}>
+              <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-[24px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-16px_36px_rgba(0,0,0,0.16)]`}>
                 {activeTab === 'sample' ? (
                   <MobileDashboard
                     sampledColor={sampledColor}

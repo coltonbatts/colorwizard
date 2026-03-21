@@ -315,8 +315,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     touchStartPos: { x: 0, y: 0 },
   })
   const activePointersRef = useRef<Map<number, PointerCoord>>(new Map())
-  const sampleRafRef = useRef<number | null>(null)
-  const pendingSampleRef = useRef<{ x: number; y: number } | null>(null)
+  const touchLastPointRef = useRef<PointerCoord | null>(null)
+  const touchHasDraggedRef = useRef(false)
   const skipNextSinglePointerSampleRef = useRef(false)
   const initialFitKeyRef = useRef<string | null>(null)
 
@@ -819,33 +819,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     performSampling(e.clientX, e.clientY)
   }, [performSampling])
 
-  const clearPendingSampling = useCallback(() => {
-    pendingSampleRef.current = null
-    if (sampleRafRef.current !== null) {
-      cancelAnimationFrame(sampleRafRef.current)
-      sampleRafRef.current = null
-    }
-  }, [])
-
-  const queueSampling = useCallback((clientX: number, clientY: number) => {
-    pendingSampleRef.current = { x: clientX, y: clientY }
-    if (sampleRafRef.current !== null) return
-
-    sampleRafRef.current = requestAnimationFrame(() => {
-      sampleRafRef.current = null
-      const pending = pendingSampleRef.current
-      if (!pending) return
-      pendingSampleRef.current = null
-      performSampling(pending.x, pending.y)
-    })
-  }, [performSampling])
-
   useEffect(() => {
     return () => {
-      clearPendingSampling()
       activePointersRef.current.clear()
     }
-  }, [clearPendingSampling])
+  }, [])
 
   // Unified touch input path using pointer events
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -861,6 +839,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     const now = Date.now()
     touchStateRef.current.touchStartTime = now
     touchStateRef.current.touchStartPos = { x: e.clientX, y: e.clientY }
+    touchLastPointRef.current = { x: e.clientX, y: e.clientY }
+    touchHasDraggedRef.current = false
+    setIsPanning(false)
 
     const pointers = Array.from(activePointersRef.current.values())
 
@@ -872,7 +853,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       const centerClientY = (pointers[0].y + pointers[1].y) / 2
       const { cssX, cssY } = clientToCanvas(centerClientX, centerClientY, canvas)
       touchStateRef.current.lastCenter = { x: cssX, y: cssY }
-      clearPendingSampling()
       if (e.cancelable) e.preventDefault()
       return
     }
@@ -881,7 +861,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       touchStateRef.current.isPinching = false
       touchStateRef.current.lastDistance = 0
       touchStateRef.current.lastCenter = { x: 0, y: 0 }
-      clearPendingSampling()
       if (e.cancelable) e.preventDefault()
       return
     }
@@ -889,16 +868,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     touchStateRef.current.isPinching = false
     touchStateRef.current.lastDistance = 0
     touchStateRef.current.lastCenter = { x: 0, y: 0 }
-    hasDraggedRef.current = false
-    dragStartRef.current = { x: e.clientX, y: e.clientY }
-
-    if (!props.measureMode && !skipNextSinglePointerSampleRef.current) {
-      performSampling(e.clientX, e.clientY)
-    }
-    skipNextSinglePointerSampleRef.current = false
 
     if (e.cancelable) e.preventDefault()
-  }, [image, props.measureMode, performSampling, clearPendingSampling])
+  }, [image])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType !== 'touch') return
@@ -915,6 +887,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (pointers.length === 2) {
       if (e.cancelable) e.preventDefault()
       touchStateRef.current.isPinching = true
+      touchHasDraggedRef.current = true
+      setIsPanning(false)
       const newDistance = getPointerDistance(pointers[0], pointers[1])
       const centerClientX = (pointers[0].x + pointers[1].x) / 2
       const centerClientY = (pointers[0].y + pointers[1].y) / 2
@@ -948,23 +922,43 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     touchStateRef.current.lastCenter = { x: 0, y: 0 }
 
     if (pointers.length > 1) {
-      clearPendingSampling()
       if (e.cancelable) e.preventDefault()
       return
     }
 
-    if (!touchStateRef.current.isPinching) {
-      if (skipNextSinglePointerSampleRef.current) {
-        skipNextSinglePointerSampleRef.current = false
-        if (e.cancelable) e.preventDefault()
-        return
-      }
-      if (!props.measureMode) {
-        queueSampling(e.clientX, e.clientY)
-      }
+    const currentPointer = pointers[0]
+    if (!currentPointer) {
       if (e.cancelable) e.preventDefault()
+      return
     }
-  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan, props.measureMode, queueSampling, clearPendingSampling])
+
+    const movedDistance = Math.hypot(
+      currentPointer.x - touchStateRef.current.touchStartPos.x,
+      currentPointer.y - touchStateRef.current.touchStartPos.y,
+    )
+
+    if (!touchHasDraggedRef.current && movedDistance <= DRAG_THRESHOLD) {
+      touchLastPointRef.current = currentPointer
+      if (e.cancelable) e.preventDefault()
+      return
+    }
+
+    touchHasDraggedRef.current = true
+    setIsPanning(true)
+
+    const lastPoint = touchLastPointRef.current ?? currentPointer
+    const deltaX = currentPointer.x - lastPoint.x
+    const deltaY = currentPointer.y - lastPoint.y
+
+    if (deltaX !== 0 || deltaY !== 0) {
+      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
+      showMinimap()
+    }
+
+    touchLastPointRef.current = currentPointer
+
+    if (e.cancelable) e.preventDefault()
+  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan])
 
   const handlePointerUpOrCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType !== 'touch') return
@@ -976,24 +970,42 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     activePointersRef.current.delete(e.pointerId)
 
-    if (activePointersRef.current.size < 2) {
-      const wasPinching = touchStateRef.current.isPinching
+    const remainingPointers = Array.from(activePointersRef.current.values())
+    const wasPinching = touchStateRef.current.isPinching
+
+    if (remainingPointers.length === 1 && wasPinching) {
+      const remaining = remainingPointers[0]
+      skipNextSinglePointerSampleRef.current = true
+      touchStateRef.current.touchStartPos = { ...remaining }
+      touchLastPointRef.current = { ...remaining }
+      touchHasDraggedRef.current = false
+      setIsPanning(false)
+    }
+
+    if (remainingPointers.length < 2) {
       touchStateRef.current.isPinching = false
       touchStateRef.current.lastDistance = 0
       touchStateRef.current.lastCenter = { x: 0, y: 0 }
-      clearPendingSampling()
-      if (wasPinching) {
-        skipNextSinglePointerSampleRef.current = true
+    }
+
+    if (remainingPointers.length === 0) {
+      const shouldSample = !wasPinching && !touchHasDraggedRef.current && !skipNextSinglePointerSampleRef.current
+      if (shouldSample && !props.measureMode) {
+        const samplePoint = touchLastPointRef.current ?? { x: e.clientX, y: e.clientY }
+        performSampling(samplePoint.x, samplePoint.y)
       }
-    } else if (activePointersRef.current.size !== 2) {
-      touchStateRef.current.isPinching = false
-      touchStateRef.current.lastDistance = 0
-      touchStateRef.current.lastCenter = { x: 0, y: 0 }
-      clearPendingSampling()
+
+      if (skipNextSinglePointerSampleRef.current) {
+        skipNextSinglePointerSampleRef.current = false
+      }
+
+      touchHasDraggedRef.current = false
+      touchLastPointRef.current = null
+      setIsPanning(false)
     }
 
     if (e.cancelable) e.preventDefault()
-  }, [clearPendingSampling])
+  }, [performSampling, props.measureMode])
 
   const handleWheel = useCallback(
     (e: WheelEvent) => {

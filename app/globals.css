@@ -758,17 +758,13 @@ body {
         flex-direction: column !important;
     }
 
-    /* Controls area - takes remaining space, scrollable if needed */
+    /* Controls area - compact dock below the canvas */
     .mobile-controls-area {
-        flex: 1 1 auto !important;
+        flex: 0 0 auto !important;
         width: 100% !important;
         min-width: 100% !important;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
+        overflow: hidden;
         border-left: none !important;
-        border-top: var(--rule-hairline) solid var(--ink-hairline);
     }
 
     /* Touch targets */
