@@ -1707,7 +1707,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
 
   return (
-    <div className="flex min-h-0 flex-col" ref={containerRef}>
+    <div className="flex h-full min-h-0 flex-col" ref={containerRef}>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
