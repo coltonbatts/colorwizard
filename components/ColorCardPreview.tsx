@@ -2,7 +2,7 @@
 
 import { forwardRef } from 'react'
 import { ColorCard } from '@/lib/types/colorCard'
-import { CARD_PRIORITY_OPTIONS, CARD_PRIORITY_STYLES, CARD_STATUS_OPTIONS, CARD_STATUS_STYLES, getProjectLabel } from '@/lib/cardMeta'
+import { CARD_PRIORITY_OPTIONS, CARD_PRIORITY_STYLES, CARD_STATUS_OPTIONS, CARD_STATUS_STYLES } from '@/lib/cardMeta'
 
 interface ColorCardPreviewProps {
     card: ColorCard
@@ -18,6 +18,7 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
         const { color, name, recipe, matches } = card
         const { dmc, paints } = matches
         const tags = card.tags ?? []
+        const projectLabel = card.project?.trim() || ''
         const statusLabel = CARD_STATUS_OPTIONS.find((option) => option.value === (card.status ?? 'idea'))?.label ?? 'Idea'
         const priorityLabel = CARD_PRIORITY_OPTIONS.find((option) => option.value === (card.priority ?? 'medium'))?.label ?? 'Medium'
 
@@ -79,9 +80,11 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                             {recipe.summary}
                         </p>
                         <div className="flex flex-wrap gap-2 pt-1">
-                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">
-                                {getProjectLabel(card.project)}
-                            </span>
+                            {projectLabel && projectLabel !== 'Inbox' && (
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">
+                                    {projectLabel}
+                                </span>
+                            )}
                             <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${CARD_STATUS_STYLES[card.status ?? 'idea']}`}>
                                 {statusLabel}
                             </span>
@@ -171,22 +174,29 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
 
                     {/* Mixing Steps */}
                     <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Mixing Steps</h3>
+                        <div className="mb-3">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                Mix Instructions
+                            </h3>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                Follow these steps in order: establish the base, adjust value, then fine-tune the hue.
+                            </p>
+                        </div>
                         {normalizedSteps.length > 0 ? (
-                            <ol className="space-y-2">
+                            <ol className="space-y-3">
                                 {normalizedSteps.map((step, index) => (
-                                    <li key={`${index}-${step}`} className="flex gap-3">
-                                        <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-700">
+                                    <li key={`${index}-${step}`} className="flex gap-3 rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                                        <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-black text-slate-700">
                                             {index + 1}
                                         </span>
-                                        <span className="text-xs font-medium leading-5 text-slate-700">
+                                        <span className="text-sm font-medium leading-6 text-slate-700">
                                             {step}
                                         </span>
                                     </li>
                                 ))}
                             </ol>
                         ) : (
-                            <p className="text-xs italic text-slate-500">Mixing steps not available yet</p>
+                            <p className="text-xs italic text-slate-500">Mix instructions not available yet</p>
                         )}
                     </div>
 

@@ -653,7 +653,6 @@ export default function ColorDeckPanel({
 
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-2">
                                     {group.cards.map((card) => {
-                                        const projectLabel = getProjectLabel(card.project)
                                         const status = normalizeStatus(card.status)
                                         const priority = normalizePriority(card.priority)
                                         const tags = card.tags ?? []
@@ -672,27 +671,19 @@ export default function ColorDeckPanel({
                                                 >
                                                     <div className="relative h-28 overflow-hidden" style={{ backgroundColor: card.color.hex }}>
                                                         <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                                                        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 text-white">
+                                                        <div className="absolute inset-x-0 bottom-0 flex items-end p-3 text-white">
                                                             <div className="min-w-0">
                                                                 <div className="truncate text-lg font-black">{card.name}</div>
-                                                                <div className="mt-1 flex flex-wrap gap-2">
-                                                                    <span className="rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
-                                                                        {projectLabel}
-                                                                    </span>
-                                                                    {hasSampleMatch(card) && (
-                                                                        <span className="rounded-full border border-white/20 bg-signal/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
-                                                                            Current sample
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                                {hasSampleMatch(card) && (
+                                                                    <div className="mt-1 inline-flex rounded-full border border-white/20 bg-signal/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                                                                        Current sample
+                                                                    </div>
+                                                                )}
                                                                 {card.color.colorName && card.color.colorName !== card.name && (
                                                                     <div className="truncate text-[10px] font-bold uppercase tracking-[0.22em] text-white/80">
                                                                         {card.color.colorName}
                                                                     </div>
                                                                 )}
-                                                            </div>
-                                                            <div className="rounded-full border border-white/20 bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white/90 backdrop-blur-sm">
-                                                                {card.recipe.spectral?.matchQuality || 'Heuristic'}
                                                             </div>
                                                         </div>
                                                     </div>
