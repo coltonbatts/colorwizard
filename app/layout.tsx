@@ -21,14 +21,14 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'ColorWizard. | Perceptual Color for Artists',
-  description: 'A professional color tool for artists. Spectral color mixing, perceptual analysis, and paint recipe generation. Built with precision, designed to recede.',
-  keywords: ['oil painting', 'color mixing', 'color theory', 'artist tools', 'spectral color', 'palette generator', 'perceptual color'],
+  title: 'ColorWizard | Color Mixing for Oil Painters',
+  description: 'Upload a reference image, click a color, and get a real oil paint mixing recipe from a 6-color limited palette. Free, open source, and private.',
+  keywords: ['oil painting', 'color mixing', 'paint mixing', 'limited palette', 'artist tools', 'reference photo', 'dmc thread match'],
   openGraph: {
-    title: 'ColorWizard. | Perceptual Color for Artists',
-    description: 'The professional color tool for oil painters. Let the art lead.',
+    title: 'ColorWizard | Color Mixing for Oil Painters',
+    description: 'Click a color in your reference image and get a real paint recipe you can actually use.',
     url: 'https://colorwizard.app',
-    siteName: 'ColorWizard.',
+    siteName: 'ColorWizard',
     images: [
       {
         url: 'https://colorwizard.app/og-image.png',
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ColorWizard. | Perceptual Color for Artists',
-    description: 'The professional color tool for oil painters.',
+    title: 'ColorWizard | Color Mixing for Oil Painters',
+    description: 'Upload a photo, click a color, and get a paint recipe from a real limited palette.',
     creator: '@coltonbatts',
   },
   icons: {

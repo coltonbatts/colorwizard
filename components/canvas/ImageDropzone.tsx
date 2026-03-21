@@ -12,10 +12,26 @@ interface ImageDropzoneProps {
     onImageLoad: (img: HTMLImageElement) => void;
 }
 
+const limitedPalette = [
+    { name: 'Titanium White', color: '#F4F1E8' },
+    { name: 'Ivory Black', color: '#2D2926' },
+    { name: 'Yellow Ochre', color: '#C79B44' },
+    { name: 'Cadmium Red', color: '#B6402E' },
+    { name: 'Phthalo Green', color: '#295B4F' },
+    { name: 'Phthalo Blue', color: '#275A7A' },
+];
+
+const proofPoints = [
+    'Real paint recipes',
+    'DMC matches',
+    'Nothing uploaded',
+];
+
 export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const inputId = useId();
+    const cameraInputId = useId();
 
     // Check if file is an image by extension or MIME type
     const isImageFile = useCallback((file: File): boolean => {
@@ -358,69 +374,125 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`mobile-hero-dropzone flex-1 flex flex-col items-center justify-center transition-all duration-700 relative overflow-hidden ${isDragging
-                ? 'bg-blue-50/50 scale-[0.98]'
-                : 'bg-transparent'
+            className={`mobile-hero-dropzone relative flex-1 overflow-y-auto transition-colors duration-300 ${isDragging ? 'bg-signal-muted' : 'bg-paper'
                 }`}
         >
-            {/* Background Accent - Responsive sizing */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-blue-100/30 blur-[80px] md:blur-[120px] rounded-full -z-10 animate-pulse" />
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute left-[-12rem] top-[-10rem] h-[24rem] w-[24rem] rounded-full bg-white/55 blur-3xl" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink-hairline to-transparent" />
+            </div>
 
-            <div className="w-full max-w-4xl mx-auto px-4 z-10 flex flex-col items-center">
-                <div className="text-center w-full">
-                    {/* Wordmark - Responsive sizing for mobile */}
-                    <div className="flex flex-col items-center mb-4 md:mb-8">
-                        <h1 className="font-wordmark-hero text-studio select-none tracking-tight animate-in fade-in zoom-in-95 duration-1000">
-                            Color Wizard
-                        </h1>
-                    </div>
+            <input
+                id={inputId}
+                type="file"
+                accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+                onChange={(e) => {
+                    console.log('[ImageDropzone] Input onChange fired');
+                    handleFileInput(e);
+                }}
+                className="sr-only"
+            />
+            <input
+                id={cameraInputId}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileInput}
+                className="sr-only"
+            />
 
-                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-studio-secondary mb-6 md:mb-12 tracking-tight opacity-80 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 px-4">
-                        The premium companion for light, value, and color analysis.
-                    </p>
-
-                    <div className={`
-                        border-2 border-dashed rounded-2xl md:rounded-[3rem] p-6 sm:p-8 md:p-12 lg:p-16 transition-all duration-500
-                        ${isDragging
-                            ? 'border-blue-500 bg-white shadow-2xl scale-105'
-                            : 'border-gray-200 bg-white/60 backdrop-blur-md shadow-xl hover:shadow-2xl hover:bg-white/70 md:hover:scale-[1.02]'
-                        }
-                        animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300
-                    `}>
-                        <p className="text-sm sm:text-base md:text-lg font-bold text-studio-secondary mb-4 md:mb-8 hidden sm:block">
-                            Drop an image here to begin your analysis
-                        </p>
-
-                        <input
-                            id={inputId}
-                            type="file"
-                            accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-                            onChange={(e) => {
-                                console.log('[ImageDropzone] Input onChange fired');
-                                handleFileInput(e);
-                            }}
-                            className="sr-only"
-                        />
-                        <label htmlFor={inputId} className="cursor-pointer group block">
-                            {isConverting ? (
-                                <span className="px-8 sm:px-10 md:px-12 py-4 md:py-5 bg-studio/70 text-white rounded-full font-black uppercase tracking-widest inline-block text-sm sm:text-base">
-                                    Converting HEIC...
-                                </span>
-                            ) : (
-                                <span className="px-8 sm:px-10 md:px-12 py-4 md:py-5 bg-studio text-white rounded-full font-black uppercase tracking-widest hover:bg-studio/90 transition-all shadow-xl group-active:scale-95 inline-block text-sm sm:text-base">
-                                    Choose Image
-                                </span>
-                            )}
-                        </label>
-
-                        <div className="mt-4 md:mt-8 flex items-center justify-center gap-3 md:gap-6 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-studio-dim">
-                            <span>High Precision</span>
-                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                            <span className="hidden sm:inline">Instant Recipes</span>
-                            <span className="hidden sm:inline w-1 h-1 bg-gray-300 rounded-full" />
-                            <span>Pro Grade</span>
+            <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-8 lg:px-10 lg:pb-16">
+                <div className="flex items-center justify-center pb-2 sm:pb-4">
+                    <div className="flex flex-col items-center">
+                        <div className="font-wordmark text-center text-[2rem] leading-[0.9] tracking-[-0.05em] text-ink/80 sm:text-[2.75rem] lg:text-[3.25rem]">
+                            <span>Color</span>
+                            <span className="italic">Wizard</span>
+                        </div>
+                        <div
+                            aria-hidden="true"
+                            className="mt-3 flex h-1.5 w-28 overflow-hidden rounded-full border border-black/8 sm:w-40 lg:w-48"
+                        >
+                            {limitedPalette.map((paint) => (
+                                <span
+                                    key={paint.name}
+                                    className="h-full flex-1"
+                                    style={{ backgroundColor: paint.color }}
+                                />
+                            ))}
                         </div>
                     </div>
+                </div>
+
+                <div className="flex flex-1 items-center justify-center py-8 lg:py-10">
+                    <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+                        <h1 className="mt-10 max-w-[12ch] text-[3.4rem] font-medium leading-[0.9] tracking-[-0.07em] text-ink sm:text-[4.75rem] lg:text-[6rem]">
+                            See a color.
+                            <br />
+                            Mix a color.
+                        </h1>
+
+                        <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-secondary sm:text-[1.25rem]">
+                            Upload a photo, click any color, and get a real oil paint recipe.
+                        </p>
+
+                        <p className="mt-3 text-base text-ink-muted">
+                            Made for painters, not designers.
+                        </p>
+
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                            <label
+                                htmlFor={inputId}
+                                className="inline-flex cursor-pointer items-center justify-center rounded-full bg-signal px-7 py-3.5 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-signal-hover"
+                            >
+                                {isConverting ? 'Converting HEIC...' : 'Upload a Photo'}
+                            </label>
+                            <label
+                                htmlFor={cameraInputId}
+                                className="inline-flex cursor-pointer items-center justify-center rounded-full border border-ink-hairline bg-paper-elevated px-6 py-3 text-sm font-semibold text-ink transition-all duration-200 hover:-translate-y-0.5 hover:border-ink-muted hover:bg-paper-recessed sm:hidden"
+                            >
+                                Take a Photo
+                            </label>
+                        </div>
+
+                        <p className="mt-5 text-sm text-ink-muted">
+                            Free forever. No uploads. No tracking.
+                        </p>
+
+                        <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-[12px] uppercase tracking-[0.18em] text-ink-faint sm:gap-4">
+                            {proofPoints.map((item, index) => (
+                                <div key={item} className="flex items-center gap-3 sm:gap-4">
+                                    <span>{item}</span>
+                                    {index < proofPoints.length - 1 && <span className="h-1 w-1 rounded-full bg-ink-faint" aria-hidden="true" />}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-16 w-full max-w-5xl rounded-[2rem] border border-ink-hairline bg-paper-elevated/70 p-5 shadow-md shadow-black/5 sm:p-6">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-ink-muted">
+                                6-Color Limited Palette
+                            </p>
+                            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
+                                {limitedPalette.map((paint) => (
+                                    <div
+                                        key={paint.name}
+                                        className="rounded-[1.25rem] border border-ink-hairline bg-paper/85 p-2 text-center"
+                                    >
+                                        <div
+                                            className="h-14 rounded-[0.9rem] border border-black/10 sm:h-16"
+                                            style={{ backgroundColor: paint.color }}
+                                            aria-hidden="true"
+                                        />
+                                        <p className="mt-2 text-[10px] font-medium leading-snug text-ink-secondary sm:text-[11px]">
+                                            {paint.name}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="mt-4 text-sm text-ink-muted">
+                                Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue.
+                            </p>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>

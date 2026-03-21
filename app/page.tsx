@@ -62,6 +62,8 @@ export default function Home() {
   const setImage = useCanvasStore(state => state.setImage)
   const referenceImage = useCanvasStore(state => state.referenceImage)
   const setReferenceImage = useCanvasStore(state => state.setReferenceImage)
+  const setReferenceOpacity = useCanvasStore(state => state.setReferenceOpacity)
+  const resetReferenceTransform = useCanvasStore(state => state.resetReferenceTransform)
   const valueScaleSettings = useCanvasStore(state => state.valueScaleSettings)
   const setValueScaleSettings = useCanvasStore(state => state.setValueScaleSettings)
   const setHistogramBins = useCanvasStore(state => state.setHistogramBins)
@@ -106,20 +108,24 @@ export default function Home() {
   const handleImageLoad = useCallback((img: HTMLImageElement) => {
     console.log('[Home] Image loaded, resetting value mode')
     setImage(img)
+    setReferenceOpacity(1)
+    resetReferenceTransform()
     setValueModeEnabled(false) // Always reset value mode when new image loads
-  }, [setImage, setValueModeEnabled])
+  }, [resetReferenceTransform, setImage, setReferenceOpacity, setValueModeEnabled])
 
   // Clear image and reset view
   const handleClearImage = useCallback(() => {
     console.log('[Home] Clearing image and resetting state')
     setImage(null)
     setReferenceImage(null)
+    setReferenceOpacity(1)
+    resetReferenceTransform()
     setSampledColor(null)
     setActiveHighlightColor(null)
     setBreakdownValue(0)
     setValueModeEnabled(false) // Reset value mode when clearing image
     setActiveTab('sample')
-  }, [setImage, setReferenceImage, setSampledColor, setActiveHighlightColor, setBreakdownValue, setValueModeEnabled, setActiveTab])
+  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setValueModeEnabled])
 
   const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
     setSampledColor(color)
@@ -351,31 +357,33 @@ export default function Home() {
       )}
       <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
         {/* Compact Toolbar */}
-        <div className="mb-0 md:mb-4">
-          <CompactToolbar
-            calibration={calibration}
-            onOpenCalibration={() => setShowCalibrationModal(true)}
-            onResetCalibration={resetCalibration}
-            rulerGridEnabled={rulerGridEnabled}
-            onToggleRulerGrid={toggleRulerGrid}
-            measureMode={measureMode}
-            onToggleMeasure={toggleMeasureMode}
-            palettes={palettes}
-            activePalette={activePalette}
-            onSelectPalette={setActivePalette}
-            onOpenPaletteManager={() => setShowPaletteManager(true)}
-            canvasSettings={canvasSettings}
-            onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
-            hasImage={!!image}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onResetView={() => imageCanvasRef.current?.resetView()}
-            valueModeEnabled={valueModeEnabled}
-            valueModeSteps={valueModeSteps}
-            onToggleValueMode={toggleValueMode}
-            onValueModeStepsChange={setValueModeSteps}
-          />
-      </div>
+        {image && (
+          <div className="mb-0 md:mb-4">
+            <CompactToolbar
+              calibration={calibration}
+              onOpenCalibration={() => setShowCalibrationModal(true)}
+              onResetCalibration={resetCalibration}
+              rulerGridEnabled={rulerGridEnabled}
+              onToggleRulerGrid={toggleRulerGrid}
+              measureMode={measureMode}
+              onToggleMeasure={toggleMeasureMode}
+              palettes={palettes}
+              activePalette={activePalette}
+              onSelectPalette={setActivePalette}
+              onOpenPaletteManager={() => setShowPaletteManager(true)}
+              canvasSettings={canvasSettings}
+              onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+              hasImage={!!image}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onResetView={() => imageCanvasRef.current?.resetView()}
+              valueModeEnabled={valueModeEnabled}
+              valueModeSteps={valueModeSteps}
+              onToggleValueMode={toggleValueMode}
+              onValueModeStepsChange={setValueModeSteps}
+            />
+          </div>
+        )}
 
         {/* Highlight Controls - contextual */}
         <HighlightControls />
