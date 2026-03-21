@@ -6,6 +6,7 @@ import { CARD_PRIORITY_OPTIONS, CARD_PRIORITY_STYLES, CARD_STATUS_OPTIONS, CARD_
 
 interface ColorCardPreviewProps {
     card: ColorCard
+    variant?: 'standalone' | 'embedded'
 }
 
 /**
@@ -13,7 +14,7 @@ interface ColorCardPreviewProps {
  * This component renders the visual card that gets exported as PNG.
  */
 const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
-    function ColorCardPreview({ card }, ref) {
+    function ColorCardPreview({ card, variant = 'standalone' }, ref) {
         const { color, name, recipe, matches } = card
         const { dmc, paints } = matches
         const tags = card.tags ?? []
@@ -29,7 +30,11 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
         return (
             <div
                 ref={ref}
-                className="w-[400px] overflow-hidden rounded-3xl border border-[rgba(15,23,42,0.12)] bg-[#fbfaf7] shadow-[0_22px_60px_rgba(15,23,42,0.16)]"
+                className={
+                    variant === 'embedded'
+                        ? 'w-full overflow-hidden rounded-[2rem] border border-[rgba(15,23,42,0.10)] bg-[#fbfaf7] shadow-none'
+                        : 'w-[400px] overflow-hidden rounded-3xl border border-[rgba(15,23,42,0.12)] bg-[#fbfaf7] shadow-[0_22px_60px_rgba(15,23,42,0.16)]'
+                }
                 style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
             >
                 {/* Large Color Swatch */}

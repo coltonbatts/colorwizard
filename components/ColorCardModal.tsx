@@ -151,10 +151,9 @@ export default function ColorCardModal({
             initialFocusRef={nameInputRef}
             rootClassName="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             backdropClassName="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            panelClassName="flex max-h-[90dvh] min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none"
+            panelClassName="flex max-h-[90dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none lg:flex-row"
         >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 p-4">
+            <div className="flex items-center justify-between border-b border-gray-100 p-4 lg:absolute lg:left-0 lg:right-0 lg:top-0 lg:z-10 lg:bg-white/95 lg:backdrop-blur-sm">
                 <div>
                     <h2 id={titleId} className="text-lg font-bold text-gray-900">
                         {isNewCard ? 'Save to Deck' : 'Card Detail'}
@@ -164,8 +163,8 @@ export default function ColorCardModal({
                     </p>
                 </div>
                 <button
-                    onClick={onClose}
                     type="button"
+                    onClick={onClose}
                     aria-label="Close color card modal"
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 >
@@ -173,74 +172,86 @@ export default function ColorCardModal({
                 </button>
             </div>
 
-            {/* Card Name Input */}
-            <div className="px-4 pt-4">
-                <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Deck Name
-                </label>
-                <input
-                    ref={nameInputRef}
-                    id={inputId}
-                    name="cardName"
-                    type="text"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    autoComplete="off"
-                    placeholder="Enter card name…"
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                />
-            </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0 lg:pt-16">
+                <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
+                    <aside className="flex min-h-0 flex-col border-b border-gray-100 bg-gray-50/80 lg:border-b-0 lg:border-r lg:border-gray-100">
+                        <div className="border-b border-gray-100 px-4 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">
+                                Card Preview
+                            </p>
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+                            <div className="mx-auto w-full max-w-[400px]">
+                                <ColorCardPreview ref={cardRef} card={previewCard} variant="embedded" />
+                            </div>
+                        </div>
+                    </aside>
 
-            <div className="px-4 pt-4">
-                <CardMetadataFields
-                    project={project}
-                    onProjectChange={setProject}
-                    status={status}
-                    onStatusChange={setStatus}
-                    priority={priority}
-                    onPriorityChange={setPriority}
-                    tagsText={tagsText}
-                    onTagsTextChange={setTagsText}
-                    notes={notes}
-                    onNotesChange={setNotes}
-                />
-            </div>
+                    <section className="flex min-h-0 flex-col bg-white">
+                        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                        Deck Name
+                                    </label>
+                                    <input
+                                        ref={nameInputRef}
+                                        id={inputId}
+                                        name="cardName"
+                                        type="text"
+                                        value={cardName}
+                                        onChange={(e) => setCardName(e.target.value)}
+                                        autoComplete="off"
+                                        placeholder="Enter card name…"
+                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
 
-            {/* Card Preview */}
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
-                <div className="mx-auto w-full max-w-[400px] origin-top scale-[0.85] transform">
-                    <ColorCardPreview ref={cardRef} card={previewCard} />
+                                <CardMetadataFields
+                                    project={project}
+                                    onProjectChange={setProject}
+                                    status={status}
+                                    onStatusChange={setStatus}
+                                    priority={priority}
+                                    onPriorityChange={setPriority}
+                                    tagsText={tagsText}
+                                    onTagsTextChange={setTagsText}
+                                    notes={notes}
+                                    onNotesChange={setNotes}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex shrink-0 gap-3 border-t border-gray-100 bg-gray-50 p-4">
+                            <button
+                                onClick={handleSave}
+                                type="button"
+                                disabled={isSaving}
+                                className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {isSaving ? 'Saving…' : isNewCard ? 'Save to Deck' : 'Update Card'}
+                            </button>
+                            {!isNewCard && (
+                                <button
+                                    onClick={handleSaveCopy}
+                                    type="button"
+                                    disabled={isSaving}
+                                    className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 font-bold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {isSaving ? 'Copying…' : 'Save Copy'}
+                                </button>
+                            )}
+                            <button
+                                onClick={handleExport}
+                                type="button"
+                                disabled={isExporting}
+                                className="flex-1 rounded-xl bg-gray-900 px-4 py-3 font-bold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {isExporting ? 'Exporting…' : 'Export PNG'}
+                            </button>
+                        </div>
+                    </section>
                 </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex shrink-0 gap-3 border-t border-gray-100 bg-gray-50 p-4">
-                <button
-                    onClick={handleSave}
-                    type="button"
-                    disabled={isSaving}
-                    className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    {isSaving ? 'Saving…' : isNewCard ? 'Save to Deck' : 'Update Card'}
-                </button>
-                {!isNewCard && (
-                    <button
-                        onClick={handleSaveCopy}
-                        type="button"
-                        disabled={isSaving}
-                        className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 font-bold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {isSaving ? 'Copying…' : 'Save Copy'}
-                    </button>
-                )}
-                <button
-                    onClick={handleExport}
-                    type="button"
-                    disabled={isExporting}
-                    className="flex-1 rounded-xl bg-gray-900 px-4 py-3 font-bold text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                    {isExporting ? 'Exporting…' : 'Export PNG'}
-                </button>
             </div>
         </OverlaySurface>
     )
