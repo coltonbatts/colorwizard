@@ -34,15 +34,6 @@ interface PaintRecipeProps {
   showExportButton?: boolean
 }
 
-// Match quality colors
-const QUALITY_COLORS = {
-  Excellent: { text: 'text-green-400', bg: 'bg-green-500' },
-  Good: { text: 'text-emerald-400', bg: 'bg-emerald-500' },
-  Fair: { text: 'text-yellow-400', bg: 'bg-yellow-500' },
-  Poor: { text: 'text-red-400', bg: 'bg-red-500' },
-}
-
-
 const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
   'Titanium White': { hex: '#FDFDFD', id: 'titanium-white' },
   'Ivory Black': { hex: '#0B0B0B', id: 'ivory-black' },
@@ -179,12 +170,14 @@ export default function PaintRecipe({
     variant === 'compact' || variant === 'dashboard'
       ? variant
       : (isShortViewport || isNarrowViewport ? 'compact' : 'standard')
+  const compactSteps = recipe.steps.slice(0, 3)
+  const hasMoreCompactSteps = recipe.steps.length > compactSteps.length
 
   // Handle empty catalog state separately
   const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
 
   return (
-    <div className="w-full min-w-0 rounded-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 p-4">
+    <div className={`w-full min-w-0 rounded-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 ${effectiveVariant === 'compact' ? 'p-3' : 'p-4'}`}>
       <div className={`flex items-center justify-between ${effectiveVariant === 'compact' ? 'mb-2' : 'mb-3 lg:mb-4'}`}>
         <h3 className={`${effectiveVariant === 'compact' ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-100`}>Oil Paint Recipe</h3>
         {isFallback && !isEmptyCatalog && (
@@ -217,22 +210,52 @@ export default function PaintRecipe({
           />
 
           {/* Mixing Steps */}
-          <div className={`${effectiveVariant === 'compact' ? 'mt-4 mb-3' : 'mt-6 mb-4 lg:mb-6'}`}>
-            <h4 className={`${effectiveVariant === 'compact' ? 'text-[10px]' : 'text-xs lg:text-sm'} font-bold text-gray-300 mb-2 lg:mb-3 uppercase tracking-wider`}>
-              Mixing Steps
-            </h4>
-            <ol className={`list-decimal list-outside ml-4 ${effectiveVariant === 'compact' ? 'space-y-1 text-[11px]' : 'space-y-1.5 lg:space-y-2 text-[13px] lg:text-sm'} text-gray-300`}>
-              {recipe.steps.map((step, i) => (
-                <li
-                  key={i}
-                  dangerouslySetInnerHTML={{
-                    __html: step
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                  }}
-                />
-              ))}
-            </ol>
-          </div>
+          {effectiveVariant === 'compact' ? (
+            <div className="mt-3 rounded-xl border border-gray-700/80 bg-gray-800/35 p-3">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">
+                  Quick Mix
+                </h4>
+                <span className="text-[9px] text-gray-500 uppercase tracking-wider">
+                  3-step preview
+                </span>
+              </div>
+              <ol className="space-y-1.5 text-[11px] text-gray-300">
+                {compactSteps.map((step, i) => (
+                  <li
+                    key={i}
+                    className="rounded-lg bg-gray-900/60 px-2.5 py-2 leading-5"
+                    dangerouslySetInnerHTML={{
+                      __html: step
+                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+                    }}
+                  />
+                ))}
+              </ol>
+              {hasMoreCompactSteps && (
+                <p className="mt-2 text-[10px] leading-4 text-gray-500">
+                  Open the larger recipe view for the full step-by-step mix.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-6 mb-4 lg:mb-6">
+              <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-300 lg:mb-3 lg:text-sm">
+                Mixing Steps
+              </h4>
+              <ol className="list-decimal list-outside ml-4 space-y-1.5 text-[13px] text-gray-300 lg:space-y-2 lg:text-sm">
+                {recipe.steps.map((step, i) => (
+                  <li
+                    key={i}
+                    dangerouslySetInnerHTML={{
+                      __html: step
+                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+                    }}
+                  />
+                ))}
+              </ol>
+            </div>
+          )}
         </>
       )}
 

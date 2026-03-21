@@ -51,6 +51,8 @@ export default function MobileDashboard({
     const [isCreatingCard, setIsCreatingCard] = useState(false)
     const [showCardModal, setShowCardModal] = useState(false)
     const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
+    const sampledHex = sampledColor?.hex
+    const sampledLabel = sampledColor?.label
 
     const solveOptions = useMemo(() => {
         if (hasPaintPalette && selectedPaintIds.length > 0) {
@@ -67,20 +69,20 @@ export default function MobileDashboard({
     }, [activePalette, hasPaintPalette, selectedPaintIds])
 
     useEffect(() => {
-        if (!sampledColor) {
+        if (!sampledHex) {
             setColorName('')
             return
         }
 
-        if (sampledColor.label && sampledColor.label !== 'New Color') {
-            setColorName(sampledColor.label)
+        if (sampledLabel && sampledLabel !== 'New Color') {
+            setColorName(sampledLabel)
             return
         }
 
         let cancelled = false
         setIsLoadingName(true)
 
-        getColorName(sampledColor.hex)
+        getColorName(sampledHex)
             .then((result) => {
                 if (!cancelled) {
                     setColorName(result.name)
@@ -101,7 +103,7 @@ export default function MobileDashboard({
         return () => {
             cancelled = true
         }
-    }, [sampledColor?.hex, sampledColor?.label])
+    }, [sampledHex, sampledLabel])
 
     if (!sampledColor) {
         return (
@@ -124,6 +126,10 @@ export default function MobileDashboard({
             ? 'Core six-color mix'
             : activePalette?.name || 'Active palette'
     const recipeVariant = isShortViewport ? 'compact' : 'standard'
+    const shellPadding = isShortViewport ? 'p-3' : 'p-4'
+    const swatchSize = isShortViewport ? 'w-16 h-16' : 'w-20 h-20'
+    const titleSize = isShortViewport ? 'text-xl' : 'text-2xl'
+    const actionPadding = isShortViewport ? 'px-3 py-2.5' : 'px-4 py-3'
 
     const copyToClipboard = async (text: string, type: string) => {
         await navigator.clipboard.writeText(text)
@@ -184,10 +190,10 @@ export default function MobileDashboard({
     return (
         <>
             <div className="h-full min-h-0 flex flex-col bg-white overflow-hidden dashboard-mode rounded-t-[28px] shadow-[0_-20px_50px_rgba(0,0,0,0.14)] border-t border-gray-100">
-                <section className="p-4 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white">
+                <section className={`${shellPadding} border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white`}>
                     <div className="flex items-center gap-4">
                         <motion.div
-                            className="w-20 h-20 rounded-2xl shadow-xl border-4 border-white shrink-0"
+                            className={`${swatchSize} rounded-2xl shadow-xl border-4 border-white shrink-0`}
                             style={{ backgroundColor: sampledColor.hex }}
                             layoutId="active-swatch"
                         />
@@ -196,7 +202,7 @@ export default function MobileDashboard({
                             <h2 className="text-[10px] font-black text-studio-dim uppercase tracking-[0.2em] mb-1">
                                 Sampled Color
                             </h2>
-                            <div className="text-2xl font-black text-studio truncate leading-tight">
+                            <div className={`${titleSize} font-black text-studio truncate leading-tight`}>
                                 {isLoadingName ? (
                                     <span className="inline-block w-3 h-3 border-2 border-studio-dim border-t-transparent rounded-full animate-spin" />
                                 ) : (
@@ -213,12 +219,12 @@ export default function MobileDashboard({
                     </div>
                 </section>
 
-                <section className="p-4 border-b border-gray-100 bg-white">
+                <section className={`${shellPadding} border-b border-gray-100 bg-white`}>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             onClick={handlePin}
                             disabled={!onPin || isPinning || isPinned}
-                            className={`flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all ${isPinned
+                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all ${isPinned
                                 ? 'bg-subsignal-muted text-subsignal border border-subsignal'
                                 : 'bg-signal text-white shadow-lg active:scale-95'
                                 }`}
@@ -238,7 +244,7 @@ export default function MobileDashboard({
                         <button
                             onClick={handleCreateCard}
                             disabled={isCreatingCard}
-                            className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg active:scale-95"
+                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-subsignal hover:bg-subsignal-hover text-white shadow-lg active:scale-95`}
                         >
                             {isCreatingCard ? (
                                 <>
@@ -252,7 +258,7 @@ export default function MobileDashboard({
 
                         <button
                             onClick={() => copyToClipboard(sampledColor.hex.toUpperCase(), 'hex')}
-                            className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all bg-paper-recessed text-studio-secondary border border-gray-100 active:scale-95"
+                            className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-paper-recessed text-studio-secondary border border-gray-100 active:scale-95`}
                         >
                             {copied === 'hex' ? '✓ Copied' : 'Copy HEX'}
                         </button>
@@ -260,14 +266,14 @@ export default function MobileDashboard({
                         {onSwitchToMatches ? (
                             <button
                                 onClick={onSwitchToMatches}
-                                className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all bg-studio text-white shadow-lg active:scale-95"
+                                className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-studio text-white shadow-lg active:scale-95`}
                             >
                                 Threads
                             </button>
                         ) : (
                             <button
                                 disabled
-                                className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all bg-gray-100 text-gray-400"
+                                className={`flex items-center justify-center gap-2 rounded-xl ${actionPadding} text-sm font-bold transition-all bg-gray-100 text-gray-400`}
                             >
                                 Threads
                             </button>
@@ -277,15 +283,15 @@ export default function MobileDashboard({
                     {onOpenDeck && (
                         <button
                             onClick={onOpenDeck}
-                            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-100 bg-paper-recessed px-4 py-3 text-sm font-bold text-studio-secondary transition-all active:scale-95"
+                            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-100 bg-paper-recessed ${actionPadding} text-sm font-bold text-studio-secondary transition-all active:scale-95`}
                         >
                             🎴 Open Deck
                         </button>
                     )}
                 </section>
 
-                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-8">
-                    <div className="p-4">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-4">
+                    <div className={shellPadding}>
                         <div className="space-y-3">
                             <div className="flex items-end justify-between gap-3 px-1">
                                 <div>

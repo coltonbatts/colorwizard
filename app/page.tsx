@@ -338,6 +338,10 @@ export default function Home() {
 
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
+  const mobileSheetHeightClass =
+    activeTab === 'sample'
+      ? 'h-[48dvh] max-h-[48dvh]'
+      : 'h-[56dvh] max-h-[56dvh]'
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -466,7 +470,7 @@ export default function Home() {
               )}
               key={activeTab}
             >
-              <div className="pointer-events-auto w-full max-w-3xl h-[56dvh] max-h-[56dvh] overflow-hidden rounded-t-[28px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-20px_50px_rgba(0,0,0,0.18)]">
+              <div className={`pointer-events-auto w-full max-w-3xl ${mobileSheetHeightClass} overflow-hidden rounded-t-[28px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-20px_50px_rgba(0,0,0,0.18)]`}>
                 {activeTab === 'sample' ? (
                   <MobileDashboard
                     sampledColor={sampledColor}
