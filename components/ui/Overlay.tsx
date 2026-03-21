@@ -279,7 +279,7 @@ export default function OverlaySurface({
         <div className={rootClassName ?? 'fixed inset-0 z-[1000]'}>
           <motion.div
             aria-hidden="true"
-            className={backdropClassName ?? 'absolute inset-0 bg-black/60 backdrop-blur-sm'}
+            className={backdropClassName ?? 'absolute inset-0 z-0 bg-black/60 backdrop-blur-sm'}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -295,7 +295,7 @@ export default function OverlaySurface({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             aria-describedby={ariaDescribedBy}
-            className={panelClassName}
+            className={`relative z-10 ${panelClassName ?? ''}`}
             style={panelStyle}
             initial={variants.panelInitial}
             animate={variants.panelAnimate}
