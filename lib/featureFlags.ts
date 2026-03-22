@@ -1,12 +1,9 @@
 /**
- * Feature Flags System for ColorWizard
- * 
- * PHILOSOPHY: AI-first, transparent, no bullshit.
- * 
- * FREE tier is genuinely free - unlimited palettes, all exports, full control.
- * PRO tier ($9/month) adds AI suggestions + team collaboration only.
- * We don't gate basic functionality. People pay because they want extras, not because they're trapped.
+ * Feature Flags System for ColorWizard.
+ * In open-source mode, all local features are available without payment.
  */
+
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 
 export type UserTier = 'free' | 'pro' | 'pro_lifetime'
 
@@ -94,6 +91,10 @@ export function isProOnlyFeature(featureName: string): boolean {
  * Check if user has access to a Pro feature
  */
 export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTier): boolean {
+  if (OPEN_SOURCE_MODE) {
+    return true
+  }
+
   if (!isProOnlyFeature(featureName)) {
     // If it's not in the pro-only list, it's free for everyone
     return true
@@ -114,6 +115,10 @@ export function getProFeatures(): FeatureConfig[] {
  * Get numerical limit for a feature based on user tier
  */
 export function getFeatureLimit(featureName: string, tier: UserTier): number {
+  if (OPEN_SOURCE_MODE) {
+    return Infinity
+  }
+
   if (featureName === 'exportToProcreate') {
     // Free tier limited to 5 colors for Procreate export
     // Pro/Lifetime have no such limit

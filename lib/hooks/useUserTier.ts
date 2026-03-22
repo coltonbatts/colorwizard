@@ -5,6 +5,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 import { useAuth } from '@/lib/auth/useAuth'
 import type { UserTier } from '@/lib/featureFlags'
 
@@ -21,6 +22,11 @@ const DEFAULT_TIER: UserTierData = {
   subscriptionStatus: undefined,
 }
 
+const OPEN_SOURCE_TIER: UserTierData = {
+  tier: 'free',
+  subscriptionStatus: undefined,
+}
+
 /**
  * Hook to get and manage user's subscription tier
  * Checks server for tier info on mount and when user changes
@@ -32,6 +38,13 @@ export function useUserTier() {
   const [error, setError] = useState<string | null>(null)
 
   const fetchUserTier = useCallback(async () => {
+    if (OPEN_SOURCE_MODE) {
+      setTierData(OPEN_SOURCE_TIER)
+      setError(null)
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       
@@ -80,6 +93,6 @@ export function useUserTier() {
     loading,
     error,
     refetch: fetchUserTier,
-    isPro: tierData.tier === 'pro' || tierData.tier === 'pro_lifetime',
+    isPro: OPEN_SOURCE_MODE || tierData.tier === 'pro' || tierData.tier === 'pro_lifetime',
   }
 }

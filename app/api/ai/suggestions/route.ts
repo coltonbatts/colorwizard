@@ -7,11 +7,8 @@ import { getColorHarmonies, getChromaLevel, getValueLevel, getMixingGuidance } f
  */
 export async function POST(req: NextRequest) {
     try {
-        const { rgb, tier } = await req.json();
-
-        // Security check - only Pro users get "Advanced" suggestions
-        // (In a real app, this would check the authenticated user's tier in DB)
-        const isPro = tier === 'pro';
+        const { rgb } = await req.json();
+        const isPro = true;
 
         if (!rgb || typeof rgb.r !== 'number') {
             return NextResponse.json({ error: 'Invalid RGB color' }, { status: 400 });

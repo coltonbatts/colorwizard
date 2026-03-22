@@ -1,11 +1,15 @@
 /**
  * Environment Variable Validator
- * 
- * Ensures critical server-side environment variables are present.
- * Throws a loud error if any are missing.
+ * No-op in open-source mode because payments are disabled.
  */
 
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
+
 export function validateServerEnv() {
+    if (OPEN_SOURCE_MODE) {
+        return
+    }
+
     const requiredVars = [
         'STRIPE_SECRET_KEY',
         'NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID'

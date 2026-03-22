@@ -29,9 +29,9 @@ export function ReferenceImageUploader({
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        // Check if user has reached max images (unless pro)
+        // Check if user has reached max images
         if (!isPro && images.length >= maxImages) {
-            alert(`Free tier limited to ${maxImages} reference images. Upgrade to Pro for unlimited storage!`);
+            alert(`Reference image limit reached (${maxImages}). Remove one before adding another.`);
             return;
         }
 
@@ -180,7 +180,7 @@ export function ReferenceImageUploader({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                         <span className="text-sm">
-                            {canUploadMore ? 'Upload Reference Image' : 'Upgrade to Pro for unlimited images'}
+                            {canUploadMore ? 'Upload Reference Image' : 'Reference Image Limit Reached'}
                         </span>
                         {canUploadMore && !isConverting && (
                             <input

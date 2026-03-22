@@ -4,10 +4,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 import { getUserTier, createUserDoc } from '@/lib/db/userTier'
 import { getUserIdFromRequest } from '@/lib/auth/server'
 
 export async function GET(req: NextRequest) {
+  if (OPEN_SOURCE_MODE) {
+    return NextResponse.json({
+      tier: 'free',
+      source: 'open-source-mode',
+      message: 'Payments and account tiers are disabled.',
+    })
+  }
+
   try {
     const userId = await getUserIdFromRequest(req)
 

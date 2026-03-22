@@ -10,6 +10,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 import { useUserTier } from './useUserTier'
 import { hasAccessToProFeature, type ProOnlyFeature } from '@/lib/featureFlags'
 
@@ -19,6 +20,10 @@ export function useFeatureAccess(featureName: ProOnlyFeature) {
   const [isUpgrading, setIsUpgrading] = useState(false)
 
   const hasAccess = useCallback(() => {
+    if (OPEN_SOURCE_MODE) {
+      return true
+    }
+
     return hasAccessToProFeature(featureName, tier)
   }, [featureName, tier])
 
@@ -31,6 +36,11 @@ export function useFeatureAccess(featureName: ProOnlyFeature) {
   }, [hasAccess])
 
   const handleUpgradeClick = useCallback(async () => {
+    if (OPEN_SOURCE_MODE) {
+      setShowUpgradePrompt(false)
+      return
+    }
+
     setIsUpgrading(true)
     try {
       const response = await fetch('/api/stripe/create-checkout', {

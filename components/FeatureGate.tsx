@@ -1,11 +1,6 @@
 /**
- * FeatureGate Wrapper Component
- * Wraps content and shows upgrade prompt if access denied
- * 
- * Usage:
- * <FeatureGate feature="aiPaletteSuggestions" featureName="AI Suggestions">
- *   <AIPaletteComponent />
- * </FeatureGate>
+ * FeatureGate wrapper component.
+ * In open-source mode it becomes a pass-through.
  */
 
 'use client'
@@ -60,10 +55,10 @@ export default function FeatureGate({
           type="button"
           onClick={() => setShowUpgradePrompt(true)}
           className="absolute inset-0 z-10 flex items-center justify-center rounded bg-black/5 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
-          aria-label={`Upgrade to Pro to access ${featureConfig.label}`}
+          aria-label={`Open feature info for ${featureConfig.label}`}
         >
           <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
-            Upgrade to Pro
+            Included
           </span>
         </button>
       </div>

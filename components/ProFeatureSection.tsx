@@ -1,6 +1,6 @@
 /**
- * Pro Feature Section Component
- * Shows a feature with upgrade call-to-action if user doesn't have access
+ * Legacy feature section wrapper.
+ * In open-source mode this resolves to children because all local features are available.
  */
 
 'use client'
@@ -50,7 +50,7 @@ export default function ProFeatureSection({
               onClick={() => setShowUpgradePrompt(true)}
               className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Unlock Pro
+              Included
             </button>
           </div>
         </div>
