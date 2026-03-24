@@ -19,7 +19,8 @@
       "Bash(curl:*)",
       "Bash(ls:*)",
       "Bash(tree:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(wc -l /Users/coltonbatts/dev/github.com/coltonbatts/colorwizard/.claude/worktrees/suspicious-moore/docs/*.md /Users/coltonbatts/dev/github.com/coltonbatts/colorwizard/.claude/worktrees/suspicious-moore/.github/internal-docs/*.md)"
     ],
     "deny": [],
     "ask": []
