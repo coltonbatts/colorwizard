@@ -74,6 +74,8 @@ export default function CollapsibleSidebar({
 }: CollapsibleSidebarProps) {
     // Thin Core: Always show all tabs (sample + matches + deck)
     const visibleTabs = TABS
+    const safeWidth =
+        typeof width === 'number' && Number.isFinite(width) && width > 0 ? width : 400
 
     return (
         <div
@@ -84,7 +86,7 @@ export default function CollapsibleSidebar({
                 ${className}
             `}
             style={{
-                '--computed-sidebar-width': `${width}px`
+                '--computed-sidebar-width': `${safeWidth}px`
             } as React.CSSProperties}
         >
             {/* Toggle Button */}

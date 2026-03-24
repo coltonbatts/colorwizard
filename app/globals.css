@@ -10,15 +10,7 @@
  * Precision without intimidation
  */
 
-/* ============================================
-   TYPOGRAPHY IMPORTS
-   ============================================ */
-
-/* Display / UI: EB Garamond for wordmark (Apple Garamond inspired) */
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
-
-/* Technical / Readouts: JetBrains Mono */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Fonts: self-hosted via @fontsource imports in app/layout.tsx (no runtime network). */
 
 @tailwind base;
 @tailwind components;

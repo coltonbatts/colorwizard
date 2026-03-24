@@ -1,6 +1,20 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
+import '@fontsource/eb-garamond/latin-400.css'
+import '@fontsource/eb-garamond/latin-400-italic.css'
+import '@fontsource/eb-garamond/latin-500.css'
+import '@fontsource/eb-garamond/latin-600.css'
+import '@fontsource/eb-garamond/latin-ext-400.css'
+import '@fontsource/eb-garamond/latin-ext-400-italic.css'
+import '@fontsource/eb-garamond/latin-ext-500.css'
+import '@fontsource/eb-garamond/latin-ext-600.css'
+import '@fontsource/jetbrains-mono/latin-400.css'
+import '@fontsource/jetbrains-mono/latin-500.css'
+import '@fontsource/jetbrains-mono/latin-600.css'
+import '@fontsource/jetbrains-mono/latin-ext-400.css'
+import '@fontsource/jetbrains-mono/latin-ext-500.css'
+import '@fontsource/jetbrains-mono/latin-ext-600.css'
 import './globals.css'
 
 /**
@@ -11,8 +25,7 @@ import './globals.css'
  * - UI: Helvetica Neue (system fallback)
  * - Technical: JetBrains Mono
  *
- * Fonts are loaded via CSS @import in globals.css
- * for optimal control and reduced JavaScript overhead.
+ * Fonts are self-hosted (@fontsource, imported here) so first paint works offline.
  */
 
 export const viewport: Viewport = {

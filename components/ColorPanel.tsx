@@ -149,7 +149,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   try {
                     const spectral = await solveRecipe(hex)
                     const fallback = generatePaintRecipe(hsl)
-                    const dmc = findClosestDMCColors(rgb, 5)
+                    const dmc = await findClosestDMCColors(rgb, 5)
 
                     onPin({
                       id: crypto.randomUUID(),
@@ -190,7 +190,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 onClick={async () => {
                   setIsCreatingCard(true)
                   try {
-                    const dmc = findClosestDMCColors(rgb, 5)
+                    const dmc = await findClosestDMCColors(rgb, 5)
                     const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
 
                     // Fetch descriptive name

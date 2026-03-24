@@ -25,12 +25,15 @@ export const NavigatorMinimap: React.FC<NavigatorMinimapProps> = ({
     // Memoize minimap dimensions based on image aspect ratio
     const minimapDims = useMemo(() => {
         if (!image) return { width: 0, height: 0 }
-        const aspect = image.width / image.height
+        const iw = image.naturalWidth || image.width
+        const ih = image.naturalHeight || image.height
+        if (iw <= 0 || ih <= 0) return { width: 0, height: 0 }
+        const aspect = iw / ih
+        if (!Number.isFinite(aspect) || aspect <= 0) return { width: 0, height: 0 }
         if (aspect > 1) {
             return { width: MINIMAP_SIZE, height: MINIMAP_SIZE / aspect }
-        } else {
-            return { width: MINIMAP_SIZE * aspect, height: MINIMAP_SIZE }
         }
+        return { width: MINIMAP_SIZE * aspect, height: MINIMAP_SIZE }
     }, [image])
 
     // Create and cache thumbnail
@@ -73,6 +76,19 @@ export const NavigatorMinimap: React.FC<NavigatorMinimapProps> = ({
 
         const { zoomLevel, panOffset, imageDrawInfo } = transform
         const { width: canvW, height: canvH } = canvasDimensions
+        const imgW = imageDrawInfo.width
+        const imgH = imageDrawInfo.height
+
+        if (
+            !Number.isFinite(zoomLevel) ||
+            zoomLevel === 0 ||
+            imgW <= 0 ||
+            imgH <= 0 ||
+            !Number.isFinite(canvW) ||
+            !Number.isFinite(canvH)
+        ) {
+            return null
+        }
 
         // 1. Calculate the visible portion of the IMAGE in IMAGE-FIT space
         // Screen coords: (0,0) to (canvW, canvH)
@@ -88,18 +104,22 @@ export const NavigatorMinimap: React.FC<NavigatorMinimapProps> = ({
         }
 
         // 2. Map to 0-1 range within the fitted image
-        const x1 = (topLeft.x - imageDrawInfo.x) / imageDrawInfo.width
-        const y1 = (topLeft.y - imageDrawInfo.y) / imageDrawInfo.height
-        const x2 = (bottomRight.x - imageDrawInfo.x) / imageDrawInfo.width
-        const y2 = (bottomRight.y - imageDrawInfo.y) / imageDrawInfo.height
+        const x1 = (topLeft.x - imageDrawInfo.x) / imgW
+        const y1 = (topLeft.y - imageDrawInfo.y) / imgH
+        const x2 = (bottomRight.x - imageDrawInfo.x) / imgW
+        const y2 = (bottomRight.y - imageDrawInfo.y) / imgH
 
         // 3. Scale to minimap pixels
-        return {
-            left: Math.max(0, x1 * minimapDims.width),
-            top: Math.max(0, y1 * minimapDims.height),
-            width: Math.min(minimapDims.width, (x2 - x1) * minimapDims.width),
-            height: Math.min(minimapDims.height, (y2 - y1) * minimapDims.height)
+        const left = Math.max(0, x1 * minimapDims.width)
+        const top = Math.max(0, y1 * minimapDims.height)
+        const vw = Math.min(minimapDims.width, (x2 - x1) * minimapDims.width)
+        const vh = Math.min(minimapDims.height, (y2 - y1) * minimapDims.height)
+
+        if (![left, top, vw, vh].every((n) => Number.isFinite(n) && n >= 0)) {
+            return null
         }
+
+        return { left, top, width: vw, height: vh }
     }, [transform, canvasDimensions, minimapDims, image])
 
     if (!image || !viewportRect) return null

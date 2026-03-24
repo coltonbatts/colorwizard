@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ColorCard } from './types/colorCard'
 
 describe('colorCardStorage', () => {
@@ -74,7 +74,7 @@ describe('colorCardStorage', () => {
         }]))
 
         const { getCards } = await import('./colorCardStorage')
-        const cards = getCards()
+        const cards = await getCards()
 
         expect(cards).toHaveLength(1)
         expect(cards[0].status).toBe('idea')
@@ -85,20 +85,20 @@ describe('colorCardStorage', () => {
 
     it('saves and updates metadata in localStorage', async () => {
         const { getCards, saveCard, updateCard } = await import('./colorCardStorage')
-        const saved = saveCard(makeCard({ project: 'Alpha', tags: ['UI'], status: 'in-progress', priority: 'high', notes: 'Initial pass' }))
+        const saved = await saveCard(makeCard({ project: 'Alpha', tags: ['UI'], status: 'in-progress', priority: 'high', notes: 'Initial pass' }))
 
-        expect(getCards()).toHaveLength(1)
+        expect(await getCards()).toHaveLength(1)
         expect(saved.project).toBe('Alpha')
 
-        const updated = updateCard(saved.id, { project: 'Beta', tags: ['UI', 'Deck'], notes: 'Refined' })
+        const updated = await updateCard(saved.id, { project: 'Beta', tags: ['UI', 'Deck'], notes: 'Refined' })
         expect(updated?.project).toBe('Beta')
         expect(updated?.tags).toEqual(['UI', 'Deck'])
-        expect(getCards()[0].project).toBe('Beta')
+        expect((await getCards())[0].project).toBe('Beta')
     })
 
     it('duplicates cards with a new id while keeping metadata', async () => {
         const { duplicateCard } = await import('./colorCardStorage')
-        const duplicate = duplicateCard(makeCard({ project: 'Launch', tags: ['urgent'], status: 'blocked', priority: 'urgent' }), { name: 'Copy' })
+        const duplicate = await duplicateCard(makeCard({ project: 'Launch', tags: ['urgent'], status: 'blocked', priority: 'urgent' }), { name: 'Copy' })
 
         expect(duplicate.id).not.toBe('card-1')
         expect(duplicate.name).toBe('Copy')

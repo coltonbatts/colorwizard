@@ -2,50 +2,49 @@
 
 /**
  * ImageCanvas - Main canvas component for image display and color sampling.
- * Refactored to use extracted sub-components and hooks for maintainability.
+ * Refactored to compose focused submodules for rendering, interaction, and overlays.
  */
 
-import { useRef, useState, useEffect, useCallback, useMemo, useId, forwardRef, useImperativeHandle } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import RulerOverlay from '@/components/RulerOverlay'
 import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { CalibrationData } from '@/lib/calibration'
+import { CalibrationData, type TransformState, screenToImage } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
 import { createSourceBuffer } from '@/lib/imagePipeline'
 import { DebugOverlay } from '@/components/DebugOverlay'
-
-interface ColorData {
-  hex: string
-  rgb: { r: number; g: number; b: number }
-  hsl: { h: number; s: number; l: number }
-  valueMetadata?: {
-    y: number
-    step: number
-    range: [number, number]
-    percentile: number
-  }
-}
-
-import { rgbToHsl } from '@/lib/colorUtils'
-import { ValueScaleSettings } from '@/lib/types/valueScale'
-import { getStepIndex, ValueScaleResult, getRelativeLuminance, stepToGray } from '@/lib/valueScale'
-// Define RGB interface locally if not exported
-import { TransformState, screenToImage } from '@/lib/calibration'
-import { CanvasSettings as AppCanvasSettings } from '@/lib/types/canvas'
 import { calculateFit } from '@/lib/canvasRendering'
+import { CanvasSettings as AppCanvasSettings } from '@/lib/types/canvas'
+import { ValueScaleSettings } from '@/lib/types/valueScale'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
-
-interface RGB {
-  r: number
-  g: number
-  b: number
-}
+import {
+  MAX_ZOOM,
+  MIN_ZOOM,
+  drawMainCanvas,
+  getClampedPan,
+  clientToCanvas,
+} from '@/components/ImageCanvas/CanvasRenderer'
+import { useZoomController } from '@/components/ImageCanvas/ZoomController'
+import { usePanHandler } from '@/components/ImageCanvas/PanHandler'
+import { sampleColor } from '@/components/ImageCanvas/ColorSampler'
+import { HighlightOverlay } from '@/components/ImageCanvas/HighlightOverlay'
+import { ValueOverlay } from '@/components/ImageCanvas/ValueOverlay'
+import type { ColorData, RGB, ImageDrawInfo, PointerCoord } from '@/components/ImageCanvas/types'
 
 interface ImageCanvasProps {
   image: HTMLImageElement | null
@@ -58,7 +57,7 @@ interface ImageCanvasProps {
   valueScaleSettings?: ValueScaleSettings
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
-  onValueScaleResult?: (result: ValueScaleResult) => void
+  onValueScaleResult?: (result: import('@/lib/valueScale').ValueScaleResult) => void
   canvasSettings?: AppCanvasSettings
   /** Enable measurement mode - when true, clicks report canvas-space coordinates */
   measureMode?: boolean
@@ -85,54 +84,36 @@ interface ImageCanvasProps {
   measurementLayer?: MeasurementLayer
 }
 
-// Zoom constraints
-const MIN_ZOOM = 0.1
-const MAX_ZOOM = 10
-const ZOOM_STEP = 0.1
-const ZOOM_WHEEL_SENSITIVITY = 0.001
-
-// Drag detection threshold (pixels)
-const DRAG_THRESHOLD = 3
-
-interface PointerCoord {
-  x: number
-  y: number
-}
-
-interface CanvasCoords {
-  cssX: number
-  cssY: number
-  canvasX: number
-  canvasY: number
-  dprScaleX: number
-  dprScaleY: number
-}
-
-const clientToCanvas = (clientX: number, clientY: number, canvas: HTMLCanvasElement): CanvasCoords => {
-  const rect = canvas.getBoundingClientRect()
-  const dprScaleX = rect.width > 0 ? canvas.width / rect.width : 1
-  const dprScaleY = rect.height > 0 ? canvas.height / rect.height : 1
-  const cssX = clientX - rect.left
-  const cssY = clientY - rect.top
-  return {
-    cssX,
-    cssY,
-    canvasX: cssX * dprScaleX,
-    canvasY: cssY * dprScaleY,
-    dprScaleX,
-    dprScaleY,
-  }
-}
-
-const getPointerDistance = (p1: PointerCoord, p2: PointerCoord) =>
-  Math.hypot(p1.x - p2.x, p1.y - p2.y)
-
 export interface ImageCanvasHandle {
   resetView: () => void
 }
 
 const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref) => {
-  const { onColorSample, image, onImageLoad, valueScaleSettings, onHistogramComputed, onValueScaleResult, onTransformChange, onMeasureClick, onMeasurePointsChange, generateHighlightOverlay } = props
+  const {
+    image,
+    onImageLoad,
+    onColorSample,
+    valueScaleSettings,
+    onValueScaleChange,
+    onHistogramComputed,
+    onValueScaleResult,
+    onTransformChange,
+    onMeasureClick,
+    onMeasurePointsChange,
+    generateHighlightOverlay,
+    highlightColor,
+    highlightTolerance,
+    highlightMode,
+    measureMode,
+    calibration,
+    gridEnabled: gridEnabledProp,
+    gridSpacing,
+    measurePointA,
+    measurePointB,
+    measurementLayer,
+    canvasSettings,
+  } = props
+
   const isMobile = useIsMobile()
   const breakdownValue = useCanvasStore(state => state.breakdownValue)
   const surfaceImage = useCanvasStore(state => state.surfaceImage)
@@ -140,6 +121,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const referenceTransform = useCanvasStore(state => state.referenceTransform)
   const valueModeEnabled = useSessionStore(state => state.valueModeEnabled)
   const gridOpacity = useCalibrationStore(state => state.gridOpacity)
+  const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -151,20 +133,18 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const desktopFileInputId = useId()
   const mobileFileInputId = useId()
 
-  const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
   const [metrics, setMetrics] = useState<{
-    originalWidth: number;
-    originalHeight: number;
-    bufferWidth: number;
-    bufferHeight: number;
-    displayWidth: number;
-    displayHeight: number;
-    dpr: number;
+    originalWidth: number
+    originalHeight: number
+    bufferWidth: number
+    bufferHeight: number
+    displayWidth: number
+    displayHeight: number
+    dpr: number
   } | null>(null)
 
   const [minimapVisible, setMinimapVisible] = useState(false)
   const minimapTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-
   const showMinimap = useCallback(() => {
     setMinimapVisible(true)
     if (minimapTimeoutRef.current) clearTimeout(minimapTimeoutRef.current)
@@ -173,7 +153,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }, 2000)
   }, [])
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (minimapTimeoutRef.current) clearTimeout(minimapTimeoutRef.current)
@@ -181,25 +160,19 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }, [])
 
   const [surfaceImageElement, setSurfaceImageElement] = useState<HTMLImageElement | null>(null)
-
-  // Load surface image into element
   useEffect(() => {
     if (!surfaceImage) {
       setSurfaceImageElement(null)
       return
     }
+
     const img = new Image()
     img.src = surfaceImage
     img.onload = () => setSurfaceImageElement(img)
   }, [surfaceImage])
 
-  // Canvas dimensions state
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
-
-  // analysisSource state to ensure useImageAnalyzer updates when source buffer is ready
   const [analysisSource, setAnalysisSource] = useState<CanvasImageSource | null>(image)
-
-  // Use the image analyzer hook for worker-based processing
   const {
     labBuffer,
     valueBuffer,
@@ -211,12 +184,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     generateBreakdown,
     isGeneratingBreakdown,
   } = useImageAnalyzer(analysisSource, valueScaleSettings)
+  const valueScaleResult = analyzerValueScaleResult
 
-  // Use the hook's value scale result, but allow local override for settings changes
-  const [localValueScaleResult] = useState<ValueScaleResult | null>(null)
-  const valueScaleResult = localValueScaleResult ?? analyzerValueScaleResult
-
-  // Report histogram and value scale to parent when they change
   useEffect(() => {
     if (histogramBins.length > 0 && onHistogramComputed) {
       onHistogramComputed(histogramBins)
@@ -229,59 +198,63 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }, [valueScaleResult, onValueScaleResult])
 
-  // View mode state
   const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
+  const [internalGridEnabled, setInternalGridEnabled] = useState(false)
+  const [gridPhysicalWidth, setGridPhysicalWidth] = useState(20)
+  const [gridPhysicalHeight, setGridPhysicalHeight] = useState(16)
+  const [gridSquareSize, setGridSquareSize] = useState(1)
+  const gridEnabled = gridEnabledProp ?? internalGridEnabled
+  const hasRenderableImage = Boolean(image || surfaceImageElement)
 
-  // Mobile Stabilization: Create source buffer when image changes
-  // Moved after canvasDimensions state to fix hoisting error
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
+  const [imageDrawInfo, setImageDrawInfo] = useState<ImageDrawInfo | null>(null)
+  const [highlightOverlay, setHighlightOverlay] = useState<{
+    imageData: Uint8ClampedArray | null
+    width: number
+    height: number
+  }>({ imageData: null, width: 0, height: 0 })
+
+  const resetPan = useCallback(() => {
+    setPanOffset({ x: 0, y: 0 })
+  }, [])
+
+  const zoom = useZoomController({
+    canvasRef,
+    image,
+    zoomLevel,
+    setZoomLevel,
+    panOffset,
+    setPanOffset,
+    resetPan,
+    showMinimap,
+    clampPan: (x, y, zoomValue) => getClampedPan(x, y, zoomValue, imageDrawInfo, canvasDimensions),
+  })
+
   useEffect(() => {
-    // Immediate reset when image changes to prevent stale display
-    sourceBufferRef.current = null
-    setMetrics(null) // Clears debug overlay data
-    setAnalysisSource(image) // Fallback to raw image during buffer creation
+    const canvas = canvasRef.current
+    if (!canvas) return
 
-    if (!image || image.width === 0 || image.height === 0) {
-      return
+    canvas.addEventListener('wheel', zoom.handleWheel, { passive: false })
+    return () => {
+      canvas.removeEventListener('wheel', zoom.handleWheel)
     }
+  }, [zoom.handleWheel])
 
-    const initSourceBuffer = async () => {
-      try {
-        const buffer = await createSourceBuffer(image)
+  const pan = usePanHandler({
+    canvasRef,
+    image,
+    imageDrawInfo,
+    canvasDimensions,
+    zoomLevel,
+    panOffset,
+    setPanOffset,
+    isSpaceDown: zoom.isSpaceDown,
+    showMinimap,
+  })
 
-        // Check if image is still the same (race condition safety)
-        if (image.src !== buffer.getAttribute('data-origin-src')) {
-          // In a real app we'd verify IDs, but here we just rely on the ref update
-          // which is synchronous with the effect run
-        }
-
-        sourceBufferRef.current = buffer
-        setAnalysisSource(buffer) // Update analyzer with stabilized buffer
-
-        // Update metrics for debug overlay
-        setMetrics({
-          originalWidth: image.width,
-          originalHeight: image.height,
-          bufferWidth: buffer.width,
-          bufferHeight: buffer.height,
-          displayWidth: canvasDimensions.width,
-          displayHeight: canvasDimensions.height,
-          dpr: window.devicePixelRatio || 1
-        })
-      } catch (err) {
-        console.error('[ImageCanvas] Source buffer creation failed:', err)
-        // Fallback to original image if buffer creation fails
-        sourceBufferRef.current = null
-        setAnalysisSource(image)
-      }
-    }
-
-    initSourceBuffer()
-  }, [image, canvasDimensions])
-
-  // Value Mode overrides the canvas preview into grayscale
-  // Always sync isGrayscale with valueModeEnabled - they should never be out of sync
   useEffect(() => {
     setIsGrayscale(valueModeEnabled)
   }, [valueModeEnabled])
@@ -294,296 +267,67 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     return 'Spectral Glaze'
   }, [breakdownValue])
 
-  // Zoom and pan state
-  const [zoomLevel, setZoomLevel] = useState(1)
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
-  const [isPanning, setIsPanning] = useState(false)
-  const [isMeasuring, setIsMeasuring] = useState(false)
-  const [isSpaceDown, setIsSpaceDown] = useState(false)
-  const lastPanPoint = useRef({ x: 0, y: 0 })
-  const dragStartRef = useRef({ x: 0, y: 0 })
-  const measureStartPointRef = useRef<{ x: number; y: number } | null>(null)
-  const hasDraggedRef = useRef(false)
-
-  // Touch gesture state refs
-  const touchStateRef = useRef({
-    lastDistance: 0,
-    lastCenter: { x: 0, y: 0 },
-    isPinching: false,
-    touchStartTime: 0,
-    lastTapTime: 0,
-    touchStartPos: { x: 0, y: 0 },
-  })
-  const activePointersRef = useRef<Map<number, PointerCoord>>(new Map())
-  const touchLastPointRef = useRef<PointerCoord | null>(null)
-  const touchHasDraggedRef = useRef(false)
-  const skipNextSinglePointerSampleRef = useRef(false)
-  const initialFitKeyRef = useRef<string | null>(null)
-
-  // Image dimensions after initial fit
-  const [imageDrawInfo, setImageDrawInfo] = useState<{
-    x: number
-    y: number
-    width: number
-    height: number
-  } | null>(null)
-
-  // Grid system state
-  const [internalGridEnabled, setInternalGridEnabled] = useState(false)
-  const [gridPhysicalWidth, setGridPhysicalWidth] = useState(20)
-  const [gridPhysicalHeight, setGridPhysicalHeight] = useState(16)
-  const [gridSquareSize, setGridSquareSize] = useState(1)
-
-  // Use external or internal grid enabled state
-  const gridEnabled = props.gridEnabled ?? internalGridEnabled
-
-  // Load grid settings from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('colorwizard_grid_settings')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setInternalGridEnabled(parsed.enabled ?? false)
-        setGridPhysicalWidth(parsed.physicalWidth ?? 20)
-        setGridPhysicalHeight(parsed.physicalHeight ?? 16)
-        setGridSquareSize(parsed.squareSize ?? 1)
-      } catch (e) {
-        console.error('Failed to parse grid settings', e)
-      }
+    if (!saved) return
+
+    try {
+      const parsed = JSON.parse(saved)
+      setInternalGridEnabled(parsed.enabled ?? false)
+      setGridPhysicalWidth(parsed.physicalWidth ?? 20)
+      setGridPhysicalHeight(parsed.physicalHeight ?? 16)
+      setGridSquareSize(parsed.squareSize ?? 1)
+    } catch (error) {
+      console.error('Failed to parse grid settings', error)
     }
   }, [])
 
-  // Save grid settings to localStorage
   useEffect(() => {
     localStorage.setItem('colorwizard_grid_settings', JSON.stringify({
       enabled: internalGridEnabled,
       physicalWidth: gridPhysicalWidth,
       physicalHeight: gridPhysicalHeight,
-      squareSize: gridSquareSize
+      squareSize: gridSquareSize,
     }))
   }, [internalGridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize])
 
-  // No longer needed, using shared calculateFit
+  useEffect(() => {
+    sourceBufferRef.current = null
+    setMetrics(null)
+    setAnalysisSource(image)
 
-
-  // Draw image on canvas with zoom and pan transforms
-  const drawCanvas = useCallback(() => {
-    if (!canvasRef.current) return
-
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const dpr = window.devicePixelRatio || 1
-    const rectWidth = canvasDimensions.width
-    const rectHeight = canvasDimensions.height
-    if (rectWidth <= 0 || rectHeight <= 0) return
-
-    // Set internal resolution (DPR aware)
-    if (canvas.width !== rectWidth * dpr || canvas.height !== rectHeight * dpr) {
-      canvas.width = rectWidth * dpr
-      canvas.height = rectHeight * dpr
-      canvas.style.width = `${rectWidth}px`
-      canvas.style.height = `${rectHeight}px`
-    }
-
-    // Clear canvas
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, rectWidth, rectHeight)
-
-    if ((!image && !surfaceImageElement) || !imageDrawInfo || (image && (image.width === 0 || image.height === 0))) {
-      // Debug: log why canvas isn't drawing
-      if (image && !imageDrawInfo) {
-        const msg = `drawCanvas skipped: imageDrawInfo is null, dims=${canvasDimensions.width}x${canvasDimensions.height}`
-        console.warn('[ImageCanvas]', msg)
-      }
+    if (!image || image.width === 0 || image.height === 0) {
       return
     }
 
-    // Debug: log when canvas IS drawing
-    if (image && imageDrawInfo) {
-      // console.log('[ImageCanvas] Drawing canvas');
-    }
-
-    // Save context state
-    ctx.save()
-
-    // Apply pan and zoom transforms
-    ctx.translate(panOffset.x, panOffset.y)
-    ctx.scale(zoomLevel, zoomLevel)
-
-    // Draw image at the calculated fit position
-    const { x, y, width, height } = imageDrawInfo
-
-    // 1. Draw Surface Image (Background)
-    if (surfaceImageElement) {
-      ctx.save()
-      ctx.drawImage(surfaceImageElement, x, y, width, height)
-      ctx.restore()
-    }
-
-    // 2. Draw Reference Image (Foreground)
-    if (image && imageDrawInfo) {
-      ctx.save()
-
-      // Apply reference opacity
-      ctx.globalAlpha = referenceOpacity
-
-      // Apply transformations centered on the image
-      const centerX = x + width / 2
-      const centerY = y + height / 2
-
-      ctx.translate(centerX, centerY)
-      ctx.rotate((referenceTransform.rotation * Math.PI) / 180)
-      ctx.scale(referenceTransform.scale, referenceTransform.scale)
-      ctx.translate(-centerX, -centerY)
-
-      // Apply X/Y offsets from transform state
-      ctx.translate(referenceTransform.x, referenceTransform.y)
-    }
-
-    if (splitMode && valueMapCanvasRef.current) {
-      const splitX = width / 2
-
-      // Left half: Original
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(x, y, splitX, height)
-      ctx.clip()
-      if (isGrayscale && image) ctx.filter = 'grayscale(100%)'
-      if (image) ctx.drawImage(image, x, y, width, height)
-      ctx.restore()
-
-      // Right half: Value Map
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(x + splitX, y, splitX, height)
-      ctx.clip()
-      ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-      ctx.restore()
-
-      // Divider
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-      ctx.lineWidth = 2 / zoomLevel
-      ctx.beginPath()
-      ctx.moveTo(x + splitX, y)
-      ctx.lineTo(x + splitX, y + height)
-      ctx.stroke()
-    } else {
-      // Normal rendering or breakdown
-      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
-
-      // Always draw the base image as a fallback if the breakdown is not ready
-      // Or if the breakdown is the 'Spectral Glaze' (which is mostly transparent)
-      const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
-        'Imprimatura': 'imprimatura',
-        'Dead Color': 'deadColor',
-        'Local Color': 'localColor',
-        'Spectral Glaze': 'spectralGlaze'
-      };
-
-      const currentBuffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
-
-      const showBaseUnderneath = activeBreakdownStep === 'Original' ||
-        activeBreakdownStep === 'Spectral Glaze' ||
-        !currentBuffer;
-
-      if (showBaseUnderneath) {
-        // Mobile Stabilization: Draw from source buffer if available, fallback to image
-        const source = sourceBufferRef.current || image
-        if (source) {
-          ctx.drawImage(source as CanvasImageSource, x, y, width, height)
-        }
-      }
-
-      if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
-
-      // Blend value map overlay if enabled and we are in original view
-      if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvasRef.current) {
-        const opacity = valueScaleSettings.opacity ?? 0.45
-        ctx.globalAlpha = opacity
-        ctx.drawImage(valueMapCanvasRef.current, x, y, width, height)
-        ctx.globalAlpha = 1.0
-      } else if (activeBreakdownStep !== 'Original' && breakdownCanvasRef.current) {
-        // Draw Breakdown Layer on top
-        // If it's Imprimatura, it already has some transparency from the worker
-        ctx.drawImage(breakdownCanvasRef.current, x, y, width, height)
+    const initSourceBuffer = async () => {
+      try {
+        const buffer = await createSourceBuffer(image)
+        sourceBufferRef.current = buffer
+        setAnalysisSource(buffer)
+        setMetrics({
+          originalWidth: image.width,
+          originalHeight: image.height,
+          bufferWidth: buffer.width,
+          bufferHeight: buffer.height,
+          displayWidth: canvasDimensions.width,
+          displayHeight: canvasDimensions.height,
+          dpr: window.devicePixelRatio || 1,
+        })
+      } catch (error) {
+        console.error('[ImageCanvas] Source buffer creation failed:', error)
+        sourceBufferRef.current = null
+        setAnalysisSource(image)
       }
     }
 
-    // Draw Highlight Overlay if available
-    if (overlayCanvasRef.current && labBuffer?.width) {
-      ctx.drawImage(
-        overlayCanvasRef.current,
-        imageDrawInfo.x,
-        imageDrawInfo.y,
-        imageDrawInfo.width,
-        imageDrawInfo.height
-      )
-    }
+    initSourceBuffer()
+  }, [image, canvasDimensions.width, canvasDimensions.height])
 
-    // Draw Grid
-    if (gridEnabled && image) {
-      const activeWidth = (props.canvasSettings?.enabled && props.canvasSettings.width) ? props.canvasSettings.width : gridPhysicalWidth
-      const activeHeight = (props.canvasSettings?.enabled && props.canvasSettings.height) ? props.canvasSettings.height : gridPhysicalHeight
-
-      const ppiDraw = imageDrawInfo.width / activeWidth
-
-      ctx.save()
-      ctx.translate(imageDrawInfo.x, imageDrawInfo.y)
-
-      ctx.strokeStyle = `rgba(255, 255, 255, ${gridOpacity})`
-      ctx.lineWidth = 1 / zoomLevel
-      ctx.setLineDash([5 / zoomLevel, 5 / zoomLevel])
-
-      ctx.font = `${12 / zoomLevel}px monospace`
-      ctx.fillStyle = `rgba(255, 255, 255, ${gridOpacity + 0.2})`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      // Vertical lines (Columns)
-      for (let gridX = 0; gridX <= activeWidth; gridX += gridSquareSize) {
-        const xPos = gridX * ppiDraw
-        ctx.beginPath()
-        ctx.moveTo(xPos, 0)
-        ctx.lineTo(xPos, imageDrawInfo.height)
-        ctx.stroke()
-
-        // Column label (A, B, C...)
-        if (gridX < activeWidth) {
-          const colLabel = String.fromCharCode(65 + Math.floor(gridX / gridSquareSize))
-          ctx.fillText(colLabel, xPos + (gridSquareSize * ppiDraw) / 2, -10 / zoomLevel)
-        }
-      }
-
-      // Horizontal lines (Rows)
-      for (let gridY = 0; gridY <= activeHeight; gridY += gridSquareSize) {
-        const yPos = gridY * ppiDraw
-        ctx.beginPath()
-        ctx.moveTo(0, yPos)
-        ctx.lineTo(imageDrawInfo.width, yPos)
-        ctx.stroke()
-
-        // Row label (1, 2, 3...)
-        if (gridY < activeHeight) {
-          const rowLabel = (Math.floor(gridY / gridSquareSize) + 1).toString()
-          ctx.fillText(rowLabel, -15 / zoomLevel, yPos + (gridSquareSize * ppiDraw) / 2)
-        }
-      }
-
-      ctx.restore()
-    }
-
-    // Restore global context state
-    ctx.restore()
-  }, [image, surfaceImageElement, imageDrawInfo, zoomLevel, panOffset, labBuffer, isGrayscale, gridEnabled, gridPhysicalWidth, gridPhysicalHeight, gridSquareSize, gridOpacity, referenceOpacity, referenceTransform, valueScaleSettings, analyzerValueScaleResult, splitMode, props.canvasSettings, activeBreakdownStep, breakdownBuffers, breakdownCanvasRef, overlayCanvasRef, sourceBufferRef, valueMapCanvasRef, canvasDimensions.width, canvasDimensions.height])
-
-  // Resize observer to update canvas dimensions when container resizes
   useEffect(() => {
     const canvasContainer = canvasContainerRef.current
     if (!canvasContainer) return
 
-    // Initialize dimensions immediately (critical for mobile)
     const updateDimensions = () => {
       const rect = canvasContainer.getBoundingClientRect()
       if (rect.width > 0 && rect.height > 0) {
@@ -596,15 +340,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       return false
     }
 
-    // Try immediate update
     if (!updateDimensions()) {
-      // If dimensions are 0, wait for next frame (mobile layout might be delayed)
       requestAnimationFrame(() => {
         updateDimensions()
       })
     }
 
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
         if (width > 0 && height > 0) {
@@ -618,9 +360,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     resizeObserver.observe(canvasContainer)
     return () => resizeObserver.disconnect()
-  }, [!!(image || surfaceImageElement)]) // Re-run when canvas container existence changes
+  }, [hasRenderableImage])
 
-  // Initial fit: run once per image after dimensions are known
+  const initialFitKeyRef = useRef<string | null>(null)
   useEffect(() => {
     const mainImg = image || surfaceImageElement
     if (!mainImg || mainImg.width === 0 || mainImg.height === 0) {
@@ -633,28 +375,23 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (initialFitKeyRef.current === fitKey) return
 
     const raf = requestAnimationFrame(() => {
-      const info = calculateFit(
+      const fittedInfo = calculateFit(
         { width: canvasDimensions.width, height: canvasDimensions.height },
         { width: mainImg.width, height: mainImg.height }
       )
-      setImageDrawInfo(info)
+      setImageDrawInfo(fittedInfo)
       setZoomLevel(1)
-      setPanOffset({ x: 0, y: 0 })
+      resetPan()
       initialFitKeyRef.current = fitKey
     })
 
     return () => cancelAnimationFrame(raf)
-  }, [image, surfaceImageElement, canvasDimensions.width, canvasDimensions.height])
+  }, [image, surfaceImageElement, canvasDimensions.width, canvasDimensions.height, resetPan])
 
-  // Update image draw info on resize without resetting zoom/pan
   useEffect(() => {
     const mainImg = image || surfaceImageElement
     if (!mainImg) return
-
-    // Skip if dimensions are invalid
-    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) {
-      return
-    }
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) return
 
     const info = calculateFit(
       { width: canvasDimensions.width, height: canvasDimensions.height },
@@ -663,169 +400,243 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     setImageDrawInfo(info)
   }, [canvasDimensions.width, canvasDimensions.height, image, surfaceImageElement])
 
-  // Redraw canvas when zoom, pan, or image changes
+  const drawCanvas = useCallback(() => {
+    drawMainCanvas({
+      canvas: canvasRef.current,
+      canvasDimensions,
+      image,
+      surfaceImageElement,
+      imageDrawInfo,
+      zoomLevel,
+      panOffset,
+      valueScaleSettings,
+      referenceOpacity,
+      referenceTransform,
+      isGrayscale,
+      splitMode,
+      activeBreakdownStep,
+      breakdownBuffers,
+      gridEnabled,
+      gridPhysicalWidth,
+      gridPhysicalHeight,
+      gridSquareSize,
+      gridOpacity,
+      overlayCanvas: overlayCanvasRef.current,
+      valueMapCanvas: valueMapCanvasRef.current,
+      breakdownCanvas: breakdownCanvasRef.current,
+      sourceBuffer: sourceBufferRef.current,
+      canvasSettings,
+      showHighlightOverlay: !!highlightOverlay.imageData,
+    })
+  }, [
+    canvasDimensions,
+    image,
+    surfaceImageElement,
+    imageDrawInfo,
+    zoomLevel,
+    panOffset,
+    valueScaleSettings,
+    referenceOpacity,
+    referenceTransform,
+    isGrayscale,
+    splitMode,
+    activeBreakdownStep,
+    breakdownBuffers,
+    gridEnabled,
+    gridPhysicalWidth,
+    gridPhysicalHeight,
+    gridSquareSize,
+    gridOpacity,
+    canvasSettings,
+    highlightOverlay.imageData,
+  ])
+
   useEffect(() => {
     drawCanvas()
-  }, [drawCanvas, props.highlightMode, props.highlightColor, props.highlightTolerance])
+  }, [drawCanvas])
 
-  // Report transform state changes to parent for RulerOverlay
+  useEffect(() => {
+    let isActive = true
+
+    const run = async () => {
+      if (!labBuffer || !highlightColor || !generateHighlightOverlay) {
+        if (!isActive) return
+        setHighlightOverlay({ imageData: null, width: 0, height: 0 })
+        return
+      }
+
+      const overlayData = await generateHighlightOverlay(
+        highlightColor.r,
+        highlightColor.g,
+        highlightColor.b,
+        highlightTolerance ?? 20,
+        highlightMode ?? 'solid'
+      )
+
+      if (!isActive || !overlayData) return
+
+      setHighlightOverlay({
+        imageData: overlayData,
+        width: labBuffer.width,
+        height: labBuffer.height,
+      })
+    }
+
+    run()
+    return () => {
+      isActive = false
+    }
+  }, [labBuffer, highlightColor, highlightTolerance, highlightMode, generateHighlightOverlay])
+
+  useEffect(() => {
+    drawCanvas()
+  }, [drawCanvas, highlightMode, highlightColor, highlightTolerance, highlightOverlay.imageData])
+
   useEffect(() => {
     if (onTransformChange && imageDrawInfo) {
       onTransformChange({ zoomLevel, panOffset, imageDrawInfo })
     }
   }, [zoomLevel, panOffset, imageDrawInfo, onTransformChange])
 
-  // Zoom function centered on a point
-  const zoomAtPoint = useCallback(
-    (newZoom: number, centerX: number, centerY: number) => {
-      const clampedZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom))
-      const zoomRatio = clampedZoom / zoomLevel
-
-      // Adjust pan to keep the point under cursor stationary
-      const newPanX = centerX - (centerX - panOffset.x) * zoomRatio
-      const newPanY = centerY - (centerY - panOffset.y) * zoomRatio
-
-      setZoomLevel(clampedZoom)
-      setPanOffset({ x: newPanX, y: newPanY })
-    },
-    [zoomLevel, panOffset]
-  )
-
-  // Handle mouse wheel for zoom
-  // Reset view to initial state
   const resetView = useCallback(() => {
-    setZoomLevel(1)
-    setPanOffset({ x: 0, y: 0 })
-  }, [])
+    zoom.zoomToFit()
+  }, [zoom])
 
-  // Mobile Stabilization: Bound the pan offset so the image doesn't disappear
-  const getClampedPan = useCallback((x: number, y: number, zoom: number) => {
-    if (!imageDrawInfo) return { x, y }
+  useImperativeHandle(ref, () => ({
+    resetView,
+  }))
 
-    const { x: imgX, y: imgY, width: imgW, height: imgH } = imageDrawInfo
-    const viewportW = canvasDimensions.width
-    const viewportH = canvasDimensions.height
-
-    // Transformed image bounds in logical screen space
-    const tw = imgW * zoom
-    const th = imgH * zoom
-
-    // Ensure at least 20% of the image remains visible
-    const limitX = Math.max(viewportW, tw) * 0.8
-    const limitY = Math.max(viewportH, th) * 0.8
-
-    return {
-      x: Math.max(-limitX - imgX * zoom, Math.min(viewportW + limitX - (imgX * zoom + tw), x)),
-      y: Math.max(-limitY - imgY * zoom, Math.min(viewportH + limitY - (imgY * zoom + th), y))
-    }
-  }, [imageDrawInfo, canvasDimensions])
-
-  // Shared sampling logic for both mouse and touch
   const performSampling = useCallback((clientX: number, clientY: number) => {
-    if (!canvasRef.current || !image || !imageDrawInfo) return
-
     const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    if (rect.width <= 0 || rect.height <= 0) return
-    const { cssX, cssY, canvasX, canvasY } = clientToCanvas(clientX, clientY, canvas)
+    if (!canvas || !image || !imageDrawInfo) return
 
-    const source = sourceBufferRef.current
-    let r, g, b, a
-
-    if (source) {
-      // Calculate coordinates in source buffer space
-      const { x, y, width, height } = imageDrawInfo
-
-      // 1. Transform back to unpanned, unzoomed image-draw-info space
-      const screenRelX = (cssX - panOffset.x) / zoomLevel
-      const screenRelY = (cssY - panOffset.y) / zoomLevel
-
-      // 2. Transform to normalized 0-1 image coordinates
-      const normX = (screenRelX - x) / width
-      const normY = (screenRelY - y) / height
-
-      if (normX < 0 || normX > 1 || normY < 0 || normY > 1) return
-
-      // 3. Map to source buffer pixels
-      const sampleX = Math.floor(normX * source.width)
-      const sampleY = Math.floor(normY * source.height)
-
-      const sourceCtx = source.getContext('2d', { willReadFrequently: true })
-      if (!sourceCtx) return
-      const pixel = sourceCtx.getImageData(sampleX, sampleY, 1, 1).data
-      r = pixel[0]
-      g = pixel[1]
-      b = pixel[2]
-      a = pixel[3]
-    } else {
-      // Fallback to display canvas (less accurate if filtered/scaled)
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-      const pixelData = ctx.getImageData(
-        Math.floor(canvasX),
-        Math.floor(canvasY),
-        1,
-        1
-      ).data
-      r = pixelData[0]
-      g = pixelData[1]
-      b = pixelData[2]
-      a = pixelData[3]
-    }
-
-    if (a === 0) return
-
-    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
-    const hsl = rgbToHsl(r, g, b)
-
-    let valueMetadata = undefined
-    if (valueScaleResult) {
-      const luminance = getRelativeLuminance(r, g, b)
-      const stepIdx = getStepIndex(luminance, valueScaleResult.thresholds)
-      const step = valueScaleResult.steps[stepIdx]
-
-      let percentile = 0
-      if (sortedLuminances) {
-        let low = 0
-        let high = sortedLuminances.length - 1
-        while (low <= high) {
-          const mid = (low + high) >> 1
-          if (sortedLuminances[mid] < luminance) {
-            low = mid + 1
-          } else {
-            high = mid - 1
-          }
-        }
-        percentile = low / sortedLuminances.length
-      }
-
-      valueMetadata = {
-        y: luminance,
-        step: stepIdx + 1,
-        range: [step.min, step.max] as [number, number],
-        percentile
-      }
-    }
-
-    onColorSample({
-      hex,
-      rgb: { r, g, b },
-      hsl,
-      valueMetadata
+    const canvasCoords = clientToCanvas(clientX, clientY, canvas)
+    const color = sampleColor(canvasCoords.cssX, canvasCoords.cssY, canvas, {
+      imageDrawInfo,
+      zoomLevel,
+      panOffset,
+      sourceCanvas: sourceBufferRef.current,
+      valueScaleResult,
+      sortedLuminances,
+      canvasCoords,
     })
+
+    if (color) {
+      onColorSample(color)
+    }
   }, [image, imageDrawInfo, zoomLevel, panOffset, valueScaleResult, sortedLuminances, onColorSample])
 
-  const sampleColor = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    performSampling(e.clientX, e.clientY)
-  }, [performSampling])
+  const measureStartPointRef = useRef<{ x: number; y: number } | null>(null)
+  const isMeasuringRef = useRef(false)
+  const dragStartRef = useRef({ x: 0, y: 0 })
+  const mouseLastPointRef = useRef({ x: 0, y: 0 })
 
-  useEffect(() => {
-    return () => {
-      activePointersRef.current.clear()
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    if (measureMode && e.button === 0 && !zoom.isSpaceDown) {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+      const imagePoint = screenToImage(
+        screenX,
+        screenY,
+        { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined },
+        image.width,
+        image.height
+      )
+      if (imagePoint && onMeasurePointsChange) {
+        isMeasuringRef.current = true
+        measureStartPointRef.current = imagePoint
+        onMeasurePointsChange(imagePoint, imagePoint)
+      }
+      return
     }
-  }, [])
 
-  // Unified touch input path using pointer events
+    pan.handleMouseDown(e)
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    mouseLastPointRef.current = { x: e.clientX, y: e.clientY }
+  }, [image, measureMode, zoom.isSpaceDown, zoomLevel, panOffset, imageDrawInfo, pan, onMeasurePointsChange])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!image) return
+
+    if (isMeasuringRef.current && onMeasurePointsChange && measureStartPointRef.current) {
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+      const imagePoint = screenToImage(
+        screenX,
+        screenY,
+        { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined },
+        image.width,
+        image.height
+      )
+      if (imagePoint) {
+        onMeasurePointsChange(measureStartPointRef.current, imagePoint)
+      }
+      return
+    }
+
+    pan.handleMouseMove(e)
+  }, [image, onMeasurePointsChange, zoomLevel, panOffset, imageDrawInfo, pan])
+
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isMeasuringRef.current) {
+      isMeasuringRef.current = false
+      return
+    }
+
+    pan.handleMouseUp(e)
+
+    if (e.button === 0 && !pan.hasDragged && !zoom.isSpaceDown) {
+      if (measureMode && onMeasureClick) {
+        const canvas = canvasRef.current
+        if (!canvas || !image) return
+
+        const rect = canvas.getBoundingClientRect()
+        const screenX = e.clientX - rect.left
+        const screenY = e.clientY - rect.top
+        const imagePoint = screenToImage(
+          screenX,
+          screenY,
+          { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined },
+          image.width,
+          image.height
+        )
+        if (imagePoint) {
+          onMeasureClick(imagePoint)
+        }
+      } else {
+        performSampling(e.clientX, e.clientY)
+      }
+    }
+  }, [pan, zoom.isSpaceDown, measureMode, onMeasureClick, performSampling, zoomLevel, panOffset, imageDrawInfo, image])
+
+  const handleMouseLeave = useCallback(() => {
+    pan.handleMouseLeave()
+  }, [pan])
+
+  const touchStateRef = useRef({
+    lastDistance: 0,
+    lastCenter: { x: 0, y: 0 },
+    isPinching: false,
+    touchStartTime: 0,
+    lastTapTime: 0,
+    touchStartPos: { x: 0, y: 0 },
+  })
+  const activePointersRef = useRef<Map<number, PointerCoord>>(new Map())
+  const touchLastPointRef = useRef<PointerCoord | null>(null)
+  const touchHasDraggedRef = useRef(false)
+  const skipNextSinglePointerSampleRef = useRef(false)
+
+  const getPointerDistance = (p1: PointerCoord, p2: PointerCoord) =>
+    Math.hypot(p1.x - p2.x, p1.y - p2.y)
+
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType !== 'touch') return
     if (!image) return
@@ -836,15 +647,15 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     canvas.setPointerCapture(e.pointerId)
 
-    const now = Date.now()
-    touchStateRef.current.touchStartTime = now
+    touchStateRef.current.touchStartTime = Date.now()
     touchStateRef.current.touchStartPos = { x: e.clientX, y: e.clientY }
     touchLastPointRef.current = { x: e.clientX, y: e.clientY }
     touchHasDraggedRef.current = false
-    setIsPanning(false)
+
+    pan.handleTouchDown(e)
+    zoom.handlePinchDown(e)
 
     const pointers = Array.from(activePointersRef.current.values())
-
     if (pointers.length === 2) {
       touchStateRef.current.isPinching = true
       skipNextSinglePointerSampleRef.current = true
@@ -870,7 +681,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     touchStateRef.current.lastCenter = { x: 0, y: 0 }
 
     if (e.cancelable) e.preventDefault()
-  }, [image])
+  }, [image, pan, zoom])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType !== 'touch') return
@@ -881,50 +692,27 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!activePointersRef.current.has(e.pointerId)) return
 
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    pan.handleTouchMove(e)
+    zoom.handlePinchMove(e)
 
     const pointers = Array.from(activePointersRef.current.values())
-
     if (pointers.length === 2) {
-      if (e.cancelable) e.preventDefault()
       touchStateRef.current.isPinching = true
       touchHasDraggedRef.current = true
-      setIsPanning(false)
       const newDistance = getPointerDistance(pointers[0], pointers[1])
       const centerClientX = (pointers[0].x + pointers[1].x) / 2
       const centerClientY = (pointers[0].y + pointers[1].y) / 2
       const { cssX, cssY } = clientToCanvas(centerClientX, centerClientY, canvas)
-      const newCenter = { x: cssX, y: cssY }
-
-      if (touchStateRef.current.isPinching && touchStateRef.current.lastDistance > 0) {
-        const zoomDelta = newDistance / touchStateRef.current.lastDistance
-        const targetZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * zoomDelta))
-
-        const zoomRatio = targetZoom / zoomLevel
-        const newPanX = newCenter.x - (newCenter.x - panOffset.x) * zoomRatio
-        const newPanY = newCenter.y - (newCenter.y - panOffset.y) * zoomRatio
-
-        const panDeltaX = newCenter.x - touchStateRef.current.lastCenter.x
-        const panDeltaY = newCenter.y - touchStateRef.current.lastCenter.y
-
-        setZoomLevel(targetZoom)
-        const clampedPan = getClampedPan(newPanX + panDeltaX, newPanY + panDeltaY, targetZoom)
-        setPanOffset(clampedPan)
-        showMinimap()
-      }
-
       touchStateRef.current.lastDistance = newDistance
-      touchStateRef.current.lastCenter = newCenter
+      touchStateRef.current.lastCenter = { x: cssX, y: cssY }
+      showMinimap()
+      if (e.cancelable) e.preventDefault()
       return
     }
 
     touchStateRef.current.isPinching = false
     touchStateRef.current.lastDistance = 0
     touchStateRef.current.lastCenter = { x: 0, y: 0 }
-
-    if (pointers.length > 1) {
-      if (e.cancelable) e.preventDefault()
-      return
-    }
 
     const currentPointer = pointers[0]
     if (!currentPointer) {
@@ -937,28 +725,24 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       currentPointer.y - touchStateRef.current.touchStartPos.y,
     )
 
-    if (!touchHasDraggedRef.current && movedDistance <= DRAG_THRESHOLD) {
+    if (!touchHasDraggedRef.current && movedDistance <= 3) {
       touchLastPointRef.current = currentPointer
       if (e.cancelable) e.preventDefault()
       return
     }
 
     touchHasDraggedRef.current = true
-    setIsPanning(true)
-
     const lastPoint = touchLastPointRef.current ?? currentPointer
     const deltaX = currentPointer.x - lastPoint.x
     const deltaY = currentPointer.y - lastPoint.y
 
     if (deltaX !== 0 || deltaY !== 0) {
-      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
+      touchLastPointRef.current = currentPointer
       showMinimap()
     }
 
-    touchLastPointRef.current = currentPointer
-
     if (e.cancelable) e.preventDefault()
-  }, [image, zoomLevel, panOffset, showMinimap, getClampedPan])
+  }, [image, pan, zoom, showMinimap])
 
   const handlePointerUpOrCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.pointerType !== 'touch') return
@@ -969,6 +753,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
 
     activePointersRef.current.delete(e.pointerId)
+    pan.handleTouchUpOrCancel(e)
+    zoom.handlePinchUpOrCancel(e)
 
     const remainingPointers = Array.from(activePointersRef.current.values())
     const wasPinching = touchStateRef.current.isPinching
@@ -979,7 +765,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       touchStateRef.current.touchStartPos = { ...remaining }
       touchLastPointRef.current = { ...remaining }
       touchHasDraggedRef.current = false
-      setIsPanning(false)
     }
 
     if (remainingPointers.length < 2) {
@@ -990,7 +775,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     if (remainingPointers.length === 0) {
       const shouldSample = !wasPinching && !touchHasDraggedRef.current && !skipNextSinglePointerSampleRef.current
-      if (shouldSample && !props.measureMode) {
+      if (shouldSample && !measureMode) {
         const samplePoint = touchLastPointRef.current ?? { x: e.clientX, y: e.clientY }
         performSampling(samplePoint.x, samplePoint.y)
       }
@@ -1001,321 +786,66 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
       touchHasDraggedRef.current = false
       touchLastPointRef.current = null
-      setIsPanning(false)
     }
 
     if (e.cancelable) e.preventDefault()
-  }, [performSampling, props.measureMode])
+  }, [pan, zoom, performSampling, measureMode])
 
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      if (!image) return
-      e.preventDefault()
-
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const { cssX, cssY } = clientToCanvas(e.clientX, e.clientY, canvas)
-
-      const delta = -e.deltaY * ZOOM_WHEEL_SENSITIVITY
-      const newZoom = zoomLevel * (1 + delta)
-
-      zoomAtPoint(newZoom, cssX, cssY)
-      showMinimap()
-    },
-    [image, zoomLevel, zoomAtPoint, showMinimap]
-  )
-
-  // Add wheel event listener
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    canvas.addEventListener('wheel', handleWheel, { passive: false })
-
+    const activePointers = activePointersRef.current
     return () => {
-      canvas.removeEventListener('wheel', handleWheel)
+      activePointers.clear()
     }
-  }, [handleWheel])
+  }, [])
 
-  // Handle keyboard events
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!image) return
+
+    zoom.handleKeyDown(e)
+
+    if (e.key.toLowerCase() === 'v' && !e.repeat) {
+      if (onValueScaleChange && valueScaleSettings) {
+        onValueScaleChange({
+          ...valueScaleSettings,
+          enabled: !valueScaleSettings.enabled,
+        })
+      }
+    }
+
+    if (e.key.toLowerCase() === 's' && !e.repeat) {
+      setSplitMode(prev => !prev)
+    }
+
+    if (e.key.toLowerCase() === 'g' && !e.repeat) {
+      setInternalGridEnabled(prev => !prev)
+    }
+  }, [image, zoom, onValueScaleChange, valueScaleSettings])
+
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    zoom.handleKeyUp(e)
+  }, [zoom])
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!image) return
-
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        setIsSpaceDown(true)
-      }
-
-      if (e.key === '+' || e.key === '=') {
-        e.preventDefault()
-        const canvas = canvasRef.current
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect()
-          zoomAtPoint(zoomLevel + ZOOM_STEP, rect.width / 2, rect.height / 2)
-        }
-      }
-
-      if (e.key === '-') {
-        e.preventDefault()
-        const canvas = canvasRef.current
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect()
-          zoomAtPoint(zoomLevel - ZOOM_STEP, rect.width / 2, rect.height / 2)
-        }
-      }
-
-      if (e.key === '0') {
-        e.preventDefault()
-        resetView()
-      }
-
-      if (e.key.toLowerCase() === 'v' && !e.repeat) {
-        if (props.onValueScaleChange && props.valueScaleSettings) {
-          props.onValueScaleChange({
-            ...props.valueScaleSettings,
-            enabled: !props.valueScaleSettings.enabled
-          })
-        }
-      }
-
-      if (e.key.toLowerCase() === 's' && !e.repeat) {
-        setSplitMode(prev => !prev)
-      }
-
-      if (e.key.toLowerCase() === 'g' && !e.repeat) {
-        setInternalGridEnabled(prev => !prev)
-      }
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        setIsSpaceDown(false)
-        setIsPanning(false)
-      }
-    }
-
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [image, zoomLevel, zoomAtPoint, props.onValueScaleChange, props.valueScaleSettings])
+  }, [handleKeyDown, handleKeyUp])
 
-
-  // Expose methods to parent
-  useImperativeHandle(ref, () => ({
-    resetView
-  }))
-
-
-
-  // Handle mouse down
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!image) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const screenX = e.clientX - rect.left
-    const screenY = e.clientY - rect.top
-
-    // Measurement Mode
-    if (props.measureMode && e.button === 0 && !isSpaceDown) {
-      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-      if (imagePoint && onMeasurePointsChange) {
-        setIsMeasuring(true)
-        measureStartPointRef.current = imagePoint
-        onMeasurePointsChange(imagePoint, imagePoint)
-      }
-      return
-    }
-
-    // Panning Mode
-    if (e.button === 0 || e.button === 1 || isSpaceDown) {
-      e.preventDefault()
-      setIsPanning(true)
-      lastPanPoint.current = { x: e.clientX, y: e.clientY }
-      dragStartRef.current = { x: e.clientX, y: e.clientY }
-      hasDraggedRef.current = false
-    }
-  }
-
-  // Handle mouse move
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!image) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const rect = canvas.getBoundingClientRect()
-    const screenX = e.clientX - rect.left
-    const screenY = e.clientY - rect.top
-
-    // Measurement Drag Preview
-    if (isMeasuring && onMeasurePointsChange && measureStartPointRef.current) {
-      const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-      if (imagePoint) {
-        onMeasurePointsChange(measureStartPointRef.current, imagePoint)
-      }
-      return
-    }
-
-    if (isPanning) {
-      if (!hasDraggedRef.current) {
-        const dist = Math.hypot(
-          e.clientX - dragStartRef.current.x,
-          e.clientY - dragStartRef.current.y
-        )
-        if (dist > DRAG_THRESHOLD) hasDraggedRef.current = true
-      }
-
-      const deltaX = e.clientX - lastPanPoint.current.x
-      const deltaY = e.clientY - lastPanPoint.current.y
-
-      setPanOffset((prev) => getClampedPan(prev.x + deltaX, prev.y + deltaY, zoomLevel))
-
-      lastPanPoint.current = { x: e.clientX, y: e.clientY }
-      showMinimap()
-    }
-  }
-
-  // Handle mouse up
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isMeasuring) {
-      setIsMeasuring(false)
-      return
-    }
-
-    setIsPanning(false)
-    if (e.button === 0 && !hasDraggedRef.current && !isSpaceDown) {
-      if (props.measureMode && onMeasureClick) {
-        const canvas = canvasRef.current
-        if (!canvas || !image) return
-
-        const rect = canvas.getBoundingClientRect()
-        const screenX = e.clientX - rect.left
-        const screenY = e.clientY - rect.top
-
-        const imagePoint = screenToImage(screenX, screenY, { zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }, image.width, image.height)
-        if (imagePoint) {
-          onMeasureClick(imagePoint)
-        }
-      } else {
-        sampleColor(e)
-      }
-    }
-  }
-
-  // Handle mouse leave
-  const handleMouseLeave = () => {
-    setIsPanning(false)
-  }
-
-
-  // Draw value map overlay
-  useEffect(() => {
-    const canvas = valueMapCanvasRef.current
-    const enabled = valueScaleSettings?.enabled
-    if (!canvas || !valueBuffer || !enabled || !valueScaleResult) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    if (canvas.width !== valueBuffer.width || canvas.height !== valueBuffer.height) {
-      canvas.width = valueBuffer.width
-      canvas.height = valueBuffer.height
-    }
-
-    const imageData = ctx.createImageData(valueBuffer.width, valueBuffer.height)
-    const data = imageData.data
-    const { y: yBuffer } = valueBuffer
-    const pixelCount = yBuffer.length
-
-    const thresholds = valueScaleResult.thresholds
-    const numSteps = thresholds.length - 1
-
-    for (let i = 0; i < pixelCount; i++) {
-      const y = yBuffer[i]
-      const stepIdx = getStepIndex(y, thresholds)
-      const val = stepToGray(stepIdx, numSteps)
-
-      const idx = i * 4
-      data[idx] = val
-      data[idx + 1] = val
-      data[idx + 2] = val
-      data[idx + 3] = 255
-    }
-
-    ctx.putImageData(imageData, 0, 0)
-  }, [valueBuffer, valueScaleSettings?.enabled, valueScaleResult])
-
-  // Update highlight overlay using worker
-  useEffect(() => {
-    const { highlightColor, highlightTolerance = 20, highlightMode = 'solid' } = props
-    if (!labBuffer || !highlightColor) {
-      const canvas = overlayCanvasRef.current
-      if (canvas) {
-        const ctx = canvas.getContext('2d')
-        ctx?.clearRect(0, 0, canvas.width, canvas.height)
-      }
-      return
-    }
-
-    let isSubscribed = true
-
-    const updateHighlight = async () => {
-      const overlayData = await generateHighlightOverlay?.(
-        highlightColor.r,
-        highlightColor.g,
-        highlightColor.b,
-        highlightTolerance,
-        highlightMode
-      )
-
-      if (!isSubscribed || !overlayData) return
-
-      const canvas = overlayCanvasRef.current
-      if (!canvas) return
-
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-
-      if (canvas.width !== labBuffer.width || canvas.height !== labBuffer.height) {
-        canvas.width = labBuffer.width
-        canvas.height = labBuffer.height
-      }
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const imageData = new ImageData(new Uint8ClampedArray(overlayData), labBuffer.width, labBuffer.height)
-      ctx.putImageData(imageData, 0, 0)
-      drawCanvas()
-    }
-
-    updateHighlight()
-
-    return () => {
-      isSubscribed = false
-    }
-  }, [labBuffer, props.highlightColor, props.highlightTolerance, props.highlightMode, generateHighlightOverlay, drawCanvas])
-
-  // Draw breakdown layers to offscreen canvas
   useEffect(() => {
     const canvas = breakdownCanvasRef.current
     if (!canvas || !breakdownBuffers || !labBuffer) return
 
     const stepToBuffer: Record<string, keyof typeof breakdownBuffers> = {
-      'Imprimatura': 'imprimatura',
+      Imprimatura: 'imprimatura',
       'Dead Color': 'deadColor',
       'Local Color': 'localColor',
-      'Spectral Glaze': 'spectralGlaze'
-    };
+      'Spectral Glaze': 'spectralGlaze',
+    }
 
-    const buffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null;
+    const buffer = activeBreakdownStep !== 'Original' ? breakdownBuffers[stepToBuffer[activeBreakdownStep]] : null
 
     if (!buffer) {
       const ctx = canvas.getContext('2d')
@@ -1325,8 +855,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
 
     const { width, height } = labBuffer
-
-    // Ensure canvas is large enough
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width
       canvas.height = height
@@ -1340,57 +868,27 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     drawCanvas()
   }, [breakdownBuffers, activeBreakdownStep, drawCanvas, labBuffer])
 
-  // Trigger breakdown generation when image is loaded
   useEffect(() => {
     if (image && !isGeneratingBreakdown && !breakdownBuffers.imprimatura) {
       generateBreakdown()
     }
   }, [image, breakdownBuffers.imprimatura, isGeneratingBreakdown, generateBreakdown])
 
-  // Zoom control handlers
-  const handleZoomIn = () => {
-    const canvas = canvasRef.current
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect()
-      zoomAtPoint(zoomLevel + ZOOM_STEP, rect.width / 2, rect.height / 2)
-    }
-  }
-
-  const handleZoomOut = () => {
-    const canvas = canvasRef.current
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect()
-      zoomAtPoint(zoomLevel - ZOOM_STEP, rect.width / 2, rect.height / 2)
-    }
-  }
-
-
-  // Check if file is an image by extension or MIME type
-  const isImageFile = useCallback((file: File): boolean => {
-    // Check MIME type first
-    if (file.type && file.type.startsWith('image/')) {
-      return true
-    }
-
-    // Check by file extension (handles HEIC, WebP, etc. that might have wrong MIME type)
-    const extension = file.name.toLowerCase().split('.').pop()
-    const imageExtensions = [
-      'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico',
-      'heic', 'heif', 'avif', 'tiff', 'tif', 'raw', 'cr2', 'nef', 'orf', 'sr2'
-    ]
-
-    return imageExtensions.includes(extension || '')
-  }, [])
-
-  // Handle direct file input for mobile/desktop "New Image" action
   const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const file = input.files?.[0]
-    if (!file) {
-      return
+    if (!file) return
+
+    const isImageFile = (value: File): boolean => {
+      if (value.type && value.type.startsWith('image/')) return true
+      const extension = value.name.toLowerCase().split('.').pop()
+      const imageExtensions = [
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico',
+        'heic', 'heif', 'avif', 'tiff', 'tif', 'raw', 'cr2', 'nef', 'orf', 'sr2',
+      ]
+      return imageExtensions.includes(extension || '')
     }
 
-    // Validate file type (by extension or MIME type)
     if (!isImageFile(file)) {
       console.error('[ImageCanvas] Invalid file type:', file.type, 'File:', file.name)
       alert(`"${file.name}" is not a supported image format. Please use JPEG, PNG, WebP, HEIC, or other common image formats.`)
@@ -1400,14 +898,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     let processedFile = file
 
-    // Handle HEIC/HEIF conversion
     const isHeic = file.name.toLowerCase().endsWith('.heic') ||
       file.name.toLowerCase().endsWith('.heif') ||
       file.type === 'image/heic' ||
       file.type === 'image/heif'
 
     if (isHeic) {
-      // Ensure we're in browser environment
       if (typeof window === 'undefined' || typeof Blob === 'undefined') {
         console.error('[ImageCanvas] HEIC conversion requires browser environment')
         alert('HEIC conversion is not available in this environment. Please convert your image to JPEG first.')
@@ -1415,8 +911,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         return
       }
 
-      // Validate file size (heic2any may struggle with very large files)
-      const maxHeicSize = 50 * 1024 * 1024 // 50MB
+      const maxHeicSize = 50 * 1024 * 1024
       if (file.size > maxHeicSize) {
         alert(`HEIC file is too large (${Math.round(file.size / 1024 / 1024)}MB). Please convert to JPEG first or use a smaller file.`)
         input.value = ''
@@ -1424,215 +919,49 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       }
 
       try {
-        console.log('[ImageCanvas] Converting HEIC file...', file.name, file.size, 'bytes')
-
-        // Dynamic import with error handling
-        let heic2any
-        try {
-          const heic2anyModule = await import('heic2any')
-          heic2any = heic2anyModule.default || heic2anyModule
-
-          if (typeof heic2any !== 'function') {
-            throw new Error(`heic2any is not a function: ${typeof heic2any}`)
-          }
-        } catch (importErr) {
-          console.error('[ImageCanvas] Failed to import heic2any:', importErr)
-          const importErrorMsg = importErr instanceof Error
-            ? importErr.message
-            : String(importErr)
-          throw new Error(`Failed to load HEIC converter: ${importErrorMsg}`)
+        const heic2anyModule = await import('heic2any')
+        const heic2any = heic2anyModule.default || heic2anyModule
+        if (typeof heic2any !== 'function') {
+          throw new Error(`heic2any is not a function: ${typeof heic2any}`)
         }
 
-        // Check WebAssembly support (heic2any requires it)
         if (typeof WebAssembly === 'undefined') {
           throw new Error('WebAssembly is not supported in this browser. HEIC conversion requires WebAssembly support.')
         }
 
-        // Convert HEIC to JPEG with timeout
-        // Wrap in try-catch to catch any synchronous errors
-        let conversionPromise: Promise<Blob | Blob[]>
-        try {
-          console.log('[ImageCanvas] Calling heic2any with file:', {
-            name: file.name,
-            size: file.size,
-            type: file.type
-          })
+        const conversionPromise = heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.95,
+        })
 
-          conversionPromise = heic2any({
-            blob: file,
-            toType: 'image/jpeg',
-            quality: 0.95
-          })
-
-          if (!(conversionPromise instanceof Promise)) {
-            throw new Error(`heic2any did not return a Promise, got: ${typeof conversionPromise}`)
-          }
-
-          console.log('[ImageCanvas] heic2any promise created successfully')
-        } catch (syncErr) {
-          console.error('[ImageCanvas] Synchronous error during heic2any call:', syncErr)
-          throw new Error(`Failed to start HEIC conversion: ${syncErr instanceof Error ? syncErr.message : String(syncErr)}`)
-        }
-
-        // Add timeout (30 seconds)
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('HEIC conversion timed out after 30 seconds')), 30000)
         )
 
-        // Wrap conversion promise to capture any errors
-        const wrappedConversionPromise = conversionPromise.catch((conversionErr) => {
-          console.error('[ImageCanvas] Conversion promise rejected:', conversionErr)
-          console.error('[ImageCanvas] Conversion error type:', typeof conversionErr)
-          console.error('[ImageCanvas] Conversion error constructor:', conversionErr?.constructor?.name)
-
-          // Deep inspection of the "empty" object
-          const allProps = conversionErr ? Object.getOwnPropertyNames(conversionErr) : [];
-          console.error('[ImageCanvas] Conversion error all properties:', allProps);
-
-          // Try to extract error message
-          let errorMsg = 'HEIC conversion failed'
-          if (conversionErr instanceof Error) {
-            errorMsg = conversionErr.message || 'Unknown conversion error'
-          } else if (typeof conversionErr === 'string') {
-            errorMsg = conversionErr
-          } else if (conversionErr && typeof conversionErr === 'object') {
-            // Try to get message property or any descriptive property
-            const errObj = conversionErr as Record<string, unknown>
-            errorMsg = (errObj.message as string) || (errObj.error as string) || (errObj.code as string) || errObj.toString?.() || 'Conversion error (details unavailable)'
-          }
-
-          throw new Error(`HEIC conversion failed: ${errorMsg}`)
-        })
-
-        let convertedBlob: Blob | Blob[]
-        try {
-          convertedBlob = await Promise.race([wrappedConversionPromise, timeoutPromise])
-          console.log('[ImageCanvas] Conversion completed successfully')
-        } catch (raceErr) {
-          // Check if it's the timeout or the actual conversion error
-          if (raceErr instanceof Error && raceErr.message.includes('timed out')) {
-            throw raceErr
-          }
-          // The error should already be wrapped with context from wrappedConversionPromise
-          console.error('[ImageCanvas] Error during Promise.race:', raceErr)
-          console.error('[ImageCanvas] Race error type:', typeof raceErr)
-          console.error('[ImageCanvas] Race error constructor:', raceErr?.constructor?.name)
-
-          // Re-throw with more context if not already wrapped
-          if (raceErr instanceof Error) {
-            throw raceErr
-          } else {
-            throw new Error(`HEIC conversion failed: ${String(raceErr) || 'Unknown error during conversion'}`)
-          }
-        }
-
-        if (!convertedBlob) {
-          throw new Error('HEIC conversion returned no result')
-        }
-
-        // heic2any can return an array if multiple images are in the HEIC
+        const convertedBlob = await Promise.race([conversionPromise, timeoutPromise])
         const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob
 
-        if (!blob) {
-          throw new Error('HEIC conversion returned null or undefined')
-        }
-
-        if (!(blob instanceof Blob)) {
-          throw new Error(`Invalid conversion result: expected Blob, got ${typeof blob} (${Object.prototype.toString.call(blob)})`)
-        }
-
-        if (blob.size === 0) {
-          throw new Error('HEIC conversion returned empty blob')
+        if (!(blob instanceof Blob) || blob.size === 0) {
+          throw new Error('HEIC conversion returned an invalid blob')
         }
 
         processedFile = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
           type: 'image/jpeg',
         })
-        console.log('[ImageCanvas] HEIC converted to JPEG:', processedFile.size, 'bytes')
-      } catch (err) {
-        // Extract error information with more aggressive error extraction
-        let errorMessage = 'Unknown error'
-        let errorDetails: Record<string, unknown> = {}
-
-        // Log the raw error first
-        console.error('[ImageCanvas] Raw error caught:', err)
-        console.error('[ImageCanvas] Error type:', typeof err)
-        console.error('[ImageCanvas] Error constructor:', (err as { constructor?: { name?: string } })?.constructor?.name)
-        console.error('[ImageCanvas] Error keys:', err ? Object.keys(err) : 'no keys')
-
-        if (err instanceof Error) {
-          errorMessage = err.message || 'Error without message'
-          errorDetails = {
-            message: err.message,
-            name: err.name,
-            stack: err.stack?.split('\n').slice(0, 10).join('\n') // More stack lines
-          }
-        } else if (typeof err === 'string') {
-          errorMessage = err
-          errorDetails = { error: err }
-        } else if (err && typeof err === 'object') {
-          // Try to extract properties from the error object
-          try {
-            const errObj = err as Record<string, unknown>
-            errorMessage = (errObj.message as string) || (errObj.error as string) || errObj.toString?.() || 'Object error'
-            errorDetails = {
-              ...errObj,
-              type: typeof err,
-              constructor: (err as { constructor?: { name?: string } }).constructor?.name,
-              stringified: JSON.stringify(err, Object.getOwnPropertyNames(err))
-            }
-          } catch {
-            // If we can't extract, try to stringify with replacer
-            try {
-              errorMessage = JSON.stringify(err, (key, value) => {
-                if (value instanceof Error) {
-                  return { message: value.message, name: value.name, stack: value.stack }
-                }
-                return value
-              })
-            } catch {
-              errorMessage = `Conversion failed - error type: ${typeof err}, constructor: ${(err as { constructor?: { name?: string } })?.constructor?.name || 'unknown'}`
-            }
-            errorDetails = {
-              error: 'Non-serializable error object',
-              type: typeof err,
-              constructor: (err as { constructor?: { name?: string } })?.constructor?.name
-            }
-          }
-        } else {
-          errorMessage = String(err) || 'Unknown error type'
-          errorDetails = {
-            error: String(err),
-            type: typeof err
-          }
-        }
-
-        console.error('[ImageCanvas] HEIC conversion failed - errorDetails:', errorDetails)
-        console.error('[ImageCanvas] HEIC conversion failed - errorMessage:', errorMessage)
-        console.error('[ImageCanvas] Full error object (direct):', err)
-        console.error('[ImageCanvas] Full error object (JSON):', JSON.stringify(err, null, 2))
-
-        alert(`Failed to convert HEIC image.\n\nError: ${errorMessage}\n\nPlease try:\n1. Converting the image to JPEG using your device's Photos app\n2. Using a different image format\n3. Trying a smaller HEIC file (under 50MB)`)
+      } catch (error) {
+        console.error('[ImageCanvas] HEIC conversion failed:', error)
+        alert('Failed to convert HEIC image. Please convert the image to JPEG first or try a smaller HEIC file.')
         input.value = ''
         return
       }
     }
 
-    console.log('[ImageCanvas] Direct file input selected:', processedFile.name, processedFile.type, processedFile.size)
     const objectUrl = URL.createObjectURL(processedFile)
     const img = new Image()
-
-    // Cleanup function to revoke object URL
-    const cleanup = () => {
-      URL.revokeObjectURL(objectUrl)
-    }
+    const cleanup = () => URL.revokeObjectURL(objectUrl)
 
     img.onload = () => {
-      const logMsg1 = `✅ Image loaded: ${img.width}x${img.height}, src: ${img.src.substring(0, 30)}`
-      console.log('[ImageCanvas]', logMsg1)
-
-      // Convert to data URL to preserve image source (blob URLs get revoked)
-      // This ensures the fallback image can display even if canvas isn't ready
       const canvas = document.createElement('canvas')
       canvas.width = img.width
       canvas.height = img.height
@@ -1640,82 +969,63 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       if (ctx) {
         ctx.drawImage(img, 0, 0)
         try {
-          const dataUrl = canvas.toDataURL('image/png')
-          img.src = dataUrl
-          const logMsg2 = `✅ Converted to data URL (${dataUrl.length} chars)`
-          console.log('[ImageCanvas]', logMsg2)
-        } catch (e) {
-          const logMsg3 = `❌ Data URL conversion failed: ${e}`
-          console.error('[ImageCanvas]', logMsg3)
-          // Keep blob URL alive - don't revoke yet
+          img.src = canvas.toDataURL('image/png')
+        } catch {
+          // Keep blob URL alive if conversion fails.
         }
-      } else {
-        const logMsg4 = '❌ Failed to get canvas context'
-        console.error('[ImageCanvas]', logMsg4)
       }
 
-      props.onImageLoad(img)
-      // Once converted to data URL, blob URL can be revoked immediately.
+      onImageLoad(img)
       if (img.src.startsWith('data:')) {
         cleanup()
       }
     }
 
-    img.onerror = (error) => {
+    img.onerror = () => {
       console.error('[ImageCanvas] Direct image load error:', {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        error: error
       })
       cleanup()
     }
 
     img.src = objectUrl
     input.value = ''
-  }, [props.onImageLoad])
+  }, [onImageLoad])
 
-  // Get cursor style based on current mode
   const getCursorStyle = () => {
-    if (isPanning) return 'grabbing'
-    if (isSpaceDown) return 'grab'
+    if (pan.isPanning) return 'grabbing'
+    if (zoom.isSpaceDown) return 'grab'
     return 'crosshair'
   }
 
-  // Debug logging for mobile issue
   useEffect(() => {
-    if (image) {
-      const shouldShowFallback = !imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0
-      const renderState = {
-        hasImage: !!image,
-        imageSize: image ? `${image.width}x${image.height}` : 'null',
-        imageSrc: image.src?.substring(0, 50),
-        imageSrcType: image.src?.startsWith('data:') ? 'data URL' : image.src?.startsWith('blob:') ? 'blob URL' : 'other',
-        imageComplete: image.complete,
-        imageNaturalSize: `${image.naturalWidth}x${image.naturalHeight}`,
-        hasSurfaceImage: !!surfaceImage,
-        canvasDimensions,
-        imageDrawInfoValue: imageDrawInfo,
-        hasImageDrawInfo: !!imageDrawInfo,
-        containerRefExists: !!containerRef.current,
-        canvasContainerRefExists: !!canvasContainerRef.current,
-        shouldShowFallback,
-        conditionBreakdown: {
-          '!imageDrawInfo': !imageDrawInfo,
-          'width === 0': canvasDimensions.width === 0,
-          'height === 0': canvasDimensions.height === 0
-        }
-      }
-      const logMsg = `🔍 Render: ${image.width}x${image.height}, fallback=${shouldShowFallback}`
-      console.log('[ImageCanvas]', logMsg, renderState)
+    if (!image) return
 
-      // Log fallback condition details
-      if (shouldShowFallback) {
-        // console.log('[ImageCanvas] FALLBACK triggered');
-      } else {
-        // console.log('[ImageCanvas] Canvas ready');
-      }
+    const shouldShowFallback = !imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0
+    const renderState = {
+      hasImage: !!image,
+      imageSize: image ? `${image.width}x${image.height}` : 'null',
+      imageSrc: image.src?.substring(0, 50),
+      imageSrcType: image.src?.startsWith('data:') ? 'data URL' : image.src?.startsWith('blob:') ? 'blob URL' : 'other',
+      imageComplete: image.complete,
+      imageNaturalSize: `${image.naturalWidth}x${image.naturalHeight}`,
+      hasSurfaceImage: !!surfaceImage,
+      canvasDimensions,
+      imageDrawInfoValue: imageDrawInfo,
+      hasImageDrawInfo: !!imageDrawInfo,
+      containerRefExists: !!containerRef.current,
+      canvasContainerRefExists: !!canvasContainerRef.current,
+      shouldShowFallback,
+      conditionBreakdown: {
+        '!imageDrawInfo': !imageDrawInfo,
+        'width === 0': canvasDimensions.width === 0,
+        'height === 0': canvasDimensions.height === 0,
+      },
     }
+    const logMsg = `🔍 Render: ${image.width}x${image.height}, fallback=${shouldShowFallback}`
+    console.log('[ImageCanvas]', logMsg, renderState)
   }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
 
   return (
@@ -1725,26 +1035,21 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
         <div className="flex-1 flex min-h-0 flex-col">
-          {/* Zoom Controls Bar - Hidden on mobile/tablet for art-first simplicity */}
           {!isMobile && (
             <ZoomControlsBar
               zoomLevel={zoomLevel}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
+              onZoomIn={zoom.zoomIn}
+              onZoomOut={zoom.zoomOut}
               onFit={resetView}
               minZoom={MIN_ZOOM}
               maxZoom={MAX_ZOOM}
             />
           )}
 
-          {/* Grid Controls removed - keeping UI minimal */}
-
-          {/* Canvas Container */}
           <div
             ref={canvasContainerRef}
             className="canvas-viewport flex-1 min-h-0 relative overflow-hidden overscroll-contain select-none md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
           >
-            {/* Loading indicator */}
             {isAnalyzing && (
               <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-xs text-white/70 bg-gray-900/80 px-2 py-1 rounded">
                 <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin" />
@@ -1752,7 +1057,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               </div>
             )}
 
-            {/* Full-screen expand button */}
             <button
               onClick={() => setShowImageFullScreen(true)}
               className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white/70 hover:text-white rounded-lg transition-all duration-200 backdrop-blur-sm"
@@ -1774,7 +1078,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUpOrCancel}
               onPointerCancel={handlePointerUpOrCancel}
-              onContextMenu={(e) => e.preventDefault()}
+              onContextMenu={e => e.preventDefault()}
               className="absolute top-0 left-0 w-full h-full touch-none select-none"
               style={{
                 cursor: getCursorStyle(),
@@ -1784,37 +1088,42 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                 touchAction: 'none',
                 overscrollBehavior: 'contain',
                 userSelect: 'none',
-                WebkitUserSelect: 'none'
+                WebkitUserSelect: 'none',
               }}
             />
 
-            {/* Highlight Overlay Canvas */}
-            <canvas
+            <HighlightOverlay
               ref={overlayCanvasRef}
-              className="absolute top-0 left-0 pointer-events-none"
-              style={{ display: 'none' }}
+              imageData={highlightOverlay.imageData}
+              width={highlightOverlay.width}
+              height={highlightOverlay.height}
+              onRendered={drawCanvas}
             />
-            <canvas ref={valueMapCanvasRef} id="value-map-canvas" style={{ display: 'none' }} />
+            <ValueOverlay
+              ref={valueMapCanvasRef}
+              valueBuffer={valueBuffer}
+              enabled={valueScaleSettings?.enabled ?? false}
+              valueScaleResult={valueScaleResult}
+              onRendered={drawCanvas}
+            />
             <canvas ref={breakdownCanvasRef} id="breakdown-canvas" style={{ display: 'none' }} />
 
-            {/* Ruler Grid & Measurement Overlay */}
             <RulerOverlay
-              gridEnabled={props.gridEnabled || false}
-              gridSpacing={props.gridSpacing || 1}
+              gridEnabled={gridEnabledProp || false}
+              gridSpacing={gridSpacing || 1}
               gridOpacity={gridOpacity}
-              calibration={props.calibration || null}
-              measureEnabled={props.measureMode || false}
-              measurePointA={props.measurePointA}
-              measurePointB={props.measurePointB}
+              calibration={calibration || null}
+              measureEnabled={measureMode || false}
+              measurePointA={measurePointA}
+              measurePointB={measurePointB}
               containerRef={canvasContainerRef}
-              onMeasurePointsChange={props.onMeasurePointsChange}
+              onMeasurePointsChange={onMeasurePointsChange}
               transformState={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
-              measurementLayer={props.measurementLayer}
+              measurementLayer={measurementLayer}
               image={image || surfaceImageElement}
-              canvasSettings={props.canvasSettings}
+              canvasSettings={canvasSettings}
             />
 
-            {/* Navigator Minimap */}
             <NavigatorMinimap
               image={image}
               transform={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
@@ -1823,12 +1132,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             />
           </div>
 
-          {/* Keyboard hints - hidden on mobile */}
           <div className="hidden md:block mt-2 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
             Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • V: Value • S: Split • G: Grid
           </div>
 
-          {/* Bottom Controls - visible on desktop, mobile uses header */}
           <div className="hidden md:flex items-center justify-between mt-4">
             <label
               htmlFor={desktopFileInputId}
@@ -1848,7 +1155,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             </div>
           </div>
 
-          {/* Mobile: New Image button */}
           <div className="flex md:hidden items-center justify-center mt-2 pb-2">
             <label
               htmlFor={mobileFileInputId}
@@ -1867,7 +1173,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         </div>
       )}
 
-      {/* Full Screen Image Overlay */}
       <FullScreenOverlay
         isOpen={showImageFullScreen}
         onClose={() => setShowImageFullScreen(false)}

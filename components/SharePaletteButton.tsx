@@ -16,9 +16,13 @@ interface ResolvedColor {
     name: string;
 }
 
+function buildPaletteShareText(paletteName: string, colors: ResolvedColor[]): string {
+    const lines = colors.map((c) => `${c.name}: ${c.hex.toUpperCase()}`);
+    return [`Palette: ${paletteName}`, '', ...lines, '', '— ColorWizard'].join('\n');
+}
+
 /**
- * SharePaletteButton - Generates a beautiful, shareable image of a palette.
- * Inclues a viral watermark and "Built for Artists" branding.
+ * SharePaletteButton - Exports a shareable PNG and copies palette text locally (offline-friendly).
  */
 export default function SharePaletteButton({ paintIds, paletteName, className = '' }: SharePaletteButtonProps) {
     const [isGenerating, setIsGenerating] = useState(false);
@@ -71,14 +75,28 @@ export default function SharePaletteButton({ paintIds, paletteName, className = 
             link.href = dataUrl;
             link.click();
 
+            const shareText = buildPaletteShareText(paletteName, resolvedColors);
+            try {
+                await navigator.clipboard.writeText(shareText);
+            } catch (clipErr) {
+                console.warn('Clipboard unavailable:', clipErr);
+            }
+
+            if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+                try {
+                    await navigator.share({
+                        title: `Palette: ${paletteName}`,
+                        text: shareText,
+                    });
+                } catch (shareErr) {
+                    if ((shareErr as Error)?.name !== 'AbortError') {
+                        console.warn('Native share cancelled or failed:', shareErr);
+                    }
+                }
+            }
+
             setShowSuccess(true);
             setTimeout(() => setShowSuccess(false), 4000);
-
-            // Social Sharing Loop: Open Twitter/X with pre-filled content
-            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                `Just crafted this color palette "${paletteName}" for my next painting! 🎨✨\n\nBuilt with ColorWizard (privacy-first, $1 lifetime Pro).\n\nCheck it out: https://colorwizard.app\n\n#ColorWizard #Painting #ColorTheory #IndieDev`
-            )}`;
-            window.open(twitterUrl, '_blank');
 
         } catch (err) {
             console.error('Failed to generate sharing image:', err);
@@ -124,7 +142,7 @@ export default function SharePaletteButton({ paintIds, paletteName, className = 
                         </div>
                         <div className="flex flex-col items-end">
                             <div className="text-4xl font-black text-blue-600 tracking-tighter uppercase leading-none mb-1">ColorWizard</div>
-                            <div className="text-xl font-bold text-gray-400">colorwizard.app</div>
+                            <div className="text-xl font-bold text-gray-400">Offline-first color mixing</div>
                         </div>
                     </div>
 
@@ -159,7 +177,7 @@ export default function SharePaletteButton({ paintIds, paletteName, className = 
                             </div>
                             <div>
                                 <div className="text-2xl font-black text-gray-900 uppercase tracking-tight">Built for Artists</div>
-                                <div className="text-lg font-bold text-gray-400 italic">Privacy-first • Open Source • $1 Forever</div>
+                                <div className="text-lg font-bold text-gray-400 italic">Privacy-first • Open source • Local-first</div>
                             </div>
                         </div>
                         <div className="text-right">
@@ -183,8 +201,8 @@ export default function SharePaletteButton({ paintIds, paletteName, className = 
                             ✨
                         </div>
                         <div className="flex flex-col">
-                            <p className="font-black text-lg leading-tight uppercase tracking-tight">Palette Shared!</p>
-                            <p className="text-sm text-gray-400 font-medium">Image downloaded. Spreading the word on X...</p>
+                            <p className="font-black text-lg leading-tight uppercase tracking-tight">Palette exported</p>
+                            <p className="text-sm text-gray-400 font-medium">PNG saved. Palette text copied to clipboard.</p>
                         </div>
                         <button
                             onClick={() => setShowSuccess(false)}

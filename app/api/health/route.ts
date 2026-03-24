@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getFirestoreDb } from '@/lib/firebase';
+import { OPEN_SOURCE_MODE } from '@/lib/appMode';
 
 export async function GET() {
-    const db = getFirestoreDb();
-
     return NextResponse.json({
         status: 'ok',
         commit: process.env.VERCEL_GIT_COMMIT_SHA || 'unknown',
-        firebaseConfigured: !!db,
+        openSourceMode: OPEN_SOURCE_MODE,
         timestamp: new Date().toISOString(),
     });
 }

@@ -1,8 +1,9 @@
-'use client'
-
 /**
  * Color Theory Utilities
  * 12-segment RYB color wheel with harmonies and analysis
+ *
+ * Shared by client components and Route Handlers — must stay free of `'use client'`
+ * so server code (e.g. `app/api/ai/suggestions`) can import these pure functions.
  */
 
 import { RGB } from './color/types';

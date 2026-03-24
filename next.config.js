@@ -26,6 +26,20 @@ const nextConfig = {
   // Enable strict mode for better error detection in development
   reactStrictMode: true,
 
+  async headers() {
+    return [
+      {
+        source: '/data/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ]
+  },
+
   // Pin tracing to this repo so Next does not infer the parent folder as a workspace root.
   outputFileTracingRoot: path.join(__dirname),
 }

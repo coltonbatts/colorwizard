@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
 import type { KeyboardEvent, MouseEvent } from 'react'
 
@@ -11,15 +11,31 @@ interface DMCFlossMatchProps {
 
 export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [matches, setMatches] = useState<Awaited<ReturnType<typeof findClosestDMCColors>>>([])
 
-  // Memoize matches - performance is sub-ms so no need for async/loading states
-  const matches = useMemo(() => {
-    if (!rgb) return []
-    try {
-      return findClosestDMCColors(rgb, 5)
-    } catch (e) {
-      console.error('DMC Matching Error:', e)
-      return []
+  useEffect(() => {
+    let cancelled = false
+
+    if (!rgb) {
+      setMatches([])
+      return
+    }
+
+    findClosestDMCColors(rgb, 5)
+      .then((results) => {
+        if (!cancelled) {
+          setMatches(results)
+        }
+      })
+      .catch((e) => {
+        console.error('DMC Matching Error:', e)
+        if (!cancelled) {
+          setMatches([])
+        }
+      })
+
+    return () => {
+      cancelled = true
     }
   }, [rgb])
 

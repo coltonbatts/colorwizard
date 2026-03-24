@@ -1,65 +1,37 @@
-/**
- * React hook for Firebase Auth
- * Manages user authentication state
- */
-
 'use client'
 
-import { useEffect, useState, useContext, createContext, ReactNode } from 'react'
-import { getFirebaseAuth } from '@/lib/firebase'
-import { onAuthStateChanged, User } from 'firebase/auth'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { OPEN_SOURCE_MODE } from '@/lib/appMode'
+import { AuthContext } from './authContext'
 
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  isSignedIn: boolean
-}
+export { useAuth } from './authContext'
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isSignedIn: false,
-})
+const FirebaseAuthProvider = lazy(() => import('./FirebaseAuthProvider'))
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    try {
-      const auth = getFirebaseAuth()
-      if (!auth) {
-        setLoading(false)
-        return
-      }
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user)
-        setLoading(false)
-      })
-
-      return unsubscribe
-    } catch (error) {
-      // If Firebase fails to initialize (mobile Safari, network issues, etc.), 
-      // gracefully degrade rather than crash the entire app
-      console.warn('Firebase Auth initialization failed:', error)
-      setLoading(false)
-      return undefined
-    }
-  }, [])
-
+function AuthLoadingShell({ children }: { children: ReactNode }) {
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isSignedIn: !!user,
-      }}
-    >
+    <AuthContext.Provider value={{ user: null, loading: true, isSignedIn: false }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
-  return useContext(AuthContext)
+/**
+ * In OPEN_SOURCE_MODE, Firebase Auth is not loaded (no SDK chunk, no network).
+ * Paid / cloud builds use a lazy-loaded Firebase provider.
+ */
+export function AuthProvider({ children }: { children: ReactNode }) {
+  if (OPEN_SOURCE_MODE) {
+    return (
+      <AuthContext.Provider value={{ user: null, loading: false, isSignedIn: false }}>
+        {children}
+      </AuthContext.Provider>
+    )
+  }
+
+  return (
+    <Suspense fallback={<AuthLoadingShell>{children}</AuthLoadingShell>}>
+      <FirebaseAuthProvider>{children}</FirebaseAuthProvider>
+    </Suspense>
+  )
 }

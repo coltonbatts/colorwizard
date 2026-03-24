@@ -36,8 +36,9 @@ export default function PaintPuddle({
     showLabel = true,
     onClick,
 }: PaintPuddleProps) {
-    // Calculate diameter based on weight
-    const diameter = minSize + weight * (maxSize - minSize)
+    // Calculate diameter based on weight (guard NaN so SVG / layout never see invalid sizes)
+    const w = Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : 0
+    const diameter = minSize + w * (maxSize - minSize)
 
     // Generate a unique filter ID for this puddle
     const filterId = `puddle-filter-${name.replace(/\s+/g, '-').toLowerCase()}`

@@ -19,17 +19,27 @@ interface LayoutState {
     toggleSimpleMode: () => void
 }
 
+const MIN_SIDEBAR = 300
+const MAX_SIDEBAR = 800
+const DEFAULT_SIDEBAR = 400
+
+function clampSidebarWidth(w: unknown): number {
+    if (typeof w !== 'number' || !Number.isFinite(w)) return DEFAULT_SIDEBAR
+    return Math.min(MAX_SIDEBAR, Math.max(MIN_SIDEBAR, Math.round(w)))
+}
+
 export const useLayoutStore = create<LayoutState>()(
     persist(
         (set) => ({
             sidebarCollapsed: false,
             compactMode: false,
-            sidebarWidth: 400,
+            sidebarWidth: DEFAULT_SIDEBAR,
             simpleMode: true,
 
             setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
             setCompactMode: (compactMode) => set({ compactMode }),
-            setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
+            setSidebarWidth: (sidebarWidth) =>
+                set({ sidebarWidth: clampSidebarWidth(sidebarWidth) }),
             setSimpleMode: (simpleMode) => set({ simpleMode }),
             toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
             toggleCompactMode: () => set((state) => ({ compactMode: !state.compactMode })),
@@ -44,6 +54,15 @@ export const useLayoutStore = create<LayoutState>()(
                 sidebarWidth: state.sidebarWidth,
                 simpleMode: state.simpleMode,
             }),
+            merge: (persisted, current) => {
+                const p = persisted as Partial<LayoutState> | undefined
+                if (!p) return current
+                return {
+                    ...current,
+                    ...p,
+                    sidebarWidth: clampSidebarWidth(p.sidebarWidth ?? current.sidebarWidth),
+                }
+            },
         }
     )
 )

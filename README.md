@@ -17,6 +17,29 @@
 
 ---
 
+## Desktop & offline packaging (ADR)
+
+**Decision:** Ship the desktop app (**Option A**) by bundling the production Next.js server (`next start` or standalone output) as a **local sidecar**; Tauri’s webview loads `http://127.0.0.1:<port>`. This keeps the first macOS DMG achievable with minimal Next.js refactor.
+
+**Trade-off:** Larger install size (includes Node). A later milestone may pursue **Option B** (static export, no Route Handlers at runtime).
+
+**Offline web baseline:** Display type uses self-hosted **@fontsource** (no `fonts.googleapis.com` at runtime). AI palette suggestions are generated in **`lib/ai/suggestions.ts`** on the client so the panel works without `/api/ai/suggestions`. Palette export uses **PNG download + clipboard** and optional **`navigator.share`** (no Twitter or marketing URLs).
+
+**Client hardening:** With `OPEN_SOURCE_MODE`, `AuthProvider` does not load the Firebase Auth chunk (lazy path exists only for paid/cloud builds). `/api/health` does not touch Firestore.
+
+**Tauri dev (desktop shell):** Requires [Rust](https://www.rust-lang.org/tools/install). Free TCP **3000** for Next (Tauri’s `devUrl` is fixed to `http://localhost:3000`). Then:
+
+```bash
+npm install
+npm run tauri:dev
+```
+
+This runs `next dev -p 3000` and opens the native window. Turn off Wi‑Fi to validate offline UI; the dev server is still local loopback.
+
+**Follow-ups:** macOS codesigning/notarization; Windows packaging; static-export migration; packaged `tauri build` needs a real `out/` or standalone Next sidecar; remove `firebase` / `stripe` packages once server routes and imports are gone.
+
+---
+
 ## Why This Exists
 
 I was a motion designer for 10+ years. Worked with Google, Kate Spade, Under Armour. Made nice videos. Got paid. Then I realized something: I was solving the wrong problem.

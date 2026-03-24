@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useUserTier } from '@/lib/hooks/useUserTier';
+import { generateAiSuggestions } from '@/lib/ai/suggestions';
 import FeatureGate from './FeatureGate';
 
 interface Suggestion {
@@ -28,37 +29,18 @@ interface AISuggestionsProps {
  * Displays "AI" generated color theory advice and harmonies.
  */
 export default function AISuggestions({ rgb }: AISuggestionsProps) {
-    const { tier, isPro } = useUserTier();
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-    const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const { isPro } = useUserTier();
 
-    useEffect(() => {
-        if (!rgb) return;
-
-        async function fetchSuggestions() {
-            try {
-                setIsLoading(true);
-                const response = await fetch('/api/ai/suggestions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rgb, tier }),
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setSuggestions(data.suggestions);
-                    setAnalysis(data.baseAnalysis);
-                }
-            } catch (error) {
-                console.error('Failed to fetch AI suggestions:', error);
-            } finally {
-                setIsLoading(false);
-            }
+    const { suggestions, analysis } = useMemo(() => {
+        if (!rgb) {
+            return { suggestions: [] as Suggestion[], analysis: null as AIAnalysis | null };
         }
-
-        fetchSuggestions();
-    }, [rgb, tier]);
+        const data = generateAiSuggestions(rgb, { isPro });
+        return {
+            suggestions: data.suggestions as Suggestion[],
+            analysis: data.baseAnalysis,
+        };
+    }, [rgb, isPro]);
 
     if (!rgb) return null;
 
@@ -105,13 +87,7 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
 
                     {/* Suggestions Grid */}
                     <div className="space-y-4">
-                        {isLoading ? (
-                            <div className="py-12 flex flex-col items-center justify-center gap-4">
-                                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest pulse">Thinking like a Master...</p>
-                            </div>
-                        ) : (
-                            suggestions.map((s, i) => (
+                        {suggestions.map((s, i) => (
                                 <motion.div
                                     key={i}
                                     initial={{ opacity: 0, x: -10 }}
@@ -148,8 +124,7 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
                                         </div>
                                     )}
                                 </motion.div>
-                            ))
-                        )}
+                            ))}
                     </div>
                 </div>
             </FeatureGate>

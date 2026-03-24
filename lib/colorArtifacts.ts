@@ -118,7 +118,7 @@ export async function createPinnedColor(
         timestamp: Date.now(),
         spectralRecipe,
         fallbackRecipe,
-        dmcMatches: findClosestDMCColors(sampledColor.rgb, 5),
+        dmcMatches: await findClosestDMCColors(sampledColor.rgb, 5),
     }
 }
 
@@ -183,7 +183,7 @@ export async function createColorCard(
             spectral: spectralRecipe,
         },
         matches: {
-            dmc: findClosestDMCColors(sampledColor.rgb, 5),
+            dmc: await findClosestDMCColors(sampledColor.rgb, 5),
             paints: paintMatches,
         },
     }

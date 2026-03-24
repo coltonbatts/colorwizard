@@ -32,7 +32,7 @@ type LegacyColorCard = {
     valueStep?: number
     colorName?: string
     mixingSteps?: string[]
-    dmcMatches?: ReturnType<typeof findClosestDMCColors>
+    dmcMatches?: Awaited<ReturnType<typeof findClosestDMCColors>>
     paintMatches?: PaintCardMatch[]
 }
 
@@ -77,7 +77,7 @@ function safeParse<T>(data: string | null): T | null {
 
 function normalizeLegacyCard(card: LegacyColorCard): ColorCard {
     const heuristicRecipe = generatePaintRecipe(card.color.hsl)
-    const dmcMatches = card.dmcMatches ?? findClosestDMCColors(card.color.rgb, 5)
+    const dmcMatches = card.dmcMatches ?? []
     const paintMatches = card.paintMatches?.length
         ? card.paintMatches
         : mapHeuristicRecipeIngredients(heuristicRecipe).map((ingredient) => ({

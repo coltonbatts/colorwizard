@@ -50,12 +50,16 @@ function CanvasImage({
 
     // Compute transform styles
     const styles = useMemo(() => {
+        const w = image.naturalWidth || image.width
+        const h = image.naturalHeight || image.height
+        const safeW = Number.isFinite(w) && w > 0 ? w : 1
+        const safeH = Number.isFinite(h) && h > 0 ? h : 1
         const s: React.CSSProperties = {
             position: 'absolute',
             left: 0,
             top: 0,
-            width: image.width,
-            height: image.height,
+            width: safeW,
+            height: safeH,
             zIndex,
             opacity: isReference ? 1 : opacity,
             filter: isGrayscale ? 'grayscale(100%)' : 'none',
@@ -68,7 +72,7 @@ function CanvasImage({
 
         if (perspectiveEnabled && perspectiveCorners && !isReference) {
             // Perspective warp uses matrix3d which defines the entire transform from source to quad
-            const matrix = computeMatrix3d(perspectiveCorners, image.width, image.height)
+            const matrix = computeMatrix3d(perspectiveCorners, safeW, safeH)
             s.transform = `${transformStr} ${matrix}`
         } else {
             // Standard transform

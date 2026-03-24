@@ -1,11 +1,9 @@
 import { cssColors } from './datasets/css';
 import { xkcdColors } from './datasets/xkcd';
-import { loadExtendedColors } from './datasets/extended';
 import { findNearestColor } from './match';
 import { getCachedMatch, setCachedMatch } from './cache';
+import { getColorNames } from '../dataCache';
 import { ColorNameMatch, GetColorNameOptions } from './types';
-
-let extendedColorsCache: Record<string, string> | null = null;
 
 /**
  * Main entry point for getting a color name.
@@ -33,10 +31,7 @@ export async function getColorName(
             break;
         case 'extended':
         default:
-            if (!extendedColorsCache) {
-                extendedColorsCache = await loadExtendedColors();
-            }
-            dataset = extendedColorsCache;
+            dataset = await getColorNames();
             break;
     }
 

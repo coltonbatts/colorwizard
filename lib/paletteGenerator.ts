@@ -382,7 +382,7 @@ export async function generateShoppingList(
         const avgDist = (distAccumulator.get(i) || 0) / count
 
         // Map to closest DMC floss color
-        const dmcMatches = findClosestDMCColors(paletteRGB[i], 1)
+        const dmcMatches = await findClosestDMCColors(paletteRGB[i], 1)
         const bestMatch = dmcMatches[0]
 
         initialList.push({

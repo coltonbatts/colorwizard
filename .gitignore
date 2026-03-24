@@ -9,6 +9,8 @@
 # next.js
 /.next/
 /out/
+/public/data/
+/scripts/source/
 
 # production
 /build
