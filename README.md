@@ -19,13 +19,13 @@
 
 ## Desktop & offline packaging (ADR)
 
-**Decision:** Ship the desktop app (**Option A**) by bundling the production Next.js server (`next start` or standalone output) as a **local sidecar**; Tauri’s webview loads `http://127.0.0.1:<port>`. This keeps the first macOS DMG achievable with minimal Next.js refactor.
+**Decision:** Ship the desktop app using Tauri’s supported Next.js path: **static export** into `out/`, which the macOS bundle loads directly. This is the cleanest route to a shippable DMG and avoids a bundled Node server.
 
-**Trade-off:** Larger install size (includes Node). A later milestone may pursue **Option B** (static export, no Route Handlers at runtime).
+**Trade-off:** Any remaining server-only routes or cloud-only flows must be isolated or removed so the export stays static.
 
 **Offline web baseline:** Display type uses self-hosted **@fontsource** (no `fonts.googleapis.com` at runtime). AI palette suggestions are generated in **`lib/ai/suggestions.ts`** on the client so the panel works without `/api/ai/suggestions`. Palette export uses **PNG download + clipboard** and optional **`navigator.share`** (no Twitter or marketing URLs).
 
-**Client hardening:** With `OPEN_SOURCE_MODE`, `AuthProvider` does not load the Firebase Auth chunk (lazy path exists only for paid/cloud builds). `/api/health` does not touch Firestore.
+**Client hardening:** With `OPEN_SOURCE_MODE`, `AuthProvider` does not load the Firebase Auth chunk (lazy path exists only for paid/cloud builds). Cloud-era route handlers were removed so the Next export stays static.
 
 **Tauri dev (desktop shell):** Requires [Rust](https://www.rust-lang.org/tools/install). Free TCP **3000** for Next (Tauri’s `devUrl` is fixed to `http://localhost:3000`). Then:
 
@@ -36,7 +36,15 @@ npm run tauri:dev
 
 This runs `next dev -p 3000` and opens the native window. Turn off Wi‑Fi to validate offline UI; the dev server is still local loopback.
 
-**Follow-ups:** macOS codesigning/notarization; Windows packaging; static-export migration; packaged `tauri build` needs a real `out/` or standalone Next sidecar; remove `firebase` / `stripe` packages once server routes and imports are gone.
+**DMG build:** On macOS, the first release artifact should be built with:
+
+```bash
+npm run tauri:build:dmg
+```
+
+Apple Developer ID signing and notarization are required for distribution outside the App Store. Tauri expects `APPLE_SIGNING_IDENTITY` for signing and `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` for notarization.
+
+**Follow-ups:** macOS codesigning/notarization hardening; Windows packaging; prune remaining cloud/server routes if the static export build surfaces them; remove `firebase` / `stripe` packages once their imports are no longer needed.
 
 ---
 

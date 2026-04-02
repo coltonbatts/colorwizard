@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
+import TauriAppShell from '@/components/TauriAppShell'
 import '@fontsource/eb-garamond/latin-400.css'
 import '@fontsource/eb-garamond/latin-400-italic.css'
 import '@fontsource/eb-garamond/latin-500.css'
@@ -75,7 +76,9 @@ export default function RootLayout({
           Skip to main content
         </a>
         <StoreBootstrap />
-        <AuthProvider>{children}</AuthProvider>
+        <TauriAppShell>
+          <AuthProvider>{children}</AuthProvider>
+        </TauriAppShell>
       </body>
     </html>
   )
