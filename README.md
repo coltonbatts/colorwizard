@@ -17,6 +17,14 @@
 
 ---
 
+## Download
+
+**[Mac Desktop App (Apple Silicon) — v1.0.0](https://github.com/coltonbatts/colorwizard/releases/download/v1.0.0/ColorWizard_0.1.0_aarch64.dmg)**
+
+Or use it in the browser: [colorwizard.app](https://colorwizard.app/)
+
+---
+
 ## Desktop & offline packaging (ADR)
 
 **Decision:** Ship the desktop app using Tauri’s supported Next.js path: **static export** into `out/`, which the macOS bundle loads directly. This is the cleanest route to a shippable DMG and avoids a bundled Node server.
