@@ -11,8 +11,6 @@
 graphify-out/
 components/graphify-out/
 /out/
-/public/data/
-/scripts/source/
 
 # production
 /build
