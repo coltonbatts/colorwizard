@@ -5,7 +5,6 @@ use sqlx::FromRow;
 use tauri::Manager;
 
 use sqlx::sqlite::SqliteConnectOptions;
-use std::str::FromStr;
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct ProjectInfo {
@@ -28,8 +27,17 @@ pub struct ProjectUpdate {
     pub thumbnail: Option<String>,
 }
 
-fn db_path_str(path: &PathBuf) -> String {
-    format!("sqlite:{}", path.to_string_lossy())
+fn app_db_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&app_data_dir).map_err(|e| {
+        format!(
+            "failed to create app data directory {}: {}",
+            app_data_dir.display(),
+            e
+        )
+    })?;
+
+    Ok(app_data_dir.join("colorwizard.db"))
 }
 
 async fn ensure_tables(pool: &sqlx::SqlitePool) -> Result<(), String> {
@@ -108,28 +116,36 @@ async fn ensure_tables(pool: &sqlx::SqlitePool) -> Result<(), String> {
 }
 
 async fn get_pool(app: &tauri::AppHandle) -> Result<sqlx::SqlitePool, String> {
-    let path = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(&path).map_err(|e| e.to_string())?;
-    let db_file = path.join("colorwizard.db");
-
-    // Use SqliteConnectOptions which handles special chars in paths properly
-    let db_str = db_file.to_string_lossy();
-    let options = SqliteConnectOptions::from_str(&format!("sqlite:{}?mode=rwc", db_str))
-        .map_err(|e| e.to_string())?
+    let db_file = app_db_file(app)?;
+    let options = SqliteConnectOptions::new()
+        .filename(&db_file)
         .create_if_missing(true);
 
     let pool = sqlx::SqlitePool::connect_with(options)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("failed to open SQLite database at {}: {}", db_file.display(), e))?;
 
     ensure_tables(&pool).await?;
     Ok(pool)
 }
 
+#[allow(non_snake_case)]
+fn resolve_project_id(project_id: Option<i64>, projectId: Option<i64>) -> Result<i64, String> {
+    project_id
+        .or(projectId)
+        .ok_or_else(|| "missing required key projectId".to_string())
+}
+
+fn resolve_string_arg(primary: Option<String>, alias: Option<String>, arg_name: &str) -> Result<String, String> {
+    primary
+        .or(alias)
+        .ok_or_else(|| format!("missing required key {}", arg_name))
+}
+
 #[tauri::command]
 pub async fn cw_init_database(app: tauri::AppHandle) -> Result<String, String> {
     let pool = get_pool(&app).await?;
-    let path = app.path().app_data_dir().map_err(|e| e.to_string())?.join("colorwizard.db");
+    let path = app_db_file(&app)?;
     pool.close().await;
     Ok(format!("OK: {}", path.to_string_lossy()))
 }
@@ -163,7 +179,9 @@ pub async fn cw_list_projects(app: tauri::AppHandle) -> Result<Vec<ProjectInfo>,
 }
 
 #[tauri::command]
-pub async fn cw_get_project(app: tauri::AppHandle, project_id: i64) -> Result<ProjectInfo, String> {
+#[allow(non_snake_case)]
+pub async fn cw_get_project(app: tauri::AppHandle, project_id: Option<i64>, projectId: Option<i64>) -> Result<ProjectInfo, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
     let pool = get_pool(&app).await?;
     let project = sqlx::query_as::<_, ProjectInfo>(
         "SELECT id, name, created_at, modified_at, thumbnail FROM projects WHERE id = ?"
@@ -202,7 +220,9 @@ pub async fn cw_update_project(app: tauri::AppHandle, update: ProjectUpdate) -> 
 }
 
 #[tauri::command]
-pub async fn cw_delete_project(app: tauri::AppHandle, project_id: i64) -> Result<String, String> {
+#[allow(non_snake_case)]
+pub async fn cw_delete_project(app: tauri::AppHandle, project_id: Option<i64>, projectId: Option<i64>) -> Result<String, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
     let pool = get_pool(&app).await?;
     sqlx::query("DELETE FROM projects WHERE id = ?")
         .bind(project_id)
@@ -214,7 +234,16 @@ pub async fn cw_delete_project(app: tauri::AppHandle, project_id: i64) -> Result
 }
 
 #[tauri::command]
-pub async fn cw_save_palettes(app: tauri::AppHandle, project_id: i64, palettes_json: String) -> Result<String, String> {
+#[allow(non_snake_case)]
+pub async fn cw_save_palettes(
+    app: tauri::AppHandle,
+    project_id: Option<i64>,
+    projectId: Option<i64>,
+    palettes_json: Option<String>,
+    palettesJson: Option<String>,
+) -> Result<String, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
+    let palettes_json = resolve_string_arg(palettes_json, palettesJson, "palettesJson")?;
     let pool = get_pool(&app).await?;
     sqlx::query("DELETE FROM palettes WHERE project_id = ?")
         .bind(project_id).execute(&pool).await.map_err(|e| e.to_string())?;
@@ -238,7 +267,9 @@ pub async fn cw_save_palettes(app: tauri::AppHandle, project_id: i64, palettes_j
 }
 
 #[tauri::command]
-pub async fn cw_load_palettes(app: tauri::AppHandle, project_id: i64) -> Result<String, String> {
+#[allow(non_snake_case)]
+pub async fn cw_load_palettes(app: tauri::AppHandle, project_id: Option<i64>, projectId: Option<i64>) -> Result<String, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
     let pool = get_pool(&app).await?;
     let rows = sqlx::query(
         "SELECT palette_id, name, is_active, is_default, colors FROM palettes WHERE project_id = ?"
@@ -255,7 +286,16 @@ pub async fn cw_load_palettes(app: tauri::AppHandle, project_id: i64) -> Result<
 }
 
 #[tauri::command]
-pub async fn cw_save_pinned_colors(app: tauri::AppHandle, project_id: i64, pinned_colors_json: String) -> Result<String, String> {
+#[allow(non_snake_case)]
+pub async fn cw_save_pinned_colors(
+    app: tauri::AppHandle,
+    project_id: Option<i64>,
+    projectId: Option<i64>,
+    pinned_colors_json: Option<String>,
+    pinnedColorsJson: Option<String>,
+) -> Result<String, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
+    let pinned_colors_json = resolve_string_arg(pinned_colors_json, pinnedColorsJson, "pinnedColorsJson")?;
     let pool = get_pool(&app).await?;
     sqlx::query("DELETE FROM pinned_colors WHERE project_id = ?").bind(project_id).execute(&pool).await.map_err(|e| e.to_string())?;
     let colors: Vec<serde_json::Value> = serde_json::from_str(&pinned_colors_json).map_err(|e| e.to_string())?;
@@ -276,7 +316,9 @@ pub async fn cw_save_pinned_colors(app: tauri::AppHandle, project_id: i64, pinne
 }
 
 #[tauri::command]
-pub async fn cw_load_pinned_colors(app: tauri::AppHandle, project_id: i64) -> Result<String, String> {
+#[allow(non_snake_case)]
+pub async fn cw_load_pinned_colors(app: tauri::AppHandle, project_id: Option<i64>, projectId: Option<i64>) -> Result<String, String> {
+    let project_id = resolve_project_id(project_id, projectId)?;
     let pool = get_pool(&app).await?;
     let rows = sqlx::query("SELECT color_id, hex, r_value, g_value, b_value, notes FROM pinned_colors WHERE project_id = ? ORDER BY sort_order")
         .bind(project_id).fetch_all(&pool).await.map_err(|e| e.to_string())?;

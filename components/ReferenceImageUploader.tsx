@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { resolveTauriImageSrc } from '@/lib/tauri';
 
 interface ReferenceImage {
     id: string;
@@ -208,7 +209,7 @@ export function ReferenceImageUploader({
                                 }`}
                         >
                             <img
-                                src={image.url}
+                                src={resolveTauriImageSrc(image.url) ?? image.url}
                                 alt={image.name}
                                 className="w-full h-full object-cover"
                             />

@@ -4,6 +4,8 @@
  */
 'use client'
 
+import { convertFileSrc } from '@tauri-apps/api/core'
+
 interface WindowWithTauri {
     __TAURI__?: { core?: { invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } }
     __TAURI_INTERNALS__?: { invoke?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }
@@ -19,10 +21,58 @@ export function isTauri(): boolean {
     return getInvoke() !== null
 }
 
+function fileUrlToPath(src: string): string | null {
+    try {
+        const url = new URL(src)
+        if (url.protocol !== 'file:') return null
+
+        const decodedPath = decodeURIComponent(url.pathname)
+
+        // Windows file URLs resolve to /C:/...
+        if (/^\/[A-Za-z]:\//.test(decodedPath)) {
+            return decodedPath.slice(1)
+        }
+
+        return decodedPath
+    } catch {
+        return null
+    }
+}
+
+export function resolveTauriImageSrc(src: string | null | undefined): string | null {
+    if (!src) return null
+    if (!isTauri()) return src
+
+    if (
+        src.startsWith('data:') ||
+        src.startsWith('blob:') ||
+        src.startsWith('asset:') ||
+        src.startsWith('http://') ||
+        src.startsWith('https://')
+    ) {
+        return src
+    }
+
+    if (src.startsWith('file://')) {
+        const filePath = fileUrlToPath(src)
+        return filePath ? convertFileSrc(filePath) : src
+    }
+
+    if (src.startsWith('/') || /^[A-Za-z]:[\\/]/.test(src)) {
+        return convertFileSrc(src)
+    }
+
+    return src
+}
+
 function invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown> {
     const fn = getInvoke()
     if (!fn) return Promise.reject(new Error(`Tauri invoke not available. Command: ${cmd}`))
     return fn(cmd, args)
+}
+
+function withProjectId(projectId: number): Record<string, unknown> {
+    return { projectId, project_id: projectId }
 }
 
 // ─── Database ───
@@ -51,7 +101,7 @@ export async function listProjects(): Promise<ProjectInfo[]> {
 }
 
 export async function getProject(projectId: number): Promise<ProjectInfo> {
-    return invoke('cw_get_project', { project_id: projectId }) as Promise<ProjectInfo>
+    return invoke('cw_get_project', withProjectId(projectId)) as Promise<ProjectInfo>
 }
 
 export async function updateProject(id: number, name?: string, thumbnail?: string): Promise<ProjectInfo> {
@@ -61,28 +111,38 @@ export async function updateProject(id: number, name?: string, thumbnail?: strin
 }
 
 export async function deleteProject(projectId: number): Promise<string> {
-    return invoke('cw_delete_project', { project_id: projectId }) as Promise<string>
+    return invoke('cw_delete_project', withProjectId(projectId)) as Promise<string>
 }
 
 // ─── Palettes ───
 
 export async function savePalettes(projectId: number, palettes: unknown[]): Promise<string> {
-    return invoke('cw_save_palettes', { project_id: projectId, palettes_json: JSON.stringify(palettes) }) as Promise<string>
+    const palettesJson = JSON.stringify(palettes)
+    return invoke('cw_save_palettes', {
+        ...withProjectId(projectId),
+        palettesJson,
+        palettes_json: palettesJson,
+    }) as Promise<string>
 }
 
 export async function loadPalettes(projectId: number): Promise<unknown[]> {
-    const result = await invoke('cw_load_palettes', { project_id: projectId }) as string
+    const result = await invoke('cw_load_palettes', withProjectId(projectId)) as string
     try { return JSON.parse(result) } catch { return [] }
 }
 
 // ─── Pinned Colors ───
 
 export async function savePinnedColors(projectId: number, colors: unknown[]): Promise<string> {
-    return invoke('cw_save_pinned_colors', { project_id: projectId, pinned_colors_json: JSON.stringify(colors) }) as Promise<string>
+    const pinnedColorsJson = JSON.stringify(colors)
+    return invoke('cw_save_pinned_colors', {
+        ...withProjectId(projectId),
+        pinnedColorsJson,
+        pinned_colors_json: pinnedColorsJson,
+    }) as Promise<string>
 }
 
 export async function loadPinnedColors(projectId: number): Promise<unknown[]> {
-    const result = await invoke('cw_load_pinned_colors', { project_id: projectId }) as string
+    const result = await invoke('cw_load_pinned_colors', withProjectId(projectId)) as string
     try { return JSON.parse(result) } catch { return [] }
 }
 

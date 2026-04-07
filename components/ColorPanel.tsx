@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useId } from 'react'
 import { rgb as culoriRgb } from 'culori'
 import PaintRecipe from './PaintRecipe'
 import MixLab from './MixLab'
@@ -11,7 +11,7 @@ import ColorHarmonies from './ColorHarmonies'
 import ValueHistogram from './ValueHistogram'
 import ColorCardModal from './ColorCardModal'
 import CollapsibleSection from './ui/CollapsibleSection'
-import { getPainterValue, getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
+import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
@@ -64,6 +64,26 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const [showCardModal, setShowCardModal] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
   const isShortViewport = useMediaQuery('(max-height: 900px)')
+  const noteInputId = useId()
+
+  const ExpandIcon = () => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M15 3h6v6" />
+      <path d="M9 21H3v-6" />
+      <path d="M21 3l-7 7" />
+      <path d="M3 21l7-7" />
+    </svg>
+  )
 
   // Section toggle handlers
   const toggleSection = useCallback((section: MixSection) => {
@@ -100,13 +120,11 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   }
 
   const { hex, rgb, hsl } = sampledColor
-  const value = getPainterValue(hex)
   const chroma = getPainterChroma(hex)
   const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
   // Value First Data
   const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
-  const valueStep10 = Math.min(10, Math.max(0, Math.round(valuePercent / 10)))
   const valueBand = getValueBand(valuePercent)
   const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
@@ -118,18 +136,23 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         <div className="flex flex-col lg:gap-4 gap-2">
 
           {/* Giant Hero Swatch */}
-          <div className="w-full aspect-[2/1] lg:aspect-video rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-all duration-500"
+          <div className="w-full aspect-[2/1] lg:aspect-video rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-[box-shadow,transform] duration-500"
             style={{ backgroundColor: hex }}
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
             <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-3xl"></div>
             {/* Expand button */}
             <button
-              onClick={() => setShowColorFullScreen(true)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white/70 hover:text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-sm"
-              title="View full screen (click or ESC to close)"
+              type="button"
+              onClick={() => {
+                setShowCardModal(false)
+                setShowColorFullScreen(true)
+              }}
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/20 text-white/70 opacity-0 backdrop-blur-sm transition-[background-color,opacity,color] duration-200 hover:bg-black/40 hover:text-white group-hover:opacity-100"
+              title="Open full-screen preview"
+              aria-label="View color swatch full screen"
             >
-              <span className="text-lg">⛶</span>
+              <ExpandIcon />
             </button>
           </div>
 
@@ -143,6 +166,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             <div className="flex items-center gap-4 mb-2">
               <h2 className="text-4xl lg:text-5xl font-black tracking-tighter font-mono text-studio tabular-nums">{hex}</h2>
               <button
+                type="button"
                 onClick={async () => {
                   if (isPinned) return
                   setIsPinning(true)
@@ -170,15 +194,16 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   }
                 }}
                 disabled={isPinning || isPinned}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isPinned
+                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-[background-color,color,border-color,box-shadow,transform] ${isPinned
                   ? 'bg-green-600/20 text-green-400 border border-green-500/30'
                   : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
                   }`}
+                aria-label={isPinned ? 'Color pinned' : 'Pin color'}
               >
                 {isPinning ? (
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Pinning...
+                    Pinning…
                   </span>
                 ) : isPinned ? (
                   <><span>✓</span> Pinned</>
@@ -187,6 +212,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 )}
               </button>
               <button
+                type="button"
                 onClick={async () => {
                   setIsCreatingCard(true)
                   try {
@@ -225,6 +251,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                         dmc,
                       },
                     })
+                    setShowColorFullScreen(false)
                     setShowCardModal(true)
                   } catch (e) {
                     console.error('Failed to create color card', e)
@@ -233,12 +260,13 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   }
                 }}
                 disabled={isCreatingCard}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-purple-600 hover:bg-purple-500 text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg transition-[background-color,color,box-shadow,transform] hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-70"
+                aria-label="Create color card"
               >
                 {isCreatingCard ? (
                   <>
                     <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Saving...
+                    Saving…
                   </>
                 ) : (
                   <>
@@ -249,12 +277,19 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             </div>
 
             <div className="w-full max-w-xs mb-4">
+              <label htmlFor={noteInputId} className="sr-only">
+                Color note
+              </label>
               <input
+                id={noteInputId}
+                name="color-note"
                 type="text"
                 placeholder="Add a label/note..."
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-xs text-studio focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full rounded-xl border border-gray-100 bg-white px-3 py-2 text-xs text-studio shadow-sm transition-[border-color,box-shadow] focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 

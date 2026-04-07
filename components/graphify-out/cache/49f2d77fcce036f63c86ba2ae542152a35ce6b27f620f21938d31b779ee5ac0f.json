@@ -1,0 +1,1 @@
+{"nodes": [{"id": "structuretab", "label": "StructureTab.tsx", "file_type": "code", "source_file": "components/tabs/StructureTab.tsx", "source_location": "L1"}], "edges": [{"source": "structuretab", "target": "usecalibrationstore", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "components/tabs/StructureTab.tsx", "source_location": "L3", "weight": 1.0}]}

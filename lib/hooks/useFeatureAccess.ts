@@ -10,67 +10,27 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 import { useUserTier } from './useUserTier'
-import { hasAccessToProFeature, type ProOnlyFeature } from '@/lib/featureFlags'
+import type { ProOnlyFeature } from '@/lib/featureFlags'
 
 export function useFeatureAccess(featureName: ProOnlyFeature) {
   const { tier, loading: tierLoading } = useUserTier()
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
-  const [isUpgrading, setIsUpgrading] = useState(false)
+  const [isUpgrading] = useState(false)
 
   const hasAccess = useCallback(() => {
-    if (OPEN_SOURCE_MODE) {
-      return true
-    }
-
-    return hasAccessToProFeature(featureName, tier)
+    void featureName
+    void tier
+    return true
   }, [featureName, tier])
 
   const promptUpgrade = useCallback(() => {
-    if (!hasAccess()) {
-      setShowUpgradePrompt(true)
-      return true
-    }
+    void hasAccess
     return false
   }, [hasAccess])
 
   const handleUpgradeClick = useCallback(async () => {
-    if (OPEN_SOURCE_MODE) {
-      setShowUpgradePrompt(false)
-      return
-    }
-
-    setIsUpgrading(true)
-    try {
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create checkout session')
-      }
-
-      const data = await response.json()
-      
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url
-      } else if (data.error) {
-        throw new Error(data.error)
-      }
-    } catch (error) {
-      console.error('Error initiating upgrade:', error)
-      const message = error instanceof Error ? error.message : 'Unknown error occurred'
-      alert(`Failed to start upgrade: ${message}. Please try again.`)
-    } finally {
-      setIsUpgrading(false)
-    }
+    setShowUpgradePrompt(false)
   }, [])
 
   return {

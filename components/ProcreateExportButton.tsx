@@ -57,11 +57,12 @@ export default function ProcreateExportButton({
         minimal: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold border border-gray-300',
     };
 
-    const baseStyles = 'px-4 py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2';
+    const baseStyles = 'flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition-colors disabled:cursor-not-allowed disabled:opacity-50';
 
     return (
         <>
             <button
+                type="button"
                 onClick={handleExport}
                 disabled={isExporting || colors.length === 0}
                 className={`${baseStyles} ${variantStyles[variant]} ${className}`}
@@ -70,11 +71,24 @@ export default function ProcreateExportButton({
                 {isExporting ? (
                     <>
                         <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Exporting...</span>
+                        <span>Exporting…</span>
                     </>
                 ) : (
                     <>
-                        <span className="text-lg">🎨</span>
+                        <svg
+                            aria-hidden="true"
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M12 3v10" />
+                            <path d="m8 7 4-4 4 4" />
+                            <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+                        </svg>
                         <span>Export to Procreate</span>
                     </>
                 )}

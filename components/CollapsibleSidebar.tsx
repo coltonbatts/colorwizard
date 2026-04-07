@@ -1,9 +1,27 @@
 'use client'
 
 import { ReactNode } from 'react'
+import {
+    DeckWorkbenchIcon,
+    LibraryWorkbenchIcon,
+    MixWorkbenchIcon,
+    ReferenceWorkbenchIcon,
+    SampleWorkbenchIcon,
+    StructureWorkbenchIcon,
+    SurfaceWorkbenchIcon,
+    ThreadsWorkbenchIcon,
+} from './workbenchIcons'
 
-// Thin Core: Sample, matches, and deck tabs
-type TabType = 'sample' | 'matches' | 'deck'
+// Desktop workbench modes plus mobile-safe thin-core tabs.
+type TabType =
+    | 'sample'
+    | 'matches'
+    | 'mix'
+    | 'library'
+    | 'reference'
+    | 'structure'
+    | 'surface'
+    | 'deck'
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -16,46 +34,55 @@ interface CollapsibleSidebarProps {
     className?: string
 }
 
-// Tab configuration with icons - Thin Core only
+// Mobile tab configuration keeps the thin-core flow simple.
 const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[] = [
     {
         id: 'sample',
         label: 'Sample',
         tooltip: 'Sample Color',
-        icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m12 19-7-7 7-7" />
-                <path d="M19 12H5" />
-                <path d="M19 12c0 3.866-3.134 7-7 7" />
-                <circle cx="12" cy="12" r="3" />
-            </svg>
-        )
+        icon: <SampleWorkbenchIcon />
     },
     {
         id: 'matches',
         label: 'Threads',
         tooltip: 'DMC Floss Matches',
-        icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                {/* Needle */}
-                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
-                <circle cx="20.5" cy="3.5" r="1.5" />
-                {/* Thread */}
-                <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
-            </svg>
-        )
+        icon: <ThreadsWorkbenchIcon />
+    },
+    {
+        id: 'mix',
+        label: 'Mix',
+        tooltip: 'Color mixing workspace',
+        icon: <MixWorkbenchIcon />
+    },
+    {
+        id: 'library',
+        label: 'Library',
+        tooltip: 'Paint library',
+        icon: <LibraryWorkbenchIcon />
+    },
+    {
+        id: 'reference',
+        label: 'Reference',
+        tooltip: 'Reference image',
+        icon: <ReferenceWorkbenchIcon />
+    },
+    {
+        id: 'structure',
+        label: 'Structure',
+        tooltip: 'Grid and guides',
+        icon: <StructureWorkbenchIcon />
+    },
+    {
+        id: 'surface',
+        label: 'Surface',
+        tooltip: 'Painting surface',
+        icon: <SurfaceWorkbenchIcon />
     },
     {
         id: 'deck',
         label: 'Deck',
         tooltip: 'Saved Card Deck',
-        icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="5" width="16" height="14" rx="3" />
-                <path d="M7 9h10" />
-                <path d="M7 13h6" />
-            </svg>
-        )
+        icon: <DeckWorkbenchIcon />
     },
 ]
 
@@ -72,7 +99,7 @@ export default function CollapsibleSidebar({
     width = 400,
     className = ''
 }: CollapsibleSidebarProps) {
-    // Thin Core: Always show all tabs (sample + matches + deck)
+    // Collapsible sidebar stays generic. Desktop mode selection now lives in the workbench rail.
     const visibleTabs = TABS
     const safeWidth =
         typeof width === 'number' && Number.isFinite(width) && width > 0 ? width : 400
@@ -111,7 +138,7 @@ export default function CollapsibleSidebar({
             {/* Collapsed Icon Bar */}
             {collapsed && (
                 <div className="sidebar-icon-bar pt-4">
-                    {visibleTabs.map((tab, index) => (
+                    {visibleTabs.map((tab) => (
                         <button
                             type="button"
                             key={tab.id}
@@ -120,7 +147,7 @@ export default function CollapsibleSidebar({
                                 onToggle()
                             }}
                             className={`sidebar-icon-btn tooltip-wrapper ${activeTab === tab.id ? 'active' : ''}`}
-                            data-tooltip={`${tab.tooltip} (${index + 1})`}
+                            data-tooltip={tab.tooltip}
                             aria-label={tab.tooltip}
                             aria-pressed={activeTab === tab.id}
                         >

@@ -5,6 +5,19 @@
 
 import { NextRequest } from 'next/server'
 
+const FIREBASE_ADMIN_PLACEHOLDER_MESSAGE =
+  'Firebase Admin verification is not configured in this repo; server auth remains placeholder logic.'
+let hasWarnedAboutFirebaseAdminPlaceholder = false
+
+function warnFirebaseAdminPlaceholder() {
+  if (hasWarnedAboutFirebaseAdminPlaceholder) {
+    return
+  }
+
+  hasWarnedAboutFirebaseAdminPlaceholder = true
+  console.warn(FIREBASE_ADMIN_PLACEHOLDER_MESSAGE)
+}
+
 /**
  * Get user ID from Authorization header
  * Format: "Bearer <idToken>"
@@ -15,27 +28,24 @@ export async function getUserIdFromRequest(req: NextRequest): Promise<string | n
   
   if (!authHeader?.startsWith('Bearer ')) {
     // Fallback to demo user for development
+    warnFirebaseAdminPlaceholder()
     console.warn('No Authorization header found, using demo user')
     return 'demo-user'
   }
 
   const idToken = authHeader.substring(7)
   
-  // In production, verify the ID token with Firebase Admin SDK
-  // For now, return the token as user ID
-  // TODO: Implement proper Firebase Admin SDK verification
+  // Without firebase-admin configured, this remains a passthrough placeholder.
+  warnFirebaseAdminPlaceholder()
   return idToken
 }
 
 /**
- * Verify Firebase ID token (requires firebase-admin)
- * TODO: Set up Firebase Admin SDK
+ * Verify Firebase ID token.
+ * This repo does not currently ship firebase-admin, so verification is disabled.
  */
 export async function verifyIdToken(idToken: string): Promise<{ uid: string } | null> {
-  // This would use firebase-admin
-  // const decodedToken = await admin.auth().verifyIdToken(idToken)
-  // return decodedToken
-  
-  // For now, return a placeholder
+  void idToken
+  warnFirebaseAdminPlaceholder()
   return null
 }

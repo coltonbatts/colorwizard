@@ -55,11 +55,12 @@ export default function MixedColorPreview({
     variant = 'standard',
 }: MixedColorPreviewProps) {
     const styles = QUALITY_STYLES[matchQuality]
+    const isCompact = variant === 'compact'
 
     return (
-        <div className={variant === 'compact' ? 'mb-4' : 'mb-6'}>
+        <div className={isCompact ? 'mb-3' : 'mb-6'}>
             {/* Color comparison swatches */}
-            <div className={`flex gap-3 ${variant === 'compact' ? 'mb-3' : 'mb-4'}`}>
+            <div className={`flex gap-2 ${isCompact ? 'mb-2.5' : 'mb-4'}`}>
                 {/* Predicted Mix - larger, primary */}
                 <motion.div
                     className="flex-1"
@@ -67,11 +68,11 @@ export default function MixedColorPreview({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <div className={`${variant === 'compact' ? 'text-[9px] mb-1' : 'text-[10px] mb-1.5'} text-gray-400 uppercase tracking-widest font-bold`}>
-                        Mixed Result
+                    <div className={`${isCompact ? 'mb-1 text-[8px] tracking-[0.18em]' : 'mb-1.5 text-[10px] tracking-widest'} font-bold uppercase text-gray-400`}>
+                        Mix
                     </div>
                     <div
-                        className={`${variant === 'compact' ? 'h-14' : 'h-20'} rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden`}
+                        className={`${isCompact ? 'h-12 rounded-lg' : 'h-20 rounded-xl'} relative overflow-hidden border border-gray-600/50 shadow-lg`}
                         style={{ backgroundColor: predictedHex }}
                     >
                         {/* Subtle gradient overlay for depth */}
@@ -81,16 +82,16 @@ export default function MixedColorPreview({
 
                 {/* Target - smaller, reference */}
                 <motion.div
-                    className={variant === 'compact' ? 'w-16' : 'w-20'}
+                    className={isCompact ? 'w-14' : 'w-20'}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <div className={`${variant === 'compact' ? 'text-[9px] mb-1' : 'text-[10px] mb-1.5'} text-gray-400 uppercase tracking-widest font-bold`}>
+                    <div className={`${isCompact ? 'mb-1 text-[8px] tracking-[0.18em]' : 'mb-1.5 text-[10px] tracking-widest'} font-bold uppercase text-gray-400`}>
                         Target
                     </div>
                     <div
-                        className={`${variant === 'compact' ? 'h-14' : 'h-20'} rounded-xl border border-gray-600/50 shadow-lg relative overflow-hidden`}
+                        className={`${isCompact ? 'h-12 rounded-lg' : 'h-20 rounded-xl'} relative overflow-hidden border border-gray-600/50 shadow-lg`}
                         style={{ backgroundColor: targetHex }}
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
@@ -100,16 +101,16 @@ export default function MixedColorPreview({
 
             {/* Match quality badge */}
             <motion.div
-                className={`inline-flex items-center gap-2 ${variant === 'compact' ? 'px-2.5 py-1' : 'px-3 py-1.5'} rounded-full ${styles.bg} ${styles.border} border`}
+                className={`inline-flex items-center gap-1.5 rounded-full border ${styles.bg} ${styles.border} ${isCompact ? 'px-2 py-1' : 'px-3 py-1.5'}`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
             >
                 <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
-                <span className={`${variant === 'compact' ? 'text-xs' : 'text-sm'} font-medium ${styles.text}`}>
-                    {matchQuality} Match
+                <span className={`${isCompact ? 'text-[10px]' : 'text-sm'} font-medium ${styles.text}`}>
+                    {matchQuality}
                 </span>
-                <span className={`${variant === 'compact' ? 'text-[10px]' : 'text-xs'} text-gray-500 ml-1`}>
+                <span className={`${isCompact ? 'text-[9px]' : 'text-xs'} ml-0.5 text-gray-500`}>
                     ΔE {error.toFixed(1)}
                 </span>
             </motion.div>

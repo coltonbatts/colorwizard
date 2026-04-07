@@ -36,11 +36,14 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect }
     if (!sampledColor) {
         return (
             <div className="h-full p-6 flex flex-col items-center justify-center bg-paper-elevated text-ink-secondary">
-                <div className="w-16 h-16 rounded-full border-2 border-ink-hairline flex items-center justify-center mb-4">
-                    <span className="text-2xl text-ink-faint">🎨</span>
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-ink-hairline bg-paper-recessed text-ink-faint">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="8" />
+                        <path d="M12 4v8l5 5" />
+                    </svg>
                 </div>
-                <p className="text-center font-semibold text-ink">Sample a color first</p>
-                <p className="text-sm text-ink-muted mt-2">Then see how to mix it</p>
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Mix</div>
+                <p className="mt-2 text-sm font-semibold text-ink">Sample to mix.</p>
             </div>
         )
     }

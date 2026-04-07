@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useState, useId } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 interface UploadHeroProps {
     onImageLoad: (img: HTMLImageElement) => void
@@ -17,6 +17,7 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
     const [isLoading, setIsLoading] = useState(false)
     const fileInputId = useId()
     const cameraInputId = useId()
+    const shouldReduceMotion = useReducedMotion() ?? false
 
     const handleFile = useCallback((file: File) => {
         if (!file.type.startsWith('image/')) {
@@ -28,9 +29,11 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
         const img = new Image()
         img.onload = () => {
             onImageLoad(img)
+            URL.revokeObjectURL(objectUrl)
             setIsLoading(false)
         }
         img.onerror = () => {
+            URL.revokeObjectURL(objectUrl)
             setIsLoading(false)
         }
         img.src = objectUrl
@@ -71,10 +74,10 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
     return (
         <motion.div
             className="upload-hero"
-            initial={{ opacity: 0 }}
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3 }}
         >
             {/* Hidden file inputs */}
             <input
@@ -104,26 +107,32 @@ export default function UploadHero({ onImageLoad }: UploadHeroProps) {
                     {isLoading ? (
                         <motion.div
                             key="loading"
-                            initial={{ opacity: 0, scale: 0.8 }}
+                            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
+                            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
                             className="upload-hero-content"
                         >
                             <div className="upload-hero-spinner" />
-                            <p className="upload-hero-text">Loading image...</p>
+                            <p className="upload-hero-text">Loading image…</p>
                         </motion.div>
                     ) : (
                         <motion.div
                             key="upload"
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
+                            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -20 }}
                             className="upload-hero-content"
                         >
                             {/* Upload Icon */}
                             <motion.div
                                 className="upload-hero-icon"
-                                animate={isDragging ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+                                animate={
+                                    shouldReduceMotion
+                                        ? undefined
+                                        : isDragging
+                                            ? { scale: 1.1, rotate: 5 }
+                                            : { scale: 1, rotate: 0 }
+                                }
                             >
                                 <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

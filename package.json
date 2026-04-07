@@ -1,6 +1,6 @@
 {
   "name": "color-wizard",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "generate:data": "node scripts/generate-static-data.mjs",
@@ -9,14 +9,16 @@
     "dev:tauri": "next dev -p 3000",
     "prebuild": "npm run generate:data",
     "build": "next build",
+    "postbuild": "node scripts/clean-desktop-export.mjs",
     "pretest": "npm run generate:data",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
+    "tauri:build:dmg": "tauri build --bundles dmg",
     "tauri:build": "tauri build",
-    "validate:paints": "npx ts-node --esm scripts/validate-paints.ts"
+    "validate:paints": "node scripts/validate-paints.mjs"
   },
   "dependencies": {
     "@fontsource/eb-garamond": "^5.2.7",

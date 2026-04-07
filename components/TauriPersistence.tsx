@@ -13,13 +13,16 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
+import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
+import { DEFAULT_PALETTE } from '@/lib/types/palette'
+import { DEFAULT_CANVAS_SETTINGS } from '@/lib/types/canvas'
+import { DEFAULT_VALUE_SCALE_SETTINGS } from '@/lib/types/valueScale'
 import {
   isTauri,
   initDatabase,
   loadPalettes,
   savePalettes,
-  loadPinnedColors,
   savePinnedColors,
   setAppSetting,
   getAppSetting,
@@ -27,9 +30,16 @@ import {
 
 interface TauriPersistenceProps {
   projectId: number | null
+  onReady?: (projectId: number) => void
 }
 
-export default function TauriPersistence({ projectId }: TauriPersistenceProps) {
+const DEFAULT_SIDEBAR_WIDTH = 360
+
+function projectSettingKey(projectId: number, key: string): string {
+  return `project:${projectId}:${key}`
+}
+
+export default function TauriPersistence({ projectId, onReady }: TauriPersistenceProps) {
   const hasInitializedRef = useRef(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -45,7 +55,71 @@ export default function TauriPersistence({ projectId }: TauriPersistenceProps) {
   const setSidebarWidth = useLayoutStore((s) => s.setSidebarWidth)
   const setSimpleMode = useLayoutStore((s) => s.setSimpleMode)
 
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
+  const setImage = useCanvasStore((s) => s.setImage)
+  const setReferenceImage = useCanvasStore((s) => s.setReferenceImage)
+  const setSurfaceImage = useCanvasStore((s) => s.setSurfaceImage)
+  const setSurfaceBounds = useCanvasStore((s) => s.setSurfaceBounds)
+  const setReferenceOpacity = useCanvasStore((s) => s.setReferenceOpacity)
+  const resetReferenceTransform = useCanvasStore((s) => s.resetReferenceTransform)
+  const setValueScaleSettings = useCanvasStore((s) => s.setValueScaleSettings)
+  const setHistogramBins = useCanvasStore((s) => s.setHistogramBins)
+  const setValueScaleResult = useCanvasStore((s) => s.setValueScaleResult)
+  const setBreakdownValue = useCanvasStore((s) => s.setBreakdownValue)
+  const setCanvasSettings = useCanvasStore((s) => s.setCanvasSettings)
+
+  const setSampledColor = useSessionStore((s) => s.setSampledColor)
+  const setActiveHighlightColor = useSessionStore((s) => s.setActiveHighlightColor)
+  const setValueModeEnabled = useSessionStore((s) => s.setValueModeEnabled)
+
+  const [hydratedProjectId, setHydratedProjectId] = useState<number | null>(null)
+
+  const resetProjectState = useCallback(() => {
+    setPalettes([DEFAULT_PALETTE])
+    setPinnedColors([])
+    setCalibration(null)
+    setSidebarCollapsed(false)
+    setCompactMode(false)
+    setSidebarWidth(DEFAULT_SIDEBAR_WIDTH)
+    setSimpleMode(true)
+
+    setImage(null)
+    setReferenceImage(null)
+    setSurfaceImage(null)
+    setSurfaceBounds(null)
+    setReferenceOpacity(1)
+    resetReferenceTransform()
+    setValueScaleSettings(DEFAULT_VALUE_SCALE_SETTINGS)
+    setHistogramBins([])
+    setValueScaleResult(null)
+    setBreakdownValue(0)
+    setCanvasSettings(DEFAULT_CANVAS_SETTINGS)
+
+    setSampledColor(null)
+    setActiveHighlightColor(null)
+    setValueModeEnabled(false)
+  }, [
+    resetReferenceTransform,
+    setActiveHighlightColor,
+    setBreakdownValue,
+    setCalibration,
+    setCanvasSettings,
+    setCompactMode,
+    setHistogramBins,
+    setImage,
+    setPalettes,
+    setPinnedColors,
+    setReferenceImage,
+    setReferenceOpacity,
+    setSampledColor,
+    setSidebarCollapsed,
+    setSidebarWidth,
+    setSimpleMode,
+    setSurfaceBounds,
+    setSurfaceImage,
+    setValueModeEnabled,
+    setValueScaleResult,
+    setValueScaleSettings,
+  ])
 
   // Step 1: Init DB on first mount
   useEffect(() => {
@@ -59,88 +133,138 @@ export default function TauriPersistence({ projectId }: TauriPersistenceProps) {
 
   // Step 2: Load data when project is set
   useEffect(() => {
-    if (!isTauri() || projectId === null) return
+    if (!isTauri()) return
+
+    if (projectId === null) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      setHydratedProjectId(null)
+      return
+    }
 
     console.log('[Tauri] Loading project', projectId)
-    setActiveProjectId(projectId)
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    setHydratedProjectId(null)
+    resetProjectState()
 
-    // Load palettes
-    loadPalettes(projectId).then((raw: unknown[]) => {
-      if (!Array.isArray(raw) || raw.length === 0) return
-      const loaded = raw.map((p: unknown) => {
-        const obj = p as Record<string, unknown>
-        return {
-          id: (obj.id as string) || 'default',
-          name: (obj.name as string) || 'Palette',
-          colors: Array.isArray(obj.colors) ? obj.colors : [],
-          isActive: obj.isActive === true,
-          isDefault: obj.isDefault === true,
-          createdAt: (obj.createdAt as number) || 0,
-        }
-      })
-      setPalettes(loaded)
-      console.log('[Tauri] Loaded', loaded.length, 'palettes')
-    }).catch((err) => {
-      console.error('[Tauri] Failed to load palettes:', err)
-    })
+    let cancelled = false
 
-    // Load pinned colors - skip for now, stored in localStorage
-    // Full SQLite migration in Step 3
+    const hydrateProject = async () => {
+      await Promise.allSettled([
+        loadPalettes(projectId)
+          .then((raw: unknown[]) => {
+            if (!Array.isArray(raw) || raw.length === 0) {
+              setPalettes([DEFAULT_PALETTE])
+              return
+            }
 
-    // Load calibration from settings
-    getAppSetting('calibration').then((calStr) => {
-      if (!calStr) return
-      try {
-        const calData = JSON.parse(calStr)
-        setCalibration(calData)
-        console.log('[Tauri] Loaded calibration')
-      } catch (e) {
-        console.error('[Tauri] Failed to parse calibration:', e)
-      }
-    }).catch((err: unknown) => {
-      console.error('[Tauri] Failed to load calibration:', err)
-    })
+            const loaded = raw.map((p: unknown) => {
+              const obj = p as Record<string, unknown>
+              return {
+                id: (obj.id as string) || 'default',
+                name: (obj.name as string) || 'Palette',
+                colors: Array.isArray(obj.colors) ? obj.colors : [],
+                isActive: obj.isActive === true,
+                isDefault: obj.isDefault === true,
+                createdAt: (obj.createdAt as number) || 0,
+              }
+            })
 
-    // Load layout settings
-    getAppSetting('layout').then((layoutStr) => {
-      if (!layoutStr) return
-      try {
-        const layout = JSON.parse(layoutStr) as Record<string, number | string | boolean>
-        if (typeof layout.sidebarCollapsed === 'boolean') setSidebarCollapsed(layout.sidebarCollapsed)
-        if (typeof layout.compactMode === 'boolean') setCompactMode(layout.compactMode)
-        if (typeof layout.sidebarWidth === 'number') setSidebarWidth(layout.sidebarWidth)
-        if (typeof layout.simpleMode === 'boolean') setSimpleMode(layout.simpleMode)
-        console.log('[Tauri] Loaded layout settings')
-      } catch (e) {
-        console.error('[Tauri] Failed to parse layout:', e)
-      }
-    }).catch((err: unknown) => {
-      console.error('[Tauri] Failed to load layout:', err)
-    })
-  }, [projectId])
+            setPalettes(loaded)
+            console.log('[Tauri] Loaded', loaded.length, 'palettes')
+          })
+          .catch((err) => {
+            console.error('[Tauri] Failed to load palettes:', err)
+          }),
+        getAppSetting(projectSettingKey(projectId, 'calibration'))
+          .then((calStr) => {
+            if (!calStr) return
+            try {
+              const calData = JSON.parse(calStr)
+              setCalibration(calData)
+              console.log('[Tauri] Loaded calibration')
+            } catch (e) {
+              console.error('[Tauri] Failed to parse calibration:', e)
+            }
+          })
+          .catch((err: unknown) => {
+            console.error('[Tauri] Failed to load calibration:', err)
+          }),
+        getAppSetting(projectSettingKey(projectId, 'layout'))
+          .then((layoutStr) => {
+            if (!layoutStr) return
+            try {
+              const layout = JSON.parse(layoutStr) as Record<string, number | string | boolean>
+              if (typeof layout.sidebarCollapsed === 'boolean') setSidebarCollapsed(layout.sidebarCollapsed)
+              if (typeof layout.compactMode === 'boolean') setCompactMode(layout.compactMode)
+              if (typeof layout.sidebarWidth === 'number') setSidebarWidth(layout.sidebarWidth)
+              if (typeof layout.simpleMode === 'boolean') setSimpleMode(layout.simpleMode)
+              console.log('[Tauri] Loaded layout settings')
+            } catch (e) {
+              console.error('[Tauri] Failed to parse layout:', e)
+            }
+          })
+          .catch((err: unknown) => {
+            console.error('[Tauri] Failed to load layout:', err)
+          }),
+      ])
+
+      if (cancelled) return
+
+      setHydratedProjectId(projectId)
+      onReady?.(projectId)
+    }
+
+    hydrateProject()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    onReady,
+    projectId,
+    resetProjectState,
+    setCalibration,
+    setCompactMode,
+    setPalettes,
+    setSidebarCollapsed,
+    setSidebarWidth,
+    setSimpleMode,
+  ])
 
   // Step 3: Debounced save on store changes
   const debouncedSave = useCallback(() => {
-    if (!isTauri() || activeProjectId === null) return
+    if (!isTauri() || hydratedProjectId === null) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      return
+    }
 
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
 
     saveTimeoutRef.current = setTimeout(() => {
-      savePalettes(activeProjectId, palettes).catch((err: unknown) => {
+      savePalettes(hydratedProjectId, palettes).catch((err: unknown) => {
         console.error('[Tauri] Save palettes failed:', err)
       })
 
-      savePinnedColors(activeProjectId, pinnedColors).catch((err: unknown) => {
+      savePinnedColors(hydratedProjectId, pinnedColors).catch((err: unknown) => {
         console.error('[Tauri] Save pinned colors failed:', err)
       })
 
       if (calibration) {
-        setAppSetting('calibration', JSON.stringify(calibration)).catch((err: unknown) => {
+        setAppSetting(projectSettingKey(hydratedProjectId, 'calibration'), JSON.stringify(calibration)).catch((err: unknown) => {
           console.error('[Tauri] Save calibration failed:', err)
         })
       }
+
+      setAppSetting(projectSettingKey(hydratedProjectId, 'layout'), JSON.stringify({
+        sidebarCollapsed: useLayoutStore.getState().sidebarCollapsed,
+        compactMode: useLayoutStore.getState().compactMode,
+        sidebarWidth: useLayoutStore.getState().sidebarWidth,
+        simpleMode: useLayoutStore.getState().simpleMode,
+      })).catch((err: unknown) => {
+        console.error('[Tauri] Save layout failed:', err)
+      })
     }, 500)
-  }, [activeProjectId, palettes, pinnedColors, calibration])
+  }, [hydratedProjectId, palettes, pinnedColors, calibration])
 
   useEffect(() => {
     debouncedSave()

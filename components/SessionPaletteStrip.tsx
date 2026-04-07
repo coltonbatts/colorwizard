@@ -108,121 +108,122 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-gray-200 shadow-lg z-40">
-            <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
-                {/* Label */}
-                <span className="text-[10px] font-black text-studio-dim uppercase tracking-widest shrink-0">
-                    Session
-                </span>
+        <div className="fixed bottom-[4.5rem] left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:bottom-3 md:w-[min(calc(100vw-8rem),88rem)] md:px-0">
+            <div className="glass-panel-elevated rounded-[28px] px-3 py-3 md:px-4">
+                <div className="flex items-center gap-3 overflow-x-auto">
+                    <div className="shrink-0 pr-1">
+                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                            Session Dock
+                        </div>
+                        <div className="mt-1 text-sm font-black tracking-tight text-ink">
+                            {colors.length} saved
+                        </div>
+                    </div>
 
-                {/* Color swatches */}
-                <div className="flex gap-2 flex-1 overflow-x-auto py-1">
-                    {colors.map((color) => (
-                        <div
-                            key={color.id}
-                            className="relative shrink-0"
-                        >
-                            {/* Swatch - tap to toggle menu, double-tap to select */}
-                            <button
-                                onClick={() => {
-                                    // Toggle popup on single tap
-                                    setActivePopup(activePopup === color.id ? null : color.id)
-                                }}
-                                onDoubleClick={() => {
-                                    setActivePopup(null)
-                                    onColorSelect?.(color)
-                                }}
-                                className={`w-10 h-10 rounded-lg shadow-md border transition-all flex items-center justify-center ${activePopup === color.id
-                                    ? 'border-blue-500 ring-2 ring-blue-300 scale-110'
-                                    : 'border-gray-200 hover:scale-110'
-                                    }`}
-                                style={{ backgroundColor: color.hex }}
-                                title="Tap for options, double-tap to select"
-                                aria-label={`Color swatch: ${color.label}. Tap for options, double-tap to select.`}
+                    <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
+                        {colors.map((color) => (
+                            <div
+                                key={color.id}
+                                className="group relative shrink-0"
                             >
-                                <span
-                                    className="text-[8px] font-black uppercase tracking-tighter"
-                                    style={{ color: getBestContrast(color.hex) }}
+                                <button
+                                    onClick={() => {
+                                        setActivePopup(activePopup === color.id ? null : color.id)
+                                    }}
+                                    onDoubleClick={() => {
+                                        setActivePopup(null)
+                                        onColorSelect?.(color)
+                                    }}
+                                    className={`flex h-12 w-12 items-end justify-start rounded-2xl border p-1.5 shadow-sm transition-all ${
+                                        activePopup === color.id
+                                            ? 'scale-[1.04] border-signal ring-2 ring-signal/20'
+                                            : 'border-ink-hairline hover:scale-[1.04]'
+                                    }`}
+                                    style={{ backgroundColor: color.hex }}
+                                    title="Tap for actions, double-tap to sample again"
+                                    aria-label={`Session swatch ${color.label}. Tap for actions, double-tap to sample again.`}
                                 >
-                                    {getContrastRatio(color.hex, getBestContrast(color.hex)).toFixed(1)}
-                                </span>
-                            </button>
+                                    <span
+                                        className="rounded-md bg-white/70 px-1 py-0.5 text-[8px] font-black uppercase tracking-tight"
+                                        style={{ color: getBestContrast(color.hex) }}
+                                    >
+                                        {getContrastRatio(color.hex, getBestContrast(color.hex)).toFixed(1)}
+                                    </span>
+                                </button>
 
-                            {/* Action menu - visible when activePopup matches OR on hover (desktop) */}
-                            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 transition-opacity z-50 ${activePopup === color.id
-                                ? 'opacity-100 pointer-events-auto'
-                                : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'
+                                <div className={`absolute bottom-full left-1/2 z-50 mb-2 w-40 -translate-x-1/2 transition-opacity ${
+                                    activePopup === color.id
+                                        ? 'pointer-events-auto opacity-100'
+                                        : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
                                 }`}>
-                                <div className="bg-gray-900 rounded-lg shadow-xl p-2 flex flex-col gap-1 min-w-[100px]">
-                                    {/* Label */}
-                                    {editingId === color.id ? (
-                                        <input
-                                            type="text"
-                                            value={editLabel}
-                                            onChange={(e) => setEditLabel(e.target.value)}
-                                            onBlur={() => renameColor(color.id, editLabel)}
-                                            onKeyDown={(e) => e.key === 'Enter' && renameColor(color.id, editLabel)}
-                                            className="bg-gray-800 text-white text-xs px-2 py-1 rounded border border-gray-700 w-full"
-                                            autoFocus
-                                        />
-                                    ) : (
-                                        <span className="text-white text-xs font-bold px-1 whitespace-normal break-words">{color.label}</span>
-                                    )}
-                                    <span className="text-gray-400 text-[10px] font-mono px-1">{color.hex}</span>
+                                    <div className="rounded-2xl border border-ink-hairline bg-ink px-3 py-3 shadow-[0_18px_40px_rgba(26,26,26,0.24)]">
+                                        {editingId === color.id ? (
+                                            <input
+                                                type="text"
+                                                value={editLabel}
+                                                onChange={(e) => setEditLabel(e.target.value)}
+                                                onBlur={() => renameColor(color.id, editLabel)}
+                                                onKeyDown={(e) => e.key === 'Enter' && renameColor(color.id, editLabel)}
+                                                className="w-full rounded-lg border border-white/10 bg-white/10 px-2 py-1.5 text-xs text-white outline-none"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <div className="text-sm font-bold text-white">{color.label}</div>
+                                        )}
+                                        <div className="mt-1 font-mono text-[11px] text-white/70">{color.hex}</div>
 
-                                    {/* Actions */}
-                                    <div className="flex gap-1 mt-1">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setEditingId(color.id); setEditLabel(color.label) }}
-                                            className="flex-1 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-[10px] text-gray-300"
-                                        >
-                                            ✏️
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); copyHex(color.hex, color.id) }}
-                                            className="flex-1 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-[10px] text-gray-300"
-                                        >
-                                            {copied === color.id ? '✓' : '📋'}
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); removeColor(color.id) }}
-                                            className="flex-1 px-2 py-1 bg-red-900 hover:bg-red-800 rounded text-[10px] text-red-300"
-                                        >
-                                            ✕
-                                        </button>
+                                        <div className="mt-3 flex gap-1">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setEditingId(color.id); setEditLabel(color.label) }}
+                                                className="flex-1 rounded-lg bg-white/10 px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-white/15"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); copyHex(color.hex, color.id) }}
+                                                className="flex-1 rounded-lg bg-white/10 px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-white/15"
+                                            >
+                                                {copied === color.id ? 'Copied' : 'Copy'}
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); removeColor(color.id) }}
+                                                className="flex-1 rounded-lg bg-signal px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-signal-hover"
+                                            >
+                                                Drop
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 shrink-0">
-                    <ProcreateExportButton
-                        colors={colors
-                            .filter(c => c && c.rgb) // Safety check: filter out colors without rgb
-                            .map((c): ProcreateColor => ({
-                                hex: c.hex,
-                                name: c.label,
-                                rgb: [c.rgb.r, c.rgb.g, c.rgb.b],
-                            }))}
-                        paletteName="Session Palette"
-                        variant="minimal"
-                        className="px-3 py-1.5 text-xs"
-                    />
-                    <button
-                        onClick={exportPalette}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors"
-                    >
-                        JSON
-                    </button>
-                    <button
-                        onClick={clearAll}
-                        className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-studio-dim rounded-lg text-xs font-bold transition-colors"
-                    >
-                        Clear
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <ProcreateExportButton
+                            colors={colors
+                                .filter(c => c && c.rgb)
+                                .map((c): ProcreateColor => ({
+                                    hex: c.hex,
+                                    name: c.label,
+                                    rgb: [c.rgb.r, c.rgb.g, c.rgb.b],
+                                }))}
+                            paletteName="Session Palette"
+                            variant="minimal"
+                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary"
+                        />
+                        <button
+                            onClick={exportPalette}
+                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+                        >
+                            JSON
+                        </button>
+                        <button
+                            onClick={clearAll}
+                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-signal"
+                        >
+                            Clear
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

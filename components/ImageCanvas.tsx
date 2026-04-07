@@ -23,6 +23,7 @@ import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
+import CanvasHUD from '@/components/CanvasHUD'
 import { createSourceBuffer } from '@/lib/imagePipeline'
 import { DebugOverlay } from '@/components/DebugOverlay'
 import { calculateFit } from '@/lib/canvasRendering'
@@ -32,6 +33,7 @@ import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
+import { resolveTauriImageSrc } from '@/lib/tauri'
 import {
   MAX_ZOOM,
   MIN_ZOOM,
@@ -82,6 +84,12 @@ interface ImageCanvasProps {
   measurePointA?: { x: number; y: number } | null
   measurePointB?: { x: number; y: number } | null
   measurementLayer?: MeasurementLayer
+  sampledColorHex?: string | null
+  workspaceModeLabel?: string
+  showHud?: boolean
+  mobileLayout?: 'default' | 'sample'
+  dismissPreviewSignal?: number
+  suppressPreviewOverlay?: boolean
 }
 
 export interface ImageCanvasHandle {
@@ -112,6 +120,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     measurePointB,
     measurementLayer,
     canvasSettings,
+    sampledColorHex,
+    workspaceModeLabel,
+    showHud = true,
+    mobileLayout = 'default',
+    dismissPreviewSignal,
+    suppressPreviewOverlay = false,
   } = props
 
   const isMobile = useIsMobile()
@@ -167,7 +181,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
 
     const img = new Image()
-    img.src = surfaceImage
+    img.src = resolveTauriImageSrc(surfaceImage) ?? surfaceImage
     img.onload = () => setSurfaceImageElement(img)
   }, [surfaceImage])
 
@@ -207,6 +221,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const [gridSquareSize, setGridSquareSize] = useState(1)
   const gridEnabled = gridEnabledProp ?? internalGridEnabled
   const hasRenderableImage = Boolean(image || surfaceImageElement)
+  const mobileSampleLayout = isMobile && mobileLayout === 'sample'
+
+  useEffect(() => {
+    if (dismissPreviewSignal === undefined) return
+    setShowImageFullScreen(false)
+  }, [dismissPreviewSignal])
 
   const [zoomLevel, setZoomLevel] = useState(1)
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
@@ -379,6 +399,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         { width: canvasDimensions.width, height: canvasDimensions.height },
         { width: mainImg.width, height: mainImg.height }
       )
+      if (mobileSampleLayout) {
+        fittedInfo.y = 0
+      }
       setImageDrawInfo(fittedInfo)
       setZoomLevel(1)
       resetPan()
@@ -386,7 +409,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     })
 
     return () => cancelAnimationFrame(raf)
-  }, [image, surfaceImageElement, canvasDimensions.width, canvasDimensions.height, resetPan])
+  }, [image, surfaceImageElement, canvasDimensions.width, canvasDimensions.height, resetPan, mobileSampleLayout])
 
   useEffect(() => {
     const mainImg = image || surfaceImageElement
@@ -397,8 +420,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       { width: canvasDimensions.width, height: canvasDimensions.height },
       { width: mainImg.width, height: mainImg.height }
     )
+    if (mobileSampleLayout) {
+      info.y = 0
+    }
     setImageDrawInfo(info)
-  }, [canvasDimensions.width, canvasDimensions.height, image, surfaceImageElement])
+  }, [canvasDimensions.width, canvasDimensions.height, image, surfaceImageElement, mobileSampleLayout])
 
   const drawCanvas = useCallback(() => {
     drawMainCanvas({
@@ -1034,37 +1060,72 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       {!image && !surfaceImage ? (
         <ImageDropzone onImageLoad={onImageLoad} />
       ) : (
-        <div className="flex-1 flex min-h-0 flex-col">
-          {!isMobile && (
-            <ZoomControlsBar
-              zoomLevel={zoomLevel}
-              onZoomIn={zoom.zoomIn}
-              onZoomOut={zoom.zoomOut}
-              onFit={resetView}
-              minZoom={MIN_ZOOM}
-              maxZoom={MAX_ZOOM}
-            />
-          )}
-
+        <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div
             ref={canvasContainerRef}
-            className="canvas-viewport flex-1 min-h-0 relative overflow-hidden overscroll-contain select-none md:rounded-lg md:border border-gray-700 bg-white md:bg-gray-900"
+            className={`canvas-viewport ${mobileSampleLayout ? 'h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[18px] md:border'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-paper-recessed`}
           >
+            {showHud && (
+              <CanvasHUD
+                valueOverlayEnabled={valueScaleSettings?.enabled ?? false}
+                splitViewEnabled={splitMode}
+                gridEnabled={gridEnabled}
+                measureEnabled={measureMode || false}
+                zoomLevel={zoomLevel}
+                liveColorHex={sampledColorHex}
+                workspaceModeLabel={workspaceModeLabel}
+              />
+            )}
+
             {isAnalyzing && (
-              <div className="absolute top-4 right-4 z-10 flex items-center gap-2 text-xs text-white/70 bg-gray-900/80 px-2 py-1 rounded">
-                <div className="w-3 h-3 border border-white/50 border-t-transparent rounded-full animate-spin" />
-                Processing...
+              <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-ink-hairline bg-paper-elevated/92 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-secondary shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md">
+                <div className="w-3 h-3 border border-ink-muted border-t-transparent rounded-full animate-spin" />
+                Working
               </div>
             )}
 
-            <button
-              onClick={() => setShowImageFullScreen(true)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 text-white/70 hover:text-white rounded-lg transition-all duration-200 backdrop-blur-sm"
-              style={{ right: isAnalyzing ? '90px' : '16px' }}
-              title="View full screen (click or ESC to close)"
-            >
-              <span className="text-lg">⛶</span>
-            </button>
+            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-xl border border-ink-hairline bg-paper-elevated/88 p-1 shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md'}`}>
+              {!isMobile && (
+                <>
+                  <label
+                    htmlFor={desktopFileInputId}
+                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-paper text-ink-secondary transition-colors hover:text-ink"
+                    title="Load image"
+                    aria-label="Load image"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 16V7" />
+                      <path d="m8 11 4-4 4 4" />
+                      <path d="M20 17v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" />
+                    </svg>
+                  </label>
+                  <input
+                    id={desktopFileInputId}
+                    type="file"
+                    accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+                    onChange={handleDirectFileInput}
+                    className="sr-only"
+                  />
+                </>
+              )}
+
+              <button
+                onClick={() => setShowImageFullScreen(true)}
+                className={`${mobileSampleLayout
+                  ? 'flex h-10 w-10 items-center justify-center rounded-lg border border-ink-hairline bg-paper-elevated/90 text-ink-secondary shadow-[0_8px_20px_rgba(26,26,26,0.12)] backdrop-blur-md transition-colors hover:text-ink'
+                  : 'flex h-9 w-9 items-center justify-center rounded-lg bg-paper text-ink-secondary transition-colors hover:text-ink'
+                }`}
+                title="Full screen"
+                aria-label="Full screen"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 3h6v6" />
+                  <path d="M9 21H3v-6" />
+                  <path d="M21 3l-7 7" />
+                  <path d="M3 21l7-7" />
+                </svg>
+              </button>
+            </div>
 
             <canvas
               ref={canvasRef}
@@ -1130,51 +1191,33 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               canvasDimensions={canvasDimensions}
               isVisible={minimapVisible}
             />
+
+            {!isMobile && (
+              <div className="absolute bottom-4 left-4 z-20">
+                <ZoomControlsBar
+                  zoomLevel={zoomLevel}
+                  onZoomIn={zoom.zoomIn}
+                  onZoomOut={zoom.zoomOut}
+                  onFit={resetView}
+                  minZoom={MIN_ZOOM}
+                  maxZoom={MAX_ZOOM}
+                />
+              </div>
+            )}
           </div>
 
-          <div className="hidden md:block mt-2 text-center text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-            Scroll/± to Zoom • Space+Drag to Pan • 0 to Fit • V: Value • S: Split • G: Grid
-          </div>
-
-          <div className="hidden md:flex items-center justify-between mt-4">
-            <label
-              htmlFor={desktopFileInputId}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition-colors cursor-pointer"
-            >
-              <span>Load New Image</span>
-            </label>
-            <input
-              id={desktopFileInputId}
-              type="file"
-              accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-              onChange={handleDirectFileInput}
-              className="sr-only"
-            />
-            <div className="text-gray-500 text-sm">
-              Zoom: {Math.round(zoomLevel * 100)}% | Pan: ({Math.round(panOffset.x)}, {Math.round(panOffset.y)})
-            </div>
-          </div>
-
-          <div className="flex md:hidden items-center justify-center mt-2 pb-2">
-            <label
-              htmlFor={mobileFileInputId}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer"
-            >
-              <span>New Image</span>
-            </label>
-            <input
-              id={mobileFileInputId}
-              type="file"
-              accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-              onChange={handleDirectFileInput}
-              className="sr-only"
-            />
-          </div>
+          <input
+            id={mobileFileInputId}
+            type="file"
+            accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+            onChange={handleDirectFileInput}
+            className="sr-only"
+          />
         </div>
       )}
 
       <FullScreenOverlay
-        isOpen={showImageFullScreen}
+        isOpen={showImageFullScreen && !suppressPreviewOverlay}
         onClose={() => setShowImageFullScreen(false)}
       >
         {image && (

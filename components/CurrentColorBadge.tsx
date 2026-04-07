@@ -52,7 +52,6 @@ export default function CurrentColorBadge({
     }
 
     const { hex, rgb } = sampledColor
-    const isLight = (rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114) > 150
 
     return (
         <motion.div
@@ -61,8 +60,11 @@ export default function CurrentColorBadge({
         >
             {/* Compact View */}
             <button
+                type="button"
                 className="current-color-badge-compact"
                 onClick={handleExpand}
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? 'Collapse color details' : `Expand color details for ${hex}`}
             >
                 <motion.div
                     className="current-color-badge-swatch"
@@ -86,6 +88,7 @@ export default function CurrentColorBadge({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
+                    aria-hidden="true"
                 >
                     <polyline points="6 9 12 15 18 9" />
                 </svg>
@@ -116,17 +119,19 @@ export default function CurrentColorBadge({
                         {/* Pin Action */}
                         {onPin && (
                             <button
+                                type="button"
                                 className={`current-color-badge-pin ${isPinned ? 'pinned' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     onPin()
                                 }}
                                 disabled={isPinning || isPinned}
+                                aria-label={isPinned ? 'Color already pinned' : 'Pin color'}
                             >
                                 {isPinning ? (
                                     <span className="flex items-center gap-1">
                                         <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Pinning...
+                                        Pinning…
                                     </span>
                                 ) : isPinned ? (
                                     <>✓ Pinned</>

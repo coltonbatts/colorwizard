@@ -29,18 +29,21 @@ export default function ZoomControlsBar({
     maxZoom = 10,
 }: ZoomControlsBarProps) {
     return (
-        <div className="flex items-center justify-center gap-2 mb-2 px-2">
+        <div className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-black/55 p-1.5 text-white shadow-[0_12px_32px_rgba(0,0,0,0.22)] backdrop-blur-md">
             <button
                 onClick={onZoomOut}
                 disabled={zoomLevel <= minZoom}
-                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-300 rounded-xl text-studio transition-all text-lg font-bold shadow-sm border border-gray-100"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-lg font-bold text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-35"
                 title="Zoom Out (-)"
             >
                 −
             </button>
+            <div className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">
+                {Math.round(zoomLevel * 100)}%
+            </div>
             <button
                 onClick={onFit}
-                className="px-4 h-8 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm"
+                className="flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-black uppercase tracking-[0.18em] text-black transition-colors hover:bg-white/90"
                 title="Fit to view (perfect initial size)"
             >
                 Fit
@@ -48,7 +51,7 @@ export default function ZoomControlsBar({
             <button
                 onClick={onZoomIn}
                 disabled={zoomLevel >= maxZoom}
-                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 disabled:bg-gray-50 disabled:text-gray-300 rounded-xl text-studio transition-all text-lg font-bold shadow-sm border border-gray-100"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-lg font-bold text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-35"
                 title="Zoom In (+)"
             >
                 +

@@ -1,6 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
 const LICENSE_SALT: &str = "colorwizard-desktop-2026";
 const LICENSE_KEY_PREFIX: &str = "CW-";
 

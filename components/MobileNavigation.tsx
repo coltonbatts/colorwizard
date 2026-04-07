@@ -8,6 +8,11 @@
 import Link from 'next/link'
 import { TabType } from './CollapsibleSidebar'
 import OverlaySurface from '@/components/ui/Overlay'
+import {
+    DeckWorkbenchIcon,
+    SampleWorkbenchIcon,
+    ThreadsWorkbenchIcon,
+} from './workbenchIcons'
 
 interface MobileNavigationProps {
     isOpen: boolean
@@ -38,6 +43,48 @@ export default function MobileNavigation({
         setIsOpen(false)
     }
 
+    const CanvasSettingsIcon = () => (
+        <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M4 21v-7" />
+            <path d="M4 10V3" />
+            <path d="M12 21v-9" />
+            <path d="M12 8V3" />
+            <path d="M20 21v-5" />
+            <path d="M20 12V3" />
+            <path d="M2 14h4" />
+            <path d="M10 10h4" />
+            <path d="M18 14h4" />
+        </svg>
+    )
+
+    const CalibrationIcon = () => (
+        <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+        >
+            <path d="M3 7h18" />
+            <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
+            <rect x="4" y="7" width="16" height="13" rx="2" />
+        </svg>
+    )
+
     return (
         <OverlaySurface
             isOpen={isOpen}
@@ -63,7 +110,7 @@ export default function MobileNavigation({
                     className="mobile-nav-close"
                     aria-label="Close navigation"
                 >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <path d="M18 6L6 18" />
                         <path d="M6 6l12 12" />
                     </svg>
@@ -82,12 +129,7 @@ export default function MobileNavigation({
                         aria-pressed={activeTab === 'sample'}
                     >
                         <span className="mobile-nav-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="m12 19-7-7 7-7" />
-                                <path d="M19 12H5" />
-                                <path d="M19 12c0 3.866-3.134 7-7 7" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
+                            <SampleWorkbenchIcon />
                         </span>
                         <span className="mobile-nav-label">Sample Color</span>
                         {activeTab === 'sample' && (
@@ -105,11 +147,7 @@ export default function MobileNavigation({
                         aria-pressed={activeTab === 'matches'}
                     >
                         <span className="mobile-nav-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M19.5 4.5 L6.5 17.5" strokeWidth="2" />
-                                <circle cx="20.5" cy="3.5" r="1.5" />
-                                <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
-                            </svg>
+                            <ThreadsWorkbenchIcon />
                         </span>
                         <span className="mobile-nav-label">DMC Threads</span>
                         {activeTab === 'matches' && (
@@ -127,11 +165,7 @@ export default function MobileNavigation({
                         aria-pressed={activeTab === 'deck'}
                     >
                         <span className="mobile-nav-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="4" y="5" width="16" height="14" rx="3" />
-                                <path d="M7 9h10" />
-                                <path d="M7 13h6" />
-                            </svg>
+                            <DeckWorkbenchIcon />
                         </span>
                         <span className="mobile-nav-label">Card Deck</span>
                         {activeTab === 'deck' && (
@@ -149,7 +183,9 @@ export default function MobileNavigation({
                             onClick={() => handleAction(onOpenCanvasSettings)}
                             className="mobile-nav-item"
                         >
-                            <span className="mobile-nav-icon">🖼️</span>
+                            <span className="mobile-nav-icon">
+                                <CanvasSettingsIcon />
+                            </span>
                             <span className="mobile-nav-label">Canvas Settings</span>
                         </button>
                     )}
@@ -159,7 +195,9 @@ export default function MobileNavigation({
                             onClick={() => handleAction(onOpenCalibration)}
                             className="mobile-nav-item"
                         >
-                            <span className="mobile-nav-icon">📐</span>
+                            <span className="mobile-nav-icon">
+                                <CalibrationIcon />
+                            </span>
                             <span className="mobile-nav-label">Calibration</span>
                         </button>
                     )}

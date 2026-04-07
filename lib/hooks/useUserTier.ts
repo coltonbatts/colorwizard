@@ -1,12 +1,10 @@
 /**
- * React hook for user tier management
+ * React hook for user tier management.
+ * The offline desktop build does not fetch account state from a server.
  */
 
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
-import { useAuth } from '@/lib/auth/useAuth'
 import type { UserTier } from '@/lib/featureFlags'
 
 interface UserTierData {
@@ -17,82 +15,23 @@ interface UserTierData {
   upgradeDate?: string
 }
 
-const DEFAULT_TIER: UserTierData = {
+const LOCAL_TIER: UserTierData = {
   tier: 'free',
   subscriptionStatus: undefined,
 }
 
-const OPEN_SOURCE_TIER: UserTierData = {
-  tier: 'free',
-  subscriptionStatus: undefined,
-}
-
-/**
- * Hook to get and manage user's subscription tier
- * Checks server for tier info on mount and when user changes
- */
 export function useUserTier() {
-  const { user } = useAuth()
-  const [tierData, setTierData] = useState<UserTierData>(DEFAULT_TIER)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchUserTier = useCallback(async () => {
-    if (OPEN_SOURCE_MODE) {
-      setTierData(OPEN_SOURCE_TIER)
-      setError(null)
-      setLoading(false)
-      return
-    }
-
-    try {
-      setLoading(true)
-      
-      // Get ID token for authenticated request
-      let idToken: string | undefined
-      if (user) {
-        idToken = await user.getIdToken()
-      }
-
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`
-      }
-
-      const response = await fetch('/api/user/tier', { headers })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user tier: ${response.statusText}`)
-      }
-      
-      const data = await response.json()
-      setTierData(data)
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching user tier:', err)
-      setError(err instanceof Error ? err.message : 'Unknown error')
-      setTierData(DEFAULT_TIER)
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
-
-  // Fetch tier on mount and when user changes
-  useEffect(() => {
-    fetchUserTier()
-  }, [fetchUserTier])
+  const refetch = async () => undefined
 
   return {
-    tier: tierData.tier,
-    subscriptionStatus: tierData.subscriptionStatus,
-    subscriptionId: tierData.subscriptionId,
-    nextBillingDate: tierData.nextBillingDate,
-    upgradeDate: tierData.upgradeDate,
-    loading,
-    error,
-    refetch: fetchUserTier,
-    isPro: OPEN_SOURCE_MODE || tierData.tier === 'pro' || tierData.tier === 'pro_lifetime',
+    tier: LOCAL_TIER.tier,
+    subscriptionStatus: LOCAL_TIER.subscriptionStatus,
+    subscriptionId: LOCAL_TIER.subscriptionId,
+    nextBillingDate: LOCAL_TIER.nextBillingDate,
+    upgradeDate: LOCAL_TIER.upgradeDate,
+    loading: false,
+    error: null,
+    refetch,
+    isPro: true,
   }
 }

@@ -1,4 +1,5 @@
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { resolveTauriImageSrc } from '@/lib/tauri'
 
 export default function ReferenceTab() {
     const referenceImage = useCanvasStore(state => state.referenceImage)
@@ -31,14 +32,12 @@ export default function ReferenceTab() {
     }
 
     return (
-        <div className="p-4 space-y-6">
-            <div className="space-y-4">
-                <h3 className="text-xs font-black text-ink-faint uppercase tracking-widest">Reference Image</h3>
-
+        <div className="p-3 space-y-4">
                 {referenceImage ? (
                     <div className="space-y-4">
                         <div className="relative group aspect-square rounded-xl overflow-hidden border border-ink-hairline bg-paper-recessed">
-                            <img src={referenceImage} alt="Reference" className="w-full h-full object-contain" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={resolveTauriImageSrc(referenceImage) ?? referenceImage} alt="Reference" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                 <label
                                     className="p-2 bg-paper-elevated rounded-lg text-ink hover:bg-paper-recessed transition-colors cursor-pointer"
@@ -70,8 +69,7 @@ export default function ReferenceTab() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 p-4 bg-paper-recessed rounded-xl border border-ink-hairline">
-                            {/* Opacity */}
+                        <div className="space-y-4 rounded-xl border border-ink-hairline bg-paper-recessed p-3">
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-bold text-ink uppercase tracking-wider">Opacity</label>
@@ -85,7 +83,6 @@ export default function ReferenceTab() {
                                 />
                             </div>
 
-                            {/* Lock Toggle */}
                             <button
                                 onClick={() => setReferenceLocked(!referenceLocked)}
                                 className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${referenceLocked
@@ -101,8 +98,7 @@ export default function ReferenceTab() {
                             </button>
                         </div>
 
-                        {/* Transform Controls */}
-                        <div className="space-y-4 p-4 bg-paper-elevated rounded-xl border border-ink-hairline shadow-sm">
+                        <div className="space-y-4 rounded-xl border border-ink-hairline bg-paper-elevated p-3">
                             <div className="flex justify-between items-center border-b border-ink-hairline pb-2 mb-2">
                                 <h4 className="text-[10px] font-black text-ink uppercase tracking-widest">Transform</h4>
                                 <button
@@ -113,7 +109,6 @@ export default function ReferenceTab() {
                                 </button>
                             </div>
 
-                            {/* Scale */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Scale</label>
@@ -128,7 +123,6 @@ export default function ReferenceTab() {
                                 />
                             </div>
 
-                            {/* Rotation */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Rotation</label>
@@ -143,7 +137,6 @@ export default function ReferenceTab() {
                                 />
                             </div>
 
-                            {/* Position X */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">X Offset</label>
@@ -158,7 +151,6 @@ export default function ReferenceTab() {
                                 />
                             </div>
 
-                            {/* Position Y */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Y Offset</label>
@@ -176,15 +168,15 @@ export default function ReferenceTab() {
                     </div>
                 ) : (
                     <label
-                        className="aspect-square rounded-lg border-2 border-dashed border-ink-hairline hover:border-signal hover:bg-subsignal-muted transition-all cursor-pointer flex flex-col items-center justify-center p-6 text-center group"
+                        className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-ink-hairline p-6 text-center transition-all hover:border-signal hover:bg-subsignal-muted"
                     >
-                        <div className="w-12 h-12 rounded-full bg-paper-recessed flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-paper-recessed transition-transform group-hover:scale-110">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-faint group-hover:text-signal">
                                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                             </svg>
                         </div>
-                        <p className="text-xs font-bold text-ink mb-1">Upload Reference Image</p>
-                        <p className="text-[10px] text-ink-faint">Drag and drop or click to browse</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Reference</p>
+                        <p className="mt-2 text-sm font-semibold text-ink">Load image</p>
                         <input
                             type="file"
                             className="absolute w-1 h-1 opacity-0 pointer-events-none"
@@ -193,13 +185,6 @@ export default function ReferenceTab() {
                         />
                     </label>
                 )}
-
-                <div className="p-4 bg-subsignal-muted rounded-xl border border-subsignal">
-                    <p className="text-[10px] text-subsignal leading-relaxed">
-                        <strong>Tip:</strong> Use the reference image as an overlay to check your drawing accuracy or value distribution. Lock it to prevent accidental moves.
-                    </p>
-                </div>
-            </div>
         </div>
     )
 }

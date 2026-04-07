@@ -32,6 +32,10 @@ interface PaintRecipeProps {
   variant?: 'standard' | 'dashboard' | 'compact'
   /** Whether to show the Procreate export button */
   showExportButton?: boolean
+  /** Hide the recipe title block */
+  hideHeader?: boolean
+  /** Hide compact footer metadata */
+  hideFooter?: boolean
 }
 
 const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
@@ -53,6 +57,8 @@ export default function PaintRecipe({
   paintIds,
   variant = 'standard',
   showExportButton = true,
+  hideHeader = false,
+  hideFooter = false,
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -170,31 +176,32 @@ export default function PaintRecipe({
     variant === 'compact' || variant === 'dashboard'
       ? variant
       : (isShortViewport || isNarrowViewport ? 'compact' : 'standard')
-  const compactSteps = recipe.steps.slice(0, 3)
+  const compactSteps = recipe.steps.slice(0, 2)
   const hasMoreCompactSteps = recipe.steps.length > compactSteps.length
 
   // Handle empty catalog state separately
   const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
 
   return (
-    <div className={`w-full min-w-0 rounded-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 ${effectiveVariant === 'compact' ? 'p-3' : 'p-4'}`}>
-      <div className={`flex items-center justify-between ${effectiveVariant === 'compact' ? 'mb-2' : 'mb-3 lg:mb-4'}`}>
-        <h3 className={`${effectiveVariant === 'compact' ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-100`}>Oil Paint Recipe</h3>
-        {isFallback && !isEmptyCatalog && (
-          <span className="text-[10px] lg:text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 lg:py-1 rounded border border-blue-500/30">
-            Heuristic Match
-          </span>
-        )}
-      </div>
+    <div className={`w-full min-w-0 rounded-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 ${effectiveVariant === 'compact' ? 'p-2.5' : 'p-4'}`}>
+      {!hideHeader && (
+        <div className={`flex items-center justify-between ${effectiveVariant === 'compact' ? 'mb-2' : 'mb-3 lg:mb-4'}`}>
+          <h3 className={`${effectiveVariant === 'compact' ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-100`}>Oil Paint Recipe</h3>
+          {isFallback && !isEmptyCatalog && (
+            <span className="text-[10px] lg:text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 lg:py-1 rounded border border-blue-500/30">
+              Heuristic Match
+            </span>
+          )}
+        </div>
+      )}
 
       {showLoading ? (
         <SkeletonPaintRecipe />
       ) : isEmptyCatalog ? (
-        <div className="py-8 px-4 text-center border-2 border-dashed border-gray-700 rounded-lg bg-gray-800/20">
-          <div className="text-3xl mb-3 opacity-50">🎨</div>
-          <p className="text-sm font-medium text-gray-300">No Paints Selected</p>
-          <p className="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">
-            Select some paints from the Library tab to see a custom recipe.
+        <div className="rounded-lg border border-dashed border-gray-700 bg-gray-800/20 px-4 py-4 text-center">
+          <p className="text-sm font-medium text-gray-300">No paints</p>
+          <p className="mt-1 text-[11px] text-gray-500">
+            Use Library.
           </p>
         </div>
       ) : (
@@ -211,33 +218,31 @@ export default function PaintRecipe({
 
           {/* Mixing Steps */}
           {effectiveVariant === 'compact' ? (
-            <div className="mt-3 rounded-xl border border-gray-700/80 bg-gray-800/35 p-3">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <h4 className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">
-                  Quick Mix
-                </h4>
-                <span className="text-[9px] text-gray-500 uppercase tracking-wider">
-                  3-step preview
-                </span>
-              </div>
-              <ol className="space-y-1.5 text-[11px] text-gray-300">
+            <>
+              <ol className="mt-2.5 space-y-1.5 text-[10px] text-gray-300">
                 {compactSteps.map((step, i) => (
                   <li
                     key={i}
-                    className="rounded-lg bg-gray-900/60 px-2.5 py-2 leading-5"
-                    dangerouslySetInnerHTML={{
-                      __html: step
-                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                    }}
-                  />
+                    className="flex items-start gap-2 rounded-md bg-gray-950/35 px-2.5 py-2 leading-4.5"
+                  >
+                    <span className="pt-[1px] font-mono text-[9px] font-bold text-gray-500">
+                      {i + 1}
+                    </span>
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: step
+                          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+                      }}
+                    />
+                  </li>
                 ))}
               </ol>
               {hasMoreCompactSteps && (
-                <p className="mt-2 text-[10px] leading-4 text-gray-500">
-                  Open the larger recipe view for the full step-by-step mix.
-                </p>
+                <div className="mt-2 text-[9px] font-medium uppercase tracking-[0.16em] text-gray-500">
+                  +{recipe.steps.length - compactSteps.length}
+                </div>
               )}
-            </div>
+            </>
           ) : (
             <div className="mt-6 mb-4 lg:mb-6">
               <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-300 lg:mb-3 lg:text-sm">
@@ -259,7 +264,8 @@ export default function PaintRecipe({
         </>
       )}
 
-      <div className={`${effectiveVariant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-700`}>
+      {!hideFooter && (
+        <div className={`${effectiveVariant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-700`}>
         {isEmptyCatalog ? (
           <p className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 italic`}>
             Add paints to build your active palette.
@@ -325,7 +331,8 @@ export default function PaintRecipe({
             )}
           </>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

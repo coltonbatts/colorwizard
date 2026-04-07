@@ -1,12 +1,6 @@
 'use client'
 
-/**
- * MobileDashboard - Mobile-first sampling dock.
- * Keeps the sampled color and paint recipe compact so the image stays primary.
- */
-
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
 import PaintRecipe from './PaintRecipe'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
@@ -26,6 +20,7 @@ interface MobileDashboardProps {
     onPin?: (newPin: PinnedColor) => void
     isPinned?: boolean
     onSwitchToMatches?: () => void
+    layout?: 'sheet' | 'inline'
 }
 
 export default function MobileDashboard({
@@ -34,11 +29,13 @@ export default function MobileDashboard({
     onPin,
     isPinned = false,
     onSwitchToMatches,
+    layout = 'sheet',
 }: MobileDashboardProps) {
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
     const hasPaintPalette = isUsingPaintPalette()
     const isShortViewport = useMediaQuery('(max-height: 860px)')
+    const isInline = layout === 'inline'
 
     const [colorName, setColorName] = useState<string>('')
     const [isLoadingName, setIsLoadingName] = useState(false)
@@ -103,10 +100,22 @@ export default function MobileDashboard({
         : activePalette?.isDefault
             ? 'Core six-color mix'
             : activePalette?.name || 'Active palette'
+    const paletteLabelCompact = hasPaintPalette
+        ? `Library ${selectedPaintIds.length}`
+        : activePalette?.isDefault
+            ? 'Core 6'
+            : activePalette?.name || 'Palette'
     const recipeVariant = 'compact'
-    const shellPadding = isShortViewport ? 'px-2.5 py-2' : 'px-3 py-2.5'
-    const swatchSize = isShortViewport ? 'w-11 h-11' : 'w-12 h-12'
-    const titleSize = isShortViewport ? 'text-[14px]' : 'text-[15px]'
+    const shellPadding = isInline
+        ? 'px-2 py-2'
+        : isShortViewport
+            ? 'px-2.5 py-2'
+            : 'px-3 py-2.5'
+    const swatchSize = isInline ? 'h-10 w-10' : isShortViewport ? 'w-11 h-11' : 'w-12 h-12'
+    const titleSize = isInline ? 'text-[14px]' : isShortViewport ? 'text-[14px]' : 'text-[15px]'
+    const inlineSubtitle = sampledColor && colorName && colorName.toUpperCase() !== sampledColor.hex.toUpperCase()
+        ? colorName
+        : null
 
     const handlePin = async () => {
         if (!onPin || isPinned || !sampledColor) return
@@ -128,87 +137,166 @@ export default function MobileDashboard({
     }
 
     return (
-        <div className="h-full min-h-0 flex flex-col overflow-hidden rounded-t-[24px] border-t border-gray-200 bg-white/96 shadow-[0_-16px_40px_rgba(0,0,0,0.14)] backdrop-blur-md dashboard-mode">
+        <div className={`${isInline
+            ? 'rounded-[16px] border border-ink-hairline bg-paper-elevated/96 shadow-[0_8px_18px_rgba(26,26,26,0.06)] backdrop-blur-md'
+            : 'h-full min-h-0 flex flex-col overflow-hidden rounded-t-[24px] border-t border-gray-200 bg-white/96 shadow-[0_-16px_40px_rgba(0,0,0,0.14)] backdrop-blur-md dashboard-mode'
+            }`}>
             {sampledColor ? (
                 <>
-                    <section className={`${shellPadding} shrink-0 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white`}>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <div className="text-[9px] font-black uppercase tracking-[0.24em] text-signal">
-                                    Sampled Color
-                                </div>
-                                <div className="mt-2 flex items-center gap-2.5">
-                                    <motion.div
+                    <section className={`${shellPadding} shrink-0 ${isInline ? '' : 'border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white'}`}>
+                        {isInline ? (
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex flex-1 items-center gap-2.5">
+                                    <div
                                         className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
                                         style={{ backgroundColor: sampledColor.hex }}
-                                        layoutId="active-swatch"
                                     />
 
                                     <div className="min-w-0 flex-1">
-                                        <div className={`${titleSize} truncate font-black leading-tight text-studio`}>
-                                            {isLoadingName ? (
-                                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-studio-dim border-t-transparent align-middle" />
-                                            ) : (
-                                                displayName
-                                            )}
+                                        <div className="font-mono text-[15px] font-black tracking-[0.04em] text-ink">
+                                            {sampledColor.hex.toUpperCase()}
                                         </div>
-                                        <div className="mt-0.5 flex items-center gap-2 text-[10px]">
-                                            <span className="font-mono font-bold tracking-wide text-studio-secondary">
-                                                {sampledColor.hex.toUpperCase()}
-                                            </span>
-                                            <span className="truncate uppercase tracking-[0.16em] text-studio-muted">
-                                                {paletteLabel}
-                                            </span>
+                                        <div className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+                                            {isLoadingName ? '...' : inlineSubtitle || paletteLabelCompact}
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex shrink-0 flex-col items-end gap-1">
-                                <div className="inline-flex rounded-full border border-gray-200 bg-white p-0.5 shadow-sm">
-                                    <button
-                                        type="button"
-                                        aria-pressed={true}
-                                        className="flex h-7 items-center justify-center rounded-full bg-studio px-3 text-[11px] font-bold text-white"
-                                    >
-                                        Paint
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onSwitchToMatches?.()}
-                                        disabled={!onSwitchToMatches}
-                                        aria-pressed={false}
-                                        className={`flex h-7 items-center justify-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                                            onSwitchToMatches
-                                                ? 'text-studio-secondary active:bg-gray-100'
-                                                : 'cursor-default text-gray-400'
-                                        }`}
-                                    >
-                                        Threads
-                                    </button>
-                                </div>
-                                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-studio-muted">
-                                    {paletteLabel}
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                    {onSwitchToMatches && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onSwitchToMatches()}
+                                            aria-label="Threads"
+                                            title="Threads"
+                                            className="inline-flex items-center justify-center rounded-full border border-ink-hairline bg-paper text-ink-secondary transition-colors active:bg-paper-recessed"
+                                        >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                <path d="M18.5 5.5 7 17" />
+                                                <circle cx="19.5" cy="4.5" r="1.5" />
+                                                <path d="M19.5 4.5c1.2-1 2.3.9.7 2.6-2.7 2.8-5.5 2.2-7.3 4.9-1.6 2.5-.8 5.2-3.3 7-1.8 1.3-4 .8-5.1-.8" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {onPin && (
+                                        <button
+                                            type="button"
+                                            onClick={handlePin}
+                                            disabled={isPinning || isPinned}
+                                            aria-label={isPinned ? 'Pinned color' : 'Pin color'}
+                                            title={isPinned ? 'Pinned' : 'Pin'}
+                                            className={`inline-flex items-center justify-center rounded-full border transition-all ${
+                                                isPinned
+                                                    ? 'border-subsignal bg-subsignal-muted text-subsignal'
+                                                    : 'border-ink-hairline bg-paper text-ink-secondary active:scale-95'
+                                            }`}
+                                        >
+                                            {isPinning ? (
+                                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            ) : isPinned ? (
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <path d="m5 12 4 4L19 6" />
+                                                </svg>
+                                            ) : (
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                                    <path d="M12 17v4" />
+                                                    <path d="m5 10 7-7 7 7" />
+                                                    <path d="M8 13v-2.5a4 4 0 0 1 8 0V13" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex flex-1 items-start gap-3">
+                                    <div
+                                        className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
+                                        style={{ backgroundColor: sampledColor.hex }}
+                                    />
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[9px] font-black uppercase tracking-[0.24em] text-signal">
+                                            Sampled Color
+                                        </div>
+                                        <div className="mt-2 min-w-0">
+                                            <div className={`${titleSize} truncate font-black leading-tight text-ink`}>
+                                                {isLoadingName ? (
+                                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-ink-muted border-t-transparent align-middle" />
+                                                ) : (
+                                                    displayName
+                                                )}
+                                            </div>
+                                            <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                                                <span className="font-mono font-bold tracking-wide text-ink-secondary">
+                                                    {sampledColor.hex.toUpperCase()}
+                                                </span>
+                                                <span className="truncate uppercase tracking-[0.16em] text-ink-faint">
+                                                    {paletteLabel}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex shrink-0 flex-col items-end gap-2">
+                                    <div className="inline-flex rounded-full border border-ink-hairline bg-white p-0.5 shadow-sm">
+                                        <button
+                                            type="button"
+                                            aria-pressed={true}
+                                            className="flex h-7 items-center justify-center rounded-full bg-ink px-3 text-[11px] font-bold text-white"
+                                        >
+                                            Paint
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onSwitchToMatches?.()}
+                                            disabled={!onSwitchToMatches}
+                                            aria-pressed={false}
+                                            className={`flex h-7 items-center justify-center rounded-full px-3 text-[11px] font-bold transition-colors ${
+                                                onSwitchToMatches
+                                                    ? 'text-ink-secondary active:bg-paper-recessed'
+                                                    : 'cursor-default text-gray-400'
+                                            }`}
+                                        >
+                                            Threads
+                                        </button>
+                                    </div>
+
+                                    {onPin && (
+                                        <button
+                                            onClick={handlePin}
+                                            disabled={isPinning || isPinned}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+                                                isPinned
+                                                    ? 'border-subsignal bg-subsignal-muted text-subsignal'
+                                                    : 'border-ink-hairline bg-paper text-ink-secondary shadow-sm active:scale-95'
+                                            }`}
+                                        >
+                                            {isPinning ? 'Pinning…' : isPinned ? 'Pinned' : 'Pin'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </section>
 
-                    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-                        <div className={`${shellPadding} space-y-3 pb-20`}>
-                            <div className="flex items-end justify-between gap-3 px-1">
-                                <div className="min-w-0">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.24em] text-signal">
-                                        Paint Recipe
+                    <div className={`${isInline ? '' : 'flex-1 min-h-0 overflow-y-auto overscroll-contain'}`}>
+                        <div className={`${shellPadding} ${isInline ? 'pt-1.5' : 'space-y-3 pb-20'}`}>
+                            {!isInline && (
+                                <div className="flex items-end justify-between gap-3 px-1">
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.24em] text-signal">
+                                            Paint Recipe
+                                        </div>
+                                        <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+                                            {paletteLabel}
+                                        </div>
                                     </div>
-                                    <p className="mt-1 text-[11px] leading-4 text-ink-muted">
-                                        Compact mix steps sized for one-handed use.
-                                    </p>
                                 </div>
-                                <div className="max-w-[45%] text-right text-[9px] font-bold uppercase tracking-[0.16em] text-ink-muted">
-                                    {paletteLabel}
-                                </div>
-                            </div>
+                            )}
 
                             <PaintRecipe
                                 hsl={sampledColor.hsl}
@@ -218,41 +306,17 @@ export default function MobileDashboard({
                                 paintIds={hasPaintPalette ? selectedPaintIds : undefined}
                                 variant={recipeVariant}
                                 showExportButton={false}
+                                hideHeader={isInline}
+                                hideFooter={isInline}
                             />
-
-                            {onPin && (
-                                <button
-                                    onClick={handlePin}
-                                    disabled={isPinning || isPinned}
-                                    className={`ml-auto inline-flex items-center justify-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all ${
-                                        isPinned
-                                            ? 'border-subsignal bg-subsignal-muted text-subsignal'
-                                            : 'border-gray-200 bg-white text-studio-secondary shadow-sm active:scale-95'
-                                    }`}
-                                >
-                                    {isPinning ? (
-                                        <>
-                                            <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                                            Pinning…
-                                        </>
-                                    ) : isPinned ? (
-                                        <>✓ Pinned</>
-                                    ) : (
-                                        <>📌 Pin Color</>
-                                    )}
-                                </button>
-                            )}
                         </div>
                     </div>
                 </>
             ) : (
-                <div className="flex h-full min-h-0 flex-col items-center justify-center px-4 py-5 text-studio-dim">
-                    <div className="mb-3 text-3xl">🎨</div>
-                    <p className="max-w-[14rem] text-center text-[11px] font-bold uppercase tracking-[0.18em] text-studio">
-                        Sample a color from the image above
-                    </p>
-                    <p className="mt-2 text-center text-[10px] leading-4 text-studio-muted">
-                        The recipe and thread match will appear here once you tap the image.
+                <div className={`flex min-h-0 flex-col items-center justify-center px-4 py-5 text-ink-faint ${isInline ? '' : 'h-full'}`}>
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Sample</div>
+                    <p className="max-w-[14rem] text-center text-sm font-semibold text-ink">
+                        Tap image.
                     </p>
                 </div>
             )}

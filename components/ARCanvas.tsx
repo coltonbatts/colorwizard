@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { CameraView } from './CameraView';
+import { resolveTauriImageSrc } from '@/lib/tauri';
 
 const DEBUG = true;
 
@@ -177,7 +178,7 @@ export function ARCanvas({
                     drawGrid(ctx, videoBounds);
                 }
             };
-            img.src = referenceImage;
+            img.src = resolveTauriImageSrc(referenceImage) ?? referenceImage;
         } else if (showGrid) {
             // Draw grid even without reference image
             drawGrid(ctx, videoBounds);

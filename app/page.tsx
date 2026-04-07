@@ -6,10 +6,10 @@
  * Optimized with useShallow() to reduce unnecessary re-renders by 10-15%.
  */
 
-import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
+import { useMemo, useEffect, useRef, useCallback, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import ImageCanvas, { ImageCanvasHandle } from '@/components/ImageCanvas'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
-import CollapsibleSidebar, { TABS, TabType } from '@/components/CollapsibleSidebar'
+import CollapsibleSidebar, { TabType } from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
@@ -18,6 +18,8 @@ import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColo
 import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
+import OverlaySurface from '@/components/ui/Overlay'
+import WorkbenchModeRail from '@/components/WorkbenchModeRail'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
@@ -26,23 +28,43 @@ import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
+import { resolveTauriImageSrc } from '@/lib/tauri'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
 import MatchesTab from '@/components/tabs/MatchesTab'
+import OilMixTab from '@/components/tabs/OilMixTab'
+import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
+import ReferenceTab from '@/components/tabs/ReferenceTab'
+import StructureTab from '@/components/tabs/StructureTab'
+import SurfaceTab from '@/components/tabs/SurfaceTab'
 import ColorDeckPanel from '@/components/ColorDeckPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
+const MOBILE_TABS: readonly TabType[] = ['sample', 'matches', 'deck']
+
+const INSPECTOR_TITLES: Record<Exclude<TabType, 'deck'>, string> = {
+  sample: 'Sample',
+  matches: 'Threads',
+  mix: 'Mix',
+  library: 'Library',
+  reference: 'Reference',
+  structure: 'Structure',
+  surface: 'Surface',
+}
+
 export default function Home() {
   const isMobile = useIsMobile()
   const [activeTab, setActiveTab] = useState<TabType>('sample')
+  const [showDeckDrawer, setShowDeckDrawer] = useState(false)
   const [showPaletteManager, setShowPaletteManager] = useState(false)
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const [dismissPreviewSignal, setDismissPreviewSignal] = useState(0)
 
   const sampledColor = useSessionStore(state => state.sampledColor)
   const setSampledColor = useSessionStore(state => state.setSampledColor)
@@ -132,12 +154,13 @@ export default function Home() {
     setValueScaleResult(null)
     setValueModeEnabled(false) // Reset value mode when clearing image
     setActiveTab('sample')
+    setShowDeckDrawer(false)
     setIsNavOpen(false)
     setShowPaletteManager(false)
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
     lastProcessedRef.current = null
-  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setHistogramBins, setImage, setIsNavOpen, setReferenceImage, setReferenceOpacity, setSampledColor, setShowCalibrationModal, setShowCanvasSettingsModal, setShowPaletteManager, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
+  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setHistogramBins, setImage, setIsNavOpen, setReferenceImage, setReferenceOpacity, setSampledColor, setShowCalibrationModal, setShowCanvasSettingsModal, setShowDeckDrawer, setShowPaletteManager, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
 
   const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
     setSampledColor(color)
@@ -147,16 +170,20 @@ export default function Home() {
   }, [isMobile, setSampledColor, setSidebarCollapsed])
 
   const lastProcessedRef = useRef<string | null>(null)
+  const resolvedReferenceImage = useMemo(
+    () => resolveTauriImageSrc(referenceImage),
+    [referenceImage]
+  )
 
   // Synchronize persistent referenceImage string to runtime HTMLImageElement
   useEffect(() => {
-    if (referenceImage && !image && referenceImage !== lastProcessedRef.current) {
+    if (resolvedReferenceImage && !image && resolvedReferenceImage !== lastProcessedRef.current) {
       console.log('[Home] Loading reference image from string...')
-      lastProcessedRef.current = referenceImage
+      lastProcessedRef.current = resolvedReferenceImage
 
       const img = new Image()
       img.crossOrigin = "anonymous"
-      img.src = referenceImage
+      img.src = resolvedReferenceImage
       img.onload = () => {
         console.log('[Home] Reference image loaded successfully')
         handleImageLoad(img) // Use wrapper that resets value mode
@@ -168,7 +195,7 @@ export default function Home() {
     } else if (!referenceImage) {
       lastProcessedRef.current = null
     }
-  }, [referenceImage, image, handleImageLoad])
+  }, [referenceImage, resolvedReferenceImage, image, handleImageLoad])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -179,10 +206,39 @@ export default function Home() {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return
     const newWidth = window.innerWidth - e.clientX
-    if (newWidth >= 300 && newWidth <= 800) {
+    if (newWidth >= 320 && newWidth <= 640) {
       setSidebarWidth(newWidth)
     }
   }, [setSidebarWidth])
+
+  const adjustSidebarWidth = useCallback((delta: number) => {
+    setSidebarWidth(sidebarWidth + delta)
+  }, [sidebarWidth, setSidebarWidth])
+
+  const handleResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      adjustSidebarWidth(-24)
+      return
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      adjustSidebarWidth(24)
+      return
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault()
+      setSidebarWidth(320)
+      return
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault()
+      setSidebarWidth(640)
+    }
+  }, [adjustSidebarWidth, setSidebarWidth])
 
   const stopResizing = useCallback(() => {
     isResizing.current = false
@@ -241,16 +297,30 @@ export default function Home() {
         if (sidebarCollapsed) toggleSidebar()
       }
 
-      // 1-3 for tab switching (Thin Core)
-      const tabKeys: { [key: string]: TabType } = {
+      // Desktop workbench shortcuts
+      const tabKeys: Partial<Record<string, TabType>> = {
         '1': 'sample',
         '2': 'matches',
-        '3': 'deck',
+        '3': 'mix',
+        '4': 'library',
+        '5': 'reference',
+        '6': 'structure',
+        '7': 'surface',
       }
-      if (tabKeys[e.key]) {
+      const nextTab = tabKeys[e.key]
+      if (nextTab) {
         e.preventDefault()
-        setActiveTab(tabKeys[e.key])
+        setActiveTab(nextTab)
         if (sidebarCollapsed) toggleSidebar()
+      }
+
+      if (e.key === '8') {
+        e.preventDefault()
+        if (isMobile) {
+          setActiveTab('deck')
+          return
+        }
+        setShowDeckDrawer(true)
       }
 
       // Shift+S for Simple/Pro mode toggle
@@ -268,7 +338,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [sidebarCollapsed, toggleSidebar, setActiveTab, toggleSimpleMode, toggleValueMode])
+  }, [isMobile, sidebarCollapsed, toggleSidebar, toggleSimpleMode, toggleValueMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -291,6 +361,19 @@ export default function Home() {
     setActiveTab('sample')
   }
 
+  const handleDesktopModeChange = useCallback((mode: Exclude<TabType, 'deck'>) => {
+    setShowDeckDrawer(false)
+    setActiveTab(mode)
+    if (sidebarCollapsed) {
+      toggleSidebar()
+    }
+  }, [sidebarCollapsed, toggleSidebar])
+
+  const openPaletteManager = useCallback(() => {
+    setDismissPreviewSignal((value) => value + 1)
+    setShowPaletteManager(true)
+  }, [])
+
   // Render tab content - Thin Core only
   const renderTabContent = () => {
     switch (activeTab) {
@@ -307,6 +390,8 @@ export default function Home() {
               lastSampleTime={lastSampleTime}
               onAddToSession={handleAddToSession}
               onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
+              dismissPreviewSignal={dismissPreviewSignal}
+              suppressPreviewOverlay={showPaletteManager}
           />
         )
       case 'matches':
@@ -323,6 +408,40 @@ export default function Home() {
             }}
           />
         )
+      case 'mix':
+        return (
+          <OilMixTab
+            sampledColor={sampledColor}
+            activePalette={activePalette}
+            onColorSelect={(rgb) => {
+              applySampleColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b),
+              })
+              setActiveHighlightColor(rgb)
+            }}
+          />
+        )
+      case 'library':
+        return (
+          <PaintLibraryTab
+            onColorSelect={(rgb) => {
+              applySampleColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b),
+              })
+              setActiveHighlightColor(rgb)
+            }}
+          />
+        )
+      case 'reference':
+        return <ReferenceTab />
+      case 'structure':
+        return <StructureTab />
+      case 'surface':
+        return <SurfaceTab />
       case 'deck':
         return (
           <ColorDeckPanel
@@ -338,12 +457,23 @@ export default function Home() {
 
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
+  const desktopInspectorMode = (activeTab === 'deck' ? 'sample' : activeTab) as Exclude<TabType, 'deck'>
+  const inspectorTitle = INSPECTOR_TITLES[desktopInspectorMode]
+  const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'
       ? 'h-[clamp(15rem,30dvh,20rem)]'
       : activeTab === 'matches'
         ? 'h-[clamp(18rem,38dvh,24rem)]'
         : 'h-[clamp(19rem,40dvh,26rem)]'
+
+  useEffect(() => {
+    if (!isMobile) return
+    if (!MOBILE_TABS.includes(activeTab)) {
+      setActiveTab('sample')
+    }
+  }, [activeTab, isMobile])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -362,8 +492,16 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`flex flex-col ${image ? 'md:flex-row' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}
+      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}
     >
+      {image && !isMobile && (
+        <WorkbenchModeRail
+          activeMode={desktopInspectorMode}
+          onModeChange={handleDesktopModeChange}
+          onOpenDeck={() => setShowDeckDrawer(true)}
+        />
+      )}
+
       {/* Mobile Header - only show when image is loaded */}
       {image && (
         <MobileHeader
@@ -372,10 +510,11 @@ export default function Home() {
           onOpenMenu={() => setIsNavOpen(true)}
         />
       )}
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${compactMode ? 'p-0 md:p-3' : 'p-0 md:p-6'}`}>
+
+      <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${image ? 'workbench-stage-column' : ''} ${compactMode ? 'p-0 md:p-2' : 'p-0 md:p-3'}`}>
         {/* Compact Toolbar */}
         {image && (
-          <div className="mb-0 md:mb-4">
+          <div className="mb-0 shrink-0 md:mb-3">
             <CompactToolbar
               calibration={calibration}
               onOpenCalibration={() => setShowCalibrationModal(true)}
@@ -388,7 +527,7 @@ export default function Home() {
               palettes={palettes}
               activePalette={activePalette}
               onSelectPalette={setActivePalette}
-              onOpenPaletteManager={() => setShowPaletteManager(true)}
+              onOpenPaletteManager={openPaletteManager}
               canvasSettings={canvasSettings}
               onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
               hasImage={!!image}
@@ -403,14 +542,19 @@ export default function Home() {
           </div>
         )}
 
-        {/* Highlight Controls - contextual */}
-        <HighlightControls />
-
         {/* Main Canvas Area */}
         <div
           className="flex-1 min-h-0 relative"
           ref={canvasContainerRef}
         >
+          {image && activeHighlightColor && !isMobile && (
+            <div className="pointer-events-none absolute left-4 top-[6.5rem] z-30 hidden md:block">
+              <div className="pointer-events-auto">
+                <HighlightControls />
+              </div>
+            </div>
+          )}
+
           <ErrorBoundary
             fallback={({ resetError }) => (
               <CanvasErrorFallback
@@ -424,6 +568,8 @@ export default function Home() {
               image={image}
               onImageLoad={handleImageLoad}
               onReset={handleClearImage}
+              dismissPreviewSignal={dismissPreviewSignal}
+              suppressPreviewOverlay={showPaletteManager}
               onColorSample={(color) => {
                 if (measureMode && calibration) {
                   return
@@ -447,25 +593,55 @@ export default function Home() {
               measurePointB={measurePointB}
               measurementLayer={measurementLayer}
               canvasSettings={canvasSettings}
+              sampledColorHex={isMobileSampleLayout ? null : sampledColor?.hex ?? null}
+              workspaceModeLabel={desktopInspectorMode}
+              showHud={!isMobileSampleLayout}
+              mobileLayout={isMobileSampleLayout ? 'sample' : 'default'}
             />
           </ErrorBoundary>
 
         </div>
+
+        {isMobileSampleLayout && (
+          <div className="px-2 pb-[calc(env(safe-area-inset-bottom,0px)+3.75rem)] pt-1.5">
+            <MobileDashboard
+              sampledColor={sampledColor}
+              activePalette={activePalette}
+              onPin={pinColor}
+              isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
+              onSwitchToMatches={() => setActiveTab('matches')}
+              layout="inline"
+            />
+          </div>
+        )}
       </div>
 
       {/* Resize Handle - only show when image exists */}
       {image && !sidebarCollapsed && (
         <div
           onMouseDown={startResizing}
-          className="w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 cursor-col-resize transition-all z-20"
+          tabIndex={0}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          aria-valuemin={320}
+          aria-valuemax={640}
+          aria-valuenow={sidebarWidth}
+          onKeyDown={handleResizeKeyDown}
+          className="w-px hover:w-1.5 bg-transparent hover:bg-ink-hairline cursor-col-resize z-20 transition-[background-color,width] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-inset"
           title="Drag to resize"
         />
       )}
 
       {/* Results panel - mobile gets a dedicated dashboard, desktop keeps sidebar */}
-      {image && (
+      {image && !isMobileSampleLayout && (
         isMobile ? (
           <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-2 pt-2 pb-[env(safe-area-inset-bottom,0px)]">
+            {activeHighlightColor && (
+              <div className="mb-2">
+                <HighlightControls />
+              </div>
+            )}
             <ErrorBoundary
               fallback={({ error, resetError }) => (
                 <SidebarErrorFallback error={error} resetError={resetError} />
@@ -512,38 +688,37 @@ export default function Home() {
             onTabChange={setActiveTab}
             pinnedCount={pinnedColors.length}
             width={sidebarWidth}
-            className="mobile-controls-area"
+            className="mobile-controls-area workbench-inspector"
           >
-            {/* Tab Bar - only shown when expanded and NOT mobile dashboard mode - Thin Core only */}
-            <div className="flex border-b border-ink-hairline bg-paper-elevated items-stretch">
-              {TABS.map((tab, index) => (
-                <button
-                  key={tab.id}
-                  className={`flex-1 flex items-center justify-center py-4 transition-all relative ${activeTab === tab.id
-                    ? 'text-signal'
-                    : 'text-ink-faint hover:text-ink-secondary hover:bg-paper-recessed'
-                    }`}
-                  onClick={() => setActiveTab(tab.id)}
-                  title={`${tab.tooltip} (${index + 1})`}
-                >
-                  {tab.icon}
-                  {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-signal animate-in fade-in zoom-in-95" />
-                  )}
-                </button>
-              ))}
-            </div>
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="workbench-inspector-header">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-secondary">
+                    {inspectorTitle}
+                  </h2>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              {/* Thin Core: Always show tabs directly, no dashboard */}
-              <ErrorBoundary
-                fallback={({ error, resetError }) => (
-                  <SidebarErrorFallback error={error} resetError={resetError} />
-                )}
-                key={activeTab}
-              >
-                {renderTabContent()}
-              </ErrorBoundary>
+                  {sampledColor && (
+                    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-hairline bg-paper px-2.5 py-1.5">
+                      <div
+                        className="h-4 w-4 rounded-full border border-black/10 shadow-inner"
+                        style={{ backgroundColor: sampledColor.hex }}
+                      />
+                      <div className="font-mono text-[11px] font-bold text-ink">{sampledColor.hex}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <ErrorBoundary
+                  fallback={({ error, resetError }) => (
+                    <SidebarErrorFallback error={error} resetError={resetError} />
+                  )}
+                  key={activeTab}
+                >
+                  {renderTabContent()}
+                </ErrorBoundary>
+              </div>
             </div>
           </CollapsibleSidebar>
         )
@@ -586,6 +761,43 @@ export default function Home() {
         onSave={setCanvasSettings}
         initialSettings={canvasSettings}
       />
+
+      {!isMobile && (
+        <OverlaySurface
+          isOpen={showDeckDrawer && !!image}
+          onClose={() => setShowDeckDrawer(false)}
+          preset="drawer"
+          ariaLabel="Saved deck drawer"
+          rootClassName="fixed inset-0 z-[90]"
+          backdropClassName="absolute inset-0 bg-black/28 backdrop-blur-[2px]"
+          panelClassName="absolute inset-y-0 right-0 flex h-full w-full max-w-[min(72rem,86vw)] flex-col border-l border-ink-hairline bg-paper-elevated shadow-[0_20px_80px_rgba(26,26,26,0.18)] outline-none"
+        >
+          <div className="flex items-center justify-between border-b border-ink-hairline px-5 py-4">
+            <div>
+              <div className="text-section">Saved Deck</div>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-ink">Card Management</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDeckDrawer(false)}
+              className="inline-flex items-center justify-center rounded-xl border border-ink-hairline bg-paper px-3 py-2 text-sm font-bold text-ink transition-colors hover:bg-paper-recessed"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1">
+            <ColorDeckPanel
+              sampledColor={sampledColor}
+              activePaletteName={activePalette.name}
+              onGoToSample={() => {
+                setShowDeckDrawer(false)
+                setActiveTab('sample')
+              }}
+            />
+          </div>
+        </OverlaySurface>
+      )}
 
     </main>
   )

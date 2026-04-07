@@ -1,0 +1,1 @@
+{"nodes": [{"id": "rotationhandle", "label": "RotationHandle.tsx", "file_type": "code", "source_file": "components/drawing/RotationHandle.tsx", "source_location": "L1"}], "edges": [{"source": "rotationhandle", "target": "react", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "components/drawing/RotationHandle.tsx", "source_location": "L8", "weight": 1.0}]}

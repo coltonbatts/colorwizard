@@ -1,11 +1,6 @@
 'use client'
 
-/**
- * MobileHeader - Universal mobile header for navigation escape
- * Shows on small screens with back, home, and clear actions
- */
-
-import Link from 'next/link'
+import { WordmarkCompact } from './Wordmark'
 
 interface MobileHeaderProps {
   hasImage?: boolean
@@ -25,11 +20,11 @@ export default function MobileHeader({
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      <div className="mobile-header-inner h-14 px-4 bg-paper/95 backdrop-blur-md border-b border-ink-hairline">
-        {/* Menu Button - Left */}
+      <div className="mobile-header-inner">
         <button
+          type="button"
           onClick={onOpenMenu}
-          className="mobile-header-btn flex items-center justify-center -ml-2 hover:bg-paper-recessed rounded-full w-10 h-10 transition-colors"
+          className="mobile-header-btn"
           aria-label="Open navigation menu"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -39,19 +34,16 @@ export default function MobileHeader({
           </svg>
         </button>
 
-        {/* Center: Brand */}
-        <div className="flex-1 flex justify-center">
-          <Link href="/" className="mobile-header-title text-ink font-bold tracking-tight">
-            <span>ColorWizard</span>
-          </Link>
+        <div className="flex min-w-0 flex-1 justify-center px-2">
+          <WordmarkCompact className="mobile-header-title" />
         </div>
 
-        {/* Right: Clear/New Image */}
-        <div className="w-10 flex justify-end">
+        <div className="flex w-11 justify-end">
           {hasImage && onClearImage && (
             <button
+              type="button"
               onClick={onClearImage}
-              className="mobile-header-btn flex items-center justify-center -mr-2 hover:bg-paper-recessed rounded-full w-10 h-10 text-ink-secondary transition-colors"
+              className="mobile-header-btn text-ink-secondary"
               aria-label="Back to home"
               title="Back to home"
             >

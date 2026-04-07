@@ -1,0 +1,1 @@
+{"nodes": [{"id": "canvashud", "label": "CanvasHUD.tsx", "file_type": "code", "source_file": "components/CanvasHUD.tsx", "source_location": "L1"}], "edges": [{"source": "canvashud", "target": "framer_motion", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "components/CanvasHUD.tsx", "source_location": "L3", "weight": 1.0}]}

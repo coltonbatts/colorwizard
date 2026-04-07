@@ -19,9 +19,9 @@ interface LayoutState {
     toggleSimpleMode: () => void
 }
 
-const MIN_SIDEBAR = 300
-const MAX_SIDEBAR = 800
-const DEFAULT_SIDEBAR = 400
+const MIN_SIDEBAR = 320
+const MAX_SIDEBAR = 640
+const DEFAULT_SIDEBAR = 360
 
 function clampSidebarWidth(w: unknown): number {
     if (typeof w !== 'number' || !Number.isFinite(w)) return DEFAULT_SIDEBAR
@@ -66,4 +66,3 @@ export const useLayoutStore = create<LayoutState>()(
         }
     )
 )
-

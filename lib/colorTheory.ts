@@ -2,8 +2,8 @@
  * Color Theory Utilities
  * 12-segment RYB color wheel with harmonies and analysis
  *
- * Shared by client components and Route Handlers — must stay free of `'use client'`
- * so server code (e.g. `app/api/ai/suggestions`) can import these pure functions.
+ * Shared by client components and any non-React logic. Keep this module pure so
+ * the static desktop build can reuse it without extra runtime dependencies.
  */
 
 import { RGB } from './color/types';
