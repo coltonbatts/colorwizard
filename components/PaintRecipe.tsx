@@ -103,9 +103,12 @@ export default function PaintRecipe({
       }
 
       try {
-        // Use the type-safe worker wrapper
+        // Use the type-safe worker wrapper with a 5-second timeout
         const worker = getSolverWorker()
-        const recipe = await worker.solveRecipe(targetHex, options)
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Solver worker timed out')), 5000)
+        )
+        const recipe = await Promise.race([worker.solveRecipe(targetHex, options), timeout])
 
         if (!cancelled) {
           setSpectralRecipe(recipe)

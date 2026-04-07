@@ -12,7 +12,9 @@ export function validateServerEnv() {
 
     const requiredVars = [
         'STRIPE_SECRET_KEY',
-        'NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID'
+        'NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID',
+        'STRIPE_WEBHOOK_SECRET',
+        'FIREBASE_SERVICE_ACCOUNT_KEY',
     ]
 
     const missing = requiredVars.filter(v => !process.env[v])

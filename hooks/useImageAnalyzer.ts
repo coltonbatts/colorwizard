@@ -165,11 +165,13 @@ export function useImageAnalyzer(
             try {
                 const worker = await getWorker();
                 console.log('[useImageAnalyzer] Got worker, sending image data...');
-                const result = await worker.processImageData(
-                    imageData.data,
-                    width,
-                    height
+                const timeout = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('Image processor worker timed out')), 10000)
                 );
+                const result = await Promise.race([
+                    worker.processImageData(imageData.data, width, height),
+                    timeout,
+                ]);
                 console.log('[useImageAnalyzer] Worker processing complete');
 
                 // Check if this is still the current image (handle race conditions)
