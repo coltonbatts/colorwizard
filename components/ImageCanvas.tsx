@@ -33,7 +33,7 @@ import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
-import { resolveTauriImageSrc } from '@/lib/tauri'
+import { isDesktopApp, resolveTauriImageSrc } from '@/lib/tauri'
 import {
   MAX_ZOOM,
   MIN_ZOOM,
@@ -222,6 +222,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const gridEnabled = gridEnabledProp ?? internalGridEnabled
   const hasRenderableImage = Boolean(image || surfaceImageElement)
   const mobileSampleLayout = isMobile && mobileLayout === 'sample'
+  const desktopShell = isDesktopApp()
 
   useEffect(() => {
     if (dismissPreviewSignal === undefined) return
@@ -1058,7 +1059,16 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     <div className="flex h-full min-h-0 flex-col" ref={containerRef}>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
-        <ImageDropzone onImageLoad={onImageLoad} />
+        desktopShell ? (
+          <div className="flex-1 min-h-0 p-4 md:p-6">
+            <div
+              className="h-full w-full rounded-[18px] border border-ink-hairline bg-paper-elevated/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+              aria-hidden="true"
+            />
+          </div>
+        ) : (
+          <ImageDropzone onImageLoad={onImageLoad} />
+        )
       ) : (
         <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div

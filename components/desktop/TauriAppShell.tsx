@@ -28,10 +28,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import {
   createProject,
+  getAppSetting,
   getLicenseKey,
   getProject,
   initDatabase,
   pickImagePath,
+  setAppSetting,
   type ProjectInfo,
 } from '@/lib/desktop/tauriClient'
 import DesktopWorkspaceEmpty from '@/components/desktop/DesktopWorkspaceEmpty'
@@ -48,6 +50,8 @@ const DESKTOP_BLOCKED_ROUTES = new Set([
   '/trace',
   '/color-theory',
 ])
+
+const LAST_OPENED_PROJECT_KEY = 'last_opened_project'
 
 interface ProjectContextValue {
   activeProjectId: number | null
@@ -83,7 +87,7 @@ function DesktopProjectFrame({
       <header className="border-b border-[#ddd1c0] bg-[#f5f0e8]/95 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Desktop</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
             <div className="mt-1 flex items-center gap-3">
               <h1 className="truncate font-serif text-2xl">{project?.name ?? 'Opening project...'}</h1>
               <span className="hidden text-xs text-[#8f7f69] md:inline">Last updated {modifiedAt}</span>
@@ -122,13 +126,13 @@ function DesktopProjectFrame({
 export default function TauriAppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  /** Always start in the project library on launch (document-based app, not a landing page). */
+  /** Desktop restores the last open project when possible; otherwise it falls back to the library. */
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
   const [seedReferencePath, setSeedReferencePath] = useState<string | null>(null)
-  const [resumeSession, setResumeSession] = useState<{ id: number; name: string } | null>(null)
 
   const [licensed, setLicensed] = useState(!isDesktopApp())
   const [dbReady, setDbReady] = useState(false)
+  const [launchResolved, setLaunchResolved] = useState(!isDesktopApp())
   const [activeProject, setActiveProject] = useState<ProjectInfo | null>(null)
   const [hydratedProjectId, setHydratedProjectId] = useState<number | null>(null)
 
@@ -183,37 +187,55 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isDesktopApp()) return
     if (activeProjectId === null) return
-    try {
-      localStorage.setItem('colorwizard-last-project', String(activeProjectId))
-    } catch {
-      // noop
+    let cancelled = false
+    setAppSetting(LAST_OPENED_PROJECT_KEY, String(activeProjectId)).catch((err) => {
+      if (!cancelled) {
+        console.error('[Tauri] Failed to persist last opened project:', err)
+      }
+    })
+    return () => {
+      cancelled = true
     }
   }, [activeProjectId])
 
   useEffect(() => {
-    if (!isDesktopApp() || !dbReady || activeProjectId !== null) return
+    if (!isDesktopApp()) return
+    if (!licensed || !dbReady || launchResolved || activeProjectId !== null) return
+
     let cancelled = false
-    try {
-      const raw = localStorage.getItem('colorwizard-last-project')
-      const id = raw ? parseInt(raw, 10) : NaN
-      if (!Number.isFinite(id) || id <= 0) {
-        setResumeSession(null)
-        return
+
+    const resolveLaunchProject = async () => {
+      try {
+        const raw = await getAppSetting(LAST_OPENED_PROJECT_KEY)
+        const id = raw ? parseInt(raw, 10) : NaN
+
+        if (!Number.isFinite(id) || id <= 0) {
+          if (!cancelled) setLaunchResolved(true)
+          return
+        }
+
+        const project = await getProject(id)
+        if (cancelled) return
+
+        setActiveProject(project)
+        setActiveProjectId(project.id)
+        setLaunchResolved(true)
+      } catch (err) {
+        if (cancelled) return
+        console.error('[Tauri] Failed to restore last opened project:', err)
+        setLaunchResolved(true)
+        setAppSetting(LAST_OPENED_PROJECT_KEY, '').catch((clearErr) => {
+          console.error('[Tauri] Failed to clear stale last opened project:', clearErr)
+        })
       }
-      getProject(id)
-        .then((p) => {
-          if (!cancelled) setResumeSession({ id: p.id, name: p.name })
-        })
-        .catch(() => {
-          if (!cancelled) setResumeSession(null)
-        })
-    } catch {
-      setResumeSession(null)
     }
+
+    resolveLaunchProject()
+
     return () => {
       cancelled = true
     }
-  }, [dbReady, activeProjectId])
+  }, [activeProjectId, dbReady, launchResolved, licensed])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -253,6 +275,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
   }
 
   if (!dbReady) return null
+  if (!launchResolved) return null
 
   return (
     <ProjectContext.Provider value={contextValue}>
@@ -260,8 +283,6 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
         <ProjectGallery
           onSelectProject={setActiveProjectId}
           onOpenImageNewProject={handleOpenImageNewProject}
-          resumeSession={resumeSession}
-          onResumeSession={(id) => setActiveProjectId(id)}
         />
       ) : (
         <>

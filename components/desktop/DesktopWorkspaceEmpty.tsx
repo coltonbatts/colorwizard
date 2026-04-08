@@ -27,26 +27,22 @@ export default function DesktopWorkspaceEmpty() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center bg-[#f5f0e8] px-6"
+      className="pointer-events-auto absolute inset-0 z-[200] bg-[#f5f0e8]"
       role="region"
       aria-label="Project workspace"
     >
-      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">Reference image</p>
-      <h2 className="mt-3 max-w-md text-center font-serif text-2xl text-[#1a1a1a] sm:text-3xl">
-        Add an image to start sampling colors
-      </h2>
-      <p className="mt-3 max-w-sm text-center text-sm text-[#6d5e49]">
-        Opens in this project only. Files stay on your Mac.
-      </p>
-      <button
-        type="button"
-        disabled={busy}
-        onClick={handleOpen}
-        className="mt-8 rounded-full border border-[#1a1a1a] bg-[#1a1a1a] px-8 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {busy ? 'Opening…' : 'Open image…'}
-      </button>
-      <p className="mt-6 text-xs text-[#a89880]">Or drop a file onto the canvas if your workflow supports it.</p>
+      <div className="absolute inset-6 rounded-[26px] border border-[#ddd1c0] bg-white/28 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]" aria-hidden="true" />
+      <div className="absolute left-6 top-6 flex max-w-md items-center gap-3 rounded-2xl border border-[#d7cab8] bg-white/88 px-4 py-3 shadow-sm backdrop-blur">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleOpen}
+          className="rounded-full border border-[#1a1a1a] bg-[#1a1a1a] px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? 'Opening…' : 'Open image…'}
+        </button>
+        <p className="text-sm text-[#6d5e49]">Add a reference image to this project.</p>
+      </div>
     </div>
   )
 }

@@ -17,15 +17,11 @@ interface ProjectGalleryProps {
   onSelectProject: (id: number) => void
   /** When set, shows “Open image…” (Pro shell). Legacy callers may omit. */
   onOpenImageNewProject?: () => Promise<void>
-  resumeSession?: { id: number; name: string } | null
-  onResumeSession?: (id: number) => void
 }
 
 export default function ProjectGallery({
   onSelectProject,
   onOpenImageNewProject,
-  resumeSession = null,
-  onResumeSession,
 }: ProjectGalleryProps) {
   const [projects, setProjects] = useState<ProjectInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,7 +88,14 @@ export default function ProjectGallery({
 
   const handleDelete = useCallback(
     async (id: number, name: string) => {
-      if (!confirm(`Delete "${name}"?`)) return
+      const { confirm } = await import('@tauri-apps/plugin-dialog')
+      const shouldDelete = await confirm(`Delete "${name}"? This cannot be undone.`, {
+        title: 'Delete Project',
+        kind: 'warning',
+        okLabel: 'Delete',
+        cancelLabel: 'Cancel',
+      })
+      if (!shouldDelete) return
       try {
         await deleteProject(id)
         await refreshProjects()
@@ -106,7 +109,7 @@ export default function ProjectGallery({
   if (!isDesktopApp()) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-[#f5f0e8]">
-        <p className="text-sm text-[#666]">Desktop only</p>
+        <p className="text-sm text-[#666]">ColorWizard Pro</p>
       </div>
     )
   }
@@ -121,15 +124,6 @@ export default function ProjectGallery({
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
             <h1 className="mt-1 font-serif text-2xl sm:text-3xl">Projects</h1>
           </div>
-          {resumeSession && onResumeSession ? (
-            <button
-              type="button"
-              onClick={() => onResumeSession(resumeSession.id)}
-              className="self-start rounded-full border border-[#c7baa5] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#6d5e49] transition-colors hover:border-[#1a1a1a] hover:text-[#1a1a1a] sm:self-auto"
-            >
-              Resume “{resumeSession.name}”
-            </button>
-          ) : null}
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 /**
  * LicenseActivation - Modal shown when no valid license key is found in Tauri.
- * Prompts user to enter their key or directs them to purchase.
+ * Prompts the user to unlock the local app copy.
  */
 'use client'
 
@@ -121,10 +121,10 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             <span className="text-2xl font-serif text-[#f5f0e8] font-bold">C</span>
           </div>
           <h2 className="text-xl font-bold text-[#1a1a1a] mb-1">
-            Activate ColorWizard
+            ColorWizard Pro
           </h2>
           <p className="text-sm text-[#666]">
-            Enter your license key to get started
+            Enter your license key to unlock this copy on this Mac.
           </p>
         </div>
 
@@ -157,12 +157,12 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           disabled={!key.trim() || isValidating}
           className="w-full bg-[#1a1a1a] text-white py-3 rounded-xl font-medium hover:bg-[#333] disabled:opacity-40 disabled:cursor-not-allowed transition-colors mb-6"
         >
-          {isValidating ? 'Validating...' : 'Activate'}
+          {isValidating ? 'Validating...' : 'Unlock'}
         </button>
 
         <div className="text-center pt-4 border-t border-[#e5e0d8]">
           <p className="text-xs text-[#999]">
-            Purchase and key delivery happen outside the app. Once you have a key, paste it here to unlock the offline desktop workspace.
+            Activation is stored locally on this Mac.
           </p>
         </div>
       </div>

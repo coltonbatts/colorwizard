@@ -493,7 +493,7 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image ? 'layout-hero-mode' : ''}`}
+      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isTauri() ? 'layout-hero-mode' : ''}`}
     >
       {image && !isMobile && (
         <WorkbenchModeRail

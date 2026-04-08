@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "ColorWizard",
+  "productName": "ColorWizard Pro",
   "version": "1.0.0",
   "identifier": "com.colorwizard.app",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "ColorWizard",
+        "title": "ColorWizard Pro",
         "width": 1440,
         "height": 960,
         "resizable": true,
