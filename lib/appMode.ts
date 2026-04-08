@@ -1,10 +1,11 @@
 /**
  * Product mode switches.
- * Keep this centralized so the app can move cleanly between paid and free modes.
+ * Keep this centralized so desktop licensing and cloud integrations stay coherent.
  */
 
-export const OPEN_SOURCE_MODE = true
+export const PAID_STANDALONE_DESKTOP = true
+export const SERVER_INTEGRATIONS_ENABLED = false
 
-export const APP_MODE_LABEL = 'Free & Open Source'
+export const APP_MODE_LABEL = 'Desktop License'
 export const APP_MODE_DESCRIPTION =
-  'All local features are available with payments disabled.'
+  'A licensed desktop install unlocks the full offline app with no account required.'

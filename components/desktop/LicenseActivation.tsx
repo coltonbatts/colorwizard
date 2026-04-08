@@ -5,12 +5,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  isTauri,
-  validateLicenseKey,
-  setLicenseKey,
-  getLicenseKey,
-} from '@/lib/tauri'
+import { isDesktopApp } from '@/lib/desktop/detect'
+import { validateLicenseKey, setLicenseKey, getLicenseKey } from '@/lib/desktop/tauriClient'
 
 interface LicenseActivationProps {
   onActivated: () => void
@@ -24,9 +20,8 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   const [hasChecked, setHasChecked] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Check for existing valid key on mount
   useEffect(() => {
-    if (!isTauri()) {
+    if (!isDesktopApp()) {
       setHasChecked(true)
       return
     }
@@ -39,7 +34,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
     }).catch(() => {
       setHasChecked(true)
     })
-  }, [])
+  }, [onActivated])
 
   const handleValidate = useCallback(async () => {
     if (!key.trim()) {
@@ -69,11 +64,8 @@ export default function LicenseActivation({ onActivated, demo = false }: License
     }
   }
 
-  // Simple formatter: strip non-hex chars, insert dashes, preserve "CW-" prefix
   const formatKey = (raw: string): string => {
-    // Strip everything that isn't a hex digit
     const hex = raw.toUpperCase().replace(/[^A-F0-9]/g, '')
-    // Build CW-XXXX-XXXX-XXXX from raw hex chars
     const parts = ['CW']
     if (hex.length > 0) parts.push(hex.slice(0, 4))
     if (hex.length > 4) parts.push(hex.slice(4, 8))
@@ -82,26 +74,22 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Get cursor position before reformat
     const cursorPos = e.target.selectionStart || 0
     const beforeFormat = e.target.value
 
     const formatted = formatKey(beforeFormat)
 
-    // Calculate new cursor position
-    // Count hex chars before cursor in original
     const hexBefore = beforeFormat.slice(0, cursorPos).replace(/[^A-Fa-f0-9]/g, '')
-    const baseLen = 3 // "CW-"
+    const baseLen = 3
     let newCursor = baseLen
     newCursor += Math.min(hexBefore.length, 4)
-    if (hexBefore.length > 4) newCursor += 1 // dash
+    if (hexBefore.length > 4) newCursor += 1
     newCursor += Math.min(Math.max(hexBefore.length - 4, 0), 4)
-    if (hexBefore.length > 8) newCursor += 1 // dash
+    if (hexBefore.length > 8) newCursor += 1
     newCursor += Math.min(Math.max(hexBefore.length - 8, 0), 4)
 
     setKey(formatted)
 
-    // Restore cursor position on next render
     requestAnimationFrame(() => {
       if (inputRef.current) {
         inputRef.current.setSelectionRange(newCursor, newCursor)
@@ -119,7 +107,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
     setError(null)
   }
 
-  if (!isTauri() || !hasChecked) return null
+  if (!isDesktopApp() || !hasChecked) return null
 
   if (demo) {
     return null
@@ -128,7 +116,6 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-[#f5f0e8] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e5e0d8]">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1a1a1a] mb-4">
             <span className="text-2xl font-serif text-[#f5f0e8] font-bold">C</span>
@@ -141,7 +128,6 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           </p>
         </div>
 
-        {/* Key Input */}
         <div className="mb-4">
           <label className="block text-xs font-bold uppercase tracking-[0.15em] text-[#999] mb-2">
             License Key
@@ -166,7 +152,6 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           )}
         </div>
 
-        {/* Button */}
         <button
           onClick={handleValidate}
           disabled={!key.trim() || isValidating}
@@ -175,23 +160,9 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           {isValidating ? 'Validating...' : 'Activate'}
         </button>
 
-        {/* Purchase link */}
         <div className="text-center pt-4 border-t border-[#e5e0d8]">
-          <p className="text-xs text-[#999] mb-2">
-            Don&apos;t have a key yet?
-          </p>
-          <button
-            onClick={() => window.open('https://colorwizard.app', '_blank')}
-            className="text-sm text-[#1a1a1a] underline hover:no-underline transition-colors"
-          >
-            Get ColorWizard Desktop - $10
-          </button>
-        </div>
-
-        {/* Debug: show valid demo keys */}
-        <div className="mt-4 pt-4 border-t border-[#e5e0d8]">
-          <p className="text-[10px] text-[#bbb] text-center">
-            Demo keys: CW-A1B2-C3D4-6627 / CW-BEEF-0000-E385 / CW-CAFE-0000-D582
+          <p className="text-xs text-[#999]">
+            Purchase and key delivery happen outside the app. Once you have a key, paste it here to unlock the offline desktop workspace.
           </p>
         </div>
       </div>

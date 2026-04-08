@@ -2,5 +2,40 @@
   "extends": [
     "next/core-web-vitals",
     "next/typescript"
+  ],
+  "overrides": [
+    {
+      "files": ["**/*.{ts,tsx}"],
+      "excludedFiles": [
+        "components/desktop/**/*",
+        "lib/desktop/**/*",
+        "lib/tauri.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/desktop/tauriClient",
+                "message": "Pro IPC: import from @/lib/tauri in shared code, or add code under components/desktop/ or lib/desktop/."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["@/components/desktop/**"],
+                "message": "Pro UI: only app/layout.tsx (shell) or files under components/desktop/ may import from @/components/desktop/*."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["app/layout.tsx"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
   ]
 }

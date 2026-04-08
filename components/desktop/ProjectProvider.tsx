@@ -1,18 +1,18 @@
 /**
  * ProjectProvider - Manages Tauri project state and persistence.
- * 
+ *
  * In Tauri: Shows ProjectGallery when no project is selected.
  *           When project is selected, wraps children with project context.
  *           Handles loading/saving data for the active project.
- * 
+ *
  * In Browser: Passes through children unchanged.
  */
 'use client'
 
 import { useState, createContext, useContext, type ReactNode, type Dispatch, type SetStateAction } from 'react'
-import { isTauri } from '@/lib/tauri'
-import ProjectGallery from '@/components/ProjectGallery'
-import TauriPersistence from '@/components/TauriPersistence'
+import { isDesktopApp } from '@/lib/desktop/detect'
+import ProjectGallery from '@/components/desktop/ProjectGallery'
+import TauriPersistence from '@/components/desktop/TauriPersistence'
 
 interface ProjectContextValue {
   activeProjectId: number | null
@@ -31,12 +31,10 @@ export function useProject() {
 export default function ProjectProvider({ children }: { children: ReactNode }) {
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
 
-  // Browser: no project management needed
-  if (!isTauri()) {
+  if (!isDesktopApp()) {
     return <>{children}</>
   }
 
-  // No project selected: show gallery
   if (activeProjectId === null) {
     return (
       <ProjectContext.Provider value={{ activeProjectId, setActiveProjectId }}>
@@ -45,7 +43,6 @@ export default function ProjectProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  // Project active: show app + persistence
   return (
     <ProjectContext.Provider value={{ activeProjectId, setActiveProjectId }}>
       <TauriPersistence projectId={activeProjectId} />

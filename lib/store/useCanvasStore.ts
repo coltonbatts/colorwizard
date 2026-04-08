@@ -7,6 +7,7 @@ import { TransformState } from '../calibration'
 import { ValueScaleResult } from '../valueScale'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
 import { safeStorage } from './storage'
+import { sanitizeDesktopProjectImageSrc } from '../tauri'
 
 interface CanvasState {
     image: HTMLImageElement | null
@@ -70,11 +71,14 @@ export const useCanvasStore = create<CanvasState>()(
                 const currentImage = get().image
                 if (image === currentImage) return
 
-                set({ image, referenceImage: image ? image.src : null })
+                set({
+                    image,
+                    referenceImage: sanitizeDesktopProjectImageSrc(image?.src ?? null),
+                })
             },
-            setSurfaceImage: (surfaceImage) => set({ surfaceImage }),
+            setSurfaceImage: (surfaceImage) => set({ surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage) }),
             setSurfaceBounds: (surfaceBounds) => set({ surfaceBounds }),
-            setReferenceImage: (referenceImage) => set({ referenceImage }),
+            setReferenceImage: (referenceImage) => set({ referenceImage: sanitizeDesktopProjectImageSrc(referenceImage) }),
             setReferenceOpacity: (referenceOpacity) => set({ referenceOpacity }),
             setReferenceLocked: (referenceLocked) => set({ referenceLocked }),
             setReferenceTransform: (referenceTransform) => set({ referenceTransform }),

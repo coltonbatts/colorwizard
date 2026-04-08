@@ -53,11 +53,11 @@ export default function UpgradeModal({
               <span className="text-4xl">✨</span>
             </motion.div>
 
-            <h2 className="mb-3 text-3xl font-black text-gray-900 dark:text-white">Free Forever</h2>
+            <h2 className="mb-3 text-3xl font-black text-gray-900 dark:text-white">Desktop License Required</h2>
 
             {featureName && (
               <p className="mb-6 text-sm italic text-gray-600 dark:text-gray-400">
-                {featureName} is now included without a checkout flow.
+                {featureName} is unlocked in the licensed desktop app.
               </p>
             )}
 
@@ -68,14 +68,14 @@ export default function UpgradeModal({
               <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
                 <li>Unlimited Procreate exports</li>
                 <li>AI-powered color theory suggestions</li>
-                <li>Local-first workflow with no account requirement</li>
-                <li>No subscriptions. No payment prompts. Ever.</li>
+                <li>Offline-first workflow with local activation</li>
+                <li>No cloud account required for normal use</li>
               </ul>
             </div>
 
             <div className="space-y-4">
               <p className="px-6 text-sm text-gray-500 dark:text-gray-400">
-                Local is the product now. Everything stays on your machine, and the paid layer is turned off.
+                This preview keeps export limits in place instead of pretending the paid desktop unlock is free.
               </p>
 
               <button
@@ -86,7 +86,7 @@ export default function UpgradeModal({
               </button>
 
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                Payments disabled
+                Licensed desktop feature
               </p>
             </div>
           </div>

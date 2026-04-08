@@ -5,8 +5,8 @@
 'use client'
 
 import { useState, type ReactNode, type Dispatch, type SetStateAction, createContext, useContext } from 'react'
-import { isTauri } from '@/lib/tauri'
-import ProjectGallery from '@/components/ProjectGallery'
+import { isDesktopApp } from '@/lib/desktop/detect'
+import ProjectGallery from '@/components/desktop/ProjectGallery'
 
 interface ProjectContextValue {
   activeProjectId: number | null
@@ -29,12 +29,10 @@ interface ProjectLayoutProps {
 export default function ProjectLayout({ children }: ProjectLayoutProps) {
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
 
-  // Only Tauri gets project management
-  if (!isTauri()) {
+  if (!isDesktopApp()) {
     return <>{children}</>
   }
 
-  // Show gallery when no project selected
   if (activeProjectId === null) {
     return (
       <ProjectContext.Provider value={{ activeProjectId, setActiveProjectId }}>

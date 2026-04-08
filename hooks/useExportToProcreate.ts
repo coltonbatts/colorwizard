@@ -50,7 +50,7 @@ export function useExportToProcreate(): UseExportToProcreateResult {
                 // Enforce tier limits
                 if (!isPro && colors.length > maxColors) {
                     throw new Error(
-                        `Free tier limited to ${maxColors} colors. Support the project for $1 to unlock unlimited exports!`
+                        `This preview is limited to ${maxColors} colors. The licensed desktop app unlocks unlimited Procreate exports.`
                     );
                 }
 

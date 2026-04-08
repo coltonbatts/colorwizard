@@ -1,37 +1,26 @@
 /**
  * React hook for user tier management.
- * The offline desktop build does not fetch account state from a server.
+ * Desktop unlocks locally via license key, so no server fetch is required.
  */
 
 'use client'
 
 import type { UserTier } from '@/lib/featureFlags'
-
-interface UserTierData {
-  tier: UserTier
-  subscriptionStatus?: 'active' | 'canceled' | 'pending'
-  subscriptionId?: string
-  nextBillingDate?: string
-  upgradeDate?: string
-}
-
-const LOCAL_TIER: UserTierData = {
-  tier: 'free',
-  subscriptionStatus: undefined,
-}
+import { isDesktopApp } from '@/lib/desktop/detect'
 
 export function useUserTier() {
+  const tier: UserTier = isDesktopApp() ? 'pro_lifetime' : 'free'
   const refetch = async () => undefined
 
   return {
-    tier: LOCAL_TIER.tier,
-    subscriptionStatus: LOCAL_TIER.subscriptionStatus,
-    subscriptionId: LOCAL_TIER.subscriptionId,
-    nextBillingDate: LOCAL_TIER.nextBillingDate,
-    upgradeDate: LOCAL_TIER.upgradeDate,
+    tier,
+    subscriptionStatus: tier === 'free' ? undefined : 'active',
+    subscriptionId: undefined,
+    nextBillingDate: undefined,
+    upgradeDate: undefined,
     loading: false,
     error: null,
     refetch,
-    isPro: true,
+    isPro: tier !== 'free',
   }
 }

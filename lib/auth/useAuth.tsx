@@ -1,7 +1,7 @@
 'use client'
 
 import { lazy, Suspense, type ReactNode } from 'react'
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
+import { SERVER_INTEGRATIONS_ENABLED } from '@/lib/appMode'
 import { AuthContext } from './authContext'
 
 export { useAuth } from './authContext'
@@ -17,11 +17,11 @@ function AuthLoadingShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * In OPEN_SOURCE_MODE, Firebase Auth is not loaded (no SDK chunk, no network).
- * Paid / cloud builds use a lazy-loaded Firebase provider.
+ * Desktop ships without a required cloud account, so Firebase Auth stays disabled
+ * unless server integrations are explicitly enabled again.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  if (OPEN_SOURCE_MODE) {
+  if (!SERVER_INTEGRATIONS_ENABLED) {
     return (
       <AuthContext.Provider value={{ user: null, loading: false, isSignedIn: false }}>
         {children}

@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
-import TauriAppShell from '@/components/TauriAppShell'
+import TauriAppShell from '@/components/desktop/TauriAppShell'
 import '@fontsource/eb-garamond/latin-400.css'
 import '@fontsource/eb-garamond/latin-400-italic.css'
 import '@fontsource/eb-garamond/latin-500.css'
@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'ColorWizard | Color Mixing for Oil Painters',
-  description: 'Upload a reference image, click a color, and get a real oil paint mixing recipe from a 6-color limited palette. Free, open source, and private.',
+  description: 'Upload a reference image, click a color, and get a real oil paint mixing recipe from a 6-color limited palette. Offline-first and private.',
   keywords: ['oil painting', 'color mixing', 'paint mixing', 'limited palette', 'artist tools', 'reference photo', 'dmc thread match'],
   openGraph: {
     title: 'ColorWizard | Color Mixing for Oil Painters',

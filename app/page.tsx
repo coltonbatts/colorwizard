@@ -28,7 +28,7 @@ import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
-import { resolveTauriImageSrc } from '@/lib/tauri'
+import { isTauri, resolveTauriImageSrc } from '@/lib/tauri'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -276,6 +276,7 @@ export default function Home() {
 
   // Load calibration on mount
   useEffect(() => {
+    if (isTauri()) return
     loadCalibrationFromStorage()
   }, [loadCalibrationFromStorage])
 

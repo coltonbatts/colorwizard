@@ -24,6 +24,7 @@
     "@fontsource/eb-garamond": "^5.2.7",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@stripe/stripe-js": "^8.7.0",
+    "@tauri-apps/plugin-dialog": "^2.7.0",
     "comlink": "^4.4.2",
     "culori": "^4.0.2",
     "firebase": "^12.8.0",

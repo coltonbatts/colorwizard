@@ -8,7 +8,6 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 import {
   isProOnlyFeature,
   hasAccessToProFeature,
@@ -55,10 +54,9 @@ describe('featureFlags.ts - Tier Gating', () => {
 
   // ====================================================================
   // Test Suite 2: Free User Access Control (CRITICAL)
-  // Skipped when OPEN_SOURCE_MODE — all local pro features are unlocked.
   // ====================================================================
 
-  describe.skipIf(OPEN_SOURCE_MODE)('hasAccessToProFeature - Free User', () => {
+  describe('hasAccessToProFeature - Free User', () => {
     const freeTier: UserTier = 'free'
 
     it('should deny free user access to aiPaletteSuggestions', () => {
@@ -213,29 +211,28 @@ describe('featureFlags.ts - Tier Gating', () => {
       expect(FREE_FEATURES.length).toBeGreaterThan(0)
     })
 
-    it('should include unlimited palette generation', () => {
-      expect(FREE_FEATURES).toContain('Unlimited palette generation')
+    it('should include palette generation', () => {
+      expect(FREE_FEATURES).toContain('Palette generation and export')
     })
 
-    it('should include all export formats', () => {
+    it('should include export support', () => {
       expect(FREE_FEATURES).toEqual(
         expect.arrayContaining([
           expect.stringContaining('export'),
-          expect.stringContaining('JSON'),
         ])
       )
     })
 
-    it('should include Figma export', () => {
+    it('should include offline workflow messaging', () => {
       expect(FREE_FEATURES).toEqual(
-        expect.arrayContaining([expect.stringContaining('Figma')])
+        expect.arrayContaining([expect.stringContaining('Offline')])
       )
     })
 
-    it('should mention no tracking or watermarks', () => {
+    it('should mention core local workflows', () => {
       expect(FREE_FEATURES).toEqual(
         expect.arrayContaining([
-          expect.stringContaining('no watermarks'),
+          expect.stringContaining('Reference image'),
         ])
       )
     })
@@ -304,7 +301,7 @@ describe('featureFlags.ts - Tier Gating', () => {
   // ====================================================================
 
   describe('Tier Gating Business Rules', () => {
-    it.skipIf(OPEN_SOURCE_MODE)('should follow rule: free user denies all pro features', () => {
+    it('should follow rule: free user denies all pro features', () => {
       const freeTier: UserTier = 'free'
       const proFeatures: ProOnlyFeature[] = [
         'aiPaletteSuggestions',
@@ -316,13 +313,6 @@ describe('featureFlags.ts - Tier Gating', () => {
       proFeatures.forEach((feature) => {
         const hasAccess = hasAccessToProFeature(feature, freeTier)
         expect(hasAccess).toBe(false)
-      })
-    })
-
-    it.skipIf(!OPEN_SOURCE_MODE)('open source: free tier unlocks all pro features', () => {
-      const freeTier: UserTier = 'free'
-      ;(['aiPaletteSuggestions', 'teamCollaboration', 'advancedPresets'] as const).forEach((feature) => {
-        expect(hasAccessToProFeature(feature, freeTier)).toBe(true)
       })
     })
 
@@ -356,7 +346,7 @@ describe('featureFlags.ts - Tier Gating', () => {
       })
     })
 
-    it.skipIf(OPEN_SOURCE_MODE)('should ensure no feature falls through cracks', () => {
+    it('should ensure no feature falls through cracks', () => {
       // Every pro feature must be explicitly gated for free users
       const proFeatures: ProOnlyFeature[] = [
         'aiPaletteSuggestions',

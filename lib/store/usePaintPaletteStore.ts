@@ -6,6 +6,7 @@
  */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { safeStorage } from './storage'
 
 // ============================================================================
 // Types
@@ -69,6 +70,15 @@ interface PaintPaletteState {
     isUsingPaintPalette: () => boolean
     getActivePalette: () => PaintPalette | null
     isPaintSelected: (paintId: string) => boolean
+    hydratePersistedState: (state: Partial<Pick<PaintPaletteState, 'selectedPaintIds' | 'savedPalettes' | 'activePaletteId' | 'isDirty'>>) => void
+    resetPersistedState: () => void
+}
+
+const DEFAULT_PERSISTED_STATE = {
+    selectedPaintIds: [] as string[],
+    savedPalettes: [] as PaintPalette[],
+    activePaletteId: null as string | null,
+    isDirty: false,
 }
 
 export const usePaintPaletteStore = create<PaintPaletteState>()(
@@ -195,15 +205,26 @@ export const usePaintPaletteStore = create<PaintPaletteState>()(
                 return savedPalettes.find(p => p.id === activePaletteId) || null
             },
 
-            isPaintSelected: (paintId) => get().selectedPaintIds.includes(paintId)
+            isPaintSelected: (paintId) => get().selectedPaintIds.includes(paintId),
+
+            hydratePersistedState: (state) => set({
+                selectedPaintIds: state.selectedPaintIds ?? DEFAULT_PERSISTED_STATE.selectedPaintIds,
+                savedPalettes: state.savedPalettes ?? DEFAULT_PERSISTED_STATE.savedPalettes,
+                activePaletteId: state.activePaletteId ?? DEFAULT_PERSISTED_STATE.activePaletteId,
+                isDirty: state.isDirty ?? DEFAULT_PERSISTED_STATE.isDirty,
+            }),
+
+            resetPersistedState: () => set(DEFAULT_PERSISTED_STATE),
         }),
         {
             name: 'colorwizard-paint-palette',
+            storage: safeStorage,
             partialize: (state) => ({
                 selectedPaintIds: state.selectedPaintIds,
                 savedPalettes: state.savedPalettes,
-                activePaletteId: state.activePaletteId
-            })
+                activePaletteId: state.activePaletteId,
+                isDirty: state.isDirty,
+            }),
         }
     )
 )

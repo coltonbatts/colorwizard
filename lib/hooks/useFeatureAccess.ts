@@ -11,7 +11,7 @@
 
 import { useState, useCallback } from 'react'
 import { useUserTier } from './useUserTier'
-import type { ProOnlyFeature } from '@/lib/featureFlags'
+import { hasAccessToProFeature, type ProOnlyFeature } from '@/lib/featureFlags'
 
 export function useFeatureAccess(featureName: ProOnlyFeature) {
   const { tier, loading: tierLoading } = useUserTier()
@@ -19,14 +19,15 @@ export function useFeatureAccess(featureName: ProOnlyFeature) {
   const [isUpgrading] = useState(false)
 
   const hasAccess = useCallback(() => {
-    void featureName
-    void tier
-    return true
+    return hasAccessToProFeature(featureName, tier)
   }, [featureName, tier])
 
   const promptUpgrade = useCallback(() => {
-    void hasAccess
-    return false
+    const allowed = hasAccess()
+    if (!allowed) {
+      setShowUpgradePrompt(true)
+    }
+    return allowed
   }, [hasAccess])
 
   const handleUpgradeClick = useCallback(async () => {

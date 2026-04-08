@@ -1,9 +1,7 @@
 /**
  * Feature Flags System for ColorWizard.
- * In open-source mode, all local features are available without payment.
+ * Desktop licensing grants the full app; unlicensed and web preview modes stay limited.
  */
-
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
 
 export type UserTier = 'free' | 'pro' | 'pro_lifetime'
 
@@ -58,21 +56,19 @@ export const FEATURES = PRO_FEATURES
  * What's FREE (no gating, no limits)
  */
 export const FREE_FEATURES = [
-  'Unlimited palette generation',
-  'All export formats (JSON, CSV, CSS, SVG, etc.)',
-  'Direct Figma export',
-  'Direct Adobe export',
-  'Direct Framer export',
+  'Core color sampling and analysis',
+  'Palette generation and export',
+  'Reference image workflows',
   'Full color analysis tools',
   'Standard color filters',
   'Oil paint color mixing',
   'DMC floss matching',
   'Custom calibration',
-  'All data is yours - no watermarks or tracking',
+  'Offline-first local workflow',
 ]
 
 /**
- * What's PRO-only ($9/month or $99/year)
+ * What's license-only
  */
 export const PRO_ONLY_FEATURES = [
   'AI palette suggestions',
@@ -91,10 +87,6 @@ export function isProOnlyFeature(featureName: string): boolean {
  * Check if user has access to a Pro feature
  */
 export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTier): boolean {
-  if (OPEN_SOURCE_MODE) {
-    return true
-  }
-
   if (!isProOnlyFeature(featureName)) {
     // If it's not in the pro-only list, it's free for everyone
     return true
@@ -115,16 +107,10 @@ export function getProFeatures(): FeatureConfig[] {
  * Get numerical limit for a feature based on user tier
  */
 export function getFeatureLimit(featureName: string, tier: UserTier): number {
-  if (OPEN_SOURCE_MODE) {
-    return Infinity
-  }
-
   if (featureName === 'exportToProcreate') {
-    // Free tier limited to 5 colors for Procreate export
-    // Pro/Lifetime have no such limit
-    return tier === 'free' ? 5 : Infinity;
+    return tier === 'free' ? 5 : Infinity
   }
 
   // Default to Infinity for features without explicitly defined limits
-  return Infinity;
+  return Infinity
 }

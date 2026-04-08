@@ -9,17 +9,35 @@
  *
  * Route guard: when running in Tauri, any non-root route (pricing, support,
  * dashboard, settings, trace, color-theory) is immediately redirected to `/`.
- * This ensures the dev server mirrors the desktop experience — no marketing
- * pages leak through.
+ * The main workbench lives at `/`; marketing-only web routes never appear in Pro.
  */
 'use client'
 
-import { useState, createContext, useContext, useMemo, useEffect, type ReactNode, type Dispatch, type SetStateAction } from 'react'
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  useMemo,
+  useEffect,
+  type ReactNode,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { isTauri, getLicenseKey, getProject, initDatabase, type ProjectInfo } from '@/lib/tauri'
-import ProjectGallery from '@/components/ProjectGallery'
-import TauriPersistence from '@/components/TauriPersistence'
-import LicenseActivation from '@/components/LicenseActivation'
+import { isDesktopApp } from '@/lib/desktop/detect'
+import {
+  createProject,
+  getLicenseKey,
+  getProject,
+  initDatabase,
+  pickImagePath,
+  type ProjectInfo,
+} from '@/lib/desktop/tauriClient'
+import DesktopWorkspaceEmpty from '@/components/desktop/DesktopWorkspaceEmpty'
+import ProjectGallery from '@/components/desktop/ProjectGallery'
+import TauriPersistence from '@/components/desktop/TauriPersistence'
+import LicenseActivation from '@/components/desktop/LicenseActivation'
 
 /** Routes that exist on the web but should not be accessible inside the desktop app */
 const DESKTOP_BLOCKED_ROUTES = new Set([
@@ -82,7 +100,7 @@ function DesktopProjectFrame({
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-hidden">
+      <main className="relative min-h-0 flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <div className="rounded-2xl border border-[#ddd1c0] bg-white px-8 py-6 text-center shadow-sm">
@@ -91,7 +109,10 @@ function DesktopProjectFrame({
             </div>
           </div>
         ) : (
-          children
+          <>
+            {children}
+            <DesktopWorkspaceEmpty />
+          </>
         )}
       </main>
     </div>
@@ -101,55 +122,58 @@ function DesktopProjectFrame({
 export default function TauriAppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(() => {
-    if (isTauri()) {
-      try {
-        const stored = localStorage.getItem('colorwizard-last-project')
-        return stored ? parseInt(stored, 10) || null : null
-      } catch {
-        return null
-      }
-    }
-    return null
-  })
+  /** Always start in the project library on launch (document-based app, not a landing page). */
+  const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
+  const [seedReferencePath, setSeedReferencePath] = useState<string | null>(null)
+  const [resumeSession, setResumeSession] = useState<{ id: number; name: string } | null>(null)
 
-  const [licensed, setLicensed] = useState(!isTauri())
+  const [licensed, setLicensed] = useState(!isDesktopApp())
   const [dbReady, setDbReady] = useState(false)
   const [activeProject, setActiveProject] = useState<ProjectInfo | null>(null)
   const [hydratedProjectId, setHydratedProjectId] = useState<number | null>(null)
 
-  // Route guard: redirect blocked routes to / when in Tauri
   useEffect(() => {
-    if (!isTauri()) return
+    if (!isDesktopApp()) return
     if (pathname && DESKTOP_BLOCKED_ROUTES.has(pathname)) {
       router.replace('/')
     }
   }, [pathname, router])
 
-  // Init DB immediately so ProjectGallery can create projects
   useEffect(() => {
-    if (!isTauri()) {
+    if (!isDesktopApp()) {
       setDbReady(true)
       return
     }
     initDatabase().then(() => setDbReady(true)).catch(() => setDbReady(true))
   }, [])
 
-  // Check license on mount
   useEffect(() => {
-    if (!isTauri()) return
+    if (!isDesktopApp()) return
     getLicenseKey().then((key) => {
       setLicensed(key !== null)
     }).catch(() => setLicensed(false))
   }, [])
 
-  const handleActivated = () => setLicensed(true)
-  const handleProjectReady = (projectId: number) => setHydratedProjectId(projectId)
+  const handleActivated = useCallback(() => setLicensed(true), [])
+  const handleProjectReady = useCallback((projectId: number) => {
+    setHydratedProjectId(projectId)
+  }, [])
+  const handleSeedConsumed = useCallback(() => setSeedReferencePath(null), [])
   const handleBackToProjects = () => {
     setHydratedProjectId(null)
     setActiveProject(null)
     setActiveProjectId(null)
   }
+
+  const handleOpenImageNewProject = useCallback(async () => {
+    const path = await pickImagePath()
+    if (!path) return
+    const base =
+      path.replace(/^.*[/\\]/, '').replace(/\.[^.]+$/, '') || 'Untitled'
+    const created = await createProject(base)
+    setSeedReferencePath(path)
+    setActiveProjectId(created.id)
+  }, [])
 
   const contextValue = useMemo(
     () => ({ activeProjectId, setActiveProjectId }),
@@ -157,21 +181,42 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
-    if (!isTauri()) return
-
+    if (!isDesktopApp()) return
+    if (activeProjectId === null) return
     try {
-      if (activeProjectId === null) {
-        localStorage.removeItem('colorwizard-last-project')
-      } else {
-        localStorage.setItem('colorwizard-last-project', String(activeProjectId))
-      }
+      localStorage.setItem('colorwizard-last-project', String(activeProjectId))
     } catch {
       // noop
     }
   }, [activeProjectId])
 
   useEffect(() => {
-    if (!isTauri()) return
+    if (!isDesktopApp() || !dbReady || activeProjectId !== null) return
+    let cancelled = false
+    try {
+      const raw = localStorage.getItem('colorwizard-last-project')
+      const id = raw ? parseInt(raw, 10) : NaN
+      if (!Number.isFinite(id) || id <= 0) {
+        setResumeSession(null)
+        return
+      }
+      getProject(id)
+        .then((p) => {
+          if (!cancelled) setResumeSession({ id: p.id, name: p.name })
+        })
+        .catch(() => {
+          if (!cancelled) setResumeSession(null)
+        })
+    } catch {
+      setResumeSession(null)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [dbReady, activeProjectId])
+
+  useEffect(() => {
+    if (!isDesktopApp()) return
 
     if (activeProjectId === null) {
       setActiveProject(null)
@@ -199,26 +244,33 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     }
   }, [activeProjectId])
 
-  // Browser: pass through
-  if (!isTauri()) {
+  if (!isDesktopApp()) {
     return children
   }
 
-  // No license yet: show activation modal
   if (!licensed) {
     return <LicenseActivation onActivated={handleActivated} />
   }
 
-  // DB not ready yet: show nothing (brief flash)
   if (!dbReady) return null
 
   return (
     <ProjectContext.Provider value={contextValue}>
       {activeProjectId === null ? (
-        <ProjectGallery onSelectProject={setActiveProjectId} />
+        <ProjectGallery
+          onSelectProject={setActiveProjectId}
+          onOpenImageNewProject={handleOpenImageNewProject}
+          resumeSession={resumeSession}
+          onResumeSession={(id) => setActiveProjectId(id)}
+        />
       ) : (
         <>
-          <TauriPersistence projectId={activeProjectId} onReady={handleProjectReady} />
+          <TauriPersistence
+            projectId={activeProjectId}
+            onReady={handleProjectReady}
+            seedReferenceAbsolutePath={seedReferencePath}
+            onSeedReferenceConsumed={handleSeedConsumed}
+          />
           <DesktopProjectFrame
             project={activeProject}
             isLoading={hydratedProjectId !== activeProjectId}

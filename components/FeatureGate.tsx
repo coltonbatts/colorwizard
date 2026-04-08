@@ -58,7 +58,7 @@ export default function FeatureGate({
           aria-label={`Open feature info for ${featureConfig.label}`}
         >
           <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
-            Included
+            Requires License
           </span>
         </button>
       </div>

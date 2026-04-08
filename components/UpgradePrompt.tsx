@@ -5,7 +5,7 @@
 'use client'
 
 import { useId } from 'react'
-import { APP_MODE_DESCRIPTION, APP_MODE_LABEL, OPEN_SOURCE_MODE } from '@/lib/appMode'
+import { APP_MODE_DESCRIPTION, APP_MODE_LABEL } from '@/lib/appMode'
 import OverlaySurface from '@/components/ui/Overlay'
 
 interface UpgradePromptProps {
@@ -41,7 +41,7 @@ export default function UpgradePrompt({
         <h2 id={titleId} className="mb-2 text-xl font-bold text-white sm:text-2xl">
           {featureName}
         </h2>
-        <p className="text-blue-100">{OPEN_SOURCE_MODE ? APP_MODE_LABEL : 'Pro feature'}</p>
+        <p className="text-blue-100">Requires a licensed desktop build</p>
       </div>
 
       <div className="space-y-6 px-4 py-6 sm:px-8 sm:py-8">
@@ -50,7 +50,7 @@ export default function UpgradePrompt({
         <div className="rounded-lg border-2 border-blue-200 bg-blue-50/50 p-6 text-center">
           <div className="mb-1 text-2xl font-bold text-blue-600">{APP_MODE_LABEL}</div>
           <div className="text-sm text-gray-600">{APP_MODE_DESCRIPTION}</div>
-          <p className="mt-2 text-xs text-gray-500">No checkout, account, or payment setup required.</p>
+          <p className="mt-2 text-xs text-gray-500">Desktop activation is local. Core workflows stay offline once unlocked.</p>
         </div>
 
         <div className="space-y-2">
@@ -62,25 +62,25 @@ export default function UpgradePrompt({
             </li>
             <li className="flex gap-2">
               <span className="font-bold text-blue-600">⭐</span>
-              <span>Unlimited exports and local workflows</span>
+              <span>Unlimited exports and advanced workflows</span>
             </li>
             <li className="flex gap-2">
               <span className="font-bold text-blue-600">⭐</span>
-              <span>No paid unlock flow</span>
+              <span>Local-first desktop project storage</span>
             </li>
           </ul>
-          <p className="mt-3 text-xs italic text-gray-600">The app now ships as a free local-first tool.</p>
+          <p className="mt-3 text-xs italic text-gray-600">This preview keeps the paid standalone desktop model intact instead of faking an upgrade flow.</p>
         </div>
       </div>
 
       <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 sm:px-8 sm:py-6">
         <button
           type="button"
-          onClick={OPEN_SOURCE_MODE ? onClose : onUpgradeClick}
+          onClick={onUpgradeClick}
           disabled={isLoading}
           className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {OPEN_SOURCE_MODE ? 'Continue' : 'Unlock'}
+          Close
         </button>
       </div>
     </OverlaySurface>

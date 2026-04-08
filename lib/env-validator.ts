@@ -1,12 +1,12 @@
 /**
  * Environment Variable Validator
- * No-op in open-source mode because payments are disabled.
+ * No-op while the app ships as a standalone desktop build with no server runtime.
  */
 
-import { OPEN_SOURCE_MODE } from '@/lib/appMode'
+import { SERVER_INTEGRATIONS_ENABLED } from '@/lib/appMode'
 
 export function validateServerEnv() {
-    if (OPEN_SOURCE_MODE) {
+    if (!SERVER_INTEGRATIONS_ENABLED) {
         return
     }
 
