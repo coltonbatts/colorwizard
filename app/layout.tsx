@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
+import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
 import TauriAppShell from '@/components/desktop/TauriAppShell'
 import '@fontsource/eb-garamond/latin-400.css'
 import '@fontsource/eb-garamond/latin-400-italic.css'
@@ -70,15 +72,40 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-runtime="boot" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
-        <StoreBootstrap />
-        <TauriAppShell>
-          <AuthProvider>{children}</AuthProvider>
-        </TauriAppShell>
+        <Script id="runtime-detect" strategy="beforeInteractive">
+          {`(() => {
+            try {
+              const w = window;
+              const isDesktop =
+                !!(w.__TAURI__ && w.__TAURI__.core && w.__TAURI__.core.invoke) ||
+                !!(w.__TAURI_INTERNALS__ && w.__TAURI_INTERNALS__.invoke);
+              document.documentElement.dataset.runtime = isDesktop ? 'desktop' : 'web';
+            } catch {
+              document.documentElement.dataset.runtime = 'web';
+            }
+          })();`}
+        </Script>
+
+        <div className="desktop-boot-splash" aria-hidden="true">
+          <div className="desktop-boot-splash__panel">
+            <p className="desktop-boot-splash__eyebrow">ColorWizard Pro</p>
+            <h1 className="desktop-boot-splash__title">Opening studio…</h1>
+            <p className="desktop-boot-splash__subtitle">Loading your workspace, library, and last session.</p>
+          </div>
+        </div>
+
+        <div className="runtime-app-root">
+          <DesktopRuntimeMount />
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          <StoreBootstrap />
+          <TauriAppShell>
+            <AuthProvider>{children}</AuthProvider>
+          </TauriAppShell>
+        </div>
       </body>
     </html>
   )

@@ -24,6 +24,7 @@
     /* === COLOR SYSTEM (Use by role, not decoration) === */
 
     /* Base (Paper): Warm, print-like, non-digital */
+    --paper-shell: #F5F0E8;
     --paper: #F2F0E9;
     --paper-elevated: #FAFAF7;
     --paper-recessed: #E8E6DF;
@@ -34,6 +35,12 @@
     --ink-muted: rgba(26, 26, 26, 0.5);
     --ink-faint: rgba(26, 26, 26, 0.25);
     --ink-hairline: rgba(26, 26, 26, 0.1);
+
+    /* Warm structural secondary tones */
+    --graphite: #6D5E49;
+    --graphite-muted: #8F7F69;
+    --linen: #DDD1C0;
+    --linen-strong: #C7BAA5;
 
     /* Signal (Action): Primary actions, critical states, active modes */
     /* Used sparingly. Never decorative. Rare and decisive. */
@@ -111,6 +118,7 @@
     --radius-md: 8px;
     --radius-lg: 12px;
     --radius-xl: 16px;
+    --radius-2xl: 24px;
 
     /* Rule weights */
     --rule-hairline: 1px;
@@ -121,12 +129,88 @@
     --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
     --shadow-md: 0 4px 12px rgba(26, 26, 26, 0.06);
     --shadow-lg: 0 8px 24px rgba(26, 26, 26, 0.08);
+    --shadow-floating: 0 20px 80px rgba(26, 26, 26, 0.18);
 
     /* === TRANSITIONS === */
     --duration-fast: 120ms;
     --duration-normal: 200ms;
     --duration-slow: 300ms;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* === OVERLAY / DIALOG MOTION === */
+    --overlay-fade-duration: calc((var(--duration-fast) + var(--duration-normal)) / 2);
+    --overlay-backdrop: rgba(0, 0, 0, 0.32);
+    --dialog-spring-stiffness: 360;
+    --dialog-spring-damping: 32;
+}
+
+/* ============================================
+   DESKTOP BOOT SEQUENCE
+   ============================================ */
+
+.runtime-app-root {
+    opacity: 1;
+    transition: opacity 180ms var(--ease-out);
+}
+
+.desktop-boot-splash {
+    display: none;
+}
+
+html[data-runtime='boot'] .runtime-app-root,
+html[data-runtime='desktop']:not([data-react-mounted='true']) .runtime-app-root {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html[data-runtime='desktop']:not([data-react-mounted='true']) .desktop-boot-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background:
+        radial-gradient(circle at top right, rgba(148, 103, 70, 0.12), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.74), transparent 22%),
+        linear-gradient(180deg, #f4efe7 0%, #ece4d8 100%);
+}
+
+.desktop-boot-splash__panel {
+    width: min(32rem, 100%);
+    border: 1px solid rgba(26, 26, 26, 0.08);
+    border-radius: 1.75rem;
+    padding: 2rem 2.25rem;
+    background: rgba(255, 252, 247, 0.84);
+    box-shadow: 0 24px 60px rgba(26, 26, 26, 0.08);
+    backdrop-filter: blur(18px);
+}
+
+.desktop-boot-splash__eyebrow {
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #8f7f69;
+}
+
+.desktop-boot-splash__title {
+    margin: 0.7rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    color: #1a1a1a;
+}
+
+.desktop-boot-splash__subtitle {
+    margin: 0.9rem 0 0;
+    max-width: 28rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(26, 26, 26, 0.68);
 }
 
 /* ============================================
