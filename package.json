@@ -16,6 +16,7 @@
     "test": "vitest",
     "tauri": "tauri",
     "tauri:dev": "node scripts/tauri-dev.mjs",
+    "tauri:app": "node scripts/tauri-dev.mjs",
     "tauri:build:dmg": "tauri build --bundles dmg",
     "tauri:build": "tauri build",
     "validate:paints": "node scripts/validate-paints.mjs"

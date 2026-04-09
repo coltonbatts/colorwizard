@@ -1,276 +1,348 @@
 'use client'
 
-import { useState, useEffect, useCallback, useId } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
+import Modal from '@/components/ui/Modal'
 import {
-    CalibrationData,
-    CREDIT_CARD_WIDTH_INCHES,
-    RULER_REFERENCES,
-    createCalibration,
+  CalibrationData,
+  CREDIT_CARD_WIDTH_INCHES,
+  RULER_REFERENCES,
+  createCalibration,
 } from '@/lib/calibration'
-import OverlaySurface from '@/components/ui/Overlay'
 
 interface CalibrationModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onSave: (data: CalibrationData) => void
-    initialCalibration?: CalibrationData | null
+  isOpen: boolean
+  onClose: () => void
+  onSave: (data: CalibrationData) => void
+  initialCalibration?: CalibrationData | null
 }
 
 type CalibrationMethod = 'credit_card' | 'ruler'
 
+const CONTROL_TRANSITION_STYLE = {
+  transitionDuration: 'var(--duration-fast)',
+  transitionTimingFunction: 'var(--ease-out)',
+} as const
+
+const SEGMENT_BASE_CLASS =
+  'flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-[background-color,border-color,color,box-shadow]'
+
+const STEP_BUTTON_CLASS =
+  'inline-flex h-10 min-w-[3.5rem] items-center justify-center rounded-xl border bg-[var(--paper-elevated)] px-3 font-mono text-sm font-semibold text-ink transition-[background-color,border-color,color,box-shadow] hover:bg-[var(--paper-shell)] hover:shadow-[var(--shadow-sm)]'
+
+const FOOTER_BUTTON_BASE_CLASS =
+  'inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] hover:translate-y-[-1px] active:translate-y-0'
+
+const GHOST_BUTTON_CLASS =
+  `${FOOTER_BUTTON_BASE_CLASS} hover:bg-[var(--paper-shell)] hover:shadow-[var(--shadow-sm)]`
+
+const ACTION_BUTTON_CLASS =
+  `${FOOTER_BUTTON_BASE_CLASS} hover:bg-[var(--signal-hover)] hover:shadow-[var(--shadow-md)]`
+
+function getSegmentClass(active: boolean) {
+  return [
+    SEGMENT_BASE_CLASS,
+    active
+      ? 'border border-transparent bg-[var(--subsignal-muted)] text-[var(--subsignal)] shadow-[var(--shadow-sm)]'
+      : 'border border-transparent bg-transparent text-ink-secondary hover:bg-[var(--paper-shell)] hover:text-ink',
+  ].join(' ')
+}
+
+function getReferenceClass(active: boolean) {
+  return [
+    'rounded-xl border px-4 py-2 text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,color,box-shadow]',
+    active
+      ? 'border-[var(--subsignal)] bg-[var(--subsignal-muted)] text-[var(--subsignal)] shadow-[var(--shadow-sm)]'
+      : 'border-[var(--linen)] bg-[var(--paper-elevated)] text-ink-secondary hover:bg-[var(--paper-shell)] hover:text-ink',
+  ].join(' ')
+}
+
 export default function CalibrationModal({
-    isOpen,
-    onClose,
-    onSave,
-    initialCalibration
+  isOpen,
+  onClose,
+  onSave,
+  initialCalibration,
 }: CalibrationModalProps) {
-    const [method, setMethod] = useState<CalibrationMethod>('credit_card')
+  const [method, setMethod] = useState<CalibrationMethod>('credit_card')
+  const [cardWidthPx, setCardWidthPx] = useState(320)
+  const [rulerLengthPx, setRulerLengthPx] = useState(192)
+  const [rulerReference, setRulerReference] = useState(0)
+  const titleId = useId()
 
-    // Credit card method state
-    const [cardWidthPx, setCardWidthPx] = useState(320)
+  useEffect(() => {
+    if (initialCalibration) {
+      setMethod(initialCalibration.method)
 
-    // Ruler method state
-    const [rulerLengthPx, setRulerLengthPx] = useState(192)
-    const [rulerReference, setRulerReference] = useState(0) // index into RULER_REFERENCES
-    const titleId = useId()
+      if (initialCalibration.method === 'credit_card') {
+        setCardWidthPx(initialCalibration.pxPerInch * CREDIT_CARD_WIDTH_INCHES)
+      } else {
+        const referenceIndex = RULER_REFERENCES.findIndex(
+          (reference) => Math.abs(reference.inches - initialCalibration.referenceInches) < 0.01,
+        )
 
-    // Initialize from existing calibration
-    useEffect(() => {
-        if (initialCalibration) {
-            setMethod(initialCalibration.method)
-            if (initialCalibration.method === 'credit_card') {
-                setCardWidthPx(initialCalibration.pxPerInch * CREDIT_CARD_WIDTH_INCHES)
-            } else {
-                const refIndex = RULER_REFERENCES.findIndex(
-                    r => Math.abs(r.inches - initialCalibration.referenceInches) < 0.01
-                )
-                if (refIndex >= 0) {
-                    setRulerReference(refIndex)
-                    setRulerLengthPx(initialCalibration.pxPerInch * initialCalibration.referenceInches)
-                }
-            }
+        if (referenceIndex >= 0) {
+          setRulerReference(referenceIndex)
+          setRulerLengthPx(initialCalibration.pxPerInch * initialCalibration.referenceInches)
         }
-    }, [initialCalibration])
+      }
+    }
+  }, [initialCalibration])
 
-    const handleConfirm = useCallback(() => {
-        let pxPerInch: number
-        let referenceInches: number
+  const handleConfirm = useCallback(() => {
+    let pxPerInch: number
+    let referenceInches: number
 
-        if (method === 'credit_card') {
-            referenceInches = CREDIT_CARD_WIDTH_INCHES
-            pxPerInch = cardWidthPx / referenceInches
-        } else {
-            referenceInches = RULER_REFERENCES[rulerReference].inches
-            pxPerInch = rulerLengthPx / referenceInches
-        }
-
-        const calibration = createCalibration(pxPerInch, method, referenceInches)
-        onSave(calibration)
-        onClose()
-    }, [method, cardWidthPx, rulerLengthPx, rulerReference, onSave, onClose])
-
-    const adjustValue = (delta: number, isCard: boolean) => {
-        if (isCard) {
-            setCardWidthPx(prev => Math.max(50, Math.min(800, prev + delta)))
-        } else {
-            setRulerLengthPx(prev => Math.max(50, Math.min(600, prev + delta)))
-        }
+    if (method === 'credit_card') {
+      referenceInches = CREDIT_CARD_WIDTH_INCHES
+      pxPerInch = cardWidthPx / referenceInches
+    } else {
+      referenceInches = RULER_REFERENCES[rulerReference].inches
+      pxPerInch = rulerLengthPx / referenceInches
     }
 
-    // Calculate preview pxPerInch
-    const previewPxPerInch = method === 'credit_card'
-        ? cardWidthPx / CREDIT_CARD_WIDTH_INCHES
-        : rulerLengthPx / RULER_REFERENCES[rulerReference].inches
+    onSave(createCalibration(pxPerInch, method, referenceInches))
+    onClose()
+  }, [cardWidthPx, method, onClose, onSave, rulerLengthPx, rulerReference])
 
-    return (
-        <OverlaySurface
-            isOpen={isOpen}
-            onClose={onClose}
-            preset="dialog"
-            ariaLabelledBy={titleId}
-            rootClassName="fixed inset-0 z-50 flex items-center justify-center p-4"
-            backdropClassName="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            panelClassName="w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-xl border border-gray-700 bg-gray-900 shadow-2xl outline-none"
-        >
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-700 bg-gray-900 px-6 py-4">
-                <h2 id={titleId} className="text-xl font-semibold text-white">Screen Calibration</h2>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 text-2xl leading-none text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
-                    aria-label="Close modal"
-                >
-                    ×
-                </button>
-            </div>
+  const adjustValue = (delta: number, isCard: boolean) => {
+    if (isCard) {
+      setCardWidthPx((current) => Math.max(50, Math.min(800, current + delta)))
+      return
+    }
 
-            {/* Content */}
-            <div className="p-6">
-                {/* Method Tabs */}
-                <div className="mb-6 flex rounded-lg bg-gray-800 p-1">
-                    <button
-                        type="button"
-                        onClick={() => setMethod('credit_card')}
-                        className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${method === 'credit_card'
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-400 hover:text-white'
-                            }`}
-                        aria-pressed={method === 'credit_card'}
-                    >
-                        💳 Credit Card
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setMethod('ruler')}
-                        className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${method === 'ruler'
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-400 hover:text-white'
-                            }`}
-                        aria-pressed={method === 'ruler'}
-                    >
-                        📏 Ruler
-                    </button>
+    setRulerLengthPx((current) => Math.max(50, Math.min(600, current + delta)))
+  }
+
+  const previewPxPerInch =
+    method === 'credit_card'
+      ? cardWidthPx / CREDIT_CARD_WIDTH_INCHES
+      : rulerLengthPx / RULER_REFERENCES[rulerReference].inches
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      ariaLabelledBy={titleId}
+    >
+      <Modal.Header>
+        <div>
+          <p className="text-section">Screen Setup</p>
+          <h2 id={titleId} className="mt-1 font-display text-2xl tracking-tight text-ink">
+            Screen Calibration
+          </h2>
+        </div>
+        <Modal.Close />
+      </Modal.Header>
+
+      <Modal.Body className="space-y-5">
+        <section>
+          <div className="paper-well flex gap-1 p-1">
+            <button
+              type="button"
+              onClick={() => setMethod('credit_card')}
+              className={getSegmentClass(method === 'credit_card')}
+              style={CONTROL_TRANSITION_STYLE}
+              aria-pressed={method === 'credit_card'}
+            >
+              Credit Card
+            </button>
+            <button
+              type="button"
+              onClick={() => setMethod('ruler')}
+              className={getSegmentClass(method === 'ruler')}
+              style={CONTROL_TRANSITION_STYLE}
+              aria-pressed={method === 'ruler'}
+            >
+              Ruler
+            </button>
+          </div>
+        </section>
+
+        <section className="paper-panel-raised p-4">
+          <p className="text-section">Instructions</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+            {method === 'credit_card'
+              ? 'Hold a credit card against the screen and adjust the paper card until it matches the real edge exactly.'
+              : 'Hold a ruler against the screen and adjust the line until it matches the selected physical length.'}
+          </p>
+        </section>
+
+        <section className="paper-panel-raised flex flex-col gap-4 p-6">
+          <div className="w-full overflow-x-auto">
+            <div className="flex min-w-max justify-center">
+              {method === 'credit_card' ? (
+                <div className="flex flex-col items-center">
+                  <div
+                    className="flex items-center justify-center border-2 px-4 text-center"
+                    style={{
+                      width: `${cardWidthPx}px`,
+                      height: `${cardWidthPx * 0.63}px`,
+                      backgroundColor: 'var(--subsignal-muted)',
+                      borderColor: 'var(--subsignal)',
+                      borderRadius: 'var(--radius-xl)',
+                    }}
+                  >
+                    <span className="font-mono text-sm font-medium text-[var(--subsignal)]">
+                      {cardWidthPx}px × {Math.round(cardWidthPx * 0.63)}px
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-ink-secondary">
+                    Standard card width: <span className="font-mono text-ink">3.370&quot;</span> (85.6mm)
+                  </p>
                 </div>
-
-                {/* Instructions */}
-                <p className="mb-4 text-sm text-gray-400">
-                    {method === 'credit_card'
-                        ? 'Hold a credit card against your screen and adjust the rectangle below until it matches the card width exactly.'
-                        : 'Hold a ruler against your screen and adjust the line below until it matches the selected length.'}
-                </p>
-
-                {/* Calibration Visual */}
-                <div className="mb-4 flex flex-col items-center rounded-lg bg-gray-800 p-6">
-                    {method === 'credit_card' ? (
-                        <>
-                            {/* Credit Card Rectangle */}
-                            <div
-                                className="flex items-center justify-center rounded-lg border-2 border-blue-500 bg-blue-500/10 transition-[width,height] motion-reduce:transition-none"
-                                style={{
-                                    width: `${cardWidthPx}px`,
-                                    height: `${cardWidthPx * 0.63}px`, // Credit card aspect ratio
-                                }}
-                            >
-                                <span className="text-sm font-mono text-blue-400">
-                                    {cardWidthPx}px × {Math.round(cardWidthPx * 0.63)}px
-                                </span>
-                            </div>
-                            <p className="mt-3 text-xs text-gray-500">
-                                Standard credit card width: 3.370&quot; (85.6mm)
-                            </p>
-                        </>
-                    ) : (
-                        <>
-                            {/* Ruler Line */}
-                            <div className="relative">
-                                <div
-                                    className="h-1 rounded-full bg-blue-500 transition-[width] motion-reduce:transition-none"
-                                    style={{ width: `${rulerLengthPx}px` }}
-                                />
-                                {/* Tick marks */}
-                                <div className="absolute left-0 top-0 h-3 w-0.5 -translate-y-1 bg-blue-500" />
-                                <div className="absolute right-0 top-0 h-3 w-0.5 -translate-y-1 bg-blue-500" />
-                            </div>
-                            <p className="mt-3 text-sm font-mono text-blue-400">
-                                {rulerLengthPx}px
-                            </p>
-
-                            {/* Reference selector */}
-                            <div className="mt-4 flex gap-4">
-                                {RULER_REFERENCES.map((ref, i) => (
-                                    <button
-                                        key={ref.label}
-                                        type="button"
-                                        onClick={() => setRulerReference(i)}
-                                        className={`rounded-lg px-4 py-2 text-sm transition-colors ${rulerReference === i
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                            }`}
-                                        aria-pressed={rulerReference === i}
-                                    >
-                                        {ref.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Adjustment Controls */}
-                <div className="mb-4 flex items-center justify-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => adjustValue(-10, method === 'credit_card')}
-                        className="h-10 w-10 rounded-lg bg-gray-700 font-bold text-white transition-colors hover:bg-gray-600"
-                    >
-                        −10
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => adjustValue(-1, method === 'credit_card')}
-                        className="h-10 w-10 rounded-lg bg-gray-700 font-bold text-white transition-colors hover:bg-gray-600"
-                    >
-                        −1
-                    </button>
-
-                    <input
-                        type="range"
-                        min={50}
-                        max={method === 'credit_card' ? 800 : 600}
-                        value={method === 'credit_card' ? cardWidthPx : rulerLengthPx}
-                        onChange={(e) => {
-                            const val = Number(e.target.value)
-                            if (method === 'credit_card') {
-                                setCardWidthPx(val)
-                            } else {
-                                setRulerLengthPx(val)
-                            }
-                        }}
-                        className="h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-700 accent-blue-500"
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="relative px-1 py-2">
+                    <div
+                      className="h-1 rounded-full"
+                      style={{
+                        width: `${rulerLengthPx}px`,
+                        backgroundColor: 'var(--subsignal)',
+                      }}
                     />
-
-                    <button
-                        type="button"
-                        onClick={() => adjustValue(1, method === 'credit_card')}
-                        className="h-10 w-10 rounded-lg bg-gray-700 font-bold text-white transition-colors hover:bg-gray-600"
-                    >
-                        +1
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => adjustValue(10, method === 'credit_card')}
-                        className="h-10 w-10 rounded-lg bg-gray-700 font-bold text-white transition-colors hover:bg-gray-600"
-                    >
-                        +10
-                    </button>
+                    <div
+                      className="absolute left-0 top-0 h-5 w-px"
+                      style={{ backgroundColor: 'var(--subsignal)' }}
+                    />
+                    <div
+                      className="absolute right-0 top-0 h-5 w-px"
+                      style={{ backgroundColor: 'var(--subsignal)' }}
+                    />
+                  </div>
+                  <p className="mt-3 font-mono text-sm font-medium text-[var(--subsignal)]">
+                    {rulerLengthPx}px
+                  </p>
                 </div>
-
-                {/* Preview Info */}
-                <div className="rounded-lg bg-gray-800/50 p-3 text-center">
-                    <p className="text-sm text-gray-400">
-                        Calculated: <span className="font-mono text-white">{previewPxPerInch.toFixed(1)}</span> pixels per inch
-                    </p>
-                </div>
+              )}
             </div>
+          </div>
 
-            {/* Footer */}
-            <div className="flex justify-end gap-3 border-t border-gray-700 px-6 py-4">
+          {method === 'ruler' && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {RULER_REFERENCES.map((reference, index) => (
                 <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-lg bg-gray-700 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+                  key={reference.label}
+                  type="button"
+                  onClick={() => setRulerReference(index)}
+                  className={getReferenceClass(rulerReference === index)}
+                  style={CONTROL_TRANSITION_STYLE}
+                  aria-pressed={rulerReference === index}
                 >
-                    Cancel
+                  {reference.label}
                 </button>
-                <button
-                    type="button"
-                    onClick={handleConfirm}
-                    className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-500"
-                >
-                    Confirm Calibration
-                </button>
+              ))}
             </div>
-        </OverlaySurface>
-    )
+          )}
+        </section>
+
+        <section className="paper-panel-raised p-4">
+          <p className="text-section">Adjustment</p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => adjustValue(-10, method === 'credit_card')}
+              className={STEP_BUTTON_CLASS}
+              style={{
+                ...CONTROL_TRANSITION_STYLE,
+                borderColor: 'var(--linen)',
+              }}
+            >
+              −10
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustValue(-1, method === 'credit_card')}
+              className={STEP_BUTTON_CLASS}
+              style={{
+                ...CONTROL_TRANSITION_STYLE,
+                borderColor: 'var(--linen)',
+              }}
+            >
+              −1
+            </button>
+
+            <input
+              type="range"
+              min={50}
+              max={method === 'credit_card' ? 800 : 600}
+              value={method === 'credit_card' ? cardWidthPx : rulerLengthPx}
+              onChange={(event) => {
+                const value = Number(event.target.value)
+                if (method === 'credit_card') {
+                  setCardWidthPx(value)
+                } else {
+                  setRulerLengthPx(value)
+                }
+              }}
+              className="h-2 min-w-[16rem] flex-1 cursor-pointer appearance-none rounded-full bg-[var(--paper-shell)]"
+              style={{ accentColor: 'var(--subsignal)' }}
+            />
+
+            <button
+              type="button"
+              onClick={() => adjustValue(1, method === 'credit_card')}
+              className={STEP_BUTTON_CLASS}
+              style={{
+                ...CONTROL_TRANSITION_STYLE,
+                borderColor: 'var(--linen)',
+              }}
+            >
+              +1
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustValue(10, method === 'credit_card')}
+              className={STEP_BUTTON_CLASS}
+              style={{
+                ...CONTROL_TRANSITION_STYLE,
+                borderColor: 'var(--linen)',
+              }}
+            >
+              +10
+            </button>
+          </div>
+        </section>
+
+        <section className="paper-well p-4 text-center">
+          <p className="text-section">Calculated Scale</p>
+          <p className="mt-2 text-sm text-ink-secondary">
+            <span className="font-mono text-base font-semibold text-ink">
+              {previewPxPerInch.toFixed(1)}
+            </span>{' '}
+            pixels per inch
+          </p>
+        </section>
+      </Modal.Body>
+
+      <Modal.Footer>
+        <button
+          type="button"
+          onClick={onClose}
+          className={GHOST_BUTTON_CLASS}
+          style={{
+            ...CONTROL_TRANSITION_STYLE,
+            backgroundColor: 'var(--paper-elevated)',
+            borderColor: 'var(--linen)',
+            color: 'var(--ink)',
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className={ACTION_BUTTON_CLASS}
+          style={{
+            ...CONTROL_TRANSITION_STYLE,
+            backgroundColor: 'var(--signal)',
+            borderColor: 'var(--signal)',
+            color: 'var(--paper-elevated)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          Confirm Calibration
+        </button>
+      </Modal.Footer>
+    </Modal>
+  )
 }

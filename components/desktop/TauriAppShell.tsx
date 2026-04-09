@@ -3,6 +3,8 @@
  *
  * Flow:
  * 1. In Tauri: init DB immediately, check for valid license key
+ *    - DB init fails or times out (30s): error screen with Retry / Continue without saving
+ *    - Continue without saving: offline banner; SQLite hydrate/save disabled
  *    - No valid key: show LicenseActivation modal
  *    - Valid key: show ProjectGallery or app content
  * 2. In Browser: pass through children unchanged.
@@ -25,6 +27,11 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react'
+
+/** When `persistenceDisabled` is true (offline DB), child `TauriPersistence` must skip SQLite IPC. */
+export const DesktopPersistenceContext = createContext<{ persistenceDisabled: boolean }>({
+  persistenceDisabled: false,
+})
 import { usePathname, useRouter } from 'next/navigation'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import {
@@ -59,6 +66,12 @@ const DESKTOP_BLOCKED_ROUTES = new Set([
 ])
 
 const LAST_OPENED_PROJECT_KEY = 'last_opened_project'
+
+function formatDatabaseInitError(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message
+  if (typeof err === 'string') return err
+  return 'The local project database could not be opened.'
+}
 
 interface ProjectContextValue {
   activeProjectId: number | null
@@ -135,6 +148,65 @@ function DesktopProjectFrame({
   )
 }
 
+function DesktopDatabaseErrorScreen({
+  message,
+  onRetry,
+  onContinueOffline,
+}: {
+  message: string
+  onRetry: () => void
+  onContinueOffline: () => void
+}) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
+      <div className="w-full max-w-xl rounded-[30px] border border-[#c9a882] bg-white/90 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.1)] backdrop-blur-xl">
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f5a3c]">ColorWizard Pro</p>
+        <h1 className="mt-3 font-serif text-[clamp(1.8rem,4vw,2.6rem)] leading-tight tracking-[-0.03em] text-[#1a1a1a]">
+          Local database unavailable
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-[#6a5a48]">
+          Your studio needs the on-disk project library to save palettes, pins, and workspace state. You can try again or
+          continue in memory — work will be lost when you quit.
+        </p>
+        {message ? (
+          <p className="mt-5 rounded-2xl border border-[#e8d4c4] bg-[#fff8f3] px-4 py-3 font-mono text-xs leading-relaxed text-[#5c4030]">
+            {message}
+          </p>
+        ) : null}
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onContinueOffline}
+            className="rounded-full border border-[#c7baa5] bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#6d5e49] transition-colors hover:border-[#8f5a3c] hover:text-[#1a1a1a]"
+          >
+            Continue without saving
+          </button>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-full border border-[#1a1a1a] bg-[#1a1a1a] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#f5f0e8] transition-colors hover:bg-[#2a2a2a]"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DesktopLocalDataOfflineBanner() {
+  return (
+    <div
+      role="status"
+      className="pointer-events-none fixed left-0 right-0 top-0 z-[100] border-b border-amber-200/80 bg-amber-50/95 px-4 py-2.5 text-center text-xs leading-snug text-amber-950 shadow-sm backdrop-blur-sm"
+    >
+      <span className="font-semibold">Local data is off.</span> Projects and workspace are not being saved to disk. Quitting
+      the app will discard unsaved work. Free disk space, check permissions on the app data folder, or restart — then use
+      Retry from the startup screen after relaunch.
+    </div>
+  )
+}
+
 function DesktopLaunchScreen({
   title,
   detail,
@@ -189,7 +261,11 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
 
   const [licensed, setLicensed] = useState(!isDesktopApp())
   const [licenseResolved, setLicenseResolved] = useState(!isDesktopApp())
-  const [dbReady, setDbReady] = useState(false)
+  const [dbPhase, setDbPhase] = useState<'loading' | 'ready' | 'error' | 'offline'>(() =>
+    isDesktopApp() ? 'loading' : 'ready',
+  )
+  const [dbErrorDetail, setDbErrorDetail] = useState('')
+  const [dbRetryTick, setDbRetryTick] = useState(0)
   const [launchResolved, setLaunchResolved] = useState(!isDesktopApp())
   const [activeProject, setActiveProject] = useState<ProjectInfo | null>(null)
   const [hydratedProjectId, setHydratedProjectId] = useState<number | null>(null)
@@ -198,7 +274,10 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
   const [workspaceStatus, setWorkspaceStatus] = useState('Loading workspace preferences.')
   const [projectStatus, setProjectStatus] = useState('Loading project workspace.')
   const mountedRef = useRef(true)
+  const persistOfflineRef = useRef(false)
   const startupStartedAtRef = useRef(Date.now())
+
+  const dbUnlocked = dbPhase === 'ready' || dbPhase === 'offline'
 
   const recordStartupStep = useCallback((phase: 'activation' | 'database' | 'workspace' | 'project', detail: string) => {
     const elapsedSeconds = ((Date.now() - startupStartedAtRef.current) / 1000).toFixed(1)
@@ -247,41 +326,62 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isDesktopApp()) {
-      setDbReady(true)
+      setDbPhase('ready')
       return
     }
-    let settled = false
+
+    let cancelled = false
+    let initResolved = false
     recordStartupStep('database', 'Opening the local project database.')
-    const timer = window.setTimeout(() => {
-      if (settled || !mountedRef.current) return
-      console.warn('[Tauri][Startup] Database init timed out; continuing to shell.')
-      recordStartupStep('database', 'Database initialization is taking longer than expected.')
-      setDbReady(true)
-    }, 2500)
+
+    const longWaitTimer = window.setTimeout(() => {
+      if (cancelled || initResolved || !mountedRef.current || persistOfflineRef.current) return
+      console.warn('[Tauri][Startup] Database init still pending after 30s.')
+      recordStartupStep('database', 'Still waiting for the local database.')
+      setDbErrorDetail(
+        'Still waiting after 30 seconds. The database file may be locked, storage may be full, or permissions may block the app data folder.',
+      )
+      setDbPhase('error')
+    }, 30_000)
 
     initDatabase()
       .then(() => {
-        settled = true
-        window.clearTimeout(timer)
-        if (mountedRef.current) {
-          recordStartupStep('database', 'Local project database is ready.')
-          setDbReady(true)
-        }
+        if (cancelled || !mountedRef.current || persistOfflineRef.current) return
+        initResolved = true
+        window.clearTimeout(longWaitTimer)
+        recordStartupStep('database', 'Local project database is ready.')
+        setDbErrorDetail('')
+        setDbPhase('ready')
       })
-      .catch(() => {
-        settled = true
-        window.clearTimeout(timer)
-        if (mountedRef.current) {
-          recordStartupStep('database', 'Database call failed, but the shell can continue.')
-          setDbReady(true)
-        }
+      .catch((err: unknown) => {
+        if (cancelled || !mountedRef.current || persistOfflineRef.current) return
+        initResolved = true
+        window.clearTimeout(longWaitTimer)
+        console.error('[Tauri] initDatabase failed:', err)
+        recordStartupStep('database', 'Could not open the local project database.')
+        setDbErrorDetail(formatDatabaseInitError(err))
+        setDbPhase('error')
       })
 
     return () => {
-      settled = true
-      window.clearTimeout(timer)
+      cancelled = true
+      window.clearTimeout(longWaitTimer)
     }
+  }, [dbRetryTick, recordStartupStep])
+
+  const handleRetryDatabase = useCallback(() => {
+    persistOfflineRef.current = false
+    setDbPhase('loading')
+    setDbErrorDetail('')
+    setDbRetryTick((n) => n + 1)
   }, [])
+
+  const handleContinueWithoutLocalData = useCallback(() => {
+    persistOfflineRef.current = true
+    recordStartupStep('database', 'Continuing without local database persistence.')
+    setDbPhase('offline')
+    setDbErrorDetail('')
+  }, [recordStartupStep])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -375,7 +475,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isDesktopApp()) return
-    if (!licensed || !dbReady || launchResolved || activeProjectId !== null) return
+    if (!licensed || !dbUnlocked || launchResolved || activeProjectId !== null) return
 
     let cancelled = false
     recordStartupStep('workspace', 'Loading workspace preferences.')
@@ -445,7 +545,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [activeProjectId, dbReady, launchResolved, licensed])
+  }, [activeProjectId, dbUnlocked, launchResolved, licensed])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -497,12 +597,22 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     return <LicenseActivation onActivated={handleActivated} />
   }
 
-  if (!dbReady) {
+  if (dbPhase === 'loading') {
     return (
       <DesktopLaunchScreen
         title="Preparing studio…"
         detail="Getting your local project library ready."
         status={databaseStatus}
+      />
+    )
+  }
+
+  if (dbPhase === 'error') {
+    return (
+      <DesktopDatabaseErrorScreen
+        message={dbErrorDetail}
+        onRetry={handleRetryDatabase}
+        onContinueOffline={handleContinueWithoutLocalData}
       />
     )
   }
@@ -516,34 +626,40 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     )
   }
 
+  const persistenceDisabled = dbPhase === 'offline'
+
   return (
-    <ProjectContext.Provider value={contextValue}>
-      {activeProjectId === null ? (
-        <ProjectGallery
-          onSelectProject={setActiveProjectId}
-          onOpenImageNewProject={handleOpenImageNewProject}
-          lastOpenedProject={lastOpenedProject}
-          startupBehavior={startupBehavior}
-          onStartupBehaviorChange={handleStartupBehaviorChange}
-        />
-      ) : (
-        <>
-          <TauriPersistence
-            projectId={activeProjectId}
-            onReady={handleProjectReady}
-            seedReferenceAbsolutePath={seedReferencePath}
-            onSeedReferenceConsumed={handleSeedConsumed}
+    <DesktopPersistenceContext.Provider value={{ persistenceDisabled }}>
+      {persistenceDisabled ? <DesktopLocalDataOfflineBanner /> : null}
+      <ProjectContext.Provider value={contextValue}>
+        {activeProjectId === null ? (
+          <ProjectGallery
+            onSelectProject={setActiveProjectId}
+            onOpenImageNewProject={handleOpenImageNewProject}
+            lastOpenedProject={lastOpenedProject}
+            startupBehavior={startupBehavior}
+            onStartupBehaviorChange={handleStartupBehaviorChange}
           />
-          <DesktopProjectFrame
-            project={activeProject}
-            isLoading={hydratedProjectId !== activeProjectId}
-            status={projectStatus}
-            onBackToProjects={handleBackToProjects}
-          >
-            {children}
-          </DesktopProjectFrame>
-        </>
-      )}
-    </ProjectContext.Provider>
+        ) : (
+          <>
+            <TauriPersistence
+              projectId={activeProjectId}
+              onReady={handleProjectReady}
+              seedReferenceAbsolutePath={seedReferencePath}
+              onSeedReferenceConsumed={handleSeedConsumed}
+              persistenceDisabled={persistenceDisabled}
+            />
+            <DesktopProjectFrame
+              project={activeProject}
+              isLoading={hydratedProjectId !== activeProjectId}
+              status={projectStatus}
+              onBackToProjects={handleBackToProjects}
+            >
+              {children}
+            </DesktopProjectFrame>
+          </>
+        )}
+      </ProjectContext.Provider>
+    </DesktopPersistenceContext.Provider>
   )
 }

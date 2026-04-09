@@ -40,6 +40,8 @@ interface TauriPersistenceProps {
   /** When opening a brand-new project from the library with a file already chosen, seed the canvas once after hydrate. */
   seedReferenceAbsolutePath?: string | null
   onSeedReferenceConsumed?: () => void
+  /** When true (e.g. user continued without a working local DB), skip SQLite hydrate/save and avoid IPC spam. */
+  persistenceDisabled?: boolean
 }
 
 const DEFAULT_SIDEBAR_WIDTH = 360
@@ -231,6 +233,95 @@ function sanitizePinnedColors(value: unknown): PinnedColor[] {
   })
 }
 
+/** Reads latest state from stores (not React closures) so lifecycle flushes are never stale. */
+function persistDesktopProjectSnapshot(projectId: number): void {
+  const palettes = usePaletteStore.getState().palettes
+  const pinnedColors = useSessionStore.getState().pinnedColors
+  const cal = useCalibrationStore.getState()
+  const calibration = cal.calibration
+  const rulerGridEnabled = cal.rulerGridEnabled
+  const rulerGridSpacing = cal.rulerGridSpacing
+  const gridOpacity = cal.gridOpacity
+  const measurementLayer = cal.measurementLayer
+  const layout = useLayoutStore.getState()
+  const sidebarCollapsed = layout.sidebarCollapsed
+  const compactMode = layout.compactMode
+  const sidebarWidth = layout.sidebarWidth
+  const simpleMode = layout.simpleMode
+  const c = useCanvasStore.getState()
+  const referenceImage = c.referenceImage
+  const surfaceImage = c.surfaceImage
+  const surfaceBounds = c.surfaceBounds
+  const referenceOpacity = c.referenceOpacity
+  const referenceLocked = c.referenceLocked
+  const referenceTransform = c.referenceTransform
+  const valueScaleSettings = c.valueScaleSettings
+  const canvasSettings = c.canvasSettings
+  const pp = usePaintPaletteStore.getState()
+  const selectedPaintIds = pp.selectedPaintIds
+  const savedPaintPalettes = pp.savedPalettes
+  const activePaintPaletteId = pp.activePaletteId
+  const isPaintPaletteDirty = pp.isDirty
+
+  const canvasState: PersistedCanvasState = {
+    referenceImage: sanitizeDesktopProjectImageSrc(referenceImage),
+    surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage),
+    surfaceBounds,
+    referenceOpacity,
+    referenceLocked,
+    referenceTransform,
+    valueScaleSettings,
+    canvasSettings,
+  }
+  const calibrationState: PersistedCalibrationState = {
+    calibration,
+    rulerGridEnabled,
+    rulerGridSpacing,
+    gridOpacity,
+    measurementLayer,
+  }
+  const layoutState: PersistedLayoutState = {
+    sidebarCollapsed,
+    compactMode,
+    sidebarWidth,
+    simpleMode,
+  }
+  const paintPaletteState: PersistedPaintPaletteState = {
+    selectedPaintIds,
+    savedPalettes: savedPaintPalettes,
+    activePaletteId: activePaintPaletteId,
+    isDirty: isPaintPaletteDirty,
+  }
+
+  savePalettes(projectId, palettes).catch((err: unknown) => {
+    console.error('[Tauri] Save palettes failed:', err)
+  })
+
+  savePinnedColors(projectId, pinnedColors).catch((err: unknown) => {
+    console.error('[Tauri] Save pinned colors failed:', err)
+  })
+
+  setAppSetting(projectSettingKey(projectId, 'canvas'), JSON.stringify(canvasState)).catch((err: unknown) => {
+    console.error('[Tauri] Save canvas state failed:', err)
+  })
+
+  setAppSetting(projectSettingKey(projectId, 'calibration'), JSON.stringify(calibrationState)).catch((err: unknown) => {
+    console.error('[Tauri] Save calibration failed:', err)
+  })
+
+  setAppSetting(projectSettingKey(projectId, 'layout'), JSON.stringify(layoutState)).catch((err: unknown) => {
+    console.error('[Tauri] Save layout failed:', err)
+  })
+
+  setAppSetting(projectSettingKey(projectId, 'paintPalette'), JSON.stringify(paintPaletteState)).catch((err: unknown) => {
+    console.error('[Tauri] Save paint palette state failed:', err)
+  })
+
+  updateProject(projectId, undefined, canvasState.referenceImage).catch((err: unknown) => {
+    console.error('[Tauri] Failed to update project modified time:', err)
+  })
+}
+
 async function loadProjectSetting<T>(
   projectId: number,
   key: string,
@@ -252,9 +343,11 @@ export default function TauriPersistence({
   onReady,
   seedReferenceAbsolutePath,
   onSeedReferenceConsumed,
+  persistenceDisabled = false,
 }: TauriPersistenceProps) {
   const hasInitializedRef = useRef(false)
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hydratedProjectIdRef = useRef<number | null>(null)
   /** One-shot path for “Open image” from the library; do not put in hydrate deps (would re-run load when cleared). */
   const pendingSeedPathRef = useRef<string | null>(null)
 
@@ -283,6 +376,12 @@ export default function TauriPersistence({
   const isPaintPaletteDirty = usePaintPaletteStore((s) => s.isDirty)
 
   const [hydratedProjectId, setHydratedProjectId] = useState<number | null>(null)
+
+  const persistenceActive = isDesktopApp() && !persistenceDisabled
+
+  useEffect(() => {
+    hydratedProjectIdRef.current = hydratedProjectId
+  }, [hydratedProjectId])
 
   useEffect(() => {
     if (seedReferenceAbsolutePath) {
@@ -336,13 +435,13 @@ export default function TauriPersistence({
   }, [])
 
   useEffect(() => {
-    if (!isDesktopApp() || hasInitializedRef.current) return
+    if (!persistenceActive || hasInitializedRef.current) return
     hasInitializedRef.current = true
 
     initDatabase().catch((err) => {
       console.error('[Tauri] DB init failed:', err)
     })
-  }, [])
+  }, [persistenceActive])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -350,6 +449,24 @@ export default function TauriPersistence({
     if (projectId === null) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       setHydratedProjectId(null)
+      return
+    }
+
+    if (persistenceDisabled) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+      setHydratedProjectId(null)
+      resetProjectState()
+      const pathToSeed = pendingSeedPathRef.current
+      pendingSeedPathRef.current = null
+      if (pathToSeed) {
+        const currentRef = useCanvasStore.getState().referenceImage
+        if (!currentRef) {
+          useCanvasStore.setState({ referenceImage: pathToSeed })
+        }
+        onSeedReferenceConsumed?.()
+      }
+      setHydratedProjectId(projectId)
+      onReady?.(projectId)
       return
     }
 
@@ -471,10 +588,10 @@ export default function TauriPersistence({
     return () => {
       cancelled = true
     }
-  }, [onReady, onSeedReferenceConsumed, projectId, resetProjectState])
+  }, [onReady, onSeedReferenceConsumed, persistenceDisabled, projectId, resetProjectState])
 
   const debouncedSave = useCallback(() => {
-    if (!isDesktopApp() || hydratedProjectId === null) {
+    if (!persistenceActive || hydratedProjectId === null) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       return
     }
@@ -482,63 +599,7 @@ export default function TauriPersistence({
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
 
     saveTimeoutRef.current = setTimeout(() => {
-      const canvasState: PersistedCanvasState = {
-        referenceImage: sanitizeDesktopProjectImageSrc(referenceImage),
-        surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage),
-        surfaceBounds,
-        referenceOpacity,
-        referenceLocked,
-        referenceTransform,
-        valueScaleSettings,
-        canvasSettings,
-      }
-      const calibrationState: PersistedCalibrationState = {
-        calibration,
-        rulerGridEnabled,
-        rulerGridSpacing,
-        gridOpacity,
-        measurementLayer,
-      }
-      const layoutState: PersistedLayoutState = {
-        sidebarCollapsed,
-        compactMode,
-        sidebarWidth,
-        simpleMode,
-      }
-      const paintPaletteState: PersistedPaintPaletteState = {
-        selectedPaintIds,
-        savedPalettes: savedPaintPalettes,
-        activePaletteId: activePaintPaletteId,
-        isDirty: isPaintPaletteDirty,
-      }
-
-      savePalettes(hydratedProjectId, palettes).catch((err: unknown) => {
-        console.error('[Tauri] Save palettes failed:', err)
-      })
-
-      savePinnedColors(hydratedProjectId, pinnedColors).catch((err: unknown) => {
-        console.error('[Tauri] Save pinned colors failed:', err)
-      })
-
-      setAppSetting(projectSettingKey(hydratedProjectId, 'canvas'), JSON.stringify(canvasState)).catch((err: unknown) => {
-        console.error('[Tauri] Save canvas state failed:', err)
-      })
-
-      setAppSetting(projectSettingKey(hydratedProjectId, 'calibration'), JSON.stringify(calibrationState)).catch((err: unknown) => {
-          console.error('[Tauri] Save calibration failed:', err)
-      })
-
-      setAppSetting(projectSettingKey(hydratedProjectId, 'layout'), JSON.stringify(layoutState)).catch((err: unknown) => {
-        console.error('[Tauri] Save layout failed:', err)
-      })
-
-      setAppSetting(projectSettingKey(hydratedProjectId, 'paintPalette'), JSON.stringify(paintPaletteState)).catch((err: unknown) => {
-        console.error('[Tauri] Save paint palette state failed:', err)
-      })
-
-      updateProject(hydratedProjectId, undefined, canvasState.referenceImage).catch((err: unknown) => {
-        console.error('[Tauri] Failed to update project modified time:', err)
-      })
+      persistDesktopProjectSnapshot(hydratedProjectId)
     }, 500)
   }, [
     activePaintPaletteId,
@@ -565,17 +626,36 @@ export default function TauriPersistence({
     surfaceBounds,
     surfaceImage,
     valueScaleSettings,
+    persistenceActive,
   ])
 
   useEffect(() => {
     debouncedSave()
   }, [debouncedSave])
 
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+  const flushPendingSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
     }
-  }, [])
+    if (!persistenceActive) return
+    const pid = hydratedProjectIdRef.current
+    if (pid === null) return
+    persistDesktopProjectSnapshot(pid)
+  }, [persistenceActive])
+
+  useEffect(() => {
+    if (!persistenceActive) return
+
+    window.addEventListener('pagehide', flushPendingSave)
+    window.addEventListener('beforeunload', flushPendingSave)
+
+    return () => {
+      flushPendingSave()
+      window.removeEventListener('pagehide', flushPendingSave)
+      window.removeEventListener('beforeunload', flushPendingSave)
+    }
+  }, [flushPendingSave, persistenceActive])
 
   return null
 }

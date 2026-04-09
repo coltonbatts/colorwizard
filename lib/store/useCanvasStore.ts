@@ -7,7 +7,7 @@ import { TransformState } from '../calibration'
 import { ValueScaleResult } from '../valueScale'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
 import { safeStorage } from './storage'
-import { sanitizeDesktopProjectImageSrc } from '../tauri'
+import { isDesktopApp, sanitizeDesktopProjectImageSrc } from '../tauri'
 
 interface CanvasState {
     image: HTMLImageElement | null
@@ -71,9 +71,18 @@ export const useCanvasStore = create<CanvasState>()(
                 const currentImage = get().image
                 if (image === currentImage) return
 
+                const prevRef = get().referenceImage
+                let nextRef = sanitizeDesktopProjectImageSrc(image?.src ?? null)
+
+                // Desktop: <img>.src after load is convertFileSrc → http(s), which sanitize strips
+                // (we must not persist those ephemeral URLs). Keep the path or data URL we already have.
+                if (isDesktopApp() && image && !nextRef && prevRef) {
+                    nextRef = sanitizeDesktopProjectImageSrc(prevRef) ?? prevRef
+                }
+
                 set({
                     image,
-                    referenceImage: sanitizeDesktopProjectImageSrc(image?.src ?? null),
+                    referenceImage: nextRef,
                 })
             },
             setSurfaceImage: (surfaceImage) => set({ surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage) }),

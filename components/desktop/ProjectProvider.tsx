@@ -13,6 +13,7 @@ import { useState, createContext, useContext, type ReactNode, type Dispatch, typ
 import { isDesktopApp } from '@/lib/desktop/detect'
 import ProjectGallery from '@/components/desktop/ProjectGallery'
 import TauriPersistence from '@/components/desktop/TauriPersistence'
+import { DesktopPersistenceContext } from '@/components/desktop/TauriAppShell'
 
 interface ProjectContextValue {
   activeProjectId: number | null
@@ -30,6 +31,7 @@ export function useProject() {
 
 export default function ProjectProvider({ children }: { children: ReactNode }) {
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
+  const { persistenceDisabled } = useContext(DesktopPersistenceContext)
 
   if (!isDesktopApp()) {
     return <>{children}</>
@@ -45,7 +47,7 @@ export default function ProjectProvider({ children }: { children: ReactNode }) {
 
   return (
     <ProjectContext.Provider value={{ activeProjectId, setActiveProjectId }}>
-      <TauriPersistence projectId={activeProjectId} />
+      <TauriPersistence projectId={activeProjectId} persistenceDisabled={persistenceDisabled} />
       {children}
     </ProjectContext.Provider>
   )

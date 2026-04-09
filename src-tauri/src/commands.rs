@@ -172,7 +172,31 @@ async fn get_pool(app: &tauri::AppHandle) -> Result<sqlx::SqlitePool, String> {
     })?;
 
     ensure_tables(&pool).await?;
+    apply_sqlite_pragmas(&pool).await?;
     Ok(pool)
+}
+
+/// Desktop durability: WAL reduces corruption risk on crash; busy_timeout avoids flaky writes under load.
+async fn apply_sqlite_pragmas(pool: &sqlx::SqlitePool) -> Result<(), String> {
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    if let Err(e) = sqlx::query("PRAGMA journal_mode = WAL")
+        .execute(pool)
+        .await
+    {
+        eprintln!("[colorwizard] PRAGMA journal_mode=WAL failed (continuing): {e}");
+    }
+    sqlx::query("PRAGMA synchronous = NORMAL")
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    sqlx::query("PRAGMA busy_timeout = 5000")
+        .execute(pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[allow(non_snake_case)]
