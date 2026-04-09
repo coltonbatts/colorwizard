@@ -18,6 +18,7 @@ import {
 import RulerOverlay from '@/components/RulerOverlay'
 import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { CalibrationData, type TransformState, screenToImage } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
@@ -33,7 +34,7 @@ import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
-import { isDesktopApp, resolveTauriImageSrc } from '@/lib/tauri'
+import { resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import {
   MAX_ZOOM,
   MIN_ZOOM,
@@ -129,6 +130,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   } = props
 
   const isMobile = useIsMobile()
+  const isDesktopRuntime = useDesktopRuntime()
   const breakdownValue = useCanvasStore(state => state.breakdownValue)
   const surfaceImage = useCanvasStore(state => state.surfaceImage)
   const referenceOpacity = useCanvasStore(state => state.referenceOpacity)
@@ -180,9 +182,36 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       return
     }
 
-    const img = new Image()
-    img.src = resolveTauriImageSrc(surfaceImage) ?? surfaceImage
-    img.onload = () => setSurfaceImageElement(img)
+    let cancelled = false
+
+    void resolveTauriCanvasImageSrc(surfaceImage)
+      .then((src) => {
+        if (cancelled || !src) return
+        const img = new Image()
+        img.src = src
+        img.onload = () => {
+          if (src.startsWith('blob:')) {
+            URL.revokeObjectURL(src)
+          }
+          if (!cancelled) setSurfaceImageElement(img)
+        }
+        img.onerror = () => {
+          if (src.startsWith('blob:')) {
+            URL.revokeObjectURL(src)
+          }
+          if (!cancelled) setSurfaceImageElement(null)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('[ImageCanvas] Failed to load surface image:', error)
+          setSurfaceImageElement(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [surfaceImage])
 
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
@@ -222,7 +251,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const gridEnabled = gridEnabledProp ?? internalGridEnabled
   const hasRenderableImage = Boolean(image || surfaceImageElement)
   const mobileSampleLayout = isMobile && mobileLayout === 'sample'
-  const desktopShell = isDesktopApp()
+  const desktopShell = isDesktopRuntime
 
   useEffect(() => {
     if (dismissPreviewSignal === undefined) return

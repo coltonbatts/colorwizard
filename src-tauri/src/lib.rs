@@ -11,6 +11,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             commands::cw_init_database,
+            commands::cw_read_file_as_data_url,
             commands::cw_create_project,
             commands::cw_list_projects,
             commands::cw_get_project,

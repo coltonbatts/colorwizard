@@ -536,7 +536,7 @@ export default function TauriPersistence({
         console.error('[Tauri] Save paint palette state failed:', err)
       })
 
-      updateProject(hydratedProjectId).catch((err: unknown) => {
+      updateProject(hydratedProjectId, undefined, canvasState.referenceImage).catch((err: unknown) => {
         console.error('[Tauri] Failed to update project modified time:', err)
       })
     }, 500)

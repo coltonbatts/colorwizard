@@ -21,6 +21,7 @@ import MobileHeader from '@/components/MobileHeader'
 import OverlaySurface from '@/components/ui/Overlay'
 import WorkbenchModeRail from '@/components/WorkbenchModeRail'
 import { useIsMobile } from '@/hooks/useMediaQuery'
+import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
@@ -28,7 +29,7 @@ import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
-import { isTauri, resolveTauriImageSrc } from '@/lib/tauri'
+import { isTauri, resolveTauriCanvasImageSrc } from '@/lib/tauri'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -58,6 +59,7 @@ const INSPECTOR_TITLES: Record<Exclude<TabType, 'deck'>, string> = {
 
 export default function Home() {
   const isMobile = useIsMobile()
+  const isDesktopRuntime = useDesktopRuntime()
   const [activeTab, setActiveTab] = useState<TabType>('sample')
   const [showDeckDrawer, setShowDeckDrawer] = useState(false)
   const [showPaletteManager, setShowPaletteManager] = useState(false)
@@ -170,32 +172,65 @@ export default function Home() {
   }, [isMobile, setSampledColor, setSidebarCollapsed])
 
   const lastProcessedRef = useRef<string | null>(null)
-  const resolvedReferenceImage = useMemo(
-    () => resolveTauriImageSrc(referenceImage),
-    [referenceImage]
-  )
 
   // Synchronize persistent referenceImage string to runtime HTMLImageElement
   useEffect(() => {
-    if (resolvedReferenceImage && !image && resolvedReferenceImage !== lastProcessedRef.current) {
+    if (referenceImage && referenceImage !== lastProcessedRef.current) {
+      let cancelled = false
       console.log('[Home] Loading reference image from string...')
-      lastProcessedRef.current = resolvedReferenceImage
+      lastProcessedRef.current = referenceImage
 
-      const img = new Image()
-      img.crossOrigin = "anonymous"
-      img.src = resolvedReferenceImage
-      img.onload = () => {
-        console.log('[Home] Reference image loaded successfully')
-        handleImageLoad(img) // Use wrapper that resets value mode
-      }
-      img.onerror = (e) => {
-        console.error('[Home] Failed to load reference image:', e)
-        lastProcessedRef.current = null
+      void resolveTauriCanvasImageSrc(referenceImage)
+        .then((src) => {
+          if (cancelled || !src) {
+            if (!cancelled) lastProcessedRef.current = null
+            return
+          }
+
+          const img = new Image()
+          if (!isTauri() && (src.startsWith('http://') || src.startsWith('https://'))) {
+            try {
+              const u = new URL(src, typeof window !== 'undefined' ? window.location.href : undefined)
+              if (typeof window !== 'undefined' && u.origin !== window.location.origin) {
+                img.crossOrigin = 'anonymous'
+              }
+            } catch {
+              /* leave default */
+            }
+          }
+          img.src = src
+          img.onload = () => {
+            if (cancelled) return
+            console.log('[Home] Reference image loaded successfully')
+            if (src.startsWith('blob:')) {
+              URL.revokeObjectURL(src)
+            }
+            handleImageLoad(img)
+          }
+          img.onerror = () => {
+            if (cancelled) return
+            if (src.startsWith('blob:')) {
+              URL.revokeObjectURL(src)
+            }
+            const hint =
+              src.startsWith('data:') ? `data URL (${src.length} chars)` : src.slice(0, 160)
+            console.error('[Home] Failed to load reference image:', hint)
+            lastProcessedRef.current = null
+          }
+        })
+        .catch((error) => {
+          if (cancelled) return
+          console.error('[Home] Failed to resolve reference image:', error)
+          lastProcessedRef.current = null
+        })
+
+      return () => {
+        cancelled = true
       }
     } else if (!referenceImage) {
       lastProcessedRef.current = null
     }
-  }, [referenceImage, resolvedReferenceImage, image, handleImageLoad])
+  }, [referenceImage, handleImageLoad])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -493,7 +528,7 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isTauri() ? 'layout-hero-mode' : ''}`}
+      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isDesktopRuntime ? 'layout-hero-mode' : ''}`}
     >
       {image && !isMobile && (
         <WorkbenchModeRail
