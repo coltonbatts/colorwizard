@@ -6,7 +6,7 @@ import { CanvasSettings, DEFAULT_CANVAS_SETTINGS } from '../types/canvas'
 import { TransformState } from '../calibration'
 import { ValueScaleResult } from '../valueScale'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
-import { safeStorage } from './storage'
+import { canvasPersistStorage } from './storage'
 import { isDesktopApp, sanitizeDesktopProjectImageSrc } from '../tauri'
 
 interface CanvasState {
@@ -101,7 +101,7 @@ export const useCanvasStore = create<CanvasState>()(
         }),
         {
             name: 'colorwizard-canvas',
-            storage: safeStorage,
+            storage: canvasPersistStorage,
             partialize: (state) => ({
                 surfaceImage: state.surfaceImage,
                 surfaceBounds: state.surfaceBounds,

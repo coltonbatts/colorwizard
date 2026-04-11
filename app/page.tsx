@@ -6,10 +6,11 @@
  * Optimized with useShallow() to reduce unnecessary re-renders by 10-15%.
  */
 
-import { useMemo, useEffect, useRef, useCallback, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useMemo, useEffect, useRef, useCallback, useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import ImageCanvas, { ImageCanvasHandle } from '@/components/ImageCanvas'
 import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
-import CollapsibleSidebar, { TabType } from '@/components/CollapsibleSidebar'
+import { TabType } from '@/components/CollapsibleSidebar'
 import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
@@ -18,8 +19,9 @@ import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColo
 import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
-import OverlaySurface from '@/components/ui/Overlay'
 import WorkbenchModeRail from '@/components/WorkbenchModeRail'
+import DesktopSampleHud from '@/components/workbench/DesktopSampleHud'
+import FloatingInspectorPanel from '@/components/workbench/FloatingInspectorPanel'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
@@ -47,21 +49,53 @@ import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
 const MOBILE_TABS: readonly TabType[] = ['sample', 'matches', 'deck']
 
+const DESKTOP_PANEL_META: Record<Exclude<TabType, 'sample'>, { title: string; subtitle: string }> = {
+  matches: {
+    title: 'Threads',
+    subtitle: 'Closest floss matches',
+  },
+  mix: {
+    title: 'Mix Lab',
+    subtitle: 'Recipe and harmony tools',
+  },
+  library: {
+    title: 'Library',
+    subtitle: 'Paint catalog and palette building',
+  },
+  reference: {
+    title: 'Reference',
+    subtitle: 'Overlay image controls',
+  },
+  structure: {
+    title: 'Structure',
+    subtitle: 'Grid and guide settings',
+  },
+  surface: {
+    title: 'Surface',
+    subtitle: 'Canvas texture layer',
+  },
+  deck: {
+    title: 'Deck',
+    subtitle: 'Saved color studies',
+  },
+}
+
+// Compatibility shim for stale Fast Refresh bundles that may still reference the
+// previous desktop inspector title map while the module is being reloaded.
 const INSPECTOR_TITLES: Record<Exclude<TabType, 'deck'>, string> = {
   sample: 'Sample',
-  matches: 'Threads',
-  mix: 'Mix',
-  library: 'Library',
-  reference: 'Reference',
-  structure: 'Structure',
-  surface: 'Surface',
+  matches: DESKTOP_PANEL_META.matches.title,
+  mix: DESKTOP_PANEL_META.mix.title,
+  library: DESKTOP_PANEL_META.library.title,
+  reference: DESKTOP_PANEL_META.reference.title,
+  structure: DESKTOP_PANEL_META.structure.title,
+  surface: DESKTOP_PANEL_META.surface.title,
 }
 
 export default function Home() {
   const isMobile = useIsMobile()
   const isDesktopRuntime = useDesktopRuntime()
   const [activeTab, setActiveTab] = useState<TabType>('sample')
-  const [showDeckDrawer, setShowDeckDrawer] = useState(false)
   const [showPaletteManager, setShowPaletteManager] = useState(false)
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
@@ -119,11 +153,6 @@ export default function Home() {
   const toggleRulerGrid = useCalibrationStore(state => state.toggleRulerGrid)
   const setTransformState = useCalibrationStore(state => state.setTransformState)
 
-  const sidebarCollapsed = useLayoutStore(state => state.sidebarCollapsed)
-  const toggleSidebar = useLayoutStore(state => state.toggleSidebar)
-  const setSidebarCollapsed = useLayoutStore(state => state.setSidebarCollapsed)
-  const sidebarWidth = useLayoutStore(state => state.sidebarWidth)
-  const setSidebarWidth = useLayoutStore(state => state.setSidebarWidth)
   const compactMode = useLayoutStore(state => state.compactMode)
   const simpleMode = useLayoutStore(state => state.simpleMode)
   const toggleSimpleMode = useLayoutStore(state => state.toggleSimpleMode)
@@ -156,26 +185,36 @@ export default function Home() {
     setValueScaleResult(null)
     setValueModeEnabled(false) // Reset value mode when clearing image
     setActiveTab('sample')
-    setShowDeckDrawer(false)
     setIsNavOpen(false)
     setShowPaletteManager(false)
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
     lastProcessedRef.current = null
-  }, [resetReferenceTransform, setActiveHighlightColor, setActiveTab, setBreakdownValue, setHistogramBins, setImage, setIsNavOpen, setReferenceImage, setReferenceOpacity, setSampledColor, setShowCalibrationModal, setShowCanvasSettingsModal, setShowDeckDrawer, setShowPaletteManager, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
+  }, [resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
 
   const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
     setSampledColor(color)
-    if (isMobile) {
-      setSidebarCollapsed(false)
-    }
-  }, [isMobile, setSampledColor, setSidebarCollapsed])
+  }, [setSampledColor])
 
   const lastProcessedRef = useRef<string | null>(null)
 
+  // Project hydrate clears `image` but can keep the same absolute path as the prior session.
+  // Clear the ref in a separate effect so the loader effect keeps a stable dependency list.
+  useEffect(() => {
+    if (!referenceImage) return
+    if (image === null && lastProcessedRef.current === referenceImage) {
+      lastProcessedRef.current = null
+    }
+  }, [referenceImage, image])
+
   // Synchronize persistent referenceImage string to runtime HTMLImageElement
   useEffect(() => {
-    if (referenceImage && referenceImage !== lastProcessedRef.current) {
+    if (!referenceImage) {
+      lastProcessedRef.current = null
+      return
+    }
+
+    if (referenceImage !== lastProcessedRef.current) {
       let cancelled = false
       console.log('[Home] Loading reference image from string...')
       lastProcessedRef.current = referenceImage
@@ -227,69 +266,11 @@ export default function Home() {
       return () => {
         cancelled = true
       }
-    } else if (!referenceImage) {
-      lastProcessedRef.current = null
     }
   }, [referenceImage, handleImageLoad])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
-
-  // Resize logic
-  const isResizing = useRef(false)
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing.current) return
-    const newWidth = window.innerWidth - e.clientX
-    if (newWidth >= 320 && newWidth <= 640) {
-      setSidebarWidth(newWidth)
-    }
-  }, [setSidebarWidth])
-
-  const adjustSidebarWidth = useCallback((delta: number) => {
-    setSidebarWidth(sidebarWidth + delta)
-  }, [sidebarWidth, setSidebarWidth])
-
-  const handleResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      adjustSidebarWidth(-24)
-      return
-    }
-
-    if (event.key === 'ArrowRight') {
-      event.preventDefault()
-      adjustSidebarWidth(24)
-      return
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault()
-      setSidebarWidth(320)
-      return
-    }
-
-    if (event.key === 'End') {
-      event.preventDefault()
-      setSidebarWidth(640)
-    }
-  }, [adjustSidebarWidth, setSidebarWidth])
-
-  const stopResizing = useCallback(() => {
-    isResizing.current = false
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', stopResizing)
-    document.body.style.cursor = 'default'
-    document.body.style.userSelect = 'auto'
-  }, [handleMouseMove])
-
-  const startResizing = useCallback(() => {
-    isResizing.current = true
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', stopResizing)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-  }, [handleMouseMove, stopResizing])
 
   // Canvas container ref
   const canvasContainerRef = useRef<HTMLDivElement>(null)
@@ -323,17 +304,6 @@ export default function Home() {
         return
       }
 
-      // [ and ] for collapse/expand
-      if (e.key === '[') {
-        e.preventDefault()
-        if (!sidebarCollapsed) toggleSidebar()
-      }
-      if (e.key === ']') {
-        e.preventDefault()
-        if (sidebarCollapsed) toggleSidebar()
-      }
-
-      // Desktop workbench shortcuts
       const tabKeys: Partial<Record<string, TabType>> = {
         '1': 'sample',
         '2': 'matches',
@@ -347,16 +317,11 @@ export default function Home() {
       if (nextTab) {
         e.preventDefault()
         setActiveTab(nextTab)
-        if (sidebarCollapsed) toggleSidebar()
       }
 
       if (e.key === '8') {
         e.preventDefault()
-        if (isMobile) {
-          setActiveTab('deck')
-          return
-        }
-        setShowDeckDrawer(true)
+        setActiveTab('deck')
       }
 
       // Shift+S for Simple/Pro mode toggle
@@ -374,7 +339,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isMobile, sidebarCollapsed, toggleSidebar, toggleSimpleMode, toggleValueMode])
+  }, [toggleSimpleMode, toggleValueMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -398,12 +363,8 @@ export default function Home() {
   }
 
   const handleDesktopModeChange = useCallback((mode: Exclude<TabType, 'deck'>) => {
-    setShowDeckDrawer(false)
     setActiveTab(mode)
-    if (sidebarCollapsed) {
-      toggleSidebar()
-    }
-  }, [sidebarCollapsed, toggleSidebar])
+  }, [])
 
   const openPaletteManager = useCallback(() => {
     setDismissPreviewSignal((value) => value + 1)
@@ -493,8 +454,17 @@ export default function Home() {
 
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
-  const desktopInspectorMode = (activeTab === 'deck' ? 'sample' : activeTab) as Exclude<TabType, 'deck'>
-  const inspectorTitle = INSPECTOR_TITLES[desktopInspectorMode]
+  const isPinnedSample = !!sampledColor && pinnedColors.some((p) => p.hex === sampledColor.hex)
+  const desktopCanvasMode = (activeTab === 'deck' ? 'sample' : activeTab) as Exclude<TabType, 'deck'>
+  const activeDesktopPanel =
+    activeTab === 'sample'
+      ? null
+      : DESKTOP_PANEL_META[activeTab as Exclude<TabType, 'sample'>]
+  const desktopCanvasPaddingClass = !image
+    ? ''
+    : activeTab === 'sample'
+      ? 'lg:pr-[20rem] xl:pr-[23rem] 2xl:pr-[25rem]'
+      : 'lg:pr-[23rem] xl:pr-[31rem] 2xl:pr-[33rem]'
   const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'
@@ -528,249 +498,313 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`workbench-shell flex flex-col ${image ? 'md:flex-row workbench-loaded' : ''} h-[100dvh] min-h-[100dvh] bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isDesktopRuntime ? 'layout-hero-mode' : ''}`}
+      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isDesktopRuntime ? 'layout-hero-mode' : ''}`}
     >
-      {image && !isMobile && (
-        <WorkbenchModeRail
-          activeMode={desktopInspectorMode}
-          onModeChange={handleDesktopModeChange}
-          onOpenDeck={() => setShowDeckDrawer(true)}
-        />
-      )}
-
-      {/* Mobile Header - only show when image is loaded */}
-      {image && (
-        <MobileHeader
-          hasImage={!!image}
-          onClearImage={handleClearImage}
-          onOpenMenu={() => setIsNavOpen(true)}
-        />
-      )}
-
-      <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${image ? 'workbench-stage-column' : ''} ${compactMode ? 'p-0 md:p-2' : 'p-0 md:p-3'}`}>
-        {/* Compact Toolbar */}
-        {image && (
-          <div className="mb-0 shrink-0 md:mb-3">
-            <CompactToolbar
-              calibration={calibration}
-              onOpenCalibration={() => setShowCalibrationModal(true)}
-              onResetCalibration={resetCalibration}
-              onGoHome={handleClearImage}
-              rulerGridEnabled={rulerGridEnabled}
-              onToggleRulerGrid={toggleRulerGrid}
-              measureMode={measureMode}
-              onToggleMeasure={toggleMeasureMode}
-              palettes={palettes}
-              activePalette={activePalette}
-              onSelectPalette={setActivePalette}
-              onOpenPaletteManager={openPaletteManager}
-              canvasSettings={canvasSettings}
-              onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
-              hasImage={!!image}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onResetView={() => imageCanvasRef.current?.resetView()}
-              valueModeEnabled={valueModeEnabled}
-              valueModeSteps={valueModeSteps}
-              onToggleValueMode={toggleValueMode}
-              onValueModeStepsChange={setValueModeSteps}
-            />
-          </div>
-        )}
-
-        {/* Main Canvas Area */}
-        <div
-          className="flex-1 min-h-0 relative"
-          ref={canvasContainerRef}
-        >
-          {image && activeHighlightColor && !isMobile && (
-            <div className="pointer-events-none absolute left-4 top-[6.5rem] z-30 hidden md:block">
-              <div className="pointer-events-auto">
-                <HighlightControls />
-              </div>
-            </div>
-          )}
-
-          <ErrorBoundary
-            fallback={({ resetError }) => (
-              <CanvasErrorFallback
-                resetError={resetError}
-                onReset={handleClearImage}
-              />
-            )}
-          >
-            <ImageCanvas
-              ref={imageCanvasRef}
-              image={image}
-              onImageLoad={handleImageLoad}
-              onReset={handleClearImage}
-              dismissPreviewSignal={dismissPreviewSignal}
-              suppressPreviewOverlay={showPaletteManager}
-              onColorSample={(color) => {
-                if (measureMode && calibration) {
-                  return
-                }
-                applySampleColor(color)
-              }}
-              highlightColor={activeHighlightColor}
-              highlightTolerance={highlightTolerance}
-              highlightMode={highlightMode}
-              valueScaleSettings={valueScaleSettings}
-              onValueScaleChange={setValueScaleSettings}
-              onHistogramComputed={setHistogramBins}
-              onValueScaleResult={setValueScaleResult}
-              measureMode={measureMode}
-              onMeasurePointsChange={setMeasurePoints}
-              onTransformChange={setTransformState}
-              calibration={calibration}
-              gridEnabled={rulerGridEnabled}
-              gridSpacing={rulerGridSpacing}
-              measurePointA={measurePointA}
-              measurePointB={measurePointB}
-              measurementLayer={measurementLayer}
-              canvasSettings={canvasSettings}
-              sampledColorHex={isMobileSampleLayout ? null : sampledColor?.hex ?? null}
-              workspaceModeLabel={desktopInspectorMode}
-              showHud={!isMobileSampleLayout}
-              mobileLayout={isMobileSampleLayout ? 'sample' : 'default'}
-            />
-          </ErrorBoundary>
-
-        </div>
-
-        {isMobileSampleLayout && (
-          <div className="px-2 pb-[calc(env(safe-area-inset-bottom,0px)+3.75rem)] pt-1.5">
-            <MobileDashboard
-              sampledColor={sampledColor}
-              activePalette={activePalette}
-              onPin={pinColor}
-              isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
-              onSwitchToMatches={() => setActiveTab('matches')}
-              layout="inline"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Resize Handle - only show when image exists */}
-      {image && !sidebarCollapsed && (
-        <div
-          onMouseDown={startResizing}
-          tabIndex={0}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
-          aria-valuemin={320}
-          aria-valuemax={640}
-          aria-valuenow={sidebarWidth}
-          onKeyDown={handleResizeKeyDown}
-          className="w-px hover:w-1.5 bg-transparent hover:bg-ink-hairline cursor-col-resize z-20 transition-[background-color,width] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-inset"
-          title="Drag to resize"
-        />
-      )}
-
-      {/* Results panel - mobile gets a dedicated dashboard, desktop keeps sidebar */}
-      {image && !isMobileSampleLayout && (
-        isMobile ? (
-          <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-2 pt-2 pb-[env(safe-area-inset-bottom,0px)]">
-            {activeHighlightColor && (
-              <div className="mb-2">
-                <HighlightControls />
-              </div>
-            )}
-            <ErrorBoundary
-              fallback={({ error, resetError }) => (
-                <SidebarErrorFallback error={error} resetError={resetError} />
-              )}
-              key={activeTab}
-            >
-              <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-[24px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-16px_36px_rgba(0,0,0,0.16)]`}>
-                {activeTab === 'sample' ? (
-                  <MobileDashboard
-                    sampledColor={sampledColor}
-                    activePalette={activePalette}
-                    onPin={pinColor}
-                    isPinned={!!sampledColor && pinnedColors.some(p => p.hex === sampledColor.hex)}
-                    onSwitchToMatches={() => setActiveTab('matches')}
+      {!isMobile ? (
+        <div className="relative flex flex-1 min-h-0 min-w-0 overflow-hidden">
+          {image && (
+            <>
+              <div className="pointer-events-none absolute inset-y-6 left-6 z-40 flex">
+                <div className="pointer-events-auto">
+                  <WorkbenchModeRail
+                    activeMode={desktopCanvasMode}
+                    onModeChange={handleDesktopModeChange}
+                    onOpenDeck={() => setActiveTab('deck')}
                   />
-                ) : activeTab === 'deck' ? (
-                  <ColorDeckPanel
-                    sampledColor={sampledColor}
-                    activePaletteName={activePalette.name}
-                    onGoToSample={() => setActiveTab('sample')}
-                  />
-                ) : (
-                  <MatchesTab
-                    sampledColor={sampledColor}
-                    onColorSelect={(rgb) => {
-                      applySampleColor({
-                        rgb,
-                        hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                        hsl: rgbToHsl(rgb.r, rgb.g, rgb.b)
-                      })
-                      setActiveHighlightColor(rgb)
-                      setActiveTab('sample')
-                    }}
-                  />
-                )}
-              </div>
-            </ErrorBoundary>
-          </div>
-        ) : (
-          <CollapsibleSidebar
-            collapsed={sidebarCollapsed}
-            onToggle={toggleSidebar}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            pinnedCount={pinnedColors.length}
-            width={sidebarWidth}
-            className="mobile-controls-area workbench-inspector"
-          >
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="workbench-inspector-header">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-secondary">
-                    {inspectorTitle}
-                  </h2>
-
-                  {sampledColor && (
-                    <div className="inline-flex shrink-0 items-center gap-2 rounded-full border border-ink-hairline bg-paper px-2.5 py-1.5">
-                      <div
-                        className="h-4 w-4 rounded-full border border-black/10 shadow-inner"
-                        style={{ backgroundColor: sampledColor.hex }}
-                      />
-                      <div className="font-mono text-[11px] font-bold text-ink">{sampledColor.hex}</div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <ErrorBoundary
-                  fallback={({ error, resetError }) => (
-                    <SidebarErrorFallback error={error} resetError={resetError} />
-                  )}
-                  key={activeTab}
-                >
-                  {renderTabContent()}
-                </ErrorBoundary>
+              <div className="pointer-events-none absolute left-1/2 top-6 z-40 w-full max-w-[min(76rem,calc(100%-13rem))] -translate-x-1/2 px-6">
+                <div className="pointer-events-auto">
+                  <CompactToolbar
+                    calibration={calibration}
+                    onOpenCalibration={() => setShowCalibrationModal(true)}
+                    onResetCalibration={resetCalibration}
+                    onGoHome={handleClearImage}
+                    rulerGridEnabled={rulerGridEnabled}
+                    onToggleRulerGrid={toggleRulerGrid}
+                    measureMode={measureMode}
+                    onToggleMeasure={toggleMeasureMode}
+                    palettes={palettes}
+                    activePalette={activePalette}
+                    onSelectPalette={setActivePalette}
+                    onOpenPaletteManager={openPaletteManager}
+                    canvasSettings={canvasSettings}
+                    onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+                    hasImage={!!image}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    onResetView={() => imageCanvasRef.current?.resetView()}
+                    valueModeEnabled={valueModeEnabled}
+                    valueModeSteps={valueModeSteps}
+                    onToggleValueMode={toggleValueMode}
+                    onValueModeStepsChange={setValueModeSteps}
+                  />
+                </div>
+              </div>
+
+              {activeHighlightColor && (
+                <div className="pointer-events-none absolute left-6 top-28 z-30">
+                  <div className="pointer-events-auto">
+                    <HighlightControls />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <div className={`flex flex-1 min-h-0 min-w-0 flex-col ${image ? `px-6 pb-6 pt-24 lg:pl-[6.75rem] ${desktopCanvasPaddingClass}` : 'p-0'}`}>
+            <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
+              {image && (
+                <div className="pointer-events-none absolute inset-[4%] rounded-[36px] bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.55),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(198,181,154,0.18),transparent_42%)] blur-2xl" />
+              )}
+
+              <ErrorBoundary
+                fallback={({ resetError }) => (
+                  <CanvasErrorFallback
+                    resetError={resetError}
+                    onReset={handleClearImage}
+                  />
+                )}
+              >
+                <ImageCanvas
+                  ref={imageCanvasRef}
+                  image={image}
+                  onImageLoad={handleImageLoad}
+                  onReset={handleClearImage}
+                  dismissPreviewSignal={dismissPreviewSignal}
+                  suppressPreviewOverlay={showPaletteManager}
+                  onColorSample={(color) => {
+                    if (measureMode && calibration) {
+                      return
+                    }
+                    applySampleColor(color)
+                  }}
+                  highlightColor={activeHighlightColor}
+                  highlightTolerance={highlightTolerance}
+                  highlightMode={highlightMode}
+                  valueScaleSettings={valueScaleSettings}
+                  onValueScaleChange={setValueScaleSettings}
+                  onHistogramComputed={setHistogramBins}
+                  onValueScaleResult={setValueScaleResult}
+                  measureMode={measureMode}
+                  onMeasurePointsChange={setMeasurePoints}
+                  onTransformChange={setTransformState}
+                  calibration={calibration}
+                  gridEnabled={rulerGridEnabled}
+                  gridSpacing={rulerGridSpacing}
+                  measurePointA={measurePointA}
+                  measurePointB={measurePointB}
+                  measurementLayer={measurementLayer}
+                  canvasSettings={canvasSettings}
+                  sampledColorHex={sampledColor?.hex ?? null}
+                  workspaceModeLabel={desktopCanvasMode}
+                  showHud={!!image}
+                />
+              </ErrorBoundary>
+            </div>
+          </div>
+
+          {image && (
+            <div className="pointer-events-none absolute right-6 top-6 bottom-6 z-40 flex">
+              <div className="pointer-events-auto flex">
+                {activeTab === 'sample' ? (
+                  <DesktopSampleHud
+                    sampledColor={sampledColor}
+                    activePalette={activePalette}
+                    onPin={pinColor}
+                    isPinned={isPinnedSample}
+                    simpleMode={simpleMode}
+                    valueModeEnabled={valueModeEnabled}
+                    valueModeSteps={valueModeSteps}
+                    onAddToSession={handleAddToSession}
+                  />
+                ) : (
+                  <AnimatePresence mode="wait">
+                    <FloatingInspectorPanel
+                      key={activeTab}
+                      title={activeDesktopPanel?.title ?? INSPECTOR_TITLES.sample}
+                      subtitle={activeDesktopPanel?.subtitle ?? 'Workbench tools'}
+                      sampledColorHex={sampledColor?.hex ?? null}
+                      onClose={() => setActiveTab('sample')}
+                    >
+                      <ErrorBoundary
+                        fallback={({ error, resetError }) => (
+                          <SidebarErrorFallback error={error} resetError={resetError} />
+                        )}
+                        key={activeTab}
+                      >
+                        {renderTabContent()}
+                      </ErrorBoundary>
+                    </FloatingInspectorPanel>
+                  </AnimatePresence>
+                )}
               </div>
             </div>
-          </CollapsibleSidebar>
-        )
-      )}
+          )}
+        </div>
+      ) : (
+        <>
+          {image && (
+            <MobileHeader
+              hasImage={!!image}
+              onClearImage={handleClearImage}
+              onOpenMenu={() => setIsNavOpen(true)}
+            />
+          )}
 
-      {isMobile && (
-        <MobileNavigation
-          isOpen={isNavOpen}
-          onOpenChange={setIsNavOpen}
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab)
-          }}
-          onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
-          onOpenCalibration={() => setShowCalibrationModal(true)}
-        />
+          <div className={`flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area ${image ? 'workbench-stage-column' : ''} ${compactMode ? 'p-0 md:p-2' : 'p-0 md:p-3'}`}>
+            {image && (
+              <div className="mb-0 shrink-0 md:mb-3">
+                <CompactToolbar
+                  calibration={calibration}
+                  onOpenCalibration={() => setShowCalibrationModal(true)}
+                  onResetCalibration={resetCalibration}
+                  onGoHome={handleClearImage}
+                  rulerGridEnabled={rulerGridEnabled}
+                  onToggleRulerGrid={toggleRulerGrid}
+                  measureMode={measureMode}
+                  onToggleMeasure={toggleMeasureMode}
+                  palettes={palettes}
+                  activePalette={activePalette}
+                  onSelectPalette={setActivePalette}
+                  onOpenPaletteManager={openPaletteManager}
+                  canvasSettings={canvasSettings}
+                  onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+                  hasImage={!!image}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onResetView={() => imageCanvasRef.current?.resetView()}
+                  valueModeEnabled={valueModeEnabled}
+                  valueModeSteps={valueModeSteps}
+                  onToggleValueMode={toggleValueMode}
+                  onValueModeStepsChange={setValueModeSteps}
+                />
+              </div>
+            )}
+
+            <div
+              className="flex-1 min-h-0 relative"
+              ref={canvasContainerRef}
+            >
+              <ErrorBoundary
+                fallback={({ resetError }) => (
+                  <CanvasErrorFallback
+                    resetError={resetError}
+                    onReset={handleClearImage}
+                  />
+                )}
+              >
+                <ImageCanvas
+                  ref={imageCanvasRef}
+                  image={image}
+                  onImageLoad={handleImageLoad}
+                  onReset={handleClearImage}
+                  dismissPreviewSignal={dismissPreviewSignal}
+                  suppressPreviewOverlay={showPaletteManager}
+                  onColorSample={(color) => {
+                    if (measureMode && calibration) {
+                      return
+                    }
+                    applySampleColor(color)
+                  }}
+                  highlightColor={activeHighlightColor}
+                  highlightTolerance={highlightTolerance}
+                  highlightMode={highlightMode}
+                  valueScaleSettings={valueScaleSettings}
+                  onValueScaleChange={setValueScaleSettings}
+                  onHistogramComputed={setHistogramBins}
+                  onValueScaleResult={setValueScaleResult}
+                  measureMode={measureMode}
+                  onMeasurePointsChange={setMeasurePoints}
+                  onTransformChange={setTransformState}
+                  calibration={calibration}
+                  gridEnabled={rulerGridEnabled}
+                  gridSpacing={rulerGridSpacing}
+                  measurePointA={measurePointA}
+                  measurePointB={measurePointB}
+                  measurementLayer={measurementLayer}
+                  canvasSettings={canvasSettings}
+                  sampledColorHex={isMobileSampleLayout ? null : sampledColor?.hex ?? null}
+                  workspaceModeLabel={desktopCanvasMode}
+                  showHud={!isMobileSampleLayout}
+                  mobileLayout={isMobileSampleLayout ? 'sample' : 'default'}
+                />
+              </ErrorBoundary>
+            </div>
+
+            {isMobileSampleLayout && (
+              <div className="px-2 pb-[calc(env(safe-area-inset-bottom,0px)+3.75rem)] pt-1.5">
+                <MobileDashboard
+                  sampledColor={sampledColor}
+                  activePalette={activePalette}
+                  onPin={pinColor}
+                  isPinned={isPinnedSample}
+                  onSwitchToMatches={() => setActiveTab('matches')}
+                  layout="inline"
+                />
+              </div>
+            )}
+          </div>
+
+          {image && !isMobileSampleLayout && (
+            <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-2 pt-2 pb-[env(safe-area-inset-bottom,0px)]">
+              {activeHighlightColor && (
+                <div className="mb-2">
+                  <HighlightControls />
+                </div>
+              )}
+              <ErrorBoundary
+                fallback={({ error, resetError }) => (
+                  <SidebarErrorFallback error={error} resetError={resetError} />
+                )}
+                key={activeTab}
+              >
+                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-[24px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-16px_36px_rgba(0,0,0,0.16)]`}>
+                  {activeTab === 'sample' ? (
+                    <MobileDashboard
+                      sampledColor={sampledColor}
+                      activePalette={activePalette}
+                      onPin={pinColor}
+                      isPinned={isPinnedSample}
+                      onSwitchToMatches={() => setActiveTab('matches')}
+                    />
+                  ) : activeTab === 'deck' ? (
+                    <ColorDeckPanel
+                      sampledColor={sampledColor}
+                      activePaletteName={activePalette.name}
+                      onGoToSample={() => setActiveTab('sample')}
+                    />
+                  ) : (
+                    <MatchesTab
+                      sampledColor={sampledColor}
+                      onColorSelect={(rgb) => {
+                        applySampleColor({
+                          rgb,
+                          hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                          hsl: rgbToHsl(rgb.r, rgb.g, rgb.b),
+                        })
+                        setActiveHighlightColor(rgb)
+                        setActiveTab('sample')
+                      }}
+                    />
+                  )}
+                </div>
+              </ErrorBoundary>
+            </div>
+          )}
+
+          <MobileNavigation
+            isOpen={isNavOpen}
+            onOpenChange={setIsNavOpen}
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab)
+            }}
+            onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+            onOpenCalibration={() => setShowCalibrationModal(true)}
+          />
+        </>
       )}
 
       <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />
@@ -797,44 +831,6 @@ export default function Home() {
         onSave={setCanvasSettings}
         initialSettings={canvasSettings}
       />
-
-      {!isMobile && (
-        <OverlaySurface
-          isOpen={showDeckDrawer && !!image}
-          onClose={() => setShowDeckDrawer(false)}
-          preset="drawer"
-          ariaLabel="Saved deck drawer"
-          rootClassName="fixed inset-0 z-[90]"
-          backdropClassName="absolute inset-0 bg-black/28 backdrop-blur-[2px]"
-          panelClassName="absolute inset-y-0 right-0 flex h-full w-full max-w-[min(72rem,86vw)] flex-col border-l border-ink-hairline bg-paper-elevated shadow-[0_20px_80px_rgba(26,26,26,0.18)] outline-none"
-        >
-          <div className="flex items-center justify-between border-b border-ink-hairline px-5 py-4">
-            <div>
-              <div className="text-section">Saved Deck</div>
-              <h2 className="mt-1 text-xl font-black tracking-tight text-ink">Card Management</h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowDeckDrawer(false)}
-              className="inline-flex items-center justify-center rounded-xl border border-ink-hairline bg-paper px-3 py-2 text-sm font-bold text-ink transition-colors hover:bg-paper-recessed"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1">
-            <ColorDeckPanel
-              sampledColor={sampledColor}
-              activePaletteName={activePalette.name}
-              onGoToSample={() => {
-                setShowDeckDrawer(false)
-                setActiveTab('sample')
-              }}
-            />
-          </div>
-        </OverlaySurface>
-      )}
-
     </main>
   )
 }

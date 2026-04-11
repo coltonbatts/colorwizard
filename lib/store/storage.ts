@@ -1,4 +1,5 @@
 import { createJSONStorage } from 'zustand/middleware'
+import { isDesktopApp } from '@/lib/desktop/detect'
 
 const createSafeStorage = () => {
     const memoryStorage: Record<string, string> = {}
@@ -34,6 +35,25 @@ const createSafeStorage = () => {
         },
     }
 }
+
+/**
+ * Canvas + workspace image paths on desktop come from SQLite (TauriPersistence).
+ * Skipping localStorage rehydration avoids overwriting DB-loaded state with stale
+ * web-session data (often `referenceImage: null`), which left the canvas blank.
+ */
+export const canvasPersistStorage = createJSONStorage(() => {
+    const base = createSafeStorage()
+    return {
+        getItem: (name: string): string | null => {
+            if (typeof window !== 'undefined' && isDesktopApp()) {
+                return null
+            }
+            return base.getItem(name)
+        },
+        setItem: (name: string, value: string) => base.setItem(name, value),
+        removeItem: (name: string) => base.removeItem(name),
+    }
+})
 
 export const safeStorage = createJSONStorage(() => createSafeStorage())
 

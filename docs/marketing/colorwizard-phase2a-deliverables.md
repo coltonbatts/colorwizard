@@ -144,11 +144,11 @@ When payment integration is ready:
 for an app that doesn't export, doesn't match paints correctly, 
 and was built for casual color snapping, not serious artists.
 
-I'm a painter. I sample real paint tubes. I mix spectral-accurate 
-combinations. I need color data that actually works.
+I'm a painter. I sample real paint tubes. I want painter-aware
+mixing guides and color data that actually helps at the easel.
 
 So I spent the last 6 months building ColorWizard from scratch:
-- Spectral paint mixing (physics-accurate)
+- Spectral paint mixing inspired by paint behavior
 - 454 DMC floss colors (thread matching)
 - Full color export (JSON, PNG, CSV)
 - Lifetime $1 ownership

@@ -9,6 +9,7 @@
     "dev:tauri": "next dev -p 3000",
     "prebuild": "npm run generate:data",
     "build": "next build",
+    "build:desktop": "node scripts/build-desktop.mjs",
     "postbuild": "node scripts/clean-desktop-export.mjs",
     "pretest": "npm run generate:data",
     "start": "next start",

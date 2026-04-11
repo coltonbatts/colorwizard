@@ -123,7 +123,7 @@ export default function MixLab({ targetHex, onUseRecipe }: MixLabProps) {
                         onDragOver={(e) => { e.preventDefault(); setIsOverResult(true) }}
                         onDragLeave={() => setIsOverResult(false)}
                         onDrop={handleDropOnResult}
-                        className={`w-32 h-32 rounded-full border-4 shadow-[inset_0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-300 transform relative ${isOverResult ? 'scale-110 border-blue-400 shadow-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}
+                        className={`w-32 h-32 rounded-full border-4 transition-all duration-300 transform relative ${isOverResult ? 'scale-110 border-blue-400 shadow-blue-500/20' : 'border-gray-700 hover:border-gray-600'}`}
                         style={{ backgroundColor: mixedHex }}
                     >
                         {isOverResult && (
@@ -131,8 +131,6 @@ export default function MixLab({ targetHex, onUseRecipe }: MixLabProps) {
                                 <span className="text-2xl">➕</span>
                             </div>
                         )}
-                        {/* Shimmer effect */}
-                        <div className="absolute top-[10%] left-[10%] w-[30%] h-[30%] bg-white/10 rounded-full blur-xl pointer-events-none" />
                     </div>
                     <div className="text-xs text-gray-400 mt-3 font-mono font-bold tracking-widest bg-gray-900 px-3 py-1 rounded-full border border-gray-800">
                         {isCalculating ? 'MIXING...' : mixedHex.toUpperCase()}
@@ -147,7 +145,7 @@ export default function MixLab({ targetHex, onUseRecipe }: MixLabProps) {
                             onDragOver={(e) => { e.preventDefault(); setIsOverTarget(true) }}
                             onDragLeave={() => setIsOverTarget(false)}
                             onDrop={handleDropOnTarget}
-                            className={`w-20 h-20 rounded-full border-2 shadow-inner transition-all duration-300 cursor-help ${isOverTarget ? 'scale-110 border-pink-400' : 'border-gray-800'}`}
+                            className={`w-20 h-20 rounded-full border-2 transition-all duration-300 cursor-help relative ${isOverTarget ? 'scale-110 border-pink-400' : 'border-gray-800'}`}
                             style={{ backgroundColor: targetHex }}
                         >
                             {isOverTarget && (

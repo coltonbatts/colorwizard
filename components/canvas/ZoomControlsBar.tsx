@@ -29,21 +29,21 @@ export default function ZoomControlsBar({
     maxZoom = 10,
 }: ZoomControlsBarProps) {
     return (
-        <div className="inline-flex items-center gap-1 rounded-full border border-white/12 bg-black/55 p-1.5 text-white shadow-[0_12px_32px_rgba(0,0,0,0.22)] backdrop-blur-md">
+        <div className="inline-flex items-center gap-1 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.9)] p-1.5 text-ink shadow-[0_14px_32px_rgba(33,24,14,0.12)] backdrop-blur-md">
             <button
                 onClick={onZoomOut}
                 disabled={zoomLevel <= minZoom}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-lg font-bold text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-paper text-lg font-bold text-ink transition-colors hover:bg-paper-recessed disabled:cursor-not-allowed disabled:opacity-35"
                 title="Zoom Out (-)"
             >
                 −
             </button>
-            <div className="rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">
+            <div className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-secondary">
                 {Math.round(zoomLevel * 100)}%
             </div>
             <button
                 onClick={onFit}
-                className="flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-black uppercase tracking-[0.18em] text-black transition-colors hover:bg-white/90"
+                className="flex h-9 items-center justify-center rounded-full bg-ink px-4 text-xs font-black uppercase tracking-[0.18em] text-paper-elevated transition-colors hover:bg-[#26201a]"
                 title="Fit to view (perfect initial size)"
             >
                 Fit
@@ -51,7 +51,7 @@ export default function ZoomControlsBar({
             <button
                 onClick={onZoomIn}
                 disabled={zoomLevel >= maxZoom}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-lg font-bold text-white transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-35"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-paper text-lg font-bold text-ink transition-colors hover:bg-paper-recessed disabled:cursor-not-allowed disabled:opacity-35"
                 title="Zoom In (+)"
             >
                 +

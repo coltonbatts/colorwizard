@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { generatePaintRecipe, HEURISTIC_WEIGHT_MAP } from '@/lib/colorMixer'
 import { getSolverWorker } from '@/lib/workers'
 import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
@@ -47,6 +48,17 @@ const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
   'Phthalo Blue': { hex: '#0F2E53', id: 'phthalo-blue' },
 }
 
+type DisplayRecipe = {
+  source: 'solver' | 'heuristic'
+  ingredients: SpectralRecipe['ingredients']
+  steps: string[]
+  preview: {
+    predictedHex: string
+    matchQuality: SpectralRecipe['matchQuality']
+    error: number
+  } | null
+}
+
 export default function PaintRecipe({
   hsl,
   targetHex,
@@ -62,7 +74,7 @@ export default function PaintRecipe({
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isFallback, setIsFallback] = useState(false)
+  const [showSteps, setShowSteps] = useState(variant !== 'compact')
   const isShortViewport = useMediaQuery('(max-height: 900px)')
   const isNarrowViewport = useMediaQuery('(max-width: 480px)')
 
@@ -80,7 +92,6 @@ export default function PaintRecipe({
       if (useCatalog && (!paintIds || paintIds.length === 0)) {
         setIsLoading(false)
         setSpectralRecipe(null)
-        setIsFallback(false)
         return
       }
 
@@ -112,7 +123,6 @@ export default function PaintRecipe({
 
         if (!cancelled) {
           setSpectralRecipe(recipe)
-          setIsFallback(false)
           setIsLoading(false)
         }
       } catch (err) {
@@ -123,11 +133,9 @@ export default function PaintRecipe({
           try {
             const recipe = await solveRecipe(targetHex, options)
             setSpectralRecipe(recipe)
-            setIsFallback(false)
           } catch (fallbackErr) {
             console.error('Direct solveRecipe also failed:', fallbackErr)
             setSpectralRecipe(null)
-            setIsFallback(true)
           }
           setIsLoading(false)
         }
@@ -141,8 +149,7 @@ export default function PaintRecipe({
     }
   }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
 
-  // Map heuristic recipe to spectral format for high-fidelity rendering
-  const getMappedHeuristic = (): SpectralRecipe => {
+  const getMappedHeuristicIngredients = (): SpectralRecipe['ingredients'] => {
     const rawIngredients = heuristicRecipe.colors.map(c => {
       const pigmentInfo = HEURISTIC_PIGMENT_MAP[c.name] || { hex: '#888888', id: 'unknown' }
       const weight = HEURISTIC_WEIGHT_MAP[c.amount] || 0.1
@@ -160,39 +167,80 @@ export default function PaintRecipe({
 
     const totalWeight = rawIngredients.reduce((sum, ing) => sum + ing.weight, 0)
 
-    return {
-      ingredients: rawIngredients.map(ing => ({
+    return rawIngredients.map(ing => ({
         ...ing,
-        weight: ing.weight / totalWeight,
+        weight: totalWeight > 0 ? ing.weight / totalWeight : 0,
         percentage: ing.percentage === 'none' ? '0%' : ing.percentage,
-      })).filter(ing => ing.weight > 0),
-      predictedHex: targetHex, // We assume heuristic is a reasonable match for UI purposes
-      error: 5.0, // Arbitrary "Fair" error
-      matchQuality: 'Fair',
-      steps: heuristicRecipe.steps,
-    }
+      })).filter(ing => ing.weight > 0)
   }
 
   // Determine which recipe to show
-  const recipe = spectralRecipe || getMappedHeuristic()
+  const recipe: DisplayRecipe = spectralRecipe
+    ? {
+        source: 'solver',
+        ingredients: spectralRecipe.ingredients,
+        steps: spectralRecipe.steps,
+        preview: {
+          predictedHex: spectralRecipe.predictedHex,
+          matchQuality: spectralRecipe.matchQuality,
+          error: spectralRecipe.error,
+        },
+      }
+    : {
+        source: 'heuristic',
+        ingredients: getMappedHeuristicIngredients(),
+        steps: heuristicRecipe.steps,
+        preview: null,
+      }
   const effectiveVariant =
     variant === 'compact' || variant === 'dashboard'
       ? variant
       : (isShortViewport || isNarrowViewport ? 'compact' : 'standard')
-  const compactSteps = recipe.steps.slice(0, 2)
-  const hasMoreCompactSteps = recipe.steps.length > compactSteps.length
 
   // Handle empty catalog state separately
   const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
+  const paletteContextLabel = useCatalog && paintIds && paintIds.length > 0
+    ? `${paintIds.length} library paint${paintIds.length === 1 ? '' : 's'}`
+    : activePalette && !activePalette.isDefault
+      ? activePalette.name
+      : 'Core six-color mix'
+  const paletteRestrictionLabel = useCatalog && paintIds && paintIds.length > 0
+    ? 'Recipe uses only paints from your library selection.'
+    : activePalette && !activePalette.isDefault
+      ? `Limited to ${activePalette.colors.length} paints from ${activePalette.name}.`
+      : 'Built from the core six-color palette.'
+  const provenanceLabel = recipe.source === 'solver' ? 'Solver Preview' : 'Heuristic Guide'
+  const provenanceNote = recipe.source === 'solver'
+    ? 'Preview is a screen-fit guide driven by the spectral mixer and painterly recipe heuristics, not a physically exact paint simulation.'
+    : 'Guide follows value-first mixing heuristics for the core six-color palette. It is practical guidance, not a physically exact paint simulation.'
+
+  useEffect(() => {
+    setShowSteps(effectiveVariant !== 'compact')
+  }, [effectiveVariant, targetHex])
 
   return (
-    <div className={`w-full min-w-0 rounded-lg border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900 ${effectiveVariant === 'compact' ? 'p-2.5' : 'p-4'}`}>
+    <div
+      className={`w-full min-w-0 rounded-[26px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[0_18px_42px_rgba(33,24,14,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] ${effectiveVariant === 'compact' ? 'p-3' : 'p-4'}`}
+    >
       {!hideHeader && (
-        <div className={`flex items-center justify-between ${effectiveVariant === 'compact' ? 'mb-2' : 'mb-3 lg:mb-4'}`}>
-          <h3 className={`${effectiveVariant === 'compact' ? 'text-base' : 'text-lg lg:text-xl'} font-bold text-gray-100`}>Oil Paint Recipe</h3>
-          {isFallback && !isEmptyCatalog && (
-            <span className="text-[10px] lg:text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 lg:py-1 rounded border border-blue-500/30">
-              Heuristic Match
+        <div className={`flex items-start justify-between gap-3 ${effectiveVariant === 'compact' ? 'mb-3' : 'mb-4'}`}>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+              Mix Path
+            </div>
+            <h3 className={`${effectiveVariant === 'compact' ? 'mt-1 text-base' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
+              Oil Paint Recipe
+            </h3>
+          </div>
+          {!isEmptyCatalog && (
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+                recipe.source === 'solver'
+                  ? 'border border-ink-hairline bg-[rgba(255,252,247,0.82)] text-ink-secondary'
+                  : 'border border-subsignal bg-subsignal-muted px-3 py-1 text-subsignal'
+              }`}
+            >
+              {provenanceLabel}
             </span>
           )}
         </div>
@@ -201,139 +249,134 @@ export default function PaintRecipe({
       {showLoading ? (
         <SkeletonPaintRecipe />
       ) : isEmptyCatalog ? (
-        <div className="rounded-lg border border-dashed border-gray-700 bg-gray-800/20 px-4 py-4 text-center">
-          <p className="text-sm font-medium text-gray-300">No paints</p>
-          <p className="mt-1 text-[11px] text-gray-500">
+        <div className="rounded-[22px] border border-dashed border-ink-hairline bg-[rgba(255,252,247,0.72)] px-4 py-5 text-center">
+          <p className="text-sm font-semibold text-ink">No paints</p>
+          <p className="mt-1 text-[11px] text-ink-faint">
             Use Library.
           </p>
         </div>
       ) : (
-        // Always show the high-fidelity visualization
         <>
           <PuddleRecipeDisplay
             ingredients={recipe.ingredients}
-            predictedHex={recipe.predictedHex}
             targetHex={targetHex}
-            matchQuality={recipe.matchQuality}
-            error={recipe.error}
+            preview={recipe.preview}
+            mixSource={recipe.source}
             variant={effectiveVariant}
           />
 
-          {/* Mixing Steps */}
-          {effectiveVariant === 'compact' ? (
-            <>
-              <ol className="mt-2.5 space-y-1.5 text-[10px] text-gray-300">
-                {compactSteps.map((step, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-2 rounded-md bg-gray-950/35 px-2.5 py-2 leading-4.5"
-                  >
-                    <span className="pt-[1px] font-mono text-[9px] font-bold text-gray-500">
-                      {i + 1}
-                    </span>
-                    <span
-                      dangerouslySetInnerHTML={{
-                        __html: step
-                          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                      }}
-                    />
-                  </li>
-                ))}
-              </ol>
-              {hasMoreCompactSteps && (
-                <div className="mt-2 text-[9px] font-medium uppercase tracking-[0.16em] text-gray-500">
-                  +{recipe.steps.length - compactSteps.length}
+          <div className={`${effectiveVariant === 'compact' ? 'mt-3' : 'mt-5'} rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.68)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]`}>
+            <button
+              type="button"
+              onClick={() => setShowSteps((value) => !value)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                  Process
                 </div>
+                <div className="mt-1 text-sm font-semibold text-ink">
+                  {showSteps ? 'Hide mixing steps' : 'Reveal mixing steps'}
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
+                {recipe.steps.length} step{recipe.steps.length === 1 ? '' : 's'}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transform: showSteps ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showSteps && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden"
+                >
+                  <ol className={`${effectiveVariant === 'compact' ? 'px-3 pb-3' : 'px-4 pb-4'} space-y-2 border-t border-ink-hairline pt-3`}>
+                    {recipe.steps.map((step, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] px-3 py-3 text-[12px] leading-5 text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[10px] font-bold text-ink-secondary">
+                          {i + 1}
+                        </span>
+                        <span
+                          dangerouslySetInnerHTML={{
+                            __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
+                          }}
+                        />
+                      </li>
+                    ))}
+                  </ol>
+                </motion.div>
               )}
-            </>
-          ) : (
-            <div className="mt-6 mb-4 lg:mb-6">
-              <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-300 lg:mb-3 lg:text-sm">
-                Mixing Steps
-              </h4>
-              <ol className="list-decimal list-outside ml-4 space-y-1.5 text-[13px] text-gray-300 lg:space-y-2 lg:text-sm">
-                {recipe.steps.map((step, i) => (
-                  <li
-                    key={i}
-                    dangerouslySetInnerHTML={{
-                      __html: step
-                        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
-                    }}
-                  />
-                ))}
-              </ol>
-            </div>
-          )}
+            </AnimatePresence>
+          </div>
         </>
       )}
 
       {!hideFooter && (
-        <div className={`${effectiveVariant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-700`}>
-        {isEmptyCatalog ? (
-          <p className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 italic`}>
-            Add paints to build your active palette.
-          </p>
-        ) : useCatalog && paintIds && paintIds.length > 0 ? (
-          <div className={`flex items-center gap-2 ${effectiveVariant === 'compact' ? 'mb-1' : 'mb-2'}`}>
-            <span className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 uppercase tracking-wide`}>Using Paint Library:</span>
-            <span className={`${effectiveVariant === 'compact' ? 'text-[10px]' : 'text-xs'} text-blue-400 font-medium`}>
-              {paintIds.length} paint{paintIds.length !== 1 ? 's' : ''} selected
-            </span>
-          </div>
-        ) : activePalette && (
-          <div className={`flex items-center gap-2 ${effectiveVariant === 'compact' ? 'mb-1' : 'mb-2'}`}>
-            <span className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} text-gray-500 uppercase tracking-wide`}>Using Palette:</span>
-            <span className={`${effectiveVariant === 'compact' ? 'text-[10px]' : 'text-xs'} text-blue-400 font-medium`}>{activePalette.name}</span>
-            {!activePalette.isDefault && (
-              <span className="text-[9px] bg-blue-900/30 text-blue-300 px-1.5 py-0.5 rounded">
-                {activePalette.colors.length} colors
-              </span>
-            )}
-          </div>
-        )}
-        {!isEmptyCatalog && (
-          <>
-            {effectiveVariant !== 'compact' ? (
-              <p className="text-xs text-gray-500 mb-3">
-                {useCatalog && paintIds && paintIds.length > 0
-                  ? 'Recipe uses only paints from your Paint Library selection'
-                  : activePalette && !activePalette.isDefault
-                    ? `Limited to: ${activePalette.colors.map(c => c.displayName).join(', ')}`
-                    : 'Limited palette: Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue'
-                }
-              </p>
-            ) : (
-              <p className="text-[9px] text-gray-500 mb-2">
-                {useCatalog && paintIds && paintIds.length > 0
-                  ? 'Using your Paint Library selection'
-                  : activePalette && !activePalette.isDefault
-                    ? `Using ${activePalette.colors.length} paints`
-                    : 'Core six-color mix'
-                }
-              </p>
-            )}
+        <div className={`${effectiveVariant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-ink-hairline`}>
+          {isEmptyCatalog ? (
+            <p className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} italic text-ink-faint`}>
+              Add paints to build your active palette.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                  Source
+                </span>
+                <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[10px] font-semibold text-ink-secondary">
+                  {paletteContextLabel}
+                </span>
+              </div>
 
-            {showExportButton && (
-              <ProcreateExportButton
-                colors={recipe.ingredients.map((ing): ProcreateColor => ({
-                  hex: ing.pigment.hex,
-                  name: ing.pigment.name,
-                }))}
-                paletteName={`${targetHex.replace('#', '')} Recipe`}
-                variant="secondary"
-                className="w-full"
-                onExportSuccess={() => {
-                  // Optional: Show success toast
-                  console.log('Recipe exported to Procreate successfully!');
-                }}
-                onExportError={(error) => {
-                  // Optional: Show error toast
-                  console.error('Export failed:', error);
-                }}
-              />
-            )}
-          </>
-        )}
+              <p className={`${effectiveVariant === 'compact' ? 'mt-2 text-[10px]' : 'mt-3 text-xs'} text-ink-secondary`}>
+                {paletteRestrictionLabel}
+              </p>
+              <p className="mt-2 text-[11px] leading-5 text-ink-secondary">
+                {provenanceNote}
+              </p>
+
+              {showExportButton && (
+                <div className="mt-3">
+                  <ProcreateExportButton
+                    colors={recipe.ingredients.map((ing): ProcreateColor => ({
+                      hex: ing.pigment.hex,
+                      name: ing.pigment.name,
+                    }))}
+                    paletteName={`${targetHex.replace('#', '')} Recipe`}
+                    variant="secondary"
+                    className="w-full"
+                    onExportSuccess={() => {
+                      console.log('Recipe exported to Procreate successfully!')
+                    }}
+                    onExportError={(error) => {
+                      console.error('Export failed:', error)
+                    }}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

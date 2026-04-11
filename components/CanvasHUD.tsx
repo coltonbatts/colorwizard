@@ -52,7 +52,7 @@ export default function CanvasHUD({
             <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-panel rounded-xl px-3 py-2 text-xs shadow-[0_12px_36px_rgba(0,0,0,0.16)]"
+                className="glass-panel rounded-[18px] px-3 py-2 text-xs shadow-[0_12px_30px_rgba(33,24,14,0.12)]"
             >
                 <div className="flex flex-wrap items-center gap-2">
                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-secondary">
@@ -64,7 +64,7 @@ export default function CanvasHUD({
                     {activeModes.map((mode) => (
                         <span
                             key={mode.label}
-                            className={`rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${
+                            className={`rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ${
                                 mode.tone === 'subsignal'
                                     ? 'border-subsignal bg-subsignal-muted text-subsignal'
                                     : 'border-signal bg-signal-muted text-signal'
@@ -79,7 +79,7 @@ export default function CanvasHUD({
                     <div className="mt-2 flex items-center gap-2 border-t border-ink-hairline pt-2">
                         <motion.div
                             layoutId="live-color-swatch"
-                            className="h-5 w-5 rounded-md border border-black/10 shadow-inner"
+                            className="h-5 w-5 rounded-[7px] border border-black/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.28)]"
                             style={{ backgroundColor: liveColorHex }}
                         />
                         <div className="font-mono text-[11px] font-bold text-ink">

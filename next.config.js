@@ -2,8 +2,7 @@ const path = require('path')
 
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
-const internalHost = process.env.TAURI_DEV_HOST || 'localhost'
-
+const isDesktopStaticBuild = process.env.COLORWIZARD_DESKTOP_BUILD === '1'
 const nextConfig = {
   // Tauri supports static exports for Next.js frontends.
   output: 'export',
@@ -22,8 +21,11 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  // Resolve assets correctly in Tauri dev while keeping production export static.
-  assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
+  // Tauri dev loads the app directly from Next's dev server, so default same-origin
+  // asset URLs are the safest option there. Desktop static builds still need relative paths.
+  assetPrefix: isDesktopStaticBuild
+    ? '.'
+    : undefined,
 
   // Enable compression for responses
   compress: true,

@@ -108,8 +108,8 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
     }
 
     return (
-        <div className="fixed bottom-[4.5rem] left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:bottom-3 md:w-[min(calc(100vw-8rem),88rem)] md:px-0">
-            <div className="glass-panel-elevated rounded-[28px] px-3 py-3 md:px-4">
+        <div className="fixed bottom-[4.5rem] left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:bottom-4 md:w-[min(calc(100vw-10rem),92rem)] md:px-0">
+            <div className="glass-panel-elevated rounded-[30px] px-3 py-3 md:px-4">
                 <div className="flex items-center gap-3 overflow-x-auto">
                     <div className="shrink-0 pr-1">
                         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
@@ -134,17 +134,17 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                         setActivePopup(null)
                                         onColorSelect?.(color)
                                     }}
-                                    className={`flex h-12 w-12 items-end justify-start rounded-2xl border p-1.5 shadow-sm transition-all ${
+                                    className={`flex h-14 w-14 items-end justify-start rounded-[22px] border p-2 shadow-[0_14px_28px_rgba(33,24,14,0.10)] transition-all md:h-16 md:w-16 ${
                                         activePopup === color.id
                                             ? 'scale-[1.04] border-signal ring-2 ring-signal/20'
-                                            : 'border-ink-hairline hover:scale-[1.04]'
+                                            : 'border-ink-hairline hover:-translate-y-0.5 hover:scale-[1.03]'
                                     }`}
                                     style={{ backgroundColor: color.hex }}
                                     title="Tap for actions, double-tap to sample again"
                                     aria-label={`Session swatch ${color.label}. Tap for actions, double-tap to sample again.`}
                                 >
                                     <span
-                                        className="rounded-md bg-white/70 px-1 py-0.5 text-[8px] font-black uppercase tracking-tight"
+                                        className="rounded-md bg-white/72 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tight"
                                         style={{ color: getBestContrast(color.hex) }}
                                     >
                                         {getContrastRatio(color.hex, getBestContrast(color.hex)).toFixed(1)}

@@ -7,14 +7,16 @@
 import { motion } from 'framer-motion'
 
 interface MixedColorPreviewProps {
-    /** Predicted hex color from the mix */
-    predictedHex: string
     /** Target hex color we're trying to match */
     targetHex: string
-    /** Match quality label */
-    matchQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor'
-    /** Delta E error value */
-    error: number
+    /** Solver-backed preview details, when available */
+    preview?: {
+        predictedHex: string
+        matchQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor'
+        error: number
+    } | null
+    /** Whether this panel is solver-backed or heuristic */
+    mixSource: 'solver' | 'heuristic'
     /** Layout density */
     variant?: 'standard' | 'dashboard' | 'compact'
 }
@@ -22,97 +24,105 @@ interface MixedColorPreviewProps {
 // Match quality styling
 const QUALITY_STYLES = {
     Excellent: {
-        bg: 'bg-emerald-500/20',
-        border: 'border-emerald-500/40',
-        text: 'text-emerald-400',
+        bg: 'bg-emerald-500/12',
+        border: 'border-emerald-500/20',
+        text: 'text-emerald-700',
         dot: 'bg-emerald-500'
     },
     Good: {
-        bg: 'bg-green-500/20',
-        border: 'border-green-500/40',
-        text: 'text-green-400',
+        bg: 'bg-green-500/12',
+        border: 'border-green-500/20',
+        text: 'text-green-700',
         dot: 'bg-green-500'
     },
     Fair: {
-        bg: 'bg-yellow-500/20',
-        border: 'border-yellow-500/40',
-        text: 'text-yellow-400',
+        bg: 'bg-amber-500/12',
+        border: 'border-amber-500/20',
+        text: 'text-amber-700',
         dot: 'bg-yellow-500'
     },
     Poor: {
-        bg: 'bg-red-500/20',
-        border: 'border-red-500/40',
-        text: 'text-red-400',
+        bg: 'bg-red-500/12',
+        border: 'border-red-500/20',
+        text: 'text-red-700',
         dot: 'bg-red-500'
     },
 }
 
 export default function MixedColorPreview({
-    predictedHex,
     targetHex,
-    matchQuality,
-    error,
+    preview = null,
+    mixSource,
     variant = 'standard',
 }: MixedColorPreviewProps) {
-    const styles = QUALITY_STYLES[matchQuality]
     const isCompact = variant === 'compact'
+    const styles = preview ? QUALITY_STYLES[preview.matchQuality] : null
 
     return (
-        <div className={isCompact ? 'mb-3' : 'mb-6'}>
-            {/* Color comparison swatches */}
-            <div className={`flex gap-2 ${isCompact ? 'mb-2.5' : 'mb-4'}`}>
-                {/* Predicted Mix - larger, primary */}
-                <motion.div
-                    className="flex-1"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <div className={`${isCompact ? 'mb-1 text-[8px] tracking-[0.18em]' : 'mb-1.5 text-[10px] tracking-widest'} font-bold uppercase text-gray-400`}>
-                        Mix
-                    </div>
-                    <div
-                        className={`${isCompact ? 'h-12 rounded-lg' : 'h-20 rounded-xl'} relative overflow-hidden border border-gray-600/50 shadow-lg`}
-                        style={{ backgroundColor: predictedHex }}
-                    >
-                        {/* Subtle gradient overlay for depth */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-                    </div>
-                </motion.div>
-
-                {/* Target - smaller, reference */}
-                <motion.div
-                    className={isCompact ? 'w-14' : 'w-20'}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <div className={`${isCompact ? 'mb-1 text-[8px] tracking-[0.18em]' : 'mb-1.5 text-[10px] tracking-widest'} font-bold uppercase text-gray-400`}>
-                        Target
-                    </div>
-                    <div
-                        className={`${isCompact ? 'h-12 rounded-lg' : 'h-20 rounded-xl'} relative overflow-hidden border border-gray-600/50 shadow-lg`}
-                        style={{ backgroundColor: targetHex }}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-                    </div>
-                </motion.div>
-            </div>
-
-            {/* Match quality badge */}
+        <div className={`${isCompact ? 'mb-3' : 'mb-5'}`}>
             <motion.div
-                className={`inline-flex items-center gap-1.5 rounded-full border ${styles.bg} ${styles.border} ${isCompact ? 'px-2 py-1' : 'px-3 py-1.5'}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
+                className={`rounded-[24px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.88))] ${isCompact ? 'p-3' : 'p-4'} shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
             >
-                <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
-                <span className={`${isCompact ? 'text-[10px]' : 'text-sm'} font-medium ${styles.text}`}>
-                    {matchQuality}
-                </span>
-                <span className={`${isCompact ? 'text-[9px]' : 'text-xs'} ml-0.5 text-gray-500`}>
-                    ΔE {error.toFixed(1)}
-                </span>
+                <div className="flex items-start gap-3">
+                    <motion.div
+                        className="min-w-0 flex-1"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.12 }}
+                    >
+                        <div className={`${isCompact ? 'mb-1 text-[8px]' : 'mb-1.5 text-[9px]'} font-black uppercase tracking-[0.18em] text-ink-faint`}>
+                            {preview ? 'Solver Preview' : 'Reference Color'}
+                        </div>
+                        <div
+                            className={`${isCompact ? 'h-20 rounded-[20px]' : 'h-24 rounded-[24px]'} border border-black/8 shadow-[0_16px_38px_rgba(33,24,14,0.12)]`}
+                            style={{ backgroundColor: preview?.predictedHex ?? targetHex }}
+                        />
+                    </motion.div>
+
+                    {preview && (
+                        <motion.div
+                            className={isCompact ? 'w-16 shrink-0' : 'w-20 shrink-0'}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.18 }}
+                        >
+                            <div className={`${isCompact ? 'mb-1 text-[8px]' : 'mb-1.5 text-[9px]'} font-black uppercase tracking-[0.18em] text-ink-faint`}>
+                                Target
+                            </div>
+                            <div
+                                className={`${isCompact ? 'h-20 rounded-[18px]' : 'h-24 rounded-[22px]'} border border-black/8 shadow-[0_12px_28px_rgba(33,24,14,0.08)]`}
+                                style={{ backgroundColor: targetHex }}
+                            />
+                        </motion.div>
+                    )}
+                </div>
+
+                {preview && styles ? (
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                        <div className={`inline-flex items-center gap-1.5 rounded-full border ${styles.bg} ${styles.border} ${isCompact ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
+                            <div className={`h-2 w-2 rounded-full ${styles.dot}`} />
+                            <span className={`${isCompact ? 'text-[10px]' : 'text-sm'} font-semibold ${styles.text}`}>
+                                {preview.matchQuality} screen fit
+                            </span>
+                        </div>
+
+                        <div className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
+                            dE {preview.error.toFixed(1)}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="mt-3 rounded-[18px] border border-subsignal/20 bg-subsignal-muted/70 px-3 py-2.5">
+                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-subsignal">
+                            {mixSource === 'heuristic' ? 'Heuristic guide' : 'Preview unavailable'}
+                        </div>
+                        <p className="mt-1 text-[11px] leading-5 text-ink-secondary">
+                            Built from hue and value heuristics. No predicted mix swatch or deltaE score is shown until the solver returns.
+                        </p>
+                    </div>
+                )}
             </motion.div>
         </div>
     )

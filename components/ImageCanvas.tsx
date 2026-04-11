@@ -1102,7 +1102,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div
             ref={canvasContainerRef}
-            className={`canvas-viewport ${mobileSampleLayout ? 'h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[18px] md:border'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-paper-recessed`}
+            className={`canvas-viewport ${mobileSampleLayout ? 'h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
           >
             {showHud && (
               <CanvasHUD
@@ -1123,12 +1123,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               </div>
             )}
 
-            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-xl border border-ink-hairline bg-paper-elevated/88 p-1 shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md'}`}>
+            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-4 top-4 z-20 flex items-center gap-1.5 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.88)] p-1.5 shadow-[0_14px_30px_rgba(33,24,14,0.14)] backdrop-blur-md'}`}>
               {!isMobile && (
                 <>
                   <label
                     htmlFor={desktopFileInputId}
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg bg-paper text-ink-secondary transition-colors hover:text-ink"
+                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[14px] bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
                     title="Load image"
                     aria-label="Load image"
                   >
@@ -1152,7 +1152,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                 onClick={() => setShowImageFullScreen(true)}
                 className={`${mobileSampleLayout
                   ? 'flex h-10 w-10 items-center justify-center rounded-lg border border-ink-hairline bg-paper-elevated/90 text-ink-secondary shadow-[0_8px_20px_rgba(26,26,26,0.12)] backdrop-blur-md transition-colors hover:text-ink'
-                  : 'flex h-9 w-9 items-center justify-center rounded-lg bg-paper text-ink-secondary transition-colors hover:text-ink'
+                  : 'flex h-9 w-9 items-center justify-center rounded-[14px] bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink'
                 }`}
                 title="Full screen"
                 aria-label="Full screen"
@@ -1232,7 +1232,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             />
 
             {!isMobile && (
-              <div className="absolute bottom-4 left-4 z-20">
+              <div className="absolute bottom-5 left-5 z-20">
                 <ZoomControlsBar
                   zoomLevel={zoomLevel}
                   onZoomIn={zoom.zoomIn}

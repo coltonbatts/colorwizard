@@ -22,7 +22,7 @@ const limitedPalette = [
 ];
 
 const proofPoints = [
-    'Real paint recipes',
+    'Paint mix guides',
     'DMC matches',
     'Nothing uploaded',
 ];
@@ -432,7 +432,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                         </h1>
 
                         <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-secondary sm:text-[1.25rem]">
-                            Upload a photo, click any color, and get a real oil paint recipe.
+                            Upload a photo, click any color, and get a painter-aware oil paint mixing guide.
                         </p>
 
                         <p className="mt-3 text-base text-ink-muted">

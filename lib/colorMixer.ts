@@ -1,3 +1,5 @@
+import { generatePainterlyMixingSteps } from './paint/mixingWorkflow'
+
 /**
  * Represents a single paint color in a mixing recipe.
  *
@@ -27,6 +29,15 @@ export const HEURISTIC_WEIGHT_MAP: Record<string, number> = {
   'touch': 0.05,
   'tiny touch': 0.02,
   'none': 0,
+}
+
+const HEURISTIC_TINTING_STRENGTH_MAP: Record<string, number> = {
+  'Titanium White': 1.0,
+  'Ivory Black': 5.0,
+  'Yellow Ochre': 0.9,
+  'Cadmium Red': 1.5,
+  'Phthalo Green': 8.0,
+  'Phthalo Blue': 10.0,
 }
 
 /**
@@ -63,7 +74,7 @@ export function generatePaintRecipe(hsl: { h: number; s: number; l: number }): M
   const baseRecipe = determineIngredients(hsl);
 
   // 2. Generate steps
-  const steps = generateMixingSteps(baseRecipe.colors, baseRecipe.notes);
+  const steps = generateMixingSteps(baseRecipe.colors, hsl.l, baseRecipe.notes);
 
   return {
     ...baseRecipe,
@@ -74,61 +85,20 @@ export function generatePaintRecipe(hsl: { h: number; s: number; l: number }): M
 /**
  * Helper to generate logical mixing steps from ingredients
  */
-function generateMixingSteps(colors: PaintColor[], notes?: string): string[] {
-  const steps: string[] = [];
-
-  // 1. Sort colors by weight based on the weight map
-  const sorted = [...colors].sort((a, b) => (HEURISTIC_WEIGHT_MAP[b.amount] || 0) - (HEURISTIC_WEIGHT_MAP[a.amount] || 0));
-  const activeColors = sorted.filter(c => c.amount !== 'none');
-
-  if (activeColors.length === 0) return ['Mix thoroughly.'];
-
-  // 2. Determine base color.
-  // Tip: Avoid starting with high-tinting pigments if possible (Phthalo, Black)
-  // but if it's the only large component, we have to.
-  const strongPigments = ['Phthalo Green', 'Phthalo Blue', 'Ivory Black'];
-  const baseIndex = activeColors.findIndex(c => !strongPigments.includes(c.name)) === -1
-    ? 0
-    : activeColors.findIndex(c => !strongPigments.includes(c.name));
-
-  const base = activeColors[baseIndex];
-  const others = activeColors.filter((_, i) => i !== baseIndex);
-
-  steps.push(`Start with **${base.name}** as your base.`);
-
-  // 3. Separate value adjusters from chromatic
-  const valueAdjusters = others.filter(c => ['Titanium White', 'Ivory Black'].includes(c.name));
-  const chromatic = others.filter(c => !['Titanium White', 'Ivory Black'].includes(c.name));
-
-  // Step 1: Lock the value (Oil painting best practice: Value First)
-  if (valueAdjusters.length > 0) {
-    valueAdjusters.forEach(c => {
-      const action = c.name === 'Titanium White' ? 'lighten' : 'darken';
-      steps.push(`Adjust value with a **${c.amount}** of **${c.name}** to ${action}.`);
-    });
-  }
-
-  // Step 2: Find the hue
-  if (chromatic.length > 0) {
-    chromatic.forEach(c => {
-      steps.push(`Add a **${c.amount}** of **${c.name}** to shift the hue.`);
-    });
-  }
-
-  steps.push('Mix thoroughly with your palette knife.');
-
-  // Add warnings for strong pigments
-  const foundStrong = activeColors.filter(c => strongPigments.includes(c.name) && (HEURISTIC_WEIGHT_MAP[c.amount] || 0) > 0.05);
-  if (foundStrong.length > 0) {
-    const names = foundStrong.map(c => c.name).join(' and ');
-    steps.push(`**Tip:** ${names} is very strong—add gradually.`);
-  }
-
-  if (notes) {
-    steps.push(`Note: ${notes}`);
-  }
-
-  return steps;
+function generateMixingSteps(colors: PaintColor[], targetLightness: number, notes?: string): string[] {
+  return generatePainterlyMixingSteps(
+    colors.map((color) => ({
+      name: color.name,
+      weight: HEURISTIC_WEIGHT_MAP[color.amount] || 0,
+      label: color.amount,
+      isValueAdjuster: ['Titanium White', 'Ivory Black'].includes(color.name),
+      tintingStrength: HEURISTIC_TINTING_STRENGTH_MAP[color.name] ?? 1.0,
+    })),
+    {
+      targetLightness,
+      notes,
+    }
+  )
 }
 
 /**

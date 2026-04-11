@@ -58,7 +58,7 @@ function getRecipeSourceLabel(options: CreateColorCardOptions): string {
         return `Active palette (${options.solveOptions.paletteColorIds.length})`
     }
 
-    return 'Heuristic mix'
+    return 'Core six-color mix'
 }
 
 export function mapHeuristicRecipeIngredients(
@@ -93,6 +93,19 @@ function mapPaintMatchesFromIngredients(
                 ratio,
             }
         })
+        .filter((ingredient) => ingredient.ratio > 0)
+}
+
+function mapSolvedRecipeIngredients(
+    recipe: Awaited<ReturnType<typeof solveRecipe>>,
+): ColorRecipeIngredient[] {
+    return recipe.ingredients
+        .map((ingredient) => ({
+            name: ingredient.pigment.name,
+            amount: ingredient.percentage,
+            hex: ingredient.pigment.hex,
+            ratio: Math.round(ingredient.weight * 100),
+        }))
         .filter((ingredient) => ingredient.ratio > 0)
 }
 
@@ -177,9 +190,11 @@ export async function createColorCard(
         recipe: {
             sourceLabel,
             summary: heuristicRecipe.description,
-            ingredients: mapHeuristicRecipeIngredients(heuristicRecipe),
-            steps: heuristicRecipe.steps,
-            notes: heuristicRecipe.notes,
+            ingredients: solvedRecipe
+                ? mapSolvedRecipeIngredients(solvedRecipe)
+                : mapHeuristicRecipeIngredients(heuristicRecipe),
+            steps: solvedRecipe ? solvedRecipe.steps : heuristicRecipe.steps,
+            notes: solvedRecipe ? undefined : heuristicRecipe.notes,
             spectral: spectralRecipe,
         },
         matches: {

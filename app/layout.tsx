@@ -38,11 +38,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'ColorWizard | Color Mixing for Oil Painters',
-  description: 'Upload a reference image, click a color, and get a real oil paint mixing recipe from a 6-color limited palette. Offline-first and private.',
+  description: 'Upload a reference image, sample a color, and get a painter-aware oil paint mixing guide from a limited palette. Offline-first and private.',
   keywords: ['oil painting', 'color mixing', 'paint mixing', 'limited palette', 'artist tools', 'reference photo', 'dmc thread match'],
   openGraph: {
     title: 'ColorWizard | Color Mixing for Oil Painters',
-    description: 'Click a color in your reference image and get a real paint recipe you can actually use.',
+    description: 'Click a color in your reference image and get a practical oil paint mixing guide you can use at the easel.',
     url: 'https://colorwizard.app',
     siteName: 'ColorWizard',
     images: [
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'ColorWizard | Color Mixing for Oil Painters',
-    description: 'Upload a photo, click a color, and get a paint recipe from a real limited palette.',
+    description: 'Upload a photo, sample a color, and get an oil paint mixing guide from a limited palette.',
     creator: '@coltonbatts',
   },
   icons: {
@@ -85,6 +85,18 @@ export default function RootLayout({
             } catch {
               document.documentElement.dataset.runtime = 'web';
             }
+          })();`}
+        </Script>
+        <Script id="desktop-boot-fallback" strategy="beforeInteractive">
+          {`(() => {
+            try {
+              window.setTimeout(() => {
+                const root = document.documentElement;
+                if (root.dataset.runtime === 'desktop' && root.dataset.reactMounted !== 'true') {
+                  root.dataset.reactMounted = 'true';
+                }
+              }, 2500);
+            } catch {}
           })();`}
         </Script>
 

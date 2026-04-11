@@ -19,7 +19,7 @@
 
 ## What Is ColorWizard?
 
-ColorWizard is a free color sampling tool that generates **oil paint mixing recipes** from any reference image. Upload a photo, click a color, get the exact paint mixture.
+ColorWizard is a free color sampling tool that generates **oil paint mixing guides** from any reference image. Upload a photo, click a color, and get a practical starting mixture.
 
 **Real use:** Designers matching brand colors. Painters sampling reference images. Illustrators experimenting. Fiber artists finding embroidery thread matches.
 

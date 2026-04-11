@@ -64,11 +64,9 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
                         >
                             {recipe.sourceLabel}
                         </span>
-                        {recipe.spectral && (
-                            <span className="rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
-                                {recipe.spectral.matchQuality} match
-                            </span>
-                        )}
+                        <span className="rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/90 backdrop-blur-sm">
+                            {recipe.spectral ? `${recipe.spectral.matchQuality} screen fit` : 'Heuristic guide'}
+                        </span>
                     </div>
                 </div>
 

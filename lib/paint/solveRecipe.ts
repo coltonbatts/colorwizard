@@ -11,19 +11,16 @@ import {
     deltaESync,
     mixPigments,
     deltaEFromSpectral,
-    CHROMATIC_PIGMENTS,
-    VALUE_ADJUSTERS,
     PALETTE,
     isSpectralAvailable,
-    getPigment,
     getPaletteColors,
     createColor,
     registerPigments,
 } from '../spectral/adapter';
 import { nelderMeadRefine } from './nelderMead';
 import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS, Pigment } from '../spectral/types';
-import { getPaints, getPaint, paintToPigment } from './catalog';
-import type { Paint } from './types/Paint';
+import { getPaints, paintToPigment } from './catalog';
+import { generatePainterlyMixingSteps } from './mixingWorkflow';
 
 /**
  * Solver configuration.
@@ -40,6 +37,15 @@ const CONFIG = {
     /** Max value deviation that triggers white/black */
     VALUE_DEVIATION_THRESHOLD: 0.1,
 };
+
+const CORE_SIX_PIGMENT_IDS = new Set([
+    'titanium-white',
+    'ivory-black',
+    'yellow-ochre',
+    'cadmium-red',
+    'phthalo-blue',
+    'phthalo-green',
+]);
 
 /**
  * Generate all combinations of n items from array.
@@ -259,61 +265,20 @@ function refineCandidateSync(
  * Generate mixing instructions from ingredients.
  */
 function generateSteps(
-    ingredients: SpectralRecipe['ingredients']
+    ingredients: SpectralRecipe['ingredients'],
+    targetLightness: number
 ): string[] {
-    const steps: string[] = [];
-
-    // Sort by weight
-    const sorted = [...ingredients].sort((a, b) => b.weight - a.weight);
-    if (sorted.length === 0) return ['No pigments selected.'];
-
-    // 1. Find base color - avoid starting with tiny amounts or strong adjusters if possible
-    const strongIds = ['phthalo-green', 'phthalo-blue', 'ivory-black', 'titanium-white'];
-
-    // Try to find a chromatic pigment that isn't super strong as base
-    let base = sorted.find(i => !strongIds.includes(i.pigment.id));
-    if (!base) base = sorted[0]; // Fallback to most abundant
-
-    const others = sorted.filter((i) => i !== base && i.weight >= CONFIG.MIN_WEIGHT);
-
-    // Filter value vs chromatic for the remainder
-    const chromatic = others.filter((i) => !i.pigment.isValueAdjuster);
-    const valueAdj = others.filter((i) => i.pigment.isValueAdjuster);
-
-    steps.push(`Start with **${base.pigment.name}** as your base (${base.percentage}).`);
-
-    // 2. Value Adjusters first - IMPORTANT: Value First
-    if (valueAdj.length > 0) {
-        steps.push(`**Step 1: Lock the value.** Adjust your base to the target lightness/darkness.`);
-        for (const ing of valueAdj) {
-            const action = ing.pigment.id === 'titanium-white' ? 'lighten' : 'darken';
-            steps.push(`Add **${ing.pigment.name}** to ${action} until you hit the value (${ing.percentage}).`);
-        }
-    }
-
-    // 3. Chromatic adjustments second
-    if (chromatic.length > 0) {
-        if (valueAdj.length > 0) {
-            steps.push(`**Step 2: Find the hue.** Now that value is locked, shift the color.`);
-        }
-        for (const ing of chromatic) {
-            const amount = ing.weight < 0.1 ? 'a small amount' : 'a moderate amount';
-            steps.push(`Add ${amount} of **${ing.pigment.name}** (${ing.percentage}).`);
-        }
-    }
-
-    steps.push('Mix thoroughly with your palette knife until uniform.');
-
-    // Add warnings for strong pigments
-    const strongPigments = ingredients.filter(
-        (i) => ['phthalo-blue', 'phthalo-green'].includes(i.pigment.id) && i.weight > 0.05
+    return generatePainterlyMixingSteps(
+        ingredients.map((ingredient) => ({
+            id: ingredient.pigment.id,
+            name: ingredient.pigment.name,
+            weight: ingredient.weight,
+            label: ingredient.percentage,
+            isValueAdjuster: ingredient.pigment.isValueAdjuster,
+            tintingStrength: ingredient.pigment.tintingStrength,
+        })),
+        { targetLightness }
     );
-    if (strongPigments.length > 0) {
-        const names = strongPigments.map((i) => i.pigment.name).join(' and ');
-        steps.push(`**Tip:** ${names} is very strong—add gradually.`);
-    }
-
-    return steps;
 }
 
 /**
@@ -329,6 +294,14 @@ export async function solveRecipe(
     if (!targetHex || !targetHex.match(/^#[0-9A-Fa-f]{6}$/)) {
         throw new Error('Invalid target hex color');
     }
+
+    const targetRgb = {
+        r: parseInt(targetHex.slice(1, 3), 16),
+        g: parseInt(targetHex.slice(3, 5), 16),
+        b: parseInt(targetHex.slice(5, 7), 16),
+    };
+    const targetLightness =
+        ((Math.max(targetRgb.r, targetRgb.g, targetRgb.b) + Math.min(targetRgb.r, targetRgb.g, targetRgb.b)) / 2 / 255) * 100;
 
     // Pre-warm cache for high-performance sync loops
     await getPaletteColors();
@@ -365,8 +338,8 @@ export async function solveRecipe(
         // Legacy mode: filter by pigment IDs
         filteredPalette = PALETTE.filter(p => options.paletteColorIds!.includes(p.id));
     } else {
-        // Default: use full legacy palette
-        filteredPalette = PALETTE;
+        // Default: stay on the current six-color palette only.
+        filteredPalette = PALETTE.filter(p => CORE_SIX_PIGMENT_IDS.has(p.id));
     }
 
     if (filteredPalette.length === 0) {
@@ -406,9 +379,13 @@ export async function solveRecipe(
 
     // Build result
     const totalWeight = best.inputs.reduce((sum, i) => sum + i.weight, 0);
+    const pigmentById = new Map(filteredPalette.map((pigment) => [pigment.id, pigment]));
     const ingredients = best.inputs
         .map((input) => {
-            const pigment = getPigment(input.pigmentId)!;
+            const pigment = pigmentById.get(input.pigmentId);
+            if (!pigment) {
+                throw new Error(`Solved pigment missing from active palette: ${input.pigmentId}`);
+            }
             const normalizedWeight = input.weight / totalWeight;
             return {
                 pigment,
@@ -424,7 +401,7 @@ export async function solveRecipe(
         predictedHex: best.hex,
         error: best.error,
         matchQuality: getMatchQuality(best.error),
-        steps: generateSteps(ingredients),
+        steps: generateSteps(ingredients, targetLightness),
     };
 }
 
