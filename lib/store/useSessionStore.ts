@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
 import { safeStorage } from './storage'
+import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
 
 type SampledColor = {
     hex: string
@@ -50,7 +51,7 @@ export const useSessionStore = create<SessionState>()(
             highlightMode: 'solid',
             pinnedColors: [],
             valueModeEnabled: false,
-            valueModeSteps: 9,
+            valueModeSteps: DEFAULT_VALUE_STEP_COUNT,
             lastSampleTime: 0,
 
             setSampledColor: (sampledColor) => {
@@ -90,4 +91,3 @@ export const useSessionStore = create<SessionState>()(
         }
     )
 )
-

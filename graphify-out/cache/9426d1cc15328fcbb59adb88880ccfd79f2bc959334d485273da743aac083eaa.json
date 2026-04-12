@@ -1,1 +1,0 @@
-{"nodes": [{"id": "comlink_d", "label": "comlink.d.ts", "file_type": "code", "source_file": "node_modules/comlink/dist/esm/comlink.d.ts", "source_location": "L1"}], "edges": [{"source": "comlink_d", "target": "protocol", "relation": "imports_from", "confidence": "EXTRACTED", "source_file": "node_modules/comlink/dist/esm/comlink.d.ts", "source_location": "L6", "weight": 1.0}]}

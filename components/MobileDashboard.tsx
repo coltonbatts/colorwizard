@@ -8,6 +8,7 @@ import { PinnedColor } from '@/lib/types/pinnedColor'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import { getColorName } from '@/lib/colorNaming'
 import { createPinnedColor } from '@/lib/colorArtifacts'
+import { useCanvasStore } from '@/lib/store/useCanvasStore'
 
 interface MobileDashboardProps {
     sampledColor: {
@@ -15,6 +16,12 @@ interface MobileDashboardProps {
         rgb: { r: number; g: number; b: number }
         hsl: { h: number; s: number; l: number }
         label?: string
+        valueMetadata?: {
+            y: number
+            step: number
+            range: [number, number]
+            percentile: number
+        }
     } | null
     activePalette?: Palette
     onPin?: (newPin: PinnedColor) => void
@@ -34,6 +41,15 @@ export default function MobileDashboard({
     const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
     const selectedPaintIds = getSelectedPaintIds()
     const hasPaintPalette = isUsingPaintPalette()
+
+    const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
+    const activeValueBandIndex = useCanvasStore((s) => s.activeValueBandIndex)
+    const setActiveValueBandIndex = useCanvasStore((s) => s.setActiveValueBandIndex)
+    const referenceBandSteps = valueScaleSettings.steps
+    const sampleBandIndex0 =
+        sampledColor?.valueMetadata != null ? sampledColor.valueMetadata.step - 1 : null
+    const bandMatchesTarget =
+        sampleBandIndex0 !== null && sampleBandIndex0 === activeValueBandIndex
     const isShortViewport = useMediaQuery('(max-height: 860px)')
     const isInline = layout === 'inline'
 
@@ -281,6 +297,41 @@ export default function MobileDashboard({
                                 </div>
                             </div>
                         )}
+
+                        <div className="mt-3 border-t border-ink-hairline/50 pt-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                                    Target value band
+                                </div>
+                                {sampleBandIndex0 !== null && (
+                                    <span
+                                        className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] ${
+                                            bandMatchesTarget
+                                                ? 'bg-subsignal-muted text-subsignal'
+                                                : 'bg-paper text-ink-secondary'
+                                        }`}
+                                    >
+                                        {bandMatchesTarget ? 'Match' : 'Off'}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                                <span className="text-[9px] font-semibold text-ink-faint">Sh</span>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={Math.max(0, referenceBandSteps - 1)}
+                                    value={activeValueBandIndex}
+                                    onChange={(e) => setActiveValueBandIndex(Number(e.target.value))}
+                                    aria-label="Target value band"
+                                    className="h-1.5 min-w-0 flex-1 cursor-pointer accent-signal"
+                                />
+                                <span className="text-[9px] font-semibold text-ink-faint">Lt</span>
+                            </div>
+                            <div className="mt-1 font-mono text-[10px] text-ink-secondary">
+                                Band {activeValueBandIndex + 1} / {referenceBandSteps}
+                            </div>
+                        </div>
                     </section>
 
                     <div className={`${isInline ? '' : 'flex-1 min-h-0 overflow-y-auto overscroll-contain'}`}>

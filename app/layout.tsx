@@ -78,7 +78,11 @@ export default function RootLayout({
           {`(() => {
             try {
               const w = window;
+              const g = typeof globalThis !== 'undefined' ? globalThis : w;
+              // Keep in sync with lib/desktop/detect.ts isDesktopApp() — Tauri v2 sets globalThis.isTauri.
               const isDesktop =
+                g.isTauri === true ||
+                !!w.isTauri ||
                 !!(w.__TAURI__ && w.__TAURI__.core && w.__TAURI__.core.invoke) ||
                 !!(w.__TAURI_INTERNALS__ && w.__TAURI_INTERNALS__.invoke);
               document.documentElement.dataset.runtime = isDesktop ? 'desktop' : 'web';

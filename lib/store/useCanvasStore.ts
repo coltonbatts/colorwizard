@@ -9,6 +9,12 @@ import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/value
 import { canvasPersistStorage } from './storage'
 import { isDesktopApp, sanitizeDesktopProjectImageSrc } from '../tauri'
 
+/** Mid step index for the current N-step value scale (0..steps-1). */
+function defaultActiveValueBandIndex(steps: number): number {
+    const s = Math.max(1, Math.floor(steps))
+    return Math.max(0, Math.floor((s - 1) / 2))
+}
+
 interface CanvasState {
     image: HTMLImageElement | null
     surfaceImage: string | null
@@ -23,6 +29,8 @@ interface CanvasState {
         rotation: number
     }
     valueScaleSettings: ValueScaleSettings
+    /** 0..valueScaleSettings.steps-1 — which discrete value band is the painting target (see computeValueScale thresholds). */
+    activeValueBandIndex: number
     histogramBins: number[]
     valueScaleResult: ValueScaleResult | null
     breakdownValue: number
@@ -38,6 +46,7 @@ interface CanvasState {
     setReferenceTransform: (transform: CanvasState['referenceTransform']) => void
     resetReferenceTransform: () => void
     setValueScaleSettings: (settings: ValueScaleSettings) => void
+    setActiveValueBandIndex: (index: number) => void
     setHistogramBins: (bins: number[]) => void
     setValueScaleResult: (result: ValueScaleResult | null) => void
     setBreakdownValue: (value: number) => void
@@ -61,6 +70,7 @@ export const useCanvasStore = create<CanvasState>()(
             referenceLocked: false,
             referenceTransform: { x: 0, y: 0, scale: 1, rotation: 0 },
             valueScaleSettings: DEFAULT_VALUE_SCALE_SETTINGS,
+            activeValueBandIndex: defaultActiveValueBandIndex(DEFAULT_VALUE_SCALE_SETTINGS.steps),
             histogramBins: [],
             valueScaleResult: null,
             breakdownValue: 0,
@@ -80,9 +90,15 @@ export const useCanvasStore = create<CanvasState>()(
                     nextRef = sanitizeDesktopProjectImageSrc(prevRef) ?? prevRef
                 }
 
+                const steps = get().valueScaleSettings.steps
+                const nextBand = image
+                    ? defaultActiveValueBandIndex(steps)
+                    : defaultActiveValueBandIndex(DEFAULT_VALUE_SCALE_SETTINGS.steps)
+
                 set({
                     image,
                     referenceImage: nextRef,
+                    activeValueBandIndex: nextBand,
                 })
             },
             setSurfaceImage: (surfaceImage) => set({ surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage) }),
@@ -92,7 +108,18 @@ export const useCanvasStore = create<CanvasState>()(
             setReferenceLocked: (referenceLocked) => set({ referenceLocked }),
             setReferenceTransform: (referenceTransform) => set({ referenceTransform }),
             resetReferenceTransform: () => set({ referenceTransform: { x: 0, y: 0, scale: 1, rotation: 0 } }),
-            setValueScaleSettings: (valueScaleSettings) => set({ valueScaleSettings }),
+            setValueScaleSettings: (valueScaleSettings) =>
+                set((state) => {
+                    const maxIdx = Math.max(0, valueScaleSettings.steps - 1)
+                    const nextIdx = Math.min(Math.max(0, state.activeValueBandIndex), maxIdx)
+                    return { valueScaleSettings, activeValueBandIndex: nextIdx }
+                }),
+            setActiveValueBandIndex: (activeValueBandIndex) =>
+                set((state) => {
+                    const maxIdx = Math.max(0, state.valueScaleSettings.steps - 1)
+                    const clamped = Math.min(Math.max(0, Math.floor(activeValueBandIndex)), maxIdx)
+                    return { activeValueBandIndex: clamped }
+                }),
             setHistogramBins: (histogramBins) => set({ histogramBins }),
             setValueScaleResult: (valueScaleResult) => set({ valueScaleResult }),
             setBreakdownValue: (breakdownValue) => set({ breakdownValue }),
@@ -110,6 +137,7 @@ export const useCanvasStore = create<CanvasState>()(
                 referenceLocked: state.referenceLocked,
                 referenceTransform: state.referenceTransform,
                 valueScaleSettings: state.valueScaleSettings,
+                activeValueBandIndex: state.activeValueBandIndex,
                 canvasSettings: state.canvasSettings,
             }),
         }

@@ -14,7 +14,19 @@ function getInvoke(): null | ((cmd: string, args?: Record<string, unknown>) => P
   return w.__TAURI__?.core?.invoke ?? w.__TAURI_INTERNALS__?.invoke ?? null
 }
 
-/** True when running inside the Tauri desktop shell (ColorWizard Pro). */
+/**
+ * True when running inside the Tauri desktop shell (ColorWizard Pro).
+ * Must stay aligned with the `runtime-detect` inline script in `app/layout.tsx` (dataset.runtime),
+ * or the web marketing shell can flash in Pro.
+ */
 export function isDesktopApp(): boolean {
+  if (typeof window === 'undefined') return false
+  // Tauri v2 sets `globalThis.isTauri` (see @tauri-apps/api `isTauri()`). Prefer it so we
+  // match the runtime even if `invoke` is not yet exposed on `__TAURI__` / `__TAURI_INTERNALS__`.
+  try {
+    if ((globalThis as unknown as { isTauri?: boolean }).isTauri === true) return true
+  } catch {
+    /* ignore */
+  }
   return getInvoke() !== null
 }

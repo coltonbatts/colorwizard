@@ -24,7 +24,7 @@ interface PuddleRecipeDisplayProps {
         error: number
     } | null
     mixSource: 'solver' | 'heuristic'
-    variant?: 'standard' | 'dashboard' | 'compact'
+    variant?: 'standard' | 'dashboard' | 'compact' | 'board'
 }
 
 export default function PuddleRecipeDisplay({
@@ -36,6 +36,7 @@ export default function PuddleRecipeDisplay({
 }: PuddleRecipeDisplayProps) {
     const sortedIngredients = [...ingredients].sort((a, b) => b.weight - a.weight)
     const isCompact = variant === 'compact'
+    const isBoard = variant === 'board'
 
     return (
         <motion.div
@@ -51,7 +52,7 @@ export default function PuddleRecipeDisplay({
                 variant={variant}
             />
 
-            {!isCompact && (
+            {!isCompact && !isBoard && (
                 <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
                         Pigments
@@ -62,7 +63,73 @@ export default function PuddleRecipeDisplay({
                 </div>
             )}
 
-            {isCompact ? (
+            {isBoard ? (
+                <div className="mb-5">
+                    <div className="mb-3 flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                            Mix These Paints
+                        </h4>
+                        <span className="text-[11px] font-semibold text-ink-secondary">
+                            {ingredients.length} {ingredients.length === 1 ? 'paint' : 'paints'}
+                        </span>
+                    </div>
+
+                    <motion.div className="space-y-3" layout>
+                        {sortedIngredients.map((ingredient, index) => (
+                            <motion.div
+                                key={ingredient.pigment.id}
+                                className="rounded-[24px] border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-4 py-4 shadow-[0_12px_28px_rgba(33,24,14,0.05),inset_0_1px_0_rgba(255,255,255,0.66)]"
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05, type: 'spring', stiffness: 300, damping: 28 }}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div
+                                        className="h-12 w-12 shrink-0 rounded-[16px] border border-black/8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.28)]"
+                                        style={{ backgroundColor: ingredient.pigment.hex }}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-lg font-bold leading-tight text-ink">
+                                            {ingredient.pigment.name}
+                                        </div>
+                                        <div className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                            Paint load
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                        <div className="font-mono text-[2rem] font-black leading-none tracking-[-0.04em] text-ink">
+                                            {ingredient.percentage}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 h-4 overflow-hidden rounded-full border border-ink-hairline bg-paper-recessed shadow-[inset_0_1px_2px_rgba(33,24,14,0.08)]">
+                                    <motion.div
+                                        className="h-full rounded-full"
+                                        style={{
+                                            backgroundColor: ingredient.pigment.hex,
+                                            width: `${Math.max(12, ingredient.weight * 100)}%`,
+                                        }}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max(12, ingredient.weight * 100)}%` }}
+                                        transition={{ delay: 0.18 + index * 0.05, duration: 0.4, ease: 'easeOut' }}
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
+            ) : isCompact ? (
+                <div>
+                    <div className="mb-2 flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                            Paint Colors
+                        </h4>
+                        <span className="text-[10px] font-semibold text-ink-secondary">
+                            {ingredients.length} {ingredients.length === 1 ? 'paint' : 'paints'}
+                        </span>
+                    </div>
+
                 <motion.div className="space-y-1.5" layout>
                     {sortedIngredients.map((ingredient, index) => (
                         <motion.div
@@ -80,9 +147,7 @@ export default function PuddleRecipeDisplay({
                                 <div className="truncate text-[11px] font-semibold text-ink">
                                     {ingredient.pigment.name}
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="h-1.5 w-12 overflow-hidden rounded-full bg-paper-recessed">
+                                <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-paper-recessed">
                                     <div
                                         className="h-full rounded-full"
                                         style={{
@@ -91,13 +156,14 @@ export default function PuddleRecipeDisplay({
                                         }}
                                     />
                                 </div>
-                                <span className="min-w-[2.5rem] text-right font-mono text-[10px] font-bold text-ink-secondary">
-                                    {ingredient.percentage}
-                                </span>
                             </div>
+                            <span className="min-w-[2.5rem] text-right font-mono text-[10px] font-bold text-ink-secondary">
+                                {ingredient.percentage}
+                            </span>
                         </motion.div>
                     ))}
                 </motion.div>
+                </div>
             ) : (
                 <motion.div className="grid grid-cols-1 gap-3" layout>
                     {sortedIngredients.map((ingredient, index) => (
@@ -149,8 +215,8 @@ export default function PuddleRecipeDisplay({
                 </motion.div>
             )}
 
-            <div className={`${isCompact ? 'mt-2.5' : 'mt-5'} ${variant === 'dashboard' ? 'space-y-4' : ''}`}>
-                {variant !== 'dashboard' && !isCompact && (
+            <div className={`${isCompact ? 'mt-2.5' : isBoard ? 'mt-4' : 'mt-5'} ${variant === 'dashboard' ? 'space-y-4' : ''}`}>
+                {variant !== 'dashboard' && !isCompact && !isBoard && (
                     <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
                         Mix Strand
                     </div>
@@ -188,6 +254,31 @@ export default function PuddleRecipeDisplay({
                                 </div>
                             </motion.div>
                         ))}
+                    </div>
+                ) : isBoard ? (
+                    <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]">
+                        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                            Overall Mix
+                        </div>
+                        <div className="flex h-5 overflow-hidden rounded-full border border-ink-hairline bg-paper-recessed shadow-[inset_0_1px_2px_rgba(33,24,14,0.08)]">
+                            {sortedIngredients.map((ingredient, index) => (
+                                <motion.div
+                                    key={ingredient.pigment.id}
+                                    className="h-full"
+                                    style={{
+                                        backgroundColor: ingredient.pigment.hex,
+                                        width: `${ingredient.weight * 100}%`,
+                                    }}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${ingredient.weight * 100}%` }}
+                                    transition={{
+                                        delay: 0.22 + index * 0.05,
+                                        duration: 0.36,
+                                        ease: 'easeOut',
+                                    }}
+                                />
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     <div className={`${isCompact ? 'h-2.5' : 'h-3'} flex overflow-hidden rounded-full border border-ink-hairline bg-paper-recessed shadow-[inset_0_1px_2px_rgba(33,24,14,0.08)]`}>

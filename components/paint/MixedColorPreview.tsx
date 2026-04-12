@@ -18,7 +18,7 @@ interface MixedColorPreviewProps {
     /** Whether this panel is solver-backed or heuristic */
     mixSource: 'solver' | 'heuristic'
     /** Layout density */
-    variant?: 'standard' | 'dashboard' | 'compact'
+    variant?: 'standard' | 'dashboard' | 'compact' | 'board'
 }
 
 // Match quality styling
@@ -56,7 +56,80 @@ export default function MixedColorPreview({
     variant = 'standard',
 }: MixedColorPreviewProps) {
     const isCompact = variant === 'compact'
+    const isBoard = variant === 'board'
     const styles = preview ? QUALITY_STYLES[preview.matchQuality] : null
+
+    if (isBoard) {
+        return (
+            <div className="mb-5">
+                <motion.div
+                    className="rounded-[28px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(245,239,229,0.94))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.76)]"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.08 }}
+                >
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                        Target Color
+                    </div>
+
+                    <div
+                        className="h-36 rounded-[24px] border border-black/8 shadow-[0_18px_40px_rgba(33,24,14,0.12)]"
+                        style={{ backgroundColor: targetHex }}
+                    />
+
+                    {preview && styles ? (
+                        <div className="mt-4 rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                        Solver Fit
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2">
+                                        <div className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
+                                        <span className={`text-sm font-semibold ${styles.text}`}>
+                                            {preview.matchQuality}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-mono text-[11px] font-black uppercase tracking-[0.16em] text-ink-faint">
+                                        Delta
+                                    </div>
+                                    <div className="mt-1 font-mono text-xl font-black text-ink">
+                                        {preview.error.toFixed(1)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 flex items-center gap-3">
+                                <div
+                                    className="h-10 w-10 rounded-[14px] border border-black/8"
+                                    style={{ backgroundColor: preview.predictedHex }}
+                                />
+                                <div className="min-w-0">
+                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                        Mixed Preview
+                                    </div>
+                                    <div className="mt-1 font-mono text-sm font-bold text-ink">
+                                        {preview.predictedHex.toUpperCase()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-4 rounded-[22px] border border-subsignal/20 bg-subsignal-muted/70 px-4 py-3">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-subsignal">
+                                {mixSource === 'heuristic' ? 'Studio Guide' : 'Preview Pending'}
+                            </div>
+                            <p className="mt-1 text-sm leading-5 text-ink-secondary">
+                                Use this target swatch and the recipe below.
+                            </p>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
+        )
+    }
 
     return (
         <div className={`${isCompact ? 'mb-3' : 'mb-5'}`}>
@@ -118,8 +191,10 @@ export default function MixedColorPreview({
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-subsignal">
                             {mixSource === 'heuristic' ? 'Heuristic guide' : 'Preview unavailable'}
                         </div>
-                        <p className="mt-1 text-[11px] leading-5 text-ink-secondary">
-                            Built from hue and value heuristics. No predicted mix swatch or deltaE score is shown until the solver returns.
+                        <p className={`mt-1 text-ink-secondary ${isCompact ? 'text-[10px] leading-4' : 'text-[11px] leading-5'}`}>
+                            {isCompact
+                                ? 'Using the reference swatch until a solver fit is available.'
+                                : 'Built from hue and value heuristics. No predicted mix swatch or deltaE score is shown until the solver returns.'}
                         </p>
                     </div>
                 )}

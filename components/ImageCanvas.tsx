@@ -47,6 +47,7 @@ import { usePanHandler } from '@/components/ImageCanvas/PanHandler'
 import { sampleColor } from '@/components/ImageCanvas/ColorSampler'
 import { HighlightOverlay } from '@/components/ImageCanvas/HighlightOverlay'
 import { ValueOverlay } from '@/components/ImageCanvas/ValueOverlay'
+import ValueStepBar from '@/components/ImageCanvas/ValueStepBar'
 import type { ColorData, RGB, ImageDrawInfo, PointerCoord } from '@/components/ImageCanvas/types'
 
 interface ImageCanvasProps {
@@ -103,7 +104,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     onImageLoad,
     onColorSample,
     valueScaleSettings,
-    onValueScaleChange,
     onHistogramComputed,
     onValueScaleResult,
     onTransformChange,
@@ -132,6 +132,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const isMobile = useIsMobile()
   const isDesktopRuntime = useDesktopRuntime()
   const breakdownValue = useCanvasStore(state => state.breakdownValue)
+  const activeValueBandIndex = useCanvasStore(state => state.activeValueBandIndex)
+  const setActiveValueBandIndex = useCanvasStore(state => state.setActiveValueBandIndex)
   const surfaceImage = useCanvasStore(state => state.surfaceImage)
   const referenceOpacity = useCanvasStore(state => state.referenceOpacity)
   const referenceTransform = useCanvasStore(state => state.referenceTransform)
@@ -241,7 +243,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }, [valueScaleResult, onValueScaleResult])
 
-  const [isGrayscale, setIsGrayscale] = useState(false)
   const [splitMode, setSplitMode] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
   const [internalGridEnabled, setInternalGridEnabled] = useState(false)
@@ -304,10 +305,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     isSpaceDown: zoom.isSpaceDown,
     showMinimap,
   })
-
-  useEffect(() => {
-    setIsGrayscale(valueModeEnabled)
-  }, [valueModeEnabled])
 
   const activeBreakdownStep = useMemo<BreakdownStep>(() => {
     if (breakdownValue <= 10) return 'Original'
@@ -468,7 +465,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       valueScaleSettings,
       referenceOpacity,
       referenceTransform,
-      isGrayscale,
+      valueModeEnabled,
       splitMode,
       activeBreakdownStep,
       breakdownBuffers,
@@ -494,7 +491,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     valueScaleSettings,
     referenceOpacity,
     referenceTransform,
-    isGrayscale,
+    valueModeEnabled,
     splitMode,
     activeBreakdownStep,
     breakdownBuffers,
@@ -859,15 +856,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
     zoom.handleKeyDown(e)
 
-    if (e.key.toLowerCase() === 'v' && !e.repeat) {
-      if (onValueScaleChange && valueScaleSettings) {
-        onValueScaleChange({
-          ...valueScaleSettings,
-          enabled: !valueScaleSettings.enabled,
-        })
-      }
-    }
-
     if (e.key.toLowerCase() === 's' && !e.repeat) {
       setSplitMode(prev => !prev)
     }
@@ -875,7 +863,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (e.key.toLowerCase() === 'g' && !e.repeat) {
       setInternalGridEnabled(prev => !prev)
     }
-  }, [image, zoom, onValueScaleChange, valueScaleSettings])
+  }, [image, zoom])
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     zoom.handleKeyUp(e)
@@ -1085,7 +1073,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
 
   return (
-    <div className="flex h-full min-h-0 flex-col" ref={containerRef}>
+    <div className="flex h-full min-h-0 flex-col" ref={containerRef} suppressHydrationWarning>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
         desktopShell ? (
@@ -1106,7 +1094,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           >
             {showHud && (
               <CanvasHUD
-                valueOverlayEnabled={valueScaleSettings?.enabled ?? false}
+                valueOverlayEnabled={valueModeEnabled}
                 splitViewEnabled={splitMode}
                 gridEnabled={gridEnabled}
                 measureEnabled={measureMode || false}
@@ -1114,6 +1102,16 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                 liveColorHex={sampledColorHex}
                 workspaceModeLabel={workspaceModeLabel}
               />
+            )}
+
+            {valueModeEnabled && valueScaleSettings && (
+              <div className="pointer-events-none absolute left-1/2 top-4 z-30 w-[min(28rem,calc(100%-7.5rem))] -translate-x-1/2">
+                <ValueStepBar
+                  steps={valueScaleSettings.steps}
+                  selectedBandIndex={activeValueBandIndex}
+                  onSelectBand={setActiveValueBandIndex}
+                />
+              </div>
             )}
 
             {isAnalyzing && (
@@ -1202,7 +1200,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             <ValueOverlay
               ref={valueMapCanvasRef}
               valueBuffer={valueBuffer}
-              enabled={valueScaleSettings?.enabled ?? false}
+              enabled={valueModeEnabled || (valueScaleSettings?.enabled ?? false)}
               valueScaleResult={valueScaleResult}
               onRendered={drawCanvas}
             />

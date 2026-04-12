@@ -23,15 +23,18 @@ import WorkbenchModeRail from '@/components/WorkbenchModeRail'
 import DesktopSampleHud from '@/components/workbench/DesktopSampleHud'
 import FloatingInspectorPanel from '@/components/workbench/FloatingInspectorPanel'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
+import { getRelativeLuminance, getStepIndex } from '@/lib/valueScale'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
+import { getWorkbenchLayoutMode } from '@/lib/layout/workbenchLayout'
+import { useElementSize } from '@/hooks/useElementSize'
 import { isTauri, resolveTauriCanvasImageSrc } from '@/lib/tauri'
+import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -94,13 +97,13 @@ const INSPECTOR_TITLES: Record<Exclude<TabType, 'deck'>, string> = {
 
 export default function Home() {
   const isMobile = useIsMobile()
-  const isDesktopRuntime = useDesktopRuntime()
   const [activeTab, setActiveTab] = useState<TabType>('sample')
   const [showPaletteManager, setShowPaletteManager] = useState(false)
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [dismissPreviewSignal, setDismissPreviewSignal] = useState(0)
+  const { ref: workspaceFrameRef, size: workspaceFrameSize } = useElementSize<HTMLDivElement>()
 
   const sampledColor = useSessionStore(state => state.sampledColor)
   const setSampledColor = useSessionStore(state => state.setSampledColor)
@@ -113,7 +116,6 @@ export default function Home() {
   const lastSampleTime = useSessionStore(state => state.lastSampleTime)
   const valueModeEnabled = useSessionStore(state => state.valueModeEnabled)
   const valueModeSteps = useSessionStore(state => state.valueModeSteps)
-  const toggleValueMode = useSessionStore(state => state.toggleValueMode)
   const setValueModeEnabled = useSessionStore(state => state.setValueModeEnabled)
   const setValueModeSteps = useSessionStore(state => state.setValueModeSteps)
 
@@ -127,6 +129,7 @@ export default function Home() {
   const resetReferenceTransform = useCanvasStore(state => state.resetReferenceTransform)
   const valueScaleSettings = useCanvasStore(state => state.valueScaleSettings)
   const setValueScaleSettings = useCanvasStore(state => state.setValueScaleSettings)
+  const setActiveValueBandIndex = useCanvasStore(state => state.setActiveValueBandIndex)
   const setHistogramBins = useCanvasStore(state => state.setHistogramBins)
   const setValueScaleResult = useCanvasStore(state => state.setValueScaleResult)
   const setBreakdownValue = useCanvasStore(state => state.setBreakdownValue)
@@ -160,14 +163,38 @@ export default function Home() {
   const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
   const toggleDebugMode = useDebugStore(state => state.toggleDebugMode)
 
+  const normalizeValueWorkflow = useCallback((enabled: boolean) => {
+    setValueModeEnabled(enabled)
+    setValueModeSteps(DEFAULT_VALUE_STEP_COUNT)
+
+    if (
+      valueScaleSettings.enabled !== enabled ||
+      valueScaleSettings.steps !== DEFAULT_VALUE_STEP_COUNT ||
+      valueScaleSettings.mode !== 'Even' ||
+      valueScaleSettings.clip !== 0
+    ) {
+      setValueScaleSettings({
+        ...valueScaleSettings,
+        enabled,
+        steps: DEFAULT_VALUE_STEP_COUNT,
+        mode: 'Even',
+        clip: 0,
+      })
+    }
+  }, [setValueModeEnabled, setValueModeSteps, setValueScaleSettings, valueScaleSettings])
+
+  const handleToggleValueMode = useCallback(() => {
+    normalizeValueWorkflow(!valueModeEnabled)
+  }, [normalizeValueWorkflow, valueModeEnabled])
+
   // Wrapper for setImage that always resets value mode
   const handleImageLoad = useCallback((img: HTMLImageElement) => {
     console.log('[Home] Image loaded, resetting value mode')
     setImage(img)
     setReferenceOpacity(1)
     resetReferenceTransform()
-    setValueModeEnabled(false) // Always reset value mode when new image loads
-  }, [resetReferenceTransform, setImage, setReferenceOpacity, setValueModeEnabled])
+    normalizeValueWorkflow(false)
+  }, [normalizeValueWorkflow, resetReferenceTransform, setImage, setReferenceOpacity])
 
   // Clear image and reset view
   const handleClearImage = useCallback(() => {
@@ -183,18 +210,14 @@ export default function Home() {
     setBreakdownValue(0)
     setHistogramBins([])
     setValueScaleResult(null)
-    setValueModeEnabled(false) // Reset value mode when clearing image
+    normalizeValueWorkflow(false)
     setActiveTab('sample')
     setIsNavOpen(false)
     setShowPaletteManager(false)
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
     lastProcessedRef.current = null
-  }, [resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueModeEnabled, setValueScaleResult])
-
-  const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
-    setSampledColor(color)
-  }, [setSampledColor])
+  }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
 
   const lastProcessedRef = useRef<string | null>(null)
 
@@ -281,6 +304,27 @@ export default function Home() {
     histogramBins: analyzerHistogramBins,
   } = useImageAnalyzer(image, valueScaleSettings)
 
+  const syncActiveBandFromColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
+    if (!color) return
+
+    const explicitStep = color.valueMetadata?.step
+    if (typeof explicitStep === 'number' && explicitStep > 0) {
+      setActiveValueBandIndex(explicitStep - 1)
+      return
+    }
+
+    if (!analyzerValueScaleResult) return
+
+    const luminance = getRelativeLuminance(color.rgb.r, color.rgb.g, color.rgb.b)
+    const bandIndex = getStepIndex(luminance, analyzerValueScaleResult.thresholds)
+    setActiveValueBandIndex(bandIndex)
+  }, [analyzerValueScaleResult, setActiveValueBandIndex])
+
+  const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
+    setSampledColor(color)
+    syncActiveBandFromColor(color)
+  }, [setSampledColor, syncActiveBandFromColor])
+
   // Use the hook's results to update the store
   useEffect(() => {
     if (analyzerValueScaleResult) setValueScaleResult(analyzerValueScaleResult)
@@ -290,11 +334,28 @@ export default function Home() {
     if (analyzerHistogramBins.length > 0) setHistogramBins(analyzerHistogramBins)
   }, [analyzerHistogramBins, setHistogramBins])
 
+  useEffect(() => {
+    if (!sampledColor) return
+    syncActiveBandFromColor(sampledColor)
+  }, [sampledColor, syncActiveBandFromColor])
+
   // Load calibration on mount
   useEffect(() => {
     if (isTauri()) return
     loadCalibrationFromStorage()
   }, [loadCalibrationFromStorage])
+
+  useEffect(() => {
+    if (
+      valueModeSteps !== DEFAULT_VALUE_STEP_COUNT ||
+      valueScaleSettings.steps !== DEFAULT_VALUE_STEP_COUNT ||
+      valueScaleSettings.mode !== 'Even' ||
+      valueScaleSettings.clip !== 0 ||
+      valueScaleSettings.enabled !== valueModeEnabled
+    ) {
+      normalizeValueWorkflow(valueModeEnabled)
+    }
+  }, [normalizeValueWorkflow, valueModeEnabled, valueModeSteps, valueScaleSettings])
 
   // Keyboard shortcuts for tabs
   useEffect(() => {
@@ -333,13 +394,13 @@ export default function Home() {
       // V for Value Mode toggle
       if ((e.key === 'v' || e.key === 'V') && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
         e.preventDefault()
-        toggleValueMode()
+        handleToggleValueMode()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSimpleMode, toggleValueMode])
+  }, [toggleSimpleMode, handleToggleValueMode])
 
   // Derived active palette
   const activePalette = useMemo(() => {
@@ -460,11 +521,13 @@ export default function Home() {
     activeTab === 'sample'
       ? null
       : DESKTOP_PANEL_META[activeTab as Exclude<TabType, 'sample'>]
-  const desktopCanvasPaddingClass = !image
-    ? ''
-    : activeTab === 'sample'
-      ? 'lg:pr-[20rem] xl:pr-[23rem] 2xl:pr-[25rem]'
-      : 'lg:pr-[23rem] xl:pr-[31rem] 2xl:pr-[33rem]'
+  const desktopLayoutMode = getWorkbenchLayoutMode(workspaceFrameSize.width, workspaceFrameSize.height)
+  const desktopShellClass =
+    desktopLayoutMode === 'wide'
+      ? 'workbench-desktop-shell--wide'
+      : desktopLayoutMode === 'medium'
+        ? 'workbench-desktop-shell--medium'
+        : 'workbench-desktop-shell--narrow'
   const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'
@@ -498,116 +561,123 @@ export default function Home() {
     <main
       id="main-content"
       tabIndex={-1}
-      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''} ${!image && !isDesktopRuntime ? 'layout-hero-mode' : ''}`}
+      suppressHydrationWarning
+      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''}`}
     >
       {!isMobile ? (
-        <div className="relative flex flex-1 min-h-0 min-w-0 overflow-hidden">
-          {image && (
-            <>
-              <div className="pointer-events-none absolute inset-y-6 left-6 z-40 flex">
-                <div className="pointer-events-auto">
-                  <WorkbenchModeRail
-                    activeMode={desktopCanvasMode}
-                    onModeChange={handleDesktopModeChange}
-                    onOpenDeck={() => setActiveTab('deck')}
-                  />
-                </div>
-              </div>
-
-              <div className="pointer-events-none absolute left-1/2 top-6 z-40 w-full max-w-[min(76rem,calc(100%-13rem))] -translate-x-1/2 px-6">
-                <div className="pointer-events-auto">
-                  <CompactToolbar
-                    calibration={calibration}
-                    onOpenCalibration={() => setShowCalibrationModal(true)}
-                    onResetCalibration={resetCalibration}
-                    onGoHome={handleClearImage}
-                    rulerGridEnabled={rulerGridEnabled}
-                    onToggleRulerGrid={toggleRulerGrid}
-                    measureMode={measureMode}
-                    onToggleMeasure={toggleMeasureMode}
-                    palettes={palettes}
-                    activePalette={activePalette}
-                    onSelectPalette={setActivePalette}
-                    onOpenPaletteManager={openPaletteManager}
-                    canvasSettings={canvasSettings}
-                    onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
-                    hasImage={!!image}
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    onResetView={() => imageCanvasRef.current?.resetView()}
-                    valueModeEnabled={valueModeEnabled}
-                    valueModeSteps={valueModeSteps}
-                    onToggleValueMode={toggleValueMode}
-                    onValueModeStepsChange={setValueModeSteps}
-                  />
-                </div>
-              </div>
-
-              {activeHighlightColor && (
-                <div className="pointer-events-none absolute left-6 top-28 z-30">
+        <div
+          ref={workspaceFrameRef}
+          className={`workbench-desktop-shell relative flex flex-1 min-h-0 min-w-0 overflow-hidden ${desktopShellClass}`}
+          data-layout={desktopLayoutMode}
+        >
+          <div className="workbench-desktop-stage relative flex min-h-0 min-w-0 flex-col">
+            {image && (
+              <>
+                <div className="pointer-events-none absolute inset-y-6 left-6 z-40 flex">
                   <div className="pointer-events-auto">
-                    <HighlightControls />
+                    <WorkbenchModeRail
+                      activeMode={desktopCanvasMode}
+                      onModeChange={handleDesktopModeChange}
+                      onOpenDeck={() => setActiveTab('deck')}
+                    />
                   </div>
                 </div>
-              )}
-            </>
-          )}
 
-          <div className={`flex flex-1 min-h-0 min-w-0 flex-col ${image ? `px-6 pb-6 pt-24 lg:pl-[6.75rem] ${desktopCanvasPaddingClass}` : 'p-0'}`}>
-            <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
-              {image && (
-                <div className="pointer-events-none absolute inset-[4%] rounded-[36px] bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.55),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(198,181,154,0.18),transparent_42%)] blur-2xl" />
-              )}
+                <div className="pointer-events-none absolute left-1/2 top-6 z-40 w-full max-w-[min(76rem,calc(100%-13rem))] -translate-x-1/2 px-6">
+                  <div className="pointer-events-auto">
+                    <CompactToolbar
+                      calibration={calibration}
+                      onOpenCalibration={() => setShowCalibrationModal(true)}
+                      onResetCalibration={resetCalibration}
+                      onGoHome={handleClearImage}
+                      rulerGridEnabled={rulerGridEnabled}
+                      onToggleRulerGrid={toggleRulerGrid}
+                      measureMode={measureMode}
+                      onToggleMeasure={toggleMeasureMode}
+                      palettes={palettes}
+                      activePalette={activePalette}
+                      onSelectPalette={setActivePalette}
+                      onOpenPaletteManager={openPaletteManager}
+                      canvasSettings={canvasSettings}
+                      onOpenCanvasSettings={() => setShowCanvasSettingsModal(true)}
+                      hasImage={!!image}
+                      activeTab={activeTab}
+                      onTabChange={setActiveTab}
+                      onResetView={() => imageCanvasRef.current?.resetView()}
+                      valueModeEnabled={valueModeEnabled}
+                      valueModeSteps={valueModeSteps}
+                      onToggleValueMode={handleToggleValueMode}
+                      onValueModeStepsChange={setValueModeSteps}
+                    />
+                  </div>
+                </div>
 
-              <ErrorBoundary
-                fallback={({ resetError }) => (
-                  <CanvasErrorFallback
-                    resetError={resetError}
-                    onReset={handleClearImage}
-                  />
+                {activeHighlightColor && (
+                  <div className="pointer-events-none absolute left-6 top-28 z-30">
+                    <div className="pointer-events-auto">
+                      <HighlightControls />
+                    </div>
+                  </div>
                 )}
-              >
-                <ImageCanvas
-                  ref={imageCanvasRef}
-                  image={image}
-                  onImageLoad={handleImageLoad}
-                  onReset={handleClearImage}
-                  dismissPreviewSignal={dismissPreviewSignal}
-                  suppressPreviewOverlay={showPaletteManager}
-                  onColorSample={(color) => {
-                    if (measureMode && calibration) {
-                      return
-                    }
-                    applySampleColor(color)
-                  }}
-                  highlightColor={activeHighlightColor}
-                  highlightTolerance={highlightTolerance}
-                  highlightMode={highlightMode}
-                  valueScaleSettings={valueScaleSettings}
-                  onValueScaleChange={setValueScaleSettings}
-                  onHistogramComputed={setHistogramBins}
-                  onValueScaleResult={setValueScaleResult}
-                  measureMode={measureMode}
-                  onMeasurePointsChange={setMeasurePoints}
-                  onTransformChange={setTransformState}
-                  calibration={calibration}
-                  gridEnabled={rulerGridEnabled}
-                  gridSpacing={rulerGridSpacing}
-                  measurePointA={measurePointA}
-                  measurePointB={measurePointB}
-                  measurementLayer={measurementLayer}
-                  canvasSettings={canvasSettings}
-                  sampledColorHex={sampledColor?.hex ?? null}
-                  workspaceModeLabel={desktopCanvasMode}
-                  showHud={!!image}
-                />
-              </ErrorBoundary>
+              </>
+            )}
+
+            <div className={`flex flex-1 min-h-0 min-w-0 flex-col ${image ? 'px-6 pb-6 pt-24 lg:pl-[6.75rem]' : 'p-0'}`}>
+              <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
+                {image && (
+                  <div className="pointer-events-none absolute inset-[4%] rounded-[36px] bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.55),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(198,181,154,0.18),transparent_42%)] blur-2xl" />
+                )}
+
+                <ErrorBoundary
+                  fallback={({ resetError }) => (
+                    <CanvasErrorFallback
+                      resetError={resetError}
+                      onReset={handleClearImage}
+                    />
+                  )}
+                >
+                  <ImageCanvas
+                    ref={imageCanvasRef}
+                    image={image}
+                    onImageLoad={handleImageLoad}
+                    onReset={handleClearImage}
+                    dismissPreviewSignal={dismissPreviewSignal}
+                    suppressPreviewOverlay={showPaletteManager}
+                    onColorSample={(color) => {
+                      if (measureMode && calibration) {
+                        return
+                      }
+                      applySampleColor(color)
+                    }}
+                    highlightColor={activeHighlightColor}
+                    highlightTolerance={highlightTolerance}
+                    highlightMode={highlightMode}
+                    valueScaleSettings={valueScaleSettings}
+                    onValueScaleChange={setValueScaleSettings}
+                    onHistogramComputed={setHistogramBins}
+                    onValueScaleResult={setValueScaleResult}
+                    measureMode={measureMode}
+                    onMeasurePointsChange={setMeasurePoints}
+                    onTransformChange={setTransformState}
+                    calibration={calibration}
+                    gridEnabled={rulerGridEnabled}
+                    gridSpacing={rulerGridSpacing}
+                    measurePointA={measurePointA}
+                    measurePointB={measurePointB}
+                    measurementLayer={measurementLayer}
+                    canvasSettings={canvasSettings}
+                    sampledColorHex={sampledColor?.hex ?? null}
+                    workspaceModeLabel={desktopCanvasMode}
+                    showHud={!!image}
+                  />
+                </ErrorBoundary>
+              </div>
             </div>
           </div>
 
           {image && (
-            <div className="pointer-events-none absolute right-6 top-6 bottom-6 z-40 flex">
-              <div className="pointer-events-auto flex">
+            <div className="workbench-desktop-inspector relative z-40 flex min-h-0 min-w-0">
+              <div className="pointer-events-auto flex min-h-0 min-w-0 flex-1">
                 {activeTab === 'sample' ? (
                   <DesktopSampleHud
                     sampledColor={sampledColor}
@@ -617,6 +687,7 @@ export default function Home() {
                     simpleMode={simpleMode}
                     valueModeEnabled={valueModeEnabled}
                     valueModeSteps={valueModeSteps}
+                    layoutMode={desktopLayoutMode}
                     onAddToSession={handleAddToSession}
                   />
                 ) : (
@@ -626,6 +697,7 @@ export default function Home() {
                       title={activeDesktopPanel?.title ?? INSPECTOR_TITLES.sample}
                       subtitle={activeDesktopPanel?.subtitle ?? 'Workbench tools'}
                       sampledColorHex={sampledColor?.hex ?? null}
+                      layoutMode={desktopLayoutMode}
                       onClose={() => setActiveTab('sample')}
                     >
                       <ErrorBoundary
@@ -677,7 +749,7 @@ export default function Home() {
                   onResetView={() => imageCanvasRef.current?.resetView()}
                   valueModeEnabled={valueModeEnabled}
                   valueModeSteps={valueModeSteps}
-                  onToggleValueMode={toggleValueMode}
+                  onToggleValueMode={handleToggleValueMode}
                   onValueModeStepsChange={setValueModeSteps}
                 />
               </div>

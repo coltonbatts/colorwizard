@@ -22,6 +22,7 @@ import {
   useContext,
   useMemo,
   useEffect,
+  useLayoutEffect,
   useRef,
   type ReactNode,
   type Dispatch,
@@ -316,7 +317,9 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     }
   }, [pathname, router])
 
-  useEffect(() => {
+  // Must run before paint: while hasMounted is false we pass `children` through unchanged, which is
+  // the full web home (marketing dropzone). useEffect runs after paint — users saw that every launch.
+  useLayoutEffect(() => {
     mountedRef.current = true
     setHasMounted(true)
     return () => {

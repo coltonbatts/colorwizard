@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * Grayscale value map from per-pixel relative luminance (valueBuffer.y).
+ * Step boundaries use valueScaleResult.thresholds from computeValueScale() in lib/valueScale.ts:
+ * black/white points come from clipped sorted luminances; Even mode divides that range evenly;
+ * Percentile mode places interior thresholds on sorted-luminance quantiles (see thresholds[] there).
+ */
+
 import { forwardRef, useEffect, useRef } from 'react'
 import { getStepIndex, stepToGray, type ValueScaleResult } from '@/lib/valueScale'
 import type { ValueBuffer } from '@/hooks/useImageAnalyzer'

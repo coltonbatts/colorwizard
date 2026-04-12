@@ -4,8 +4,11 @@ const path = require('path')
 const isProd = process.env.NODE_ENV === 'production'
 const isDesktopStaticBuild = process.env.COLORWIZARD_DESKTOP_BUILD === '1'
 const nextConfig = {
-  // Tauri supports static exports for Next.js frontends.
-  output: 'export',
+  // Static HTML export is only for `next build` (Vercel + Tauri `out/`).
+  // If `output: 'export'` is enabled during `next dev`, App Router CSS can 404 at
+  // `/_next/static/css/app/layout.css`, which leaves the app totally unstyled in
+  // the browser and Tauri webview.
+  ...(isProd ? { output: 'export' } : {}),
 
   // Optimize package imports to reduce bundle size
   experimental: {

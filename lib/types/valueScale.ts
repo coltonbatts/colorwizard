@@ -12,6 +12,6 @@ export const DEFAULT_VALUE_SCALE_SETTINGS: ValueScaleSettings = {
     enabled: false,
     steps: 7,         // Default 7 steps
     mode: 'Even',
-    clip: 0.01,       // 1% percentile clipping (p1/p99)
+    clip: 0,          // Full-range remap for discrete painterly value studies
     opacity: 0.45,    // Default 45% opacity
 };

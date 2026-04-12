@@ -687,6 +687,42 @@ body {
     position: relative;
 }
 
+.workbench-desktop-shell {
+    display: grid;
+    gap: 1.5rem;
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) clamp(23rem, 31vw, 31rem);
+}
+
+.workbench-desktop-shell--wide {
+    grid-template-columns: minmax(0, 1fr) clamp(24rem, 30vw, 32rem);
+}
+
+.workbench-desktop-shell--medium {
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) clamp(20.5rem, 28vw, 28rem);
+}
+
+.workbench-desktop-shell--narrow {
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.workbench-desktop-stage,
+.workbench-desktop-inspector {
+    min-width: 0;
+    min-height: 0;
+}
+
+.workbench-desktop-inspector {
+    display: flex;
+}
+
+.workbench-desktop-shell--narrow .workbench-desktop-inspector {
+    max-height: clamp(24rem, 42dvh, 38rem);
+}
+
 .workbench-mode-rail {
     width: 60px;
     min-width: 60px;
@@ -1098,20 +1134,20 @@ body {
         padding-top: env(safe-area-inset-top, 0px);
     }
 
-    /* Hero dropzone mode */
-    .mobile-hero-dropzone {
+    /* Reference image dropzone (web empty state) */
+    .workspace-reference-dropzone {
         min-height: 0;
         flex: 1 1 auto !important;
         width: 100%;
     }
 
-    main.flex>div:first-child:has(.mobile-hero-dropzone) {
+    main.flex>div:first-child:has(.workspace-reference-dropzone) {
         flex: 1 1 auto !important;
         max-height: none !important;
         padding: 0 !important;
     }
 
-    main.flex:has(.mobile-hero-dropzone) .mobile-controls-area {
+    main.flex:has(.workspace-reference-dropzone) .mobile-controls-area {
         display: none !important;
     }
 
@@ -1774,18 +1810,6 @@ body {
 /* ============================================
    LAYOUT MODES
    ============================================ */
-
-.layout-hero-mode {
-    justify-content: center !important;
-    align-items: center !important;
-}
-
-.layout-hero-mode .sidebar-collapsible,
-.layout-hero-mode .mobile-nav-hamburger,
-.layout-hero-mode .mobile-header,
-.layout-hero-mode .compact-toolbar {
-    display: none !important;
-}
 
 .canvas-primary {
     flex: 1 1 60%;

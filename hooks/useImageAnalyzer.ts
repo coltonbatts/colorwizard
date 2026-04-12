@@ -10,6 +10,7 @@ import { getImageProcessorWorker } from '@/lib/workers';
 import type { ImageProcessorWorker } from '@/lib/workers/imageProcessor.worker';
 import { computeValueScale, ValueScaleResult } from '@/lib/valueScale';
 import { ValueScaleSettings } from '@/lib/types/valueScale';
+import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode';
 
 
 export interface LabBuffer {
@@ -187,7 +188,7 @@ export function useImageAnalyzer(
                 // Compute value scale from worker result
                 const valueScale = computeValueScale(
                     result.valueBuffer.y,
-                    valueScaleSettings?.steps || 5,
+                    valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
                     valueScaleSettings?.mode || 'Even',
                     valueScaleSettings?.clip || 0
                 );
@@ -211,7 +212,7 @@ export function useImageAnalyzer(
 
         const result = computeValueScale(
             valueBuffer.y,
-            valueScaleSettings?.steps || 5,
+            valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
             valueScaleSettings?.mode || 'Even',
             valueScaleSettings?.clip || 0
         );
@@ -223,7 +224,7 @@ export function useImageAnalyzer(
 
         const result = computeValueScale(
             valueBuffer.y,
-            valueScaleSettings?.steps || 5,
+            valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
             valueScaleSettings?.mode || 'Even',
             valueScaleSettings?.clip || 0
         );

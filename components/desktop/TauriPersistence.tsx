@@ -73,6 +73,7 @@ interface PersistedCanvasState {
   referenceLocked: boolean
   referenceTransform: { x: number; y: number; scale: number; rotation: number }
   valueScaleSettings: ValueScaleSettings
+  activeValueBandIndex: number
   canvasSettings: CanvasSettings
 }
 
@@ -126,6 +127,11 @@ function sanitizeSurfaceBounds(value: unknown): SurfaceBounds | null {
   }
 }
 
+function defaultActiveValueBandIndex(steps: number): number {
+  const s = Math.max(1, Math.floor(steps))
+  return Math.max(0, Math.floor((s - 1) / 2))
+}
+
 function sanitizeCanvasState(value: unknown): PersistedCanvasState {
   const raw = value && typeof value === 'object' ? (value as Partial<PersistedCanvasState>) : {}
   const rawTransform: Partial<PersistedCanvasState['referenceTransform']> =
@@ -160,6 +166,12 @@ function sanitizeCanvasState(value: unknown): PersistedCanvasState {
       steps: asNumber(rawValueScale.steps, DEFAULT_VALUE_SCALE_SETTINGS.steps),
       opacity: asNumber(rawValueScale.opacity, DEFAULT_VALUE_SCALE_SETTINGS.opacity),
     },
+    activeValueBandIndex: (() => {
+      const steps = asNumber(rawValueScale.steps, DEFAULT_VALUE_SCALE_SETTINGS.steps)
+      const maxIdx = Math.max(0, steps - 1)
+      const idx = asNumber(raw.activeValueBandIndex, defaultActiveValueBandIndex(steps))
+      return Math.min(Math.max(0, Math.floor(idx)), maxIdx)
+    })(),
     canvasSettings: {
       ...DEFAULT_CANVAS_SETTINGS,
       ...rawCanvasSettings,
@@ -256,6 +268,7 @@ function persistDesktopProjectSnapshot(projectId: number): void {
   const referenceLocked = c.referenceLocked
   const referenceTransform = c.referenceTransform
   const valueScaleSettings = c.valueScaleSettings
+  const activeValueBandIndex = c.activeValueBandIndex
   const canvasSettings = c.canvasSettings
   const pp = usePaintPaletteStore.getState()
   const selectedPaintIds = pp.selectedPaintIds
@@ -271,6 +284,7 @@ function persistDesktopProjectSnapshot(projectId: number): void {
     referenceLocked,
     referenceTransform,
     valueScaleSettings,
+    activeValueBandIndex,
     canvasSettings,
   }
   const calibrationState: PersistedCalibrationState = {
@@ -369,6 +383,7 @@ export default function TauriPersistence({
   const referenceLocked = useCanvasStore((s) => s.referenceLocked)
   const referenceTransform = useCanvasStore((s) => s.referenceTransform)
   const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
+  const activeValueBandIndex = useCanvasStore((s) => s.activeValueBandIndex)
   const canvasSettings = useCanvasStore((s) => s.canvasSettings)
   const selectedPaintIds = usePaintPaletteStore((s) => s.selectedPaintIds)
   const savedPaintPalettes = usePaintPaletteStore((s) => s.savedPalettes)
@@ -426,6 +441,7 @@ export default function TauriPersistence({
       referenceLocked: false,
       referenceTransform: DEFAULT_REFERENCE_TRANSFORM,
       valueScaleSettings: DEFAULT_VALUE_SCALE_SETTINGS,
+      activeValueBandIndex: defaultActiveValueBandIndex(DEFAULT_VALUE_SCALE_SETTINGS.steps),
       histogramBins: [],
       valueScaleResult: null,
       breakdownValue: 0,
@@ -524,6 +540,7 @@ export default function TauriPersistence({
               referenceLocked: canvasState.referenceLocked,
               referenceTransform: canvasState.referenceTransform,
               valueScaleSettings: canvasState.valueScaleSettings,
+              activeValueBandIndex: canvasState.activeValueBandIndex,
               histogramBins: [],
               valueScaleResult: null,
               breakdownValue: 0,
@@ -626,6 +643,7 @@ export default function TauriPersistence({
     surfaceBounds,
     surfaceImage,
     valueScaleSettings,
+    activeValueBandIndex,
     persistenceActive,
   ])
 

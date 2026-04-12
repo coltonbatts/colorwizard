@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { isDesktopApp } from '@/lib/desktop/detect'
 
 /**
  * Hydration-safe desktop detection.
- * Returns false on the server and on the first client render, then resolves after mount.
+ * Returns false on the server and on the first client render (must match SSR), then flips
+ * synchronously in useLayoutEffect — before paint — so ColorWizard Pro never flashes the web
+ * marketing empty state (see ImageCanvas desktopShell / layout-hero-mode).
  */
 export function useDesktopRuntime(): boolean {
   const [isDesktopRuntime, setIsDesktopRuntime] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsDesktopRuntime(isDesktopApp())
   }, [])
 

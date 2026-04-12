@@ -1,5 +1,7 @@
 'use client'
 
+import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
+
 type LegacyStoreState = {
     pinnedColors?: unknown
     palettes?: unknown
@@ -27,7 +29,7 @@ const KEY_MAP: Array<{ key: string; state: (legacy: LegacyStoreState) => Record<
         state: (legacy) => ({
             pinnedColors: legacy.pinnedColors ?? [],
             valueModeEnabled: legacy.valueModeEnabled ?? false,
-            valueModeSteps: legacy.valueModeSteps ?? 9,
+            valueModeSteps: legacy.valueModeSteps ?? DEFAULT_VALUE_STEP_COUNT,
         }),
     },
     {
@@ -95,4 +97,3 @@ export function migrateLegacyStore() {
         // Ignore malformed legacy storage and let the new stores start cleanly.
     }
 }
-

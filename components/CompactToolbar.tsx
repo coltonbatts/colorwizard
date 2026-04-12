@@ -171,9 +171,7 @@ export default function CompactToolbar({
   onTabChange,
   onResetView,
   valueModeEnabled,
-  valueModeSteps,
   onToggleValueMode,
-  onValueModeStepsChange,
 }: CompactToolbarProps) {
   const isMobile = useIsMobile()
   const mobileTabAction =
@@ -275,25 +273,6 @@ export default function CompactToolbar({
         </button>
         <CommandButton label="Fit" icon={<FitIcon />} onClick={onResetView} />
         <CommandButton label="Value mode" icon={<ValueIcon />} active={valueModeEnabled} onClick={onToggleValueMode} />
-
-        {valueModeEnabled && (
-          <div className="hidden items-center gap-1 border-l border-ink-hairline pl-1 lg:flex">
-            {([5, 7, 9, 11] as const).map((steps) => (
-              <button
-                key={steps}
-                type="button"
-                onClick={() => onValueModeStepsChange(steps)}
-                className={`inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 font-mono text-[11px] font-bold transition-colors ${
-                  valueModeSteps === steps
-                    ? 'border-signal bg-signal text-white'
-                    : 'border-ink-hairline bg-paper text-ink-secondary hover:bg-paper-recessed hover:text-ink'
-                }`}
-              >
-                {steps}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="workbench-toolbar-group shrink-0">

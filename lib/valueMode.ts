@@ -1,6 +1,7 @@
 import { getRelativeLuminance } from './valueScale'
 
 export type ValueStepCount = 5 | 7 | 9 | 11
+export const DEFAULT_VALUE_STEP_COUNT: ValueStepCount = 7
 
 export interface ValueModeMetadata {
   /** Quantized luminance in [0..1] (perceptual relative luminance) */

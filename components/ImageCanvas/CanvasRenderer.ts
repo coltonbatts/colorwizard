@@ -79,7 +79,7 @@ export const drawMainCanvas = (params: {
   valueScaleSettings?: ValueScaleSettings
   referenceOpacity: number
   referenceTransform: ReferenceTransform
-  isGrayscale: boolean
+  valueModeEnabled: boolean
   splitMode: boolean
   activeBreakdownStep: BreakdownStep
   breakdownBuffers: BreakdownBuffers
@@ -106,7 +106,7 @@ export const drawMainCanvas = (params: {
     valueScaleSettings,
     referenceOpacity,
     referenceTransform,
-    isGrayscale,
+    valueModeEnabled,
     splitMode,
     activeBreakdownStep,
     breakdownBuffers,
@@ -180,8 +180,8 @@ export const drawMainCanvas = (params: {
     ctx.beginPath()
     ctx.rect(x, y, splitX, height)
     ctx.clip()
-    if (isGrayscale && image) ctx.filter = 'grayscale(100%)'
-    if (image) ctx.drawImage(image, x, y, width, height)
+    const splitSource = sourceBuffer || image
+    if (splitSource) ctx.drawImage(splitSource as CanvasImageSource, x, y, width, height)
     ctx.restore()
 
     ctx.save()
@@ -198,8 +198,6 @@ export const drawMainCanvas = (params: {
     ctx.lineTo(x + splitX, y + height)
     ctx.stroke()
   } else {
-    if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'grayscale(100%)'
-
     const stepToBuffer: Record<string, keyof BreakdownBuffers> = {
       Imprimatura: 'imprimatura',
       'Dead Color': 'deadColor',
@@ -215,16 +213,16 @@ export const drawMainCanvas = (params: {
       activeBreakdownStep === 'Spectral Glaze' ||
       !currentBuffer
 
-    if (showBaseUnderneath) {
+    if (activeBreakdownStep === 'Original' && valueModeEnabled && valueMapCanvas) {
+      ctx.drawImage(valueMapCanvas, x, y, width, height)
+    } else if (showBaseUnderneath) {
       const source = sourceBuffer || image
       if (source) {
         ctx.drawImage(source as CanvasImageSource, x, y, width, height)
       }
     }
 
-    if (isGrayscale && activeBreakdownStep === 'Original') ctx.filter = 'none'
-
-    if (activeBreakdownStep === 'Original' && valueScaleSettings?.enabled && valueMapCanvas) {
+    if (activeBreakdownStep === 'Original' && !valueModeEnabled && valueScaleSettings?.enabled && valueMapCanvas) {
       const opacity = valueScaleSettings.opacity ?? 0.45
       ctx.globalAlpha = opacity
       ctx.drawImage(valueMapCanvas, x, y, width, height)

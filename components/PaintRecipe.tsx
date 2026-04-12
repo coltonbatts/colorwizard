@@ -30,7 +30,7 @@ interface PaintRecipeProps {
   /** Specific paint IDs to use (overrides brandId/lineId filter) */
   paintIds?: string[]
   /** Display variant */
-  variant?: 'standard' | 'dashboard' | 'compact'
+  variant?: 'standard' | 'dashboard' | 'compact' | 'board'
   /** Whether to show the Procreate export button */
   showExportButton?: boolean
   /** Hide the recipe title block */
@@ -193,7 +193,7 @@ export default function PaintRecipe({
         preview: null,
       }
   const effectiveVariant =
-    variant === 'compact' || variant === 'dashboard'
+    variant === 'compact' || variant === 'dashboard' || variant === 'board'
       ? variant
       : (isShortViewport || isNarrowViewport ? 'compact' : 'standard')
 
@@ -213,22 +213,26 @@ export default function PaintRecipe({
   const provenanceNote = recipe.source === 'solver'
     ? 'Preview is a screen-fit guide driven by the spectral mixer and painterly recipe heuristics, not a physically exact paint simulation.'
     : 'Guide follows value-first mixing heuristics for the core six-color palette. It is practical guidance, not a physically exact paint simulation.'
+  const isCompactLayout = effectiveVariant === 'compact'
+  const isBoardLayout = effectiveVariant === 'board'
+  const shouldShowInlineSteps = isCompactLayout || isBoardLayout
+  const renderedStepCount = recipe.steps.length
 
   useEffect(() => {
-    setShowSteps(effectiveVariant !== 'compact')
-  }, [effectiveVariant, targetHex])
+    setShowSteps(!shouldShowInlineSteps)
+  }, [shouldShowInlineSteps, targetHex])
 
   return (
     <div
-      className={`w-full min-w-0 rounded-[26px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[0_18px_42px_rgba(33,24,14,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] ${effectiveVariant === 'compact' ? 'p-3' : 'p-4'}`}
+      className={`w-full min-w-0 rounded-[26px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[0_18px_42px_rgba(33,24,14,0.08),inset_0_1px_0_rgba(255,255,255,0.72)] ${isCompactLayout ? 'p-3' : isBoardLayout ? 'p-5' : 'p-4'}`}
     >
       {!hideHeader && (
-        <div className={`flex items-start justify-between gap-3 ${effectiveVariant === 'compact' ? 'mb-3' : 'mb-4'}`}>
+        <div className={`flex items-start justify-between gap-3 ${isCompactLayout ? 'mb-3' : isBoardLayout ? 'mb-5' : 'mb-4'}`}>
           <div>
             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
               Mix Path
             </div>
-            <h3 className={`${effectiveVariant === 'compact' ? 'mt-1 text-base' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
+            <h3 className={`${isCompactLayout ? 'mt-1 text-base' : isBoardLayout ? 'mt-2 text-[1.7rem]' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
               Oil Paint Recipe
             </h3>
           </div>
@@ -265,77 +269,116 @@ export default function PaintRecipe({
             variant={effectiveVariant}
           />
 
-          <div className={`${effectiveVariant === 'compact' ? 'mt-3' : 'mt-5'} rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.68)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]`}>
-            <button
-              type="button"
-              onClick={() => setShowSteps((value) => !value)}
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-            >
-              <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-                  Process
-                </div>
-                <div className="mt-1 text-sm font-semibold text-ink">
-                  {showSteps ? 'Hide mixing steps' : 'Reveal mixing steps'}
-                </div>
-              </div>
+          <div className={`${isCompactLayout ? 'mt-3' : isBoardLayout ? 'mt-5' : 'mt-5'} rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.68)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]`}>
+            {shouldShowInlineSteps ? (
+              <>
+                <div className={`flex items-center justify-between gap-3 border-b border-ink-hairline ${isBoardLayout ? 'px-5 py-4' : 'px-4 py-3'}`}>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                      {isBoardLayout ? 'Mix Order' : 'Mixing Steps'}
+                    </div>
+                    <div className={`mt-1 font-semibold text-ink ${isBoardLayout ? 'text-lg' : 'text-sm'}`}>
+                      {isBoardLayout ? 'What to put down first' : 'Short path to the match'}
+                    </div>
+                  </div>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
-                {recipe.steps.length} step{recipe.steps.length === 1 ? '' : 's'}
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ transform: showSteps ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  aria-hidden="true"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </div>
-            </button>
+                  <div className={`inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] font-mono font-bold uppercase tracking-[0.16em] text-ink-secondary ${isBoardLayout ? 'px-4 py-2 text-[11px]' : 'px-3 py-1.5 text-[10px]'}`}>
+                    {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
+                  </div>
+                </div>
 
-            <AnimatePresence initial={false}>
-              {showSteps && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                  className="overflow-hidden"
+                <ol className={`${isBoardLayout ? 'space-y-3 px-4 pb-4 pt-4' : 'space-y-2 px-3 pb-3 pt-3'}`}>
+                  {recipe.steps.map((step, i) => (
+                    <li
+                      key={i}
+                      className={`flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)] ${isBoardLayout ? 'px-4 py-4 text-base leading-6' : 'px-3 py-2.5 text-[11px] leading-4.5'}`}
+                    >
+                      <span className={`flex shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono font-bold text-ink-secondary ${isBoardLayout ? 'h-10 w-10 text-sm' : 'h-6 w-6 text-[10px]'}`}>
+                        {i + 1}
+                      </span>
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ol>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowSteps((value) => !value)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 >
-                  <ol className={`${effectiveVariant === 'compact' ? 'px-3 pb-3' : 'px-4 pb-4'} space-y-2 border-t border-ink-hairline pt-3`}>
-                    {recipe.steps.map((step, i) => (
-                      <li
-                        key={i}
-                        className="flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] px-3 py-3 text-[12px] leading-5 text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]"
-                      >
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[10px] font-bold text-ink-secondary">
-                          {i + 1}
-                        </span>
-                        <span
-                          dangerouslySetInnerHTML={{
-                            __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
-                          }}
-                        />
-                      </li>
-                    ))}
-                  </ol>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                      Process
+                    </div>
+                    <div className="mt-1 text-sm font-semibold text-ink">
+                      {showSteps ? 'Hide mixing steps' : 'Reveal mixing steps'}
+                    </div>
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
+                    {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ transform: showSteps ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      aria-hidden="true"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </div>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {showSteps && (
+                    <motion.div
+                      initial={{ opacity: 0, maxHeight: 0 }}
+                      animate={{ opacity: 1, maxHeight: 3200 }}
+                      exit={{ opacity: 0, maxHeight: 0 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <ol className="space-y-2 border-t border-ink-hairline px-4 pb-4 pt-3">
+                        {recipe.steps.map((step, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] px-3 py-3 text-[12px] leading-5 text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]"
+                          >
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[10px] font-bold text-ink-secondary">
+                              {i + 1}
+                            </span>
+                            <span
+                              dangerouslySetInnerHTML={{
+                                __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ol>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
         </>
       )}
 
       {!hideFooter && (
-        <div className={`${effectiveVariant === 'compact' ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-ink-hairline`}>
+        <div className={`${isCompactLayout ? 'mt-3 pt-3' : isBoardLayout ? 'mt-5 pt-4' : 'mt-4 pt-4'} border-t border-ink-hairline`}>
           {isEmptyCatalog ? (
-            <p className={`${effectiveVariant === 'compact' ? 'text-[9px]' : 'text-[10px]'} italic text-ink-faint`}>
+            <p className={`${isCompactLayout ? 'text-[9px]' : isBoardLayout ? 'text-[11px]' : 'text-[10px]'} italic text-ink-faint`}>
               Add paints to build your active palette.
             </p>
           ) : (
@@ -347,14 +390,27 @@ export default function PaintRecipe({
                 <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[10px] font-semibold text-ink-secondary">
                   {paletteContextLabel}
                 </span>
+                {(isCompactLayout || isBoardLayout) && (
+                  <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[10px] font-semibold text-ink-secondary">
+                    {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
+                  </span>
+                )}
               </div>
 
-              <p className={`${effectiveVariant === 'compact' ? 'mt-2 text-[10px]' : 'mt-3 text-xs'} text-ink-secondary`}>
-                {paletteRestrictionLabel}
-              </p>
-              <p className="mt-2 text-[11px] leading-5 text-ink-secondary">
-                {provenanceNote}
-              </p>
+              {isCompactLayout || isBoardLayout ? (
+                <p className="mt-2 text-[10px] leading-4 text-ink-secondary">
+                  {paletteRestrictionLabel}
+                </p>
+              ) : (
+                <>
+                  <p className="mt-3 text-xs text-ink-secondary">
+                    {paletteRestrictionLabel}
+                  </p>
+                  <p className="mt-2 text-[11px] leading-5 text-ink-secondary">
+                    {provenanceNote}
+                  </p>
+                </>
+              )}
 
               {showExportButton && (
                 <div className="mt-3">
