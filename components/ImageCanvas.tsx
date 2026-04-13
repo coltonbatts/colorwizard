@@ -918,6 +918,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }, [image, breakdownBuffers.imprimatura, isGeneratingBreakdown, generateBreakdown])
 
+  const handleFileInputClick = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
+    e.currentTarget.value = ''
+  }, [])
+
   const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const file = input.files?.[0]
@@ -1031,7 +1035,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         fileType: file.type,
         fileSize: file.size,
       })
+      alert(`Failed to open "${file.name}". The file was selected, but the image could not be decoded.`)
       cleanup()
+      input.value = ''
     }
 
     img.src = objectUrl
@@ -1140,6 +1146,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                     id={desktopFileInputId}
                     type="file"
                     accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+                    onClick={handleFileInputClick}
                     onChange={handleDirectFileInput}
                     className="sr-only"
                   />
@@ -1247,6 +1254,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             id={mobileFileInputId}
             type="file"
             accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+            onClick={handleFileInputClick}
             onChange={handleDirectFileInput}
             className="sr-only"
           />

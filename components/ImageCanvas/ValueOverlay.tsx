@@ -7,7 +7,7 @@
  * Percentile mode places interior thresholds on sorted-luminance quantiles (see thresholds[] there).
  */
 
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react'
 import { getStepIndex, stepToGray, type ValueScaleResult } from '@/lib/valueScale'
 import type { ValueBuffer } from '@/hooks/useImageAnalyzer'
 
@@ -23,6 +23,10 @@ export const ValueOverlay = forwardRef<HTMLCanvasElement, ValueOverlayProps>(fun
   ref
 ) {
   const localRef = useRef<HTMLCanvasElement | null>(null)
+  const onRenderedRef = useRef(onRendered)
+  useLayoutEffect(() => {
+    onRenderedRef.current = onRendered
+  })
 
   useEffect(() => {
     if (!ref) return
@@ -40,7 +44,7 @@ export const ValueOverlay = forwardRef<HTMLCanvasElement, ValueOverlayProps>(fun
         const ctx = canvas.getContext('2d')
         ctx?.clearRect(0, 0, canvas.width, canvas.height)
       }
-      onRendered?.()
+      onRenderedRef.current?.()
       return
     }
 
@@ -73,8 +77,9 @@ export const ValueOverlay = forwardRef<HTMLCanvasElement, ValueOverlayProps>(fun
     }
 
     ctx.putImageData(imageData, 0, 0)
-    onRendered?.()
-  }, [valueBuffer, enabled, valueScaleResult, onRendered])
+    // Ref avoids re-running this full pass when parent `drawCanvas` identity changes (zoom/pan).
+    onRenderedRef.current?.()
+  }, [valueBuffer, enabled, valueScaleResult])
 
   return <canvas ref={localRef} id="value-map-canvas" style={{ display: 'none' }} />
 })

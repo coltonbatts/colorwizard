@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react'
 import FullScreenOverlay from '../FullScreenOverlay'
 import ColorCardModal from '../ColorCardModal'
 import PaintRecipe from '../PaintRecipe'
+import { getColorHarmonies } from '@/lib/colorTheory'
 import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
@@ -144,6 +145,19 @@ export default function SampleTab({
     }
   }, [activePalette])
 
+  const harmonies = useMemo(
+    () => (sampledColor ? getColorHarmonies(sampledColor.rgb) : null),
+    [sampledColor]
+  )
+
+  const temperatureLabel = harmonies
+    ? harmonies.temperature === 'warm'
+      ? 'Warm'
+      : harmonies.temperature === 'cool'
+        ? 'Cool'
+        : 'Neutral'
+    : ''
+
   if (!sampledColor) {
     return (
       <div className="flex h-full min-h-full items-center justify-center bg-paper-elevated px-4 text-center">
@@ -265,13 +279,27 @@ export default function SampleTab({
               {displayName}
             </h2>
             <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              {valueBand} • {chroma.label}
+              {displayedValue}% · {valueBand}
             </p>
           </div>
           <div className="text-right">
             <div className="font-mono text-sm font-bold text-ink">{hex}</div>
           </div>
         </div>
+
+        {harmonies && (
+          <div className="rounded-xl border border-ink-hairline bg-paper-recessed p-3 text-[12px] leading-snug text-ink-secondary">
+            <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">2–3 · Temp &amp; chroma</div>
+            <div className="mt-1 font-semibold text-ink">
+              {temperatureLabel} · {harmonies.base.name}
+              <span className="font-normal text-ink-secondary"> vs {harmonies.complementary.name}</span>
+            </div>
+            <div className="mt-1 text-ink">
+              Chroma: <span className="font-semibold">{chroma.label}</span>{' '}
+              <span className="font-mono text-[11px] text-ink-secondary">c {chroma.value.toFixed(3)}</span>
+            </div>
+          </div>
+        )}
 
         {valueModeEnabled && valueModeMeta && (
           <div className="flex items-center justify-between rounded-xl border border-ink-hairline bg-paper-recessed p-3">
@@ -286,7 +314,8 @@ export default function SampleTab({
           </div>
         )}
 
-        {recipePanel}
+        <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
+        <div className="-mt-1">{recipePanel}</div>
 
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -346,16 +375,49 @@ export default function SampleTab({
             </div>
 
             <div className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-              {valueBand} · {chroma.label}
+              Painting readout
+            </div>
+
+            <div className="mt-3 space-y-2 text-[11px] leading-snug text-ink-secondary">
+              <div className="rounded-xl border border-ink-hairline bg-paper-recessed px-3 py-2">
+                <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">1 · Big shapes &amp; value</div>
+                <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                  <span className="font-mono text-base font-black text-ink">{displayedValue}%</span>
+                  <span className="font-semibold text-ink-secondary">{valueBand}</span>
+                  {valueModeEnabled && valueModeMeta && (
+                    <span className="font-mono text-[10px] font-bold text-signal">
+                      step {valueModeMeta.step}/{valueModeSteps}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {harmonies && (
+                <div className="rounded-xl border border-ink-hairline bg-paper-recessed px-3 py-2">
+                  <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                    2 · Temperature &amp; relativity
+                  </div>
+                  <div className="mt-1 text-ink">
+                    <span className="rounded border border-ink-hairline bg-paper px-1.5 py-0.5 text-[10px] font-bold">
+                      {temperatureLabel}
+                    </span>
+                    <span className="mx-1.5 text-ink-faint">·</span>
+                    <span className="font-semibold">{harmonies.base.name}</span>
+                    <span className="text-ink-faint"> vs </span>
+                    <span className="font-semibold">{harmonies.complementary.name}</span>
+                  </div>
+                </div>
+              )}
+              <div className="rounded-xl border border-ink-hairline bg-paper-recessed px-3 py-2">
+                <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">3 · Chroma (this passage)</div>
+                <div className="mt-1 font-semibold text-ink">
+                  {chroma.label}{' '}
+                  <span className="font-mono text-[11px] font-normal text-ink-secondary">(c {chroma.value.toFixed(3)})</span>
+                </div>
+              </div>
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
               <ReadoutChip label="HEX" value={hex} active />
-              <ReadoutChip label="VAL" value={`${displayedValue}%`} />
-              <ReadoutChip label="CHR" value={chroma.label} />
-              {valueModeEnabled && valueModeMeta && (
-                <ReadoutChip label="STEP" value={`${valueModeMeta.step}/${valueModeSteps}`} />
-              )}
             </div>
           </div>
 
@@ -380,7 +442,8 @@ export default function SampleTab({
           </button>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
+          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
           {recipePanel}
         </div>
 

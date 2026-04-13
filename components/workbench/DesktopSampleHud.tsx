@@ -8,6 +8,7 @@ import PaintRecipe from '@/components/PaintRecipe'
 import { getBestContrast } from '@/lib/color/a11y'
 import { getColorName } from '@/lib/colorNaming'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
+import { getColorHarmonies } from '@/lib/colorTheory'
 import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import type { ColorCard } from '@/lib/types/colorCard'
 import type { Palette } from '@/lib/types/palette'
@@ -89,7 +90,6 @@ export default function DesktopSampleHud({
   const [showColorPreview, setShowColorPreview] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
   const [showCardModal, setShowCardModal] = useState(false)
-  const [narrowPanelView, setNarrowPanelView] = useState<'details' | 'mix'>('details')
   const isNarrowLayout = layoutMode === 'narrow'
 
   const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
@@ -104,6 +104,11 @@ export default function DesktopSampleHud({
       paletteColorIds: activePalette.colors.map((color) => color.id),
     }
   }, [activePalette])
+
+  const harmonies = useMemo(
+    () => (sampledColor ? getColorHarmonies(sampledColor.rgb) : null),
+    [sampledColor]
+  )
 
   useEffect(() => {
     if (!sampledColor) {
@@ -167,6 +172,12 @@ export default function DesktopSampleHud({
   }
 
   const { hex, rgb, hsl } = sampledColor
+  const temperatureLabel =
+    harmonies?.temperature === 'warm'
+      ? 'Warm'
+      : harmonies?.temperature === 'cool'
+        ? 'Cool'
+        : 'Neutral'
   const displayName = colorName || hex.toUpperCase()
   const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
   const valueBand = getValueBand(valuePercent)
@@ -293,42 +304,109 @@ export default function DesktopSampleHud({
         </motion.button>
 
         <div className="space-y-3">
+          <div className="grid gap-3">
+            <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                1 · Big shapes &amp; value
+              </div>
+              <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <div className="font-mono text-[1.75rem] font-black tabular-nums leading-none tracking-tight text-ink">
+                    {displayedValue}%
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-ink-secondary">{valueBand}</div>
+                  {valueModeMeta ? (
+                    <div className="mt-1 font-mono text-[11px] font-bold text-signal">
+                      Value mode step {valueModeMeta.step}/{valueModeSteps}
+                    </div>
+                  ) : null}
+                </div>
+                <div
+                  className="h-12 w-12 shrink-0 rounded-[14px] border border-ink-hairline"
+                  style={{ backgroundColor: grayscaleHex }}
+                  aria-hidden
+                />
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <div
+                  className="relative h-4 w-16 shrink-0 overflow-hidden rounded-md border border-ink-hairline"
+                  aria-label={`Sample lightness near ${displayedValue} percent`}
+                >
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: 'linear-gradient(to right, #0c0a09 0%, #78716c 50%, #fafaf9 100%)' }}
+                  />
+                  <div
+                    className="pointer-events-none absolute top-0 z-10 h-full w-[3px] -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
+                    style={{ left: `${displayedValue}%` }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, referenceBandSteps - 1)}
+                  value={activeValueBandIndex}
+                  onChange={(e) => setActiveValueBandIndex(Number(e.target.value))}
+                  aria-label="Canvas value overlay band"
+                  className="h-1.5 min-w-0 flex-1 cursor-pointer accent-signal"
+                />
+                <span className="shrink-0 font-mono text-[10px] tabular-nums text-ink-secondary">
+                  Band {activeValueBandIndex + 1}/{referenceBandSteps}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                2 · Temperature &amp; relativity
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-ink-hairline bg-paper px-3 py-1 text-[11px] font-bold text-ink">
+                  {temperatureLabel}
+                </span>
+                <span className="text-sm font-semibold text-ink-secondary">
+                  Family <span className="text-ink">{harmonies.base.name}</span>
+                </span>
+              </div>
+              <p className="mt-2 text-[13px] leading-snug text-ink-secondary">
+                Opposite mass on the wheel:{' '}
+                <span className="font-semibold text-ink">{harmonies.complementary.name}</span>
+                <span className="text-ink-faint"> · </span>
+                Flanks: {harmonies.analogous[0].name}, {harmonies.analogous[1].name}
+              </p>
+            </div>
+
+            <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                3 · Chroma (this passage)
+              </div>
+              <div className="mt-2 font-display text-[1.35rem] leading-none tracking-[-0.03em] text-ink">
+                {chroma.label}
+              </div>
+              <div className="mt-1 font-mono text-[11px] tabular-nums text-ink-secondary">
+                OKLCH chroma {chroma.value.toFixed(3)}
+              </div>
+            </div>
+          </div>
+
           <div>
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
-              Color To Mix
+              Color to mix
             </div>
             <h2 className="mt-2 font-display text-[2rem] leading-none tracking-[-0.05em] text-ink">
               {displayName}
             </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.95rem] font-bold tabular-nums text-ink-secondary">
-              <span className="text-ink">{hex.toUpperCase()}</span>
-              <span className="text-ink-faint">•</span>
-              <span>{chroma.label}</span>
-              {valueModeMeta ? (
-                <>
-                  <span className="text-ink-faint">•</span>
-                  <span>Step {valueModeMeta.step}/{valueModeSteps}</span>
-                </>
-              ) : null}
+            <div className="mt-2 font-mono text-[0.95rem] font-bold tabular-nums text-ink-secondary">
+              {hex.toUpperCase()}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-                Palette
-              </div>
-              <div className="mt-1 text-base font-semibold leading-tight text-ink">
-                {activePalette.isDefault ? 'Core mix' : activePalette.name}
-              </div>
+          <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+              Palette
             </div>
-            <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-                Value Band
-              </div>
-              <div className="mt-1 text-base font-semibold leading-tight text-ink">
-                {activeValueBandIndex + 1}/{referenceBandSteps}
-              </div>
+            <div className="mt-1 text-base font-semibold leading-tight text-ink">
+              {activePalette.isDefault ? 'Core mix' : activePalette.name}
             </div>
           </div>
 
@@ -375,10 +453,10 @@ export default function DesktopSampleHud({
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <div className="border-b border-ink-hairline px-5 py-4">
         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
-          Studio Recipe
+          4 · Tube recipe
         </div>
         <div className="mt-1 font-display text-[1.35rem] leading-none tracking-[-0.03em] text-ink">
-          Mix this color
+          {activePalette.isDefault ? 'Core six' : activePalette.name}
         </div>
       </div>
 
@@ -407,10 +485,9 @@ export default function DesktopSampleHud({
     </div>
   )
 
-  // ── Narrow layout: stacks vertically with a tab switch ──
+  // ── Narrow layout: single scroll — painting ladder + tube recipe always in flow ──
   const narrowPanel = (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-      {/* Compact header for narrow */}
       <section className="shrink-0 rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
         <div className="flex items-center gap-3">
           <motion.button
@@ -431,20 +508,27 @@ export default function DesktopSampleHud({
             <h2 className="truncate font-display text-base font-semibold leading-tight tracking-[-0.03em] text-ink">
               {displayName}
             </h2>
-            <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] tabular-nums text-ink-secondary">
-              <span className="font-semibold text-ink">{hex.toUpperCase()}</span>
-              <span className="text-ink-faint">·</span>
-              <span className={valueModeEnabled ? 'text-signal font-semibold' : ''}>{displayedValue}%</span>
-              <span className="text-ink-faint">·</span>
-              <span>{chroma.label}</span>
+            <div className="mt-0.5 font-mono text-[10px] font-semibold tabular-nums text-ink-secondary">
+              {hex.toUpperCase()}
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Target band */}
-        <div className="mt-3 flex items-center gap-2">
+      <section className="shrink-0 rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">1 · Big shapes &amp; value</div>
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+          <span className="font-mono text-lg font-black tabular-nums text-ink">{displayedValue}%</span>
+          <span className="text-[12px] font-semibold text-ink-secondary">{valueBand}</span>
+        </div>
+        {valueModeMeta ? (
+          <div className="mt-0.5 font-mono text-[10px] font-bold text-signal">
+            Step {valueModeMeta.step}/{valueModeSteps}
+          </div>
+        ) : null}
+        <div className="mt-2 flex items-center gap-2">
           <div
-            className="relative h-4 w-16 shrink-0 overflow-hidden rounded-md border border-ink-hairline"
+            className="relative h-4 w-14 shrink-0 overflow-hidden rounded-md border border-ink-hairline"
             aria-label={`Sample lightness near ${displayedValue} percent`}
           >
             <div
@@ -469,125 +553,114 @@ export default function DesktopSampleHud({
             {activeValueBandIndex + 1}/{referenceBandSteps}
           </span>
         </div>
-
-        {/* Action buttons */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ink-hairline/50 pt-3">
-          <button
-            type="button"
-            onClick={handlePin}
-            disabled={isPinning || isPinned}
-            className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-all disabled:opacity-55 ${
-              isPinned
-                ? 'border-subsignal bg-subsignal text-white'
-                : 'border-transparent bg-signal text-white hover:bg-signal-hover'
-            }`}
-          >
-            {isPinning ? '…' : isPinned ? 'Pinned' : 'Pin'}
-          </button>
-          {!simpleMode && (
-            <button
-              type="button"
-              onClick={handleCreateCard}
-              disabled={isCreatingCard}
-              className="inline-flex items-center justify-center rounded-full border border-transparent bg-subsignal px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-white transition-all hover:bg-subsignal-hover disabled:opacity-55"
-            >
-              {isCreatingCard ? '…' : 'Card'}
-            </button>
-          )}
-          {onAddToSession && (
-            <button
-              type="button"
-              onClick={() => onAddToSession({ hex, rgb })}
-              className="inline-flex items-center justify-center rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
-            >
-              Dock
-            </button>
-          )}
-          <div className="ml-auto flex items-center gap-1.5">
-            <CopyAction label="HEX" copied={copied === 'hex'} onClick={() => copyToClipboard(hex, 'hex')} />
-            <CopyAction label="RGB" copied={copied === 'rgb'} onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')} />
-            <CopyAction label="HSL" copied={copied === 'hsl'} onClick={() => copyToClipboard(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'hsl')} />
-          </div>
-        </div>
       </section>
 
-      <div className="rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.78)] px-3 py-2">
-        <div className="inline-flex overflow-hidden rounded-full border border-ink-hairline bg-paper-elevated p-1 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary">
+      <section className="shrink-0 rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">2 · Temperature &amp; relativity</div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full border border-ink-hairline bg-paper px-2 py-0.5 text-[10px] font-bold text-ink">
+            {temperatureLabel}
+          </span>
+          <span className="text-[11px] text-ink-secondary">
+            Family <span className="font-semibold text-ink">{harmonies.base.name}</span>
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-ink-secondary">
+          vs <span className="font-semibold text-ink">{harmonies.complementary.name}</span>
+          <span className="text-ink-faint"> · </span>
+          {harmonies.analogous[0].name}/{harmonies.analogous[1].name}
+        </p>
+      </section>
+
+      <section className="shrink-0 rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+        <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">3 · Chroma (this passage)</div>
+        <div className="mt-1 font-display text-base font-semibold tracking-[-0.02em] text-ink">{chroma.label}</div>
+        <div className="font-mono text-[10px] tabular-nums text-ink-secondary">c {chroma.value.toFixed(3)}</div>
+      </section>
+
+      <section className="shrink-0 rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">Palette</div>
+        <div className="mt-0.5 text-[13px] font-semibold text-ink">
+          {activePalette.isDefault ? 'Core mix' : activePalette.name}
+        </div>
+        <p className="mt-1 font-mono text-[10px] text-ink-secondary">
+          RGB {rgb.r}, {rgb.g}, {rgb.b}
+          <span className="mx-1.5 text-ink-faint">·</span>
+          HSL {hsl.h}°, {hsl.s}%, {hsl.l}%
+        </p>
+      </section>
+
+      {!simpleMode && (
+        <label className="block shrink-0 rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
+          <span className="sr-only">Optional sample label</span>
+          <input
+            type="text"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+            placeholder="Note (optional)"
+            className="studio-input w-full rounded-2xl bg-[rgba(255,252,247,0.78)] px-4 py-3 text-sm"
+          />
+        </label>
+      )}
+
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5 rounded-[16px] border border-ink-hairline bg-[rgba(255,252,247,0.72)] px-2.5 py-2">
+        <button
+          type="button"
+          onClick={handlePin}
+          disabled={isPinning || isPinned}
+          className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-all disabled:opacity-55 ${
+            isPinned
+              ? 'border-subsignal bg-subsignal text-white'
+              : 'border-transparent bg-signal text-white hover:bg-signal-hover'
+          }`}
+        >
+          {isPinning ? '…' : isPinned ? 'Pinned' : 'Pin'}
+        </button>
+        {!simpleMode && (
           <button
             type="button"
-            onClick={() => setNarrowPanelView('details')}
-            className={`rounded-full px-3 py-1.5 transition-colors ${narrowPanelView === 'details' ? 'bg-ink text-paper' : 'hover:text-ink'}`}
+            onClick={handleCreateCard}
+            disabled={isCreatingCard}
+            className="inline-flex items-center justify-center rounded-full border border-transparent bg-subsignal px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-white transition-all hover:bg-subsignal-hover disabled:opacity-55"
           >
-            Details
+            {isCreatingCard ? '…' : 'Card'}
           </button>
+        )}
+        {onAddToSession && (
           <button
             type="button"
-            onClick={() => setNarrowPanelView('mix')}
-            className={`rounded-full px-3 py-1.5 transition-colors ${narrowPanelView === 'mix' ? 'bg-ink text-paper' : 'hover:text-ink'}`}
+            onClick={() => onAddToSession({ hex, rgb })}
+            className="inline-flex items-center justify-center rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
           >
-            Mix
+            Dock
           </button>
+        )}
+        <div className="ml-auto flex items-center gap-1.5">
+          <CopyAction label="HEX" copied={copied === 'hex'} onClick={() => copyToClipboard(hex, 'hex')} />
+          <CopyAction label="RGB" copied={copied === 'rgb'} onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`, 'rgb')} />
+          <CopyAction label="HSL" copied={copied === 'hsl'} onClick={() => copyToClipboard(`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`, 'hsl')} />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
-        {narrowPanelView === 'details' ? (
-          <section className="flex min-h-0 min-w-0 flex-1 flex-col rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.64)]">
-            <div className="flex min-h-0 flex-1 flex-col gap-4">
-              {!simpleMode && (
-                <label className="block shrink-0">
-                  <span className="sr-only">Optional sample label</span>
-                  <input
-                    type="text"
-                    value={label}
-                    onChange={(event) => setLabel(event.target.value)}
-                    placeholder="Note (optional)"
-                    className="studio-input w-full rounded-2xl bg-[rgba(255,252,247,0.78)] px-4 py-3.5 text-sm"
-                  />
-                </label>
-              )}
-              <div className="text-[13px] tabular-nums text-ink">
-                <span className={valueModeEnabled ? 'text-signal font-semibold' : ''}>{displayedValue}%</span>
-                <span className="mx-2 text-ink-faint">·</span>
-                <span>{chroma.label}</span>
-                {valueModeMeta ? (
-                  <>
-                    <span className="mx-2 text-ink-faint">·</span>
-                    <span>Step {valueModeMeta.step}/{valueModeSteps}</span>
-                  </>
-                ) : null}
-              </div>
-              <p className="text-sm text-ink-secondary">
-                Palette: <span className="font-semibold text-ink">{activePalette.isDefault ? 'Core mix' : activePalette.name}</span>
-              </p>
-              <p className="text-sm text-ink-secondary">
-                RGB <span className="font-mono text-[12px] font-bold text-ink">{rgb.r}, {rgb.g}, {rgb.b}</span>
-                <span className="mx-2 text-ink-faint">·</span>
-                HSL <span className="font-mono text-[12px] font-bold text-ink">{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
-              </p>
-            </div>
-          </section>
-        ) : (
-          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-            <div className="border-b border-ink-hairline px-4 py-3">
-              <div className="font-display text-base leading-tight tracking-[-0.02em] text-ink">
-                {activePalette.isDefault ? 'Core six-color mix' : activePalette.name}
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              <PaintRecipe
-                hsl={hsl}
-                targetHex={hex}
-                activePalette={activePalette}
-                variant="compact"
-                showExportButton={false}
-                hideHeader
-                hideFooter
-              />
-            </div>
-          </section>
-        )}
-      </div>
+      <section className="flex min-h-[12rem] flex-1 flex-col overflow-hidden rounded-[22px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+        <div className="border-b border-ink-hairline px-4 py-3">
+          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
+          <div className="mt-0.5 font-display text-base leading-tight tracking-[-0.02em] text-ink">
+            {activePalette.isDefault ? 'Core six' : activePalette.name}
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+          <PaintRecipe
+            hsl={hsl}
+            targetHex={hex}
+            activePalette={activePalette}
+            variant="compact"
+            showExportButton={false}
+            hideHeader
+            hideFooter
+          />
+        </div>
+      </section>
     </div>
   )
 
