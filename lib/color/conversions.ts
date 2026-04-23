@@ -9,6 +9,11 @@ import { RGB, HSL } from './types';
 const toRgb = converter('rgb');
 const toHsl = converter('hsl');
 
+function normalizeRgbChannel(value: number): number {
+    if (!Number.isFinite(value)) return 0;
+    return Math.min(255, Math.max(0, Math.round(value)));
+}
+
 /**
  * Converts any color format to RGB (0-255)
  */
@@ -26,7 +31,12 @@ export function colorsToRgb(color: string | Color): RGB | null {
  * Converts RGB (0-255) to Hex string
  */
 export function rgbToHex(r: number, g: number, b: number): string {
-    return formatHex({ mode: 'rgb', r: r / 255, g: g / 255, b: b / 255 }) || '#000000';
+    return formatHex({
+        mode: 'rgb',
+        r: normalizeRgbChannel(r) / 255,
+        g: normalizeRgbChannel(g) / 255,
+        b: normalizeRgbChannel(b) / 255
+    }) || '#000000';
 }
 
 /**
