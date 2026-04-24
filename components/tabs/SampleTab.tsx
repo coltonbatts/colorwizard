@@ -1,18 +1,16 @@
 'use client'
 
-import { useState, useEffect, useMemo, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import FullScreenOverlay from '../FullScreenOverlay'
 import ColorCardModal from '../ColorCardModal'
 import PaintRecipe from '../PaintRecipe'
-import { getColorHarmonies } from '@/lib/colorTheory'
-import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
 import { Palette } from '@/lib/types/palette'
 import { getColorName } from '@/lib/colorNaming'
-import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 import { useIsMobile, useMediaQuery } from '@/hooks/useMediaQuery'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
+import { getPaletteRecipeOptions, useSampleReadout } from '@/lib/hooks/useSampleReadout'
 
 interface SampleTabProps {
   sampledColor: {
@@ -118,19 +116,23 @@ export default function SampleTab({
   const [showCardModal, setShowCardModal] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
-  const [colorName, setColorName] = useState<string>('')
   const [isCreatingCard, setIsCreatingCard] = useState(false)
-
-  useEffect(() => {
-    if (!sampledColor) {
-      setColorName('')
-      return
-    }
-
-    getColorName(sampledColor.hex)
-      .then(result => setColorName(result.name))
-      .catch(() => setColorName(''))
-  }, [sampledColor])
+  const {
+    colorName,
+    displayName,
+    isLoadingName,
+    harmonies,
+    temperatureLabel,
+    chroma,
+    valueBand,
+    valueModeMeta,
+    grayscaleHex,
+    displayedValue,
+  } = useSampleReadout({
+    sampledColor,
+    valueModeEnabled,
+    valueModeSteps,
+  })
 
   useEffect(() => {
     if (dismissPreviewSignal === undefined) return
@@ -138,25 +140,7 @@ export default function SampleTab({
     setShowCardModal(false)
   }, [dismissPreviewSignal])
 
-  const recipeOptions = useMemo(() => {
-    if (activePalette.isDefault) return undefined
-    return {
-      paletteColorIds: activePalette.colors.map(color => color.id),
-    }
-  }, [activePalette])
-
-  const harmonies = useMemo(
-    () => (sampledColor ? getColorHarmonies(sampledColor.rgb) : null),
-    [sampledColor]
-  )
-
-  const temperatureLabel = harmonies
-    ? harmonies.temperature === 'warm'
-      ? 'Warm'
-      : harmonies.temperature === 'cool'
-        ? 'Cool'
-        : 'Neutral'
-    : ''
+  const recipeOptions = getPaletteRecipeOptions(activePalette)
 
   if (!sampledColor) {
     return (
@@ -175,7 +159,7 @@ export default function SampleTab({
             Sample
           </div>
           <div className="text-sm font-semibold text-ink">
-            Pick a point on the canvas.
+            Tap or click the image to sample.
           </div>
         </div>
       </div>
@@ -183,19 +167,8 @@ export default function SampleTab({
   }
 
   const { hex, rgb, hsl } = sampledColor
-  const chroma = getPainterChroma(hex)
-  const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
-  const valueBand = getValueBand(valuePercent)
-  const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
-  const valueModeGrayHex = valueModeMeta ? luminanceToGrayHex(valueModeMeta.y) : null
-  const grayscaleHex = valueModeGrayHex ?? `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
   const recipeVariant = isShortViewport ? 'compact' : 'standard'
-  const displayName = colorName || 'Analyzing…'
-  const displayedValue = valueModeEnabled && valueModeMeta
-    ? Math.round(valueModeMeta.y * 100)
-    : sampledColor.valueMetadata
-      ? Math.round(sampledColor.valueMetadata.y * 100)
-      : valuePercent
+  const sampleName = colorName || (isLoadingName ? 'Analyzing...' : displayName)
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text)
@@ -276,7 +249,7 @@ export default function SampleTab({
           />
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-xl font-bold leading-tight text-ink">
-              {displayName}
+              {sampleName}
             </h2>
             <p className="text-xs font-bold uppercase tracking-wider text-ink-muted">
               {displayedValue}% · {valueBand}
@@ -295,8 +268,8 @@ export default function SampleTab({
               <span className="font-normal text-ink-secondary"> vs {harmonies.complementary.name}</span>
             </div>
             <div className="mt-1 text-ink">
-              Chroma: <span className="font-semibold">{chroma.label}</span>{' '}
-              <span className="font-mono text-[11px] text-ink-secondary">c {chroma.value.toFixed(3)}</span>
+              Chroma: <span className="font-semibold">{chroma?.label}</span>{' '}
+              <span className="font-mono text-[11px] text-ink-secondary">c {chroma?.value.toFixed(3)}</span>
             </div>
           </div>
         )}
@@ -314,7 +287,7 @@ export default function SampleTab({
           </div>
         )}
 
-        <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
+        <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Starting mix</div>
         <div className="-mt-1">{recipePanel}</div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -365,7 +338,7 @@ export default function SampleTab({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="truncate text-lg font-semibold tracking-tight text-ink">
-                {displayName}
+                {sampleName}
               </h2>
               {valueModeEnabled && valueModeMeta && (
                 <span className="rounded-full border border-signal bg-signal-muted px-2 py-1 font-mono text-[10px] font-bold text-signal">
@@ -410,8 +383,8 @@ export default function SampleTab({
               <div className="rounded-xl border border-ink-hairline bg-paper-recessed px-3 py-2">
                 <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">3 · Chroma (this passage)</div>
                 <div className="mt-1 font-semibold text-ink">
-                  {chroma.label}{' '}
-                  <span className="font-mono text-[11px] font-normal text-ink-secondary">(c {chroma.value.toFixed(3)})</span>
+                  {chroma?.label}{' '}
+                  <span className="font-mono text-[11px] font-normal text-ink-secondary">(c {chroma?.value.toFixed(3)})</span>
                 </div>
               </div>
             </div>
@@ -443,7 +416,7 @@ export default function SampleTab({
         </div>
 
         <div className="mt-3 space-y-2">
-          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
+          <div className="text-[8px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Starting mix</div>
           {recipePanel}
         </div>
 

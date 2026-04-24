@@ -133,10 +133,6 @@ export function useImageAnalyzer(
         (currentImageRef.current as any) = image;
         setIsAnalyzing(true);
         setError(null);
-        const currentWidth = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
-        const currentHeight = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
-        console.log('[useImageAnalyzer] Starting analysis for image:', currentWidth, 'x', currentHeight);
-
         // Create a temporary canvas to read pixel data
         const canvas = document.createElement('canvas');
         let width = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
@@ -165,7 +161,6 @@ export function useImageAnalyzer(
         (async () => {
             try {
                 const worker = await getWorker();
-                console.log('[useImageAnalyzer] Got worker, sending image data...');
                 const timeout = new Promise<never>((_, reject) =>
                     setTimeout(() => reject(new Error('Image processor worker timed out')), 10000)
                 );
@@ -173,7 +168,6 @@ export function useImageAnalyzer(
                     worker.processImageData(imageData.data, width, height),
                     timeout,
                 ]);
-                console.log('[useImageAnalyzer] Worker processing complete');
 
                 // Check if this is still the current image (handle race conditions)
                 if (currentImageRef.current !== image) {

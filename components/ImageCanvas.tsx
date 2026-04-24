@@ -505,10 +505,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   ])
 
   useEffect(() => {
-    drawCanvas()
-  }, [drawCanvas])
-
-  useEffect(() => {
     let isActive = true
 
     const run = async () => {
@@ -543,7 +539,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
   useEffect(() => {
     drawCanvas()
-  }, [drawCanvas, highlightMode, highlightColor, highlightTolerance, highlightOverlay.imageData])
+  }, [drawCanvas])
 
   useEffect(() => {
     if (onTransformChange && imageDrawInfo) {
@@ -918,10 +914,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }, [image, breakdownBuffers.imprimatura, isGeneratingBreakdown, generateBreakdown])
 
-  const handleFileInputClick = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
-    e.currentTarget.value = ''
-  }, [])
-
   const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
     const file = input.files?.[0]
@@ -1050,34 +1042,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     return 'crosshair'
   }
 
-  useEffect(() => {
-    if (!image) return
-
-    const shouldShowFallback = !imageDrawInfo || canvasDimensions.width === 0 || canvasDimensions.height === 0
-    const renderState = {
-      hasImage: !!image,
-      imageSize: image ? `${image.width}x${image.height}` : 'null',
-      imageSrc: image.src?.substring(0, 50),
-      imageSrcType: image.src?.startsWith('data:') ? 'data URL' : image.src?.startsWith('blob:') ? 'blob URL' : 'other',
-      imageComplete: image.complete,
-      imageNaturalSize: `${image.naturalWidth}x${image.naturalHeight}`,
-      hasSurfaceImage: !!surfaceImage,
-      canvasDimensions,
-      imageDrawInfoValue: imageDrawInfo,
-      hasImageDrawInfo: !!imageDrawInfo,
-      containerRefExists: !!containerRef.current,
-      canvasContainerRefExists: !!canvasContainerRef.current,
-      shouldShowFallback,
-      conditionBreakdown: {
-        '!imageDrawInfo': !imageDrawInfo,
-        'width === 0': canvasDimensions.width === 0,
-        'height === 0': canvasDimensions.height === 0,
-      },
-    }
-    const logMsg = `🔍 Render: ${image.width}x${image.height}, fallback=${shouldShowFallback}`
-    console.log('[ImageCanvas]', logMsg, renderState)
-  }, [image, surfaceImage, canvasDimensions, imageDrawInfo])
-
   return (
     <div className="flex h-full min-h-0 flex-col" ref={containerRef} suppressHydrationWarning>
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
@@ -1096,7 +1060,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div
             ref={canvasContainerRef}
-            className={`canvas-viewport ${mobileSampleLayout ? 'h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
+            className={`canvas-viewport ${mobileSampleLayout ? 'canvas-viewport--sample h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
           >
             {showHud && (
               <CanvasHUD
@@ -1146,7 +1110,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                     id={desktopFileInputId}
                     type="file"
                     accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-                    onClick={handleFileInputClick}
                     onChange={handleDirectFileInput}
                     className="sr-only"
                   />
@@ -1254,7 +1217,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             id={mobileFileInputId}
             type="file"
             accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-            onClick={handleFileInputClick}
             onChange={handleDirectFileInput}
             className="sr-only"
           />

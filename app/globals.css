@@ -749,6 +749,12 @@ body {
     width: 100%;
 }
 
+.workbench-mode-section-tools {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: var(--rule-hairline) solid var(--ink-hairline);
+}
+
 .workbench-mode-section-bottom {
     margin-top: auto;
     padding-top: 10px;
@@ -756,7 +762,15 @@ body {
 }
 
 .workbench-mode-label {
-    display: none;
+    display: block;
+    margin-bottom: 2px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--ink-faint);
 }
 
 .workbench-mode-btn {
@@ -1151,7 +1165,7 @@ body {
         display: none !important;
     }
 
-    .mobile-preview-area .canvas-viewport {
+    .mobile-preview-area .canvas-viewport:not(.canvas-viewport--sample) {
         flex: 1 1 auto !important;
         min-height: 0 !important;
         height: auto !important;

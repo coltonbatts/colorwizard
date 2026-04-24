@@ -189,7 +189,6 @@ export default function Home() {
 
   // Wrapper for setImage that always resets value mode
   const handleImageLoad = useCallback((img: HTMLImageElement) => {
-    console.log('[Home] Image loaded, resetting value mode')
     setImage(img)
     setReferenceOpacity(1)
     resetReferenceTransform()
@@ -198,7 +197,6 @@ export default function Home() {
 
   // Clear image and reset view
   const handleClearImage = useCallback(() => {
-    console.log('[Home] Clearing image and resetting state')
     setImage(null)
     setReferenceImage(null)
     setSurfaceImage(null)
@@ -239,7 +237,6 @@ export default function Home() {
 
     if (referenceImage !== lastProcessedRef.current) {
       let cancelled = false
-      console.log('[Home] Loading reference image from string...')
       lastProcessedRef.current = referenceImage
 
       void resolveTauriCanvasImageSrc(referenceImage)
@@ -263,7 +260,6 @@ export default function Home() {
           img.src = src
           img.onload = () => {
             if (cancelled) return
-            console.log('[Home] Reference image loaded successfully')
             if (src.startsWith('blob:')) {
               URL.revokeObjectURL(src)
             }
@@ -548,9 +544,7 @@ export default function Home() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Toggle debug mode with Alt+D
       if (e.altKey && e.key.toLowerCase() === 'd') {
-        const next = !debugModeEnabled
         toggleDebugMode()
-        console.log('[Home] Debug mode:', next)
       }
     }
     window.addEventListener('keydown', handleKeyDown)

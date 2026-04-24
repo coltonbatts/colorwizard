@@ -1,20 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import ColorCardModal from '@/components/ColorCardModal'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
 import PaintRecipe from '@/components/PaintRecipe'
 import { getBestContrast } from '@/lib/color/a11y'
-import { getColorName } from '@/lib/colorNaming'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
-import { getColorHarmonies } from '@/lib/colorTheory'
-import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
 import type { ColorCard } from '@/lib/types/colorCard'
 import type { Palette } from '@/lib/types/palette'
 import type { PinnedColor } from '@/lib/types/pinnedColor'
-import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { getPaletteRecipeOptions, useSampleReadout } from '@/lib/hooks/useSampleReadout'
 
 interface SampledColor {
   hex: string
@@ -83,7 +80,6 @@ export default function DesktopSampleHud({
   onAddToSession,
 }: DesktopSampleHudProps) {
   const [label, setLabel] = useState('')
-  const [colorName, setColorName] = useState('')
   const [copied, setCopied] = useState<'hex' | 'rgb' | 'hsl' | null>(null)
   const [isPinning, setIsPinning] = useState(false)
   const [isCreatingCard, setIsCreatingCard] = useState(false)
@@ -95,45 +91,32 @@ export default function DesktopSampleHud({
   const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
   const activeValueBandIndex = useCanvasStore((s) => s.activeValueBandIndex)
   const setActiveValueBandIndex = useCanvasStore((s) => s.setActiveValueBandIndex)
+  const {
+    colorName,
+    displayName,
+    harmonies,
+    temperatureLabel,
+    chroma,
+    valueBand,
+    valueModeMeta,
+    grayscaleHex,
+    displayedValue,
+  } = useSampleReadout({
+    sampledColor,
+    valueModeEnabled,
+    valueModeSteps,
+  })
 
   const referenceBandSteps = valueScaleSettings.steps
 
-  const recipeOptions = useMemo(() => {
-    if (activePalette.isDefault) return undefined
-    return {
-      paletteColorIds: activePalette.colors.map((color) => color.id),
-    }
-  }, [activePalette])
-
-  const harmonies = useMemo(
-    () => (sampledColor ? getColorHarmonies(sampledColor.rgb) : null),
-    [sampledColor]
-  )
-
   useEffect(() => {
     if (!sampledColor) {
-      setColorName('')
-      return
-    }
-
-    let cancelled = false
-
-    getColorName(sampledColor.hex)
-      .then((result) => {
-        if (!cancelled) {
-          setColorName(result.name)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setColorName('')
-        }
-      })
-
-    return () => {
-      cancelled = true
+      setShowColorPreview(false)
+      setShowCardModal(false)
+      setPendingCard(null)
     }
   }, [sampledColor])
+  const recipeOptions = getPaletteRecipeOptions(activePalette)
 
   if (!sampledColor) {
     return (
@@ -143,10 +126,10 @@ export default function DesktopSampleHud({
             Live Sample
           </div>
           <h2 className="mt-3 font-display text-[2rem] leading-none tracking-[-0.04em] text-ink">
-            Waiting
+            Sample a color
           </h2>
           <p className="mt-3 max-w-[18rem] text-sm leading-6 text-ink-secondary">
-            Touch the canvas. The selected color lands here as a full paint sample instead of a small inspector readout.
+            Tap or click the image to sample a color.
           </p>
         </div>
 
@@ -163,7 +146,7 @@ export default function DesktopSampleHud({
             </div>
             <div>
               <div className="text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">Canvas First</div>
-              <div className="mt-1 text-sm font-semibold text-ink">Sample to begin</div>
+              <div className="mt-1 text-sm font-semibold text-ink">Tap or click to sample</div>
             </div>
           </div>
         </div>
@@ -172,25 +155,11 @@ export default function DesktopSampleHud({
   }
 
   const { hex, rgb, hsl } = sampledColor
-  const temperatureLabel =
-    harmonies?.temperature === 'warm'
-      ? 'Warm'
-      : harmonies?.temperature === 'cool'
-        ? 'Cool'
-        : 'Neutral'
-  const displayName = colorName || hex.toUpperCase()
-  const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
-  const valueBand = getValueBand(valuePercent)
-  const chroma = getPainterChroma(hex)
-  const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
-  const displayedValue = valueModeEnabled && valueModeMeta
-    ? Math.round(valueModeMeta.y * 100)
-    : sampledColor.valueMetadata
-      ? Math.round(sampledColor.valueMetadata.y * 100)
-      : valuePercent
+  if (!harmonies || !chroma) return null
+
+  const currentHarmonies = harmonies
   const swatchHasDarkSurface = getBestContrast(hex) === 'white'
   const swatchTextColor = swatchHasDarkSurface ? '#ffffff' : '#171311'
-  const grayscaleHex = luminanceToGrayHex(displayedValue / 100)
 
   const copyToClipboard = (text: string, type: 'hex' | 'rgb' | 'hsl') => {
     navigator.clipboard.writeText(text)
@@ -365,14 +334,14 @@ export default function DesktopSampleHud({
                   {temperatureLabel}
                 </span>
                 <span className="text-sm font-semibold text-ink-secondary">
-                  Family <span className="text-ink">{harmonies.base.name}</span>
+                  Family <span className="text-ink">{currentHarmonies.base.name}</span>
                 </span>
               </div>
               <p className="mt-2 text-[13px] leading-snug text-ink-secondary">
                 Opposite mass on the wheel:{' '}
-                <span className="font-semibold text-ink">{harmonies.complementary.name}</span>
+                <span className="font-semibold text-ink">{currentHarmonies.complementary.name}</span>
                 <span className="text-ink-faint"> · </span>
-                Flanks: {harmonies.analogous[0].name}, {harmonies.analogous[1].name}
+                Flanks: {currentHarmonies.analogous[0].name}, {currentHarmonies.analogous[1].name}
               </p>
             </div>
 
@@ -453,11 +422,14 @@ export default function DesktopSampleHud({
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       <div className="border-b border-ink-hairline px-5 py-4">
         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
-          4 · Tube recipe
+          4 · Starting mix
         </div>
         <div className="mt-1 font-display text-[1.35rem] leading-none tracking-[-0.03em] text-ink">
           {activePalette.isDefault ? 'Core six' : activePalette.name}
         </div>
+        <p className="mt-2 text-[11px] leading-4 text-ink-secondary">
+          Use this as a bench mix. Adjust by eye for your paint, surface, and light.
+        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -562,13 +534,13 @@ export default function DesktopSampleHud({
             {temperatureLabel}
           </span>
           <span className="text-[11px] text-ink-secondary">
-            Family <span className="font-semibold text-ink">{harmonies.base.name}</span>
+            Family <span className="font-semibold text-ink">{currentHarmonies.base.name}</span>
           </span>
         </div>
         <p className="mt-1 text-[11px] leading-snug text-ink-secondary">
-          vs <span className="font-semibold text-ink">{harmonies.complementary.name}</span>
+          vs <span className="font-semibold text-ink">{currentHarmonies.complementary.name}</span>
           <span className="text-ink-faint"> · </span>
-          {harmonies.analogous[0].name}/{harmonies.analogous[1].name}
+          {currentHarmonies.analogous[0].name}/{currentHarmonies.analogous[1].name}
         </p>
       </section>
 
@@ -644,10 +616,13 @@ export default function DesktopSampleHud({
 
       <section className="flex min-h-[12rem] flex-1 flex-col overflow-hidden rounded-[22px] border border-ink-hairline bg-[linear-gradient(180deg,rgba(255,252,247,0.96),rgba(245,239,229,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
         <div className="border-b border-ink-hairline px-4 py-3">
-          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Tube recipe</div>
+          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">4 · Starting mix</div>
           <div className="mt-0.5 font-display text-base leading-tight tracking-[-0.02em] text-ink">
             {activePalette.isDefault ? 'Core six' : activePalette.name}
           </div>
+          <p className="mt-1 text-[10px] leading-4 text-ink-secondary">
+            Adjust by eye for your paint and light.
+          </p>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
           <PaintRecipe

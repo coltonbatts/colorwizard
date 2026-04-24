@@ -64,8 +64,6 @@ export async function createSourceBuffer(
         ctx.drawImage(image, 0, 0, width, height);
     }
 
-    console.log(`[imagePipeline] Created source buffer: ${width}x${height} (original ${image.width}x${image.height})`);
-
     return canvas;
 }
 

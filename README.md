@@ -1,278 +1,123 @@
-# ColorWizard — Updated README with Founder Story
+# ColorWizard
 
-## Hero Section
+ColorWizard is a local-first color assistant for artists. Upload a reference image, sample a color, and get a practical paint starting mix plus close DMC thread matches.
 
-```
- ██████╗  ██████╗ ██╗      ██████╗ ██████╗ ██╗    ██╗██╗███████╗ █████╗ ██████╗ ██████╗
-██╔════╝ ██╔═══██╗██║     ██╔═══██╗██╔══██╗██║    ██║██║╚══███╔╝██╔══██╗██╔══██╗██╔══██╗
-██║      ██║   ██║██║     ██║   ██║██████╔╝██║ █╗ ██║██║  ███╔╝ ███████║██████╔╝██║  ██║
-██║      ██║   ██║██║     ██║   ██║██╔══██╗██║███╗██║██║ ███╔╝  ██╔══██║██╔══██╗██║  ██║
-╚██████╗ ╚██████╔╝███████╗╚██████╔╝██║  ██║╚███╔███╔╝██║███████╗██║  ██║██║  ██║██████╔╝
- ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
-```
+The core loop is intentionally small:
 
-### A Color Picker Built for Painters. Not Locked. Not Crippled. Not Owned by Anyone But You
+1. Upload a reference image.
+2. Tap or click the image to sample a color.
+3. Use the starting paint mix as a bench mix, then adjust by eye.
+4. Check DMC thread matches for embroidery and cross-stitch work.
+5. Pin or save useful colors locally.
 
-**Free. Open source. No paywalls for the good stuff.**
-
----
-
-## Download
-
-**[Mac Desktop App (Apple Silicon) — v1.0.0](https://github.com/coltonbatts/colorwizard/releases/download/v1.0.0/ColorWizard_0.1.0_aarch64.dmg)**
-
-Or use it in the browser: [colorwizard.app](https://colorwizard.app/)
-
----
-
-## Desktop & offline packaging (ADR)
-
-**Decision:** Ship the desktop app using Tauri’s supported Next.js path: **static export** into `out/`, which the macOS bundle loads directly. This is the cleanest route to a shippable DMG and avoids a bundled Node server.
-
-**Trade-off:** Any remaining server-only routes or cloud-only flows must be isolated or removed so the export stays static.
-
-**Offline web baseline:** Display type uses self-hosted **@fontsource** (no `fonts.googleapis.com` at runtime). AI palette suggestions are generated in **`lib/ai/suggestions.ts`** on the client so the panel works without `/api/ai/suggestions`. Palette export uses **PNG download + clipboard** and optional **`navigator.share`** (no Twitter or marketing URLs).
-
-**Client hardening:** With `OPEN_SOURCE_MODE`, `AuthProvider` does not load the Firebase Auth chunk (lazy path exists only for paid/cloud builds). Cloud-era route handlers were removed so the Next export stays static.
-
-**Tauri dev (desktop shell):** Requires [Rust](https://www.rust-lang.org/tools/install). Free TCP **3000** for Next (Tauri’s `devUrl` is fixed to `http://localhost:3000`). Then:
-
-```bash
-npm install
-npm run tauri:dev
-```
-
-This runs `next dev -p 3000` and opens the native window. Turn off Wi‑Fi to validate offline UI; the dev server is still local loopback.
-
-**DMG build:** On macOS, the first release artifact should be built with:
-
-```bash
-npm run tauri:build:dmg
-```
-
-Apple Developer ID signing and notarization are required for distribution outside the App Store. Tauri expects `APPLE_SIGNING_IDENTITY` for signing and `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` for notarization.
-
-**Follow-ups:** macOS codesigning/notarization hardening; Windows packaging; prune remaining cloud/server routes if the static export build surfaces them; remove `firebase` / `stripe` packages once their imports are no longer needed.
-
----
-
-## Why This Exists
-
-I was a motion designer for 10+ years. Worked with Google, Kate Spade, Under Armour. Made nice videos. Got paid. Then I realized something: I was solving the wrong problem.
-
-The real problem wasn't making prettier motion graphics. The real problem was that creatives are trapped.
-
-Trapped by Photoshop subscriptions. Trapped by Figma paywalls. Trapped by tools that charge $20/month for features that should be free. Trapped by software that owns your data.
-
-So I built the opposite.
-
-ColorWizard is a color picker for painters. You upload an image, click a color, get the paint recipe. No email. No account. No tracking. Your data stays on your machine. Forever.
-
-It's fast (50% faster than v1). It's free. It's open source. It's the tool I wanted to exist.
-
----
+Images stay on your device. The core workflow does not require an account or cloud upload.
 
 ## What It Does
 
-Upload any reference image. Click a color. Get:
+- Samples colors from local reference images.
+- Shows HEX, RGB, HSL, perceptual name, value, chroma, and temperature readouts.
+- Generates practical paint starting mixes for a limited palette.
+- Finds close DMC embroidery floss matches.
+- Supports value mode for grayscale/value-first painting decisions.
+- Saves pinned/session colors locally.
+- Runs in the browser and as a Tauri desktop app.
 
-- **Oil paint recipe** — mixing ratios using a 6-color limited palette (how real painters work)
-- **Embroidery matches** — top 5 DMC floss threads that match
-- **Color name** — what it's called in 30k+ actual color names
-- **Reference card** — PNG export for your studio
-- **Zero tracking** — your images never leave your machine
-- **Forever free** — core features never get paywalled
+## Product Direction
 
----
+ColorWizard is not a full creative suite. It is a focused bridge between reference images and physical making.
 
-## The Numbers
+The desktop rail keeps the core flow first: Sample and Threads. Studio tools such as mix exploration, library, reference, structure, and surface controls are available, but they should not compete with upload -> sample -> mix/matches.
 
-| Metric | Before | After | Why It Matters |
-|--------|--------|-------|---|
-| **Largest Contentful Paint** | 2.4s | 1.2s | Half the time to see the tool |
-| **First Input Delay** | 180ms | 65ms | Click feels instant |
-| **JS Bundle** | 185kb | 144kb | Faster load, less wasted data |
-| **Time to Interactive** | 3.1s | 1.6s | Start using it sooner |
+Paint mixes are starting points, not exact physical simulations. Paint brand, pigment load, surface, lighting, and technique still matter.
 
-Real painter feedback: "No lag. Just works."
+## Privacy
 
----
+- Reference images are processed locally in the browser or desktop app.
+- Core sampling, matching, and saving do not require uploading images.
+- Pinned colors and local cards remain under user control.
 
-## Features
+## Tech Stack
 
-**Speed**
+- Next.js 15
+- React 18
+- TypeScript
+- Tailwind CSS
+- Zustand
+- Canvas API
+- Web Workers
+- Spectral.js
+- Tauri for desktop packaging
 
-- Click-to-color is instant (Web Workers handle the heavy math)
-- Zoom/pan with keyboard + mouse
-- Optimized rendering (Zustand selectors, component splitting)
-
-**Color Sampling**
-
-- HEX, RGB, HSL readouts
-- Zoom and pan with smooth scrolling
-- Support for drag-and-drop images
-
-**Value Mode**
-
-- Press V to check grayscale values (essential for painting)
-- Adjustable overlay opacity
-- 5/7/9/11 value interval options
-
-**Oil Paint Recipes**
-
-- 6-color realistic palette (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Green, Phthalo Blue)
-- Brand support (Winsor & Newton, Golden, Gamblin)
-- Spectral.js mixing engine
-- Interactive mix lab for experimentation
-
-**Embroidery Floss**
-
-- All 454 DMC threads
-- Top 5 matches for any color
-- Cross-stitch reference
-
-**Privacy**
-
-- Your images? Never uploaded. Stay on your machine.
-- Your colors? Not tracked. Not stored. Not sold.
-- Export anytime. Nothing is locked.
-
-**Keyboard Shortcuts**
-
-- Spacebar: pan
-- +/-: zoom
-- V: value mode
-- 1-9: sidebar tabs (Surface, Structure, Reference, Sample, etc.)
-- 0: Library
-- Alt + 9: Check My Values (Overlay)
-- Alt + 0: Check My Drawing (Perspective Warp)
-- [/]: collapse sidebar
-
-**Accessibility**
-
-- WCAG contrast ratios on every swatch
-- Screen reader ready
-- Keyboard navigable
-
----
-
-## Get It Running
+## Getting Started
 
 ```bash
-git clone https://github.com/coltonbatts/colorwizard.git
-cd colorwizard
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
----
+If port 3000 is already in use, Next.js will choose another local port.
 
-## How to Use
+## Useful Commands
 
-1. **Load an image** — Drag, drop, or click
-2. **Click a color** — Anywhere on the canvas
-3. **Get results** — Paint recipe + color name + embroidery matches
-4. **Export** — Reference card as PNG
-5. **Close browser** — Everything's done. Nothing gets stored.
+```bash
+npm run lint
+npx tsc --noEmit
+npm test -- --run
+```
 
----
+Core browser smoke check:
 
-## Tech Stack
+```bash
+COLORWIZARD_URL=http://localhost:3000 npm run smoke:core
+```
 
-Next.js 15 · React 18 · TypeScript · Tailwind CSS · Canvas API · Spectral.js · Web Workers · Zustand
+The smoke check exercises upload, sample, paint mix, value mode, and Threads/DMC on desktop and mobile viewports. It expects a local dev server to already be running and requires Playwright to be available in the local environment.
 
----
+## Desktop App
+
+Tauri development:
+
+```bash
+npm run tauri:dev
+```
+
+Build a macOS DMG:
+
+```bash
+npm run tauri:build:dmg
+```
+
+The desktop app uses a static Next.js export for packaging. Code signing and notarization are still required for normal macOS distribution outside the App Store.
+
+## Current Scope
+
+In scope for the thin core:
+
+- Image upload
+- Canvas sampling
+- Practical paint starting mix
+- DMC thread matches
+- Value mode
+- Local pinned/session colors
+
+Out of scope for the thin core:
+
+- Cloud-first project storage
+- Social sharing
+- Collaboration
+- A full Photoshop/Procreate/Figma replacement
+- Exact paint simulation claims
 
 ## Roadmap
 
-- [ ] Procreate plugin (sample colors directly in Procreate)
-- [ ] Batch palette extraction (upload image, get 5 colors)
-- [ ] Cloud palette sync (optional, Pro tier)
-- [ ] Watercolor & acrylic palettes
-- [ ] Custom paint library support
-
----
-
-## Pricing
-
-### Free Tier
-
-- Unlimited color sampling
-- Paint recipes
-- DMC floss matching
-- Color naming
-- Export everything
-- Forever
-
-### Pro Tier ($1 one-time purchase, lifetime access)
-
-- **Surface Handling** — Import and persist your own surface photos locally
-- **Structure Tools** — Square grid overlays with adjustable spacing and opacity
-- **Reference Overlay** — Import reference photos with Move, Scale, Rotate, and Opacity controls
-- **Batch palette extraction** (Coming soon)
-- **Cloud palette sync** (Coming soon)
-- **Custom paint libraries** (Coming soon)
-- **Procreate plugin** (Coming soon)
-
-**The core tool is free forever.** We're not hiding the good stuff. If you just need to sample colors and get recipes, you never have to pay.
-
----
-
-## Philosophy
-
-**Open Source ≠ Theater**
-
-This isn't some corporate "we're so open source" marketing campaign. The code is real. You can fork it. You can build on it. You can run it locally forever.
-
-**Privacy ≠ Buzzword**
-
-Your images don't get uploaded. We're not analyzing them. We're not training models on them. They never leave your machine. Period.
-
-**Free ≠ Crippled**
-
-The core features—color sampling, paint recipes, exports—are free. Forever. Not a "free trial." Not a "limited version." Actually free.
-
-**Performance ≠ Optional**
-
-A slow tool is a betrayal. We spent a sprint optimizing every interaction. 50% faster. It's not a feature. It's respect for your time.
-
----
+- Tighten automated browser coverage for the thin-core workflow.
+- Continue simplifying mobile couch/easel/iPad sampling.
+- Add clearer saved-card and export flows.
+- Improve paint-library ergonomics without crowding the core loop.
+- Expand medium-specific palettes after the core flow stays reliable.
 
 ## Contributing
 
-This is open source. Fork it. Improve it. Send a PR. We'll look at it.
-
-Ideas for contributions:
-
-- New palette types (pastel, watercolor, etc.)
-- Export formats (CSV, Figma plugins, etc.)
-- UI/UX improvements
-- Performance optimizations
-- Translations
-- Documentation
-
----
-
-## Built By
-
-[@thecoltonbatts](https://twitter.com/thecoltonbatts) — motion designer turned tool builder
-
-I spent 10 years making beautiful things for clients. Then I realized the better work was building tools so other people could make beautiful things without getting trapped.
-
-This is that tool.
-
----
-
-## Get Started
-
-**[Try ColorWizard Free →](https://colorwizard.app)**
-
-No email. No sign-up. Click, sample, paint.
-
-Following the build on Twitter: [@thecoltonbatts](https://twitter.com/thecoltonbatts)
-
----
-
-**Built by a painter. For painters. Owned by you.**
+Keep changes sympathetic to the product shape: local-first, artist-facing, and focused. Avoid adding broad suite-style features unless they support the core sample -> mix/matches workflow.

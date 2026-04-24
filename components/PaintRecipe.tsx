@@ -205,14 +205,14 @@ export default function PaintRecipe({
       ? activePalette.name
       : 'Core six-color mix'
   const paletteRestrictionLabel = useCatalog && paintIds && paintIds.length > 0
-    ? 'Recipe uses only paints from your library selection.'
+    ? 'Starting mix uses only paints from your library selection.'
     : activePalette && !activePalette.isDefault
-      ? `Limited to ${activePalette.colors.length} paints from ${activePalette.name}.`
+      ? `Starting mix is limited to ${activePalette.colors.length} paints from ${activePalette.name}.`
       : 'Built from the core six-color palette.'
-  const provenanceLabel = recipe.source === 'solver' ? 'Solver Preview' : 'Heuristic Guide'
+  const provenanceLabel = recipe.source === 'solver' ? 'Starting Mix' : 'Studio Guide'
   const provenanceNote = recipe.source === 'solver'
-    ? 'Preview is a screen-fit guide driven by the spectral mixer and painterly recipe heuristics, not a physically exact paint simulation.'
-    : 'Guide follows value-first mixing heuristics for the core six-color palette. It is practical guidance, not a physically exact paint simulation.'
+    ? 'Use this as a practical first pass. Adjust by eye for your paint, surface, and light.'
+    : 'Use this value-first studio guide as a practical first pass. Adjust by eye for your paint, surface, and light.'
   const isCompactLayout = effectiveVariant === 'compact'
   const isBoardLayout = effectiveVariant === 'board'
   const shouldShowInlineSteps = isCompactLayout || isBoardLayout
@@ -233,7 +233,7 @@ export default function PaintRecipe({
               Mix Path
             </div>
             <h3 className={`${isCompactLayout ? 'mt-1 text-base' : isBoardLayout ? 'mt-2 text-[1.7rem]' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
-              Oil Paint Recipe
+              Starting Paint Mix
             </h3>
           </div>
           {!isEmptyCatalog && (
@@ -398,9 +398,10 @@ export default function PaintRecipe({
               </div>
 
               {isCompactLayout || isBoardLayout ? (
-                <p className="mt-2 text-[10px] leading-4 text-ink-secondary">
-                  {paletteRestrictionLabel}
-                </p>
+                <div className="mt-2 space-y-1.5 text-[10px] leading-4 text-ink-secondary">
+                  <p>{paletteRestrictionLabel}</p>
+                  <p>{provenanceNote}</p>
+                </div>
               ) : (
                 <>
                   <p className="mt-3 text-xs text-ink-secondary">

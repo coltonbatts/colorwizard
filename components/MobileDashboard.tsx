@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import PaintRecipe from './PaintRecipe'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
-import { getColorName } from '@/lib/colorNaming'
 import { createPinnedColor } from '@/lib/colorArtifacts'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { useSampleReadout } from '@/lib/hooks/useSampleReadout'
 
 interface MobileDashboardProps {
     sampledColor: {
@@ -53,11 +53,24 @@ export default function MobileDashboard({
     const isShortViewport = useMediaQuery('(max-height: 860px)')
     const isInline = layout === 'inline'
 
-    const [colorName, setColorName] = useState<string>('')
-    const [isLoadingName, setIsLoadingName] = useState(false)
     const [isPinning, setIsPinning] = useState(false)
-    const sampledHex = sampledColor?.hex
     const sampledLabel = sampledColor?.label
+    const valueModeSteps = (valueScaleSettings.steps === 5 ||
+        valueScaleSettings.steps === 7 ||
+        valueScaleSettings.steps === 9 ||
+        valueScaleSettings.steps === 11
+    ) ? valueScaleSettings.steps : 7
+    const {
+        colorName,
+        displayName,
+        isLoadingName,
+        grayscaleHex,
+    } = useSampleReadout({
+        sampledColor,
+        valueModeEnabled: valueScaleSettings.enabled,
+        valueModeSteps,
+        preferredName: sampledLabel,
+    })
 
     const solveOptions = useMemo(() => {
         if (hasPaintPalette && selectedPaintIds.length > 0) {
@@ -73,44 +86,6 @@ export default function MobileDashboard({
         }
     }, [activePalette, hasPaintPalette, selectedPaintIds])
 
-    useEffect(() => {
-        if (!sampledHex) {
-            setColorName('')
-            return
-        }
-
-        if (sampledLabel && sampledLabel !== 'New Color') {
-            setColorName(sampledLabel)
-            return
-        }
-
-        let cancelled = false
-        setIsLoadingName(true)
-
-        getColorName(sampledHex)
-            .then((result) => {
-                if (!cancelled) {
-                    setColorName(result.name)
-                }
-            })
-            .catch((err) => {
-                console.error('Failed to get color name:', err)
-                if (!cancelled) {
-                    setColorName('')
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsLoadingName(false)
-                }
-            })
-
-        return () => {
-            cancelled = true
-        }
-    }, [sampledHex, sampledLabel])
-
-    const displayName = sampledColor ? (colorName || sampledColor.hex.toUpperCase()) : ''
     const paletteLabel = hasPaintPalette
         ? `Paint library (${selectedPaintIds.length})`
         : activePalette?.isDefault
@@ -165,7 +140,7 @@ export default function MobileDashboard({
                                 <div className="min-w-0 flex flex-1 items-center gap-2.5">
                                     <div
                                         className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
-                                        style={{ backgroundColor: sampledColor.hex }}
+                                        style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
                                     />
 
                                     <div className="min-w-0 flex-1">
@@ -230,7 +205,7 @@ export default function MobileDashboard({
                                 <div className="min-w-0 flex flex-1 items-start gap-3">
                                     <div
                                         className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
-                                        style={{ backgroundColor: sampledColor.hex }}
+                                        style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
                                     />
 
                                     <div className="min-w-0 flex-1">
@@ -340,7 +315,7 @@ export default function MobileDashboard({
                                 <div className="flex items-end justify-between gap-3 px-1">
                                     <div className="min-w-0">
                                         <div className="text-[10px] font-black uppercase tracking-[0.24em] text-signal">
-                                            Paint Recipe
+                                            Starting Mix
                                         </div>
                                         <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">
                                             {paletteLabel}
@@ -367,7 +342,7 @@ export default function MobileDashboard({
                 <div className={`flex min-h-0 flex-col items-center justify-center px-4 py-5 text-ink-faint ${isInline ? '' : 'h-full'}`}>
                     <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Sample</div>
                     <p className="max-w-[14rem] text-center text-sm font-semibold text-ink">
-                        Tap image.
+                        Tap or click the image to sample.
                     </p>
                 </div>
             )}
