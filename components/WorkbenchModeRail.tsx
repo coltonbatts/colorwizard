@@ -25,7 +25,7 @@ interface WorkbenchModeRailProps {
   onOpenDeck: () => void
 }
 
-const modes: ModeRailItem[] = [
+const coreModes: ModeRailItem[] = [
   {
     id: 'sample',
     label: 'Sample',
@@ -38,6 +38,9 @@ const modes: ModeRailItem[] = [
     hint: 'Compare DMC matches',
     icon: <ThreadsWorkbenchIcon />,
   },
+]
+
+const studioModes: ModeRailItem[] = [
   {
     id: 'mix',
     label: 'Mix',
@@ -78,7 +81,31 @@ export default function WorkbenchModeRail({
   return (
     <aside className="workbench-mode-rail hidden md:flex" aria-label="Workspace modes">
       <div className="workbench-mode-section">
-        {modes.map((mode) => {
+        <span className="workbench-mode-label">Core</span>
+        {coreModes.map((mode) => {
+          const active = activeMode === mode.id
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => onModeChange(mode.id)}
+              className={`workbench-mode-btn tooltip-wrapper ${active ? 'active' : ''}`}
+              aria-pressed={active}
+              aria-label={`${mode.label}: ${mode.hint}`}
+              data-tooltip={`${mode.label} · ${mode.hint}`}
+              title={`${mode.label} · ${mode.hint}`}
+            >
+              <span className="workbench-mode-icon" aria-hidden="true">
+                {mode.icon}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="workbench-mode-section workbench-mode-section-tools">
+        <span className="workbench-mode-label">Tools</span>
+        {studioModes.map((mode) => {
           const active = activeMode === mode.id
           return (
             <button
@@ -100,6 +127,7 @@ export default function WorkbenchModeRail({
       </div>
 
       <div className="workbench-mode-section workbench-mode-section-bottom">
+        <span className="workbench-mode-label">Save</span>
         <button
           type="button"
           onClick={onOpenDeck}

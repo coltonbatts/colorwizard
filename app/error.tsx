@@ -5,25 +5,67 @@
  * Catches unhandled client-side errors and provides recovery
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+
+type AppError = Error & { digest?: string }
+
+function isChunkLoadFailure(error: AppError): boolean {
+  const name = typeof error.name === 'string' ? error.name : ''
+  const msg = typeof error.message === 'string' ? error.message : ''
+  return (
+    name === 'ChunkLoadError' ||
+    /loading chunk/i.test(msg) ||
+    /chunkloaderror/i.test(name) ||
+    /failed to fetch dynamically imported module/i.test(msg) ||
+    /importing a module script failed/i.test(msg)
+  )
+}
+
+function getErrorLogPayload(error: AppError) {
+  const name = typeof error.name === 'string' ? error.name : 'Error'
+  const message =
+    typeof error.message === 'string' && error.message.length > 0
+      ? error.message
+      : '[empty message]'
+  return {
+    name,
+    message,
+    stack: typeof error.stack === 'string' ? error.stack : undefined,
+    digest: error.digest,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+    timestamp: new Date().toISOString(),
+  }
+}
 
 export default function Error({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
+  error: AppError
   reset: () => void
 }) {
+  const chunkLoad = useMemo(() => isChunkLoadFailure(error), [error])
+
   useEffect(() => {
-    // Log error details for debugging
-    console.error('App-level error caught:', {
-      message: error.message,
-      stack: error.stack,
-      digest: error.digest,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-      timestamp: new Date().toISOString(),
-    })
+    const payload = getErrorLogPayload(error)
+    // Separate args so DevTools never shows a collapsed `{}` for empty/non-enumerable cases
+    console.error(
+      'App-level error caught:',
+      payload.name,
+      payload.message,
+      payload.digest != null ? `(digest: ${payload.digest})` : '',
+      payload.timestamp,
+      payload.userAgent,
+      '\n',
+      payload.stack ?? '(no stack)',
+    )
   }, [error])
+
+  const handleHardReload = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload()
+    }
+  }
 
   return (
     <div
@@ -65,7 +107,15 @@ export default function Error({
             marginBottom: '24px',
           }}
         >
-          We&apos;re sorry - something went wrong. This has been logged and we&apos;ll investigate.
+          {chunkLoad ? (
+            <>
+              The app could not load one of its JavaScript bundles. This can happen after a new
+              deploy, a desktop dev-server restart, or an interrupted local connection. Reloading
+              usually fetches the current bundle set.
+            </>
+          ) : (
+            <>We&apos;re sorry - something went wrong. This has been logged and we&apos;ll investigate.</>
+          )}
         </p>
 
         {process.env.NODE_ENV === 'development' && (
@@ -100,7 +150,7 @@ export default function Error({
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button
-            onClick={reset}
+            onClick={chunkLoad ? handleHardReload : reset}
             style={{
               padding: '12px 24px',
               fontSize: '16px',
@@ -118,7 +168,7 @@ export default function Error({
               e.currentTarget.style.backgroundColor = '#2196F3'
             }}
           >
-            Try Again
+            {chunkLoad ? 'Reload page' : 'Try Again'}
           </button>
 
           <button

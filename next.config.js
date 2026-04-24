@@ -41,6 +41,17 @@ const nextConfig = {
 
   // Pin tracing to this repo so Next does not infer the parent folder as a workspace root.
   outputFileTracingRoot: path.join(__dirname),
+
+  // Dev-only: reduce spurious ChunkLoadError when the browser is slow to fetch large route chunks.
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.output = {
+        ...config.output,
+        chunkLoadTimeout: 180000,
+      }
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig

@@ -17,7 +17,7 @@ export const HighlightOverlay = forwardRef<HTMLCanvasElement, HighlightOverlayPr
   const onRenderedRef = useRef(onRendered)
   useLayoutEffect(() => {
     onRenderedRef.current = onRendered
-  })
+  }, [onRendered])
 
   useEffect(() => {
     if (!ref) return

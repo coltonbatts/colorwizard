@@ -275,41 +275,68 @@ export default function CompactToolbar({
         <CommandButton label="Value mode" icon={<ValueIcon />} active={valueModeEnabled} onClick={onToggleValueMode} />
       </div>
 
-      <div className="workbench-toolbar-group shrink-0">
-        <CommandButton
-          label="Grid"
-          icon={<GridIcon />}
-          active={Boolean(calibration && rulerGridEnabled)}
-          tone="subsignal"
-          disabled={!calibration}
-          onClick={onToggleRulerGrid}
-        />
-        <CommandButton
-          label="Measure"
-          icon={<MeasureIcon />}
-          active={Boolean(calibration && measureMode)}
-          disabled={!calibration}
-          onClick={onToggleMeasure}
-        />
-        <CommandButton
-          label={calibration ? 'Calibration' : 'Calibrate'}
-          icon={<BeakerIcon />}
-          active={Boolean(calibration)}
-          tone="subsignal"
-          onClick={onOpenCalibration}
-        />
-        {calibration && (
-          <button
-            type="button"
-            onClick={onResetCalibration}
-            title="Reset calibration"
-            className="inline-flex h-9 items-center rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
-          >
-            Reset
-          </button>
-        )}
-        <CommandButton label="Canvas settings" icon={<SlidersIcon />} onClick={onOpenCanvasSettings} />
-      </div>
+      <details className="group relative shrink-0">
+        <summary
+          className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink [&::-webkit-details-marker]:hidden"
+          aria-label="Studio tools"
+          title="Studio tools"
+        >
+          <SlidersIcon />
+          Tools
+        </summary>
+
+        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-ink-hairline bg-paper-elevated/98 p-2 shadow-[0_18px_44px_rgba(33,24,14,0.16)] backdrop-blur-md">
+          <div className="px-2 pb-2 pt-1 text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+            Studio tools
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <CommandButton
+              label="Grid"
+              icon={<GridIcon />}
+              active={Boolean(calibration && rulerGridEnabled)}
+              tone="subsignal"
+              disabled={!calibration}
+              onClick={onToggleRulerGrid}
+            />
+            <CommandButton
+              label="Measure"
+              icon={<MeasureIcon />}
+              active={Boolean(calibration && measureMode)}
+              disabled={!calibration}
+              onClick={onToggleMeasure}
+            />
+            <CommandButton
+              label={calibration ? 'Calibration' : 'Calibrate'}
+              icon={<BeakerIcon />}
+              active={Boolean(calibration)}
+              tone="subsignal"
+              onClick={onOpenCalibration}
+            />
+          </div>
+
+          <div className="mt-2 grid gap-2">
+            {calibration && (
+              <button
+                type="button"
+                onClick={onResetCalibration}
+                title="Reset calibration"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+              >
+                Reset calibration
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onOpenCanvasSettings}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+            >
+              <SlidersIcon />
+              Canvas settings
+            </button>
+          </div>
+        </div>
+      </details>
 
       <div className="workbench-toolbar-group ml-auto shrink-0">
         <select

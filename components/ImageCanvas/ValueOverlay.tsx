@@ -26,7 +26,7 @@ export const ValueOverlay = forwardRef<HTMLCanvasElement, ValueOverlayProps>(fun
   const onRenderedRef = useRef(onRendered)
   useLayoutEffect(() => {
     onRenderedRef.current = onRendered
-  })
+  }, [onRendered])
 
   useEffect(() => {
     if (!ref) return
