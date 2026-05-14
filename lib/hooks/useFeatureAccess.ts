@@ -1,7 +1,7 @@
 /**
  * Hook to check feature access and show upgrade modal
  * 
- * PHILOSOPHY: Only gated for actual Pro features (AI, collaboration, presets).
+ * PHILOSOPHY: Only gate surfaces that are intentionally license-only.
  * Everything else is always accessible.
  * 
  * Usage: const { hasAccess, promptUpgrade } = useFeatureAccess('aiPaletteSuggestions')

@@ -43,7 +43,6 @@ export default function ValueCompareCanvas({
 }: ValueCompareCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Transform state
     const [zoom, setZoom] = useState(1)

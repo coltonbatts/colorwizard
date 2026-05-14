@@ -8,7 +8,7 @@ interface ValueChromaGraphProps {
 }
 
 export default function ValueChromaGraph({ color }: ValueChromaGraphProps) {
-    const { value, chroma, x, y } = useMemo(() => {
+    const { x, y } = useMemo(() => {
         const val = getPainterValue(color) // 0-10
         const chr = getPainterChroma(color).value // 0-~0.4
 
@@ -27,7 +27,7 @@ export default function ValueChromaGraph({ color }: ValueChromaGraphProps) {
         const yPos = 10 + (10 - val) / 10 * graphH
         const xPos = padding + (chr / 0.4) * graphW
 
-        return { value: val, chroma: chr, x: xPos, y: yPos }
+        return { x: xPos, y: yPos }
     }, [color])
 
     return (

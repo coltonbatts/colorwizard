@@ -1,6 +1,6 @@
 /**
  * React hook for Procreate palette export
- * Handles Pro tier gating, loading states, and error handling
+ * Handles desktop license gating, loading states, and error handling.
  */
 
 'use client';
@@ -14,7 +14,7 @@ import { getFeatureLimit } from '@/lib/featureFlags';
 export interface UseExportToProcreateResult {
     /** Export function */
     exportToProcreate: (colors: ProcreateColor[], paletteName?: string) => Promise<void>;
-    /** Whether user is Pro tier */
+    /** Whether the current runtime has a desktop license */
     isPro: boolean;
     /** Maximum colors allowed for current tier */
     maxColors: number;
@@ -27,7 +27,7 @@ export interface UseExportToProcreateResult {
 }
 
 /**
- * Hook for Procreate palette export with Pro tier gating
+ * Hook for Procreate palette export with desktop license gating.
  */
 export function useExportToProcreate(): UseExportToProcreateResult {
     const { tier, isPro } = useUserTier();
@@ -57,7 +57,7 @@ export function useExportToProcreate(): UseExportToProcreateResult {
                 // Prepare export options
                 const options: ProcreateExportOptions = {
                     paletteName,
-                    sortByValue: isPro, // Pro feature: sort by brightness
+                    sortByValue: isPro,
                     maxColors,
                 };
 

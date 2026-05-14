@@ -19,6 +19,9 @@ components/graphify-out/
 .DS_Store
 *.pem
 
+# local Claude Code worktrees (never commit — avoid polluting `git status`)
+.claude/worktrees/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

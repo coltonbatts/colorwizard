@@ -1,5 +1,5 @@
 /**
- * ColorWizard Pro — runtime detection only.
+ * ColorWizard — runtime detection only.
  * No @tauri-apps imports: safe for shared hooks and tree-shaking on web.
  */
 
@@ -15,7 +15,7 @@ function getInvoke(): null | ((cmd: string, args?: Record<string, unknown>) => P
 }
 
 /**
- * True when running inside the Tauri desktop shell (ColorWizard Pro).
+ * True when running inside the Tauri desktop shell.
  * Must stay aligned with the `runtime-detect` inline script in `app/layout.tsx` (dataset.runtime),
  * or the web marketing shell can flash in Pro.
  */

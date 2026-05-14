@@ -1,14 +1,11 @@
 /**
  * Feature Flags System for ColorWizard.
- * Desktop licensing grants the full app; unlicensed and web preview modes stay limited.
+ * Desktop licensing grants the full app; web preview mode stays limited.
  */
 
-export type UserTier = 'free' | 'pro' | 'pro_lifetime'
+export type UserTier = 'free' | 'licensed'
 
-/**
- * PRO-ONLY features (everything else is free)
- * These are genuine value-adds, not artificial gatekeeping
- */
+/** License-only features. Everything else stays available in the preview. */
 export type ProOnlyFeature =
   | 'aiPaletteSuggestions'
   | 'teamCollaboration'
@@ -25,8 +22,7 @@ export interface FeatureConfig {
 }
 
 /**
- * Master feature configuration - ONLY pro features listed
- * Everything else is available to free users
+ * Master feature configuration. Only license-only features are listed here.
  */
 export const PRO_FEATURES: Record<ProOnlyFeature, FeatureConfig> = {
   aiPaletteSuggestions: {
@@ -53,7 +49,7 @@ export const PRO_FEATURES: Record<ProOnlyFeature, FeatureConfig> = {
 export const FEATURES = PRO_FEATURES
 
 /**
- * What's FREE (no gating, no limits)
+ * What's available without a desktop license.
  */
 export const FREE_FEATURES = [
   'Core color sampling and analysis',
@@ -68,7 +64,7 @@ export const FREE_FEATURES = [
 ]
 
 /**
- * What's license-only
+ * What's license-only.
  */
 export const PRO_ONLY_FEATURES = [
   'AI palette suggestions',
@@ -77,14 +73,14 @@ export const PRO_ONLY_FEATURES = [
 ]
 
 /**
- * Check if a feature is Pro-only (and user needs to upgrade)
+ * Check if a feature is license-only.
  */
 export function isProOnlyFeature(featureName: string): boolean {
   return (Object.keys(PRO_FEATURES) as ProOnlyFeature[]).includes(featureName as ProOnlyFeature)
 }
 
 /**
- * Check if user has access to a Pro feature
+ * Check if user has access to a license-only feature.
  */
 export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTier): boolean {
   if (!isProOnlyFeature(featureName)) {
@@ -92,12 +88,11 @@ export function hasAccessToProFeature(featureName: ProOnlyFeature, tier: UserTie
     return true
   }
 
-  // Pro features require Pro tier (subscription or lifetime)
-  return tier === 'pro' || tier === 'pro_lifetime'
+  return tier === 'licensed'
 }
 
 /**
- * Get all Pro-only features
+ * Get all license-only features.
  */
 export function getProFeatures(): FeatureConfig[] {
   return Object.values(PRO_FEATURES)
@@ -108,7 +103,7 @@ export function getProFeatures(): FeatureConfig[] {
  */
 export function getFeatureLimit(featureName: string, tier: UserTier): number {
   if (featureName === 'exportToProcreate') {
-    return tier === 'free' ? 5 : Infinity
+    return tier === 'licensed' ? Infinity : 5
   }
 
   // Default to Infinity for features without explicitly defined limits

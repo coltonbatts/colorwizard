@@ -79,7 +79,13 @@ export default function RulerOverlay({
     const pointB = externalPointB !== undefined ? externalPointB : internalPointB
 
     // Default transform state (no zoom/pan)
-    const transform: TransformState = transformState || { zoomLevel: 1, panOffset: { x: 0, y: 0 } }
+    const transform: TransformState = useMemo(
+        () => transformState || { zoomLevel: 1, panOffset: { x: 0, y: 0 } },
+        [transformState]
+    )
+    const canvasScaleEnabled = canvasSettings?.enabled
+    const canvasUnit = canvasSettings?.unit
+    const canvasWidth = canvasSettings?.width
 
     // Convert image-space points to screen-space for rendering
     const screenPointA = useMemo(() => {
@@ -91,22 +97,6 @@ export default function RulerOverlay({
         if (!pointB || !image) return null
         return imageToScreen(pointB.x, pointB.y, transform, image.width, image.height)
     }, [pointB, transform, image])
-
-    const setPointA = (p: Point | null) => {
-        if (onMeasurePointsChange) {
-            onMeasurePointsChange(p, pointB ?? null)
-        } else {
-            setInternalPointA(p)
-        }
-    }
-
-    const setPointB = (p: Point | null) => {
-        if (onMeasurePointsChange) {
-            onMeasurePointsChange(pointA ?? null, p)
-        } else {
-            setInternalPointB(p)
-        }
-    }
 
     // Calculate grid pattern
     const gridStyle = useMemo(() => {
@@ -139,7 +129,7 @@ export default function RulerOverlay({
             backgroundSize: `${spacingPx}px ${spacingPx}px`,
             backgroundPosition: `${gridX}px ${gridY}px`
         }
-    }, [gridEnabled, calibration, gridSpacing, transform, image])
+    }, [gridEnabled, calibration, gridSpacing, transform, image, gridOpacity])
 
     // Calculate distance between points (in image-space for accurate measurement)
     const measurementInfo = useMemo(() => {
@@ -157,12 +147,12 @@ export default function RulerOverlay({
         let distanceInches = pxToInches(distanceFittedPx, calibration)
 
         // Override with canvas-relative measurement if enabled
-        if (canvasSettings?.enabled) {
+        if (canvasScaleEnabled && canvasWidth) {
             // We use the width as the reference for scaling
             // Units can be inches or cm
-            const distanceUnits = imageToCanvasUnits(distanceImagePx, image.width, canvasSettings.width)
+            const distanceUnits = imageToCanvasUnits(distanceImagePx, image.width, canvasWidth)
 
-            if (canvasSettings.unit === 'in') {
+            if (canvasUnit === 'in') {
                 distanceInches = distanceUnits
             } else {
                 // Convert cm to inches internally for the rest of the logic
@@ -187,7 +177,7 @@ export default function RulerOverlay({
             midY,
             angle
         }
-    }, [pointA, pointB, calibration, screenPointA, screenPointB, image, transform.imageDrawInfo])
+    }, [pointA, pointB, calibration, screenPointA, screenPointB, image, transform.imageDrawInfo, canvasScaleEnabled, canvasUnit, canvasWidth])
 
     const clearMeasurement = () => {
         if (onMeasurePointsChange) {

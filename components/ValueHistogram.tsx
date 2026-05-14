@@ -14,7 +14,6 @@ export default function ValueHistogram({ bins, thresholds, currentValue }: Value
     // Generate path for histogram area
     const pathData = useMemo(() => {
         if (bins.length === 0) return ''
-        const width = 256
         const height = 100
 
         let d = `M 0 ${height}`

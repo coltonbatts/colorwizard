@@ -92,6 +92,7 @@ function CanvasImage({
             onPointerDown={onPointerDown}
             className={isSelected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent' : ''}
         >
+            {/* eslint-disable-next-line @next/next/no-img-element -- Transformed local image layers need raw object/data URLs, not Next image optimization. */}
             <img
                 src={image.src}
                 alt={isReference ? 'Reference' : 'WIP'}

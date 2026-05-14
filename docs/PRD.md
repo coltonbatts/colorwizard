@@ -52,7 +52,7 @@ The codebase also includes support for:
 - Palette persistence and palette management
 - Session color strips
 - Procreate export
-- Feature gating and Stripe checkout plumbing
+- Desktop license gating for local builds
 
 Some of those features are present in the codebase, but the current thin-core release is intentionally focused on the sampling-and-matching loop.
 
@@ -189,12 +189,12 @@ ColorWizard solves this by turning a sampled pixel into practical next-step guid
 
 ## Monetization / Packaging
 
-The repo contains feature gating and Stripe integration for a Pro tier. The product direction implied by the code is:
+The current product direction is a paid standalone desktop tool with local activation:
 
-- Free tier: core sampling, paint recipes, DMC matching, exports, and local control
-- Pro tier: advanced or convenience features layered on top of the core
+- Desktop app: local project library, offline-first workflow, and local activation
+- Web preview: useful for basic exploration, but not the center of the product
 
-For the thin-core release, the free core loop should stay fully usable without a payment decision.
+Stripe checkout/payment plumbing is not part of the current desktop app scope.
 
 ## Success Metrics
 
@@ -229,13 +229,13 @@ For the thin-core release, the free core loop should stay fully usable without a
 - Dashboard-centric workflows
 - Color theory lab pages
 - Trace/AR experiments
-- Pricing page as part of the live thin-core app
+- Pricing page as part of the desktop app
 - Collaboration and cloud sync
 
 ## Open Questions
 
 - Should the product stay strictly thin-core, or should the broader palette/calibration/reference tools return in a later phase?
-- Should Pro be lifetime, subscription, or both?
+- What purchase/licensing channel should ship with the desktop app?
 - Which advanced features deserve monetization without harming the free core experience?
 
 ## Recommended Product Definition
@@ -243,4 +243,3 @@ For the thin-core release, the free core loop should stay fully usable without a
 If this product has to be described in one sentence, use this:
 
 **ColorWizard is a local-first color sampler for artists that turns an image click into practical paint and thread matches.**
-

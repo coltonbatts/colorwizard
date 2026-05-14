@@ -15,7 +15,6 @@ const nextConfig = {
     optimizePackageImports: [
       'framer-motion',
       'culori',
-      'firebase',
     ],
   },
 

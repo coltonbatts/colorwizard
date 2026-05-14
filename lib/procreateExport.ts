@@ -79,7 +79,7 @@ export function generateSwatchesJson(
         .map(colorToSwatch)
         .filter((swatch): swatch is ProcreateSwatch => swatch !== null);
 
-    // Sort by brightness/value if requested (Pro feature)
+    // Sort by brightness/value if requested by the licensed desktop workflow.
     if (sortByValue) {
         swatches.sort((a, b) => b.brightness - a.brightness);
     }

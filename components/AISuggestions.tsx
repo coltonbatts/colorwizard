@@ -25,7 +25,7 @@ interface AISuggestionsProps {
 }
 
 /**
- * AISuggestions - Flagship Pro feature component.
+ * AISuggestions - license-only suggestion surface.
  * Displays "AI" generated color theory advice and harmonies.
  */
 export default function AISuggestions({ rgb }: AISuggestionsProps) {

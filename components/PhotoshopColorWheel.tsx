@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { converter, formatHex } from 'culori'
 
 interface HSV {
@@ -45,7 +45,7 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
     // Tip: Right (0 degrees)
     // White: Top Left
     // Black: Bottom Left
-    const getTriangleVertices = (hue: number) => {
+    const getTriangleVertices = useCallback(() => {
         const rad = innerRadius
         // Equilateral triangle inscribed in circle of innerRadius
         // Tip (Pure Hue)
@@ -61,9 +61,9 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
             y: centerY + rad * Math.sin(240 * Math.PI / 180)
         }
         return { vHue, vWhite, vBlack }
-    }
+    }, [centerX, centerY, innerRadius])
 
-    const draw = () => {
+    const draw = useCallback(() => {
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')
@@ -99,7 +99,7 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
         ctx.stroke()
 
         // 3. Draw Triangle
-        const { vHue, vWhite, vBlack } = getTriangleVertices(hsvState.h)
+        const { vHue, vWhite, vBlack } = getTriangleVertices()
 
         // We render triangle using a simple pixel loop for smooth gradient
         const imageData = ctx.createImageData(wheelSize, wheelSize)
@@ -116,22 +116,49 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
 
         const toRgb = (h: number, s: number, v: number) => {
             // Manual HSV to RGB for pixel loop performance
-            s /= 100; v /= 100;
-            const i = Math.floor(h / 60);
-            const f = h / 60 - i;
-            const p = v * (1 - s);
-            const q = v * (1 - f * s);
-            const t = v * (1 - (1 - f) * s);
-            let r = 0, g = 0, b = 0;
+            s /= 100
+            v /= 100
+            const i = Math.floor(h / 60)
+            const f = h / 60 - i
+            const p = v * (1 - s)
+            const q = v * (1 - f * s)
+            const t = v * (1 - (1 - f) * s)
+            let r = 0
+            let g = 0
+            let b = 0
             switch (i % 6) {
-                case 0: r = v, g = t, b = p; break;
-                case 1: r = q, g = v, b = p; break;
-                case 2: r = p, g = v, b = t; break;
-                case 3: r = p, g = q, b = v; break;
-                case 4: r = t, g = p, b = v; break;
-                case 5: r = v, g = p, b = q; break;
+                case 0:
+                    r = v
+                    g = t
+                    b = p
+                    break
+                case 1:
+                    r = q
+                    g = v
+                    b = p
+                    break
+                case 2:
+                    r = p
+                    g = v
+                    b = t
+                    break
+                case 3:
+                    r = p
+                    g = q
+                    b = v
+                    break
+                case 4:
+                    r = t
+                    g = p
+                    b = v
+                    break
+                case 5:
+                    r = v
+                    g = p
+                    b = q
+                    break
             }
-            return { r: r * 255, g: g * 255, b: b * 255 };
+            return { r: r * 255, g: g * 255, b: b * 255 }
         }
 
         for (let y = 0; y < wheelSize; y++) {
@@ -192,11 +219,11 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
         ctx.strokeStyle = v_in > 0.5 ? 'white' : 'black'
         ctx.lineWidth = 1
         ctx.stroke()
-    }
+    }, [centerX, centerY, getTriangleVertices, hsvState, outerRadius, ringWidth, wheelSize])
 
     useEffect(() => {
         draw()
-    }, [hsvState])
+    }, [draw])
 
     const handleMouseDown = (e: React.MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect()
@@ -243,16 +270,14 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
     }
 
     const updateSV = (x: number, y: number) => {
-        const { vHue, vWhite, vBlack } = getTriangleVertices(hsvState.h)
+        const { vHue, vWhite, vBlack } = getTriangleVertices()
         const denom = (vWhite.y - vBlack.y) * (vHue.x - vBlack.x) + (vBlack.x - vWhite.x) * (vHue.y - vBlack.y)
         const a = ((vWhite.y - vBlack.y) * (x - vBlack.x) + (vBlack.x - vWhite.x) * (y - vBlack.y)) / denom
         const b = ((vBlack.y - vHue.y) * (x - vBlack.x) + (vHue.x - vBlack.x) * (y - vBlack.y)) / denom
-        const c = 1 - a - b
 
         // Parametric clamping to triangle
         const a_c = Math.max(0, Math.min(1, a))
         const b_c = Math.max(0, Math.min(1 - a_c, b))
-        const c_c = 1 - a_c - b_c
 
         // Final normalization
         const v_val = a_c + b_c

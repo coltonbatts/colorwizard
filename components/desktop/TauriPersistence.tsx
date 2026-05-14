@@ -9,7 +9,7 @@
  */
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { isCalibrationStale, type CalibrationData } from '@/lib/calibration'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { usePaintPaletteStore, type PaintPalette } from '@/lib/store/usePaintPaletteStore'
@@ -394,6 +394,58 @@ export default function TauriPersistence({
 
   const persistenceActive = isDesktopApp() && !persistenceDisabled
 
+  const saveSignal = useMemo(() => ({
+    activePaintPaletteId,
+    activeValueBandIndex,
+    calibration,
+    canvasSettings,
+    compactMode,
+    gridOpacity,
+    isPaintPaletteDirty,
+    measurementLayer,
+    palettes,
+    pinnedColors,
+    referenceImage,
+    referenceLocked,
+    referenceOpacity,
+    referenceTransform,
+    rulerGridEnabled,
+    rulerGridSpacing,
+    savedPaintPalettes,
+    selectedPaintIds,
+    sidebarCollapsed,
+    sidebarWidth,
+    simpleMode,
+    surfaceBounds,
+    surfaceImage,
+    valueScaleSettings,
+  }), [
+    activePaintPaletteId,
+    activeValueBandIndex,
+    calibration,
+    canvasSettings,
+    compactMode,
+    gridOpacity,
+    isPaintPaletteDirty,
+    measurementLayer,
+    palettes,
+    pinnedColors,
+    referenceImage,
+    referenceLocked,
+    referenceOpacity,
+    referenceTransform,
+    rulerGridEnabled,
+    rulerGridSpacing,
+    savedPaintPalettes,
+    selectedPaintIds,
+    sidebarCollapsed,
+    sidebarWidth,
+    simpleMode,
+    surfaceBounds,
+    surfaceImage,
+    valueScaleSettings,
+  ])
+
   useEffect(() => {
     hydratedProjectIdRef.current = hydratedProjectId
   }, [hydratedProjectId])
@@ -619,37 +671,13 @@ export default function TauriPersistence({
       persistDesktopProjectSnapshot(hydratedProjectId)
     }, 500)
   }, [
-    activePaintPaletteId,
-    calibration,
-    canvasSettings,
-    compactMode,
-    gridOpacity,
     hydratedProjectId,
-    isPaintPaletteDirty,
-    measurementLayer,
-    palettes,
-    pinnedColors,
-    referenceImage,
-    referenceLocked,
-    referenceOpacity,
-    referenceTransform,
-    rulerGridEnabled,
-    rulerGridSpacing,
-    savedPaintPalettes,
-    selectedPaintIds,
-    sidebarCollapsed,
-    sidebarWidth,
-    simpleMode,
-    surfaceBounds,
-    surfaceImage,
-    valueScaleSettings,
-    activeValueBandIndex,
     persistenceActive,
   ])
 
   useEffect(() => {
     debouncedSave()
-  }, [debouncedSave])
+  }, [debouncedSave, saveSignal])
 
   const flushPendingSave = useCallback(() => {
     if (saveTimeoutRef.current) {

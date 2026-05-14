@@ -9,9 +9,7 @@
  *    - Valid key: show ProjectGallery or app content
  * 2. In Browser: pass through children unchanged.
  *
- * Route guard: when running in Tauri, any non-root route (pricing, support,
- * dashboard, settings, trace, color-theory) is immediately redirected to `/`.
- * The main workbench lives at `/`; marketing-only web routes never appear in Pro.
+ * The desktop app opens to the local project library or an active project.
  */
 'use client'
 
@@ -33,7 +31,6 @@ import {
 export const DesktopPersistenceContext = createContext<{ persistenceDisabled: boolean }>({
   persistenceDisabled: false,
 })
-import { usePathname, useRouter } from 'next/navigation'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import {
   createProject,
@@ -55,16 +52,6 @@ import DesktopWorkspaceEmpty from '@/components/desktop/DesktopWorkspaceEmpty'
 import ProjectGallery from '@/components/desktop/ProjectGallery'
 import TauriPersistence from '@/components/desktop/TauriPersistence'
 import LicenseActivation from '@/components/desktop/LicenseActivation'
-
-/** Routes that exist on the web but should not be accessible inside the desktop app */
-const DESKTOP_BLOCKED_ROUTES = new Set([
-  '/pricing',
-  '/support',
-  '/dashboard',
-  '/settings',
-  '/trace',
-  '/color-theory',
-])
 
 const LAST_OPENED_PROJECT_KEY = 'last_opened_project'
 
@@ -110,7 +97,7 @@ function DesktopProjectFrame({
       <header className="border-b border-[#ddd1c0] bg-[#f5f0e8]/95 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard</p>
             <div className="mt-1 flex items-center gap-3">
               <h1 className="truncate font-serif text-2xl">{project?.name ?? 'Opening project...'}</h1>
               <span className="hidden text-xs text-[#8f7f69] md:inline">Last updated {modifiedAt}</span>
@@ -161,7 +148,7 @@ function DesktopDatabaseErrorScreen({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
       <div className="w-full max-w-xl rounded-[30px] border border-[#c9a882] bg-white/90 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.1)] backdrop-blur-xl">
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f5a3c]">ColorWizard Pro</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f5a3c]">ColorWizard</p>
         <h1 className="mt-3 font-serif text-[clamp(1.8rem,4vw,2.6rem)] leading-tight tracking-[-0.03em] text-[#1a1a1a]">
           Local database unavailable
         </h1>
@@ -227,7 +214,7 @@ function DesktopLaunchScreen({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
       <div className="w-full max-w-xl rounded-[30px] border border-[#d7cab8] bg-white/84 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.08)] backdrop-blur-xl">
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard</p>
         <h1 className="mt-3 font-serif text-[clamp(2.2rem,5vw,3.4rem)] leading-[0.95] tracking-[-0.04em] text-[#1a1a1a]">
           {title}
         </h1>
@@ -249,8 +236,6 @@ function DesktopLaunchScreen({
 }
 
 export default function TauriAppShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
   const [hasMounted, setHasMounted] = useState(false)
   /** Desktop restores the last open project when possible; otherwise it falls back to the library. */
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null)
@@ -310,15 +295,8 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     setProjectStatus(detail)
   }, [])
 
-  useEffect(() => {
-    if (!isDesktopApp()) return
-    if (pathname && DESKTOP_BLOCKED_ROUTES.has(pathname)) {
-      router.replace('/')
-    }
-  }, [pathname, router])
-
   // Must run before paint: while hasMounted is false we pass `children` through unchanged, which is
-  // the full web home (marketing dropzone). useEffect runs after paint — users saw that every launch.
+  // the full web workbench before desktop state resolves. useEffect runs after paint.
   useLayoutEffect(() => {
     mountedRef.current = true
     setHasMounted(true)
@@ -420,7 +398,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
       settled = true
       window.clearTimeout(timer)
     }
-  }, [])
+  }, [recordStartupStep])
 
   const handleActivated = useCallback(() => {
     recordStartupStep('activation', 'Activation completed successfully.')
@@ -474,7 +452,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [activeProjectId])
+  }, [activeProjectId, recordStartupStep])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -548,7 +526,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [activeProjectId, dbUnlocked, launchResolved, licensed])
+  }, [activeProjectId, dbUnlocked, launchResolved, licensed, recordStartupStep])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -581,7 +559,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [activeProjectId])
+  }, [activeProjectId, recordStartupStep])
 
   if (!hasMounted || !isDesktopApp()) {
     return children

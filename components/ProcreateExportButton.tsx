@@ -21,7 +21,7 @@ export interface ProcreateExportButtonProps {
 }
 
 /**
- * Procreate export button with Pro tier gating
+ * Procreate export button with desktop license gating.
  */
 export default function ProcreateExportButton({
     colors,
