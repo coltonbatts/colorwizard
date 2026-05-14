@@ -74,7 +74,7 @@ function InfiniteCanvas({
     children
 }: InfiniteCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null)
-    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
+    const [, setContainerSize] = useState({ width: 800, height: 600 })
 
     // Canvas transform hook
     const {
@@ -88,8 +88,6 @@ function InfiniteCanvas({
         startPinch,
         handlePinch,
         endPinch,
-        resetView,
-        fitToView
     } = useDrawingCanvasTransform({
         initialTransform: externalTransform
     })

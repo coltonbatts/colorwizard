@@ -1,16 +1,16 @@
-# ColorWizard Desktop — Architecture & Migration Plan
+# ColorWizard Desktop — Architecture
 
 ## Vision
-ColorWizard Desktop is the $10 Procreate-style companion to ColorWizard Web (free forever). Web is the quick-lookup tool. Desktop is the workspace: projects, persistence, zero network dependency.
+ColorWizard Desktop is the owned local workspace for artists: projects, persistence, and zero network dependency for the core workflow.
 
 ---
 
-## WHAT GETS STRIPPED
+## WHAT GOT STRIPPED
 - Firebase auth (login, user sessions)
 - Firestore (remote storage)
 - Stripe webhooks (server-side payment flow)
-- User tier system (`lib/db/userTier.ts`)
-- `firebase`, `@stripe/stripe-js` npm dependencies
+- User tier/payment server modules
+- Stripe npm dependencies
 
 ## WHAT GETS ADDED
 - Tauri plugin-sql (SQLite) for local DB
@@ -176,18 +176,11 @@ tauri-plugin-dialog = "2"
 ---
 
 ## FIREBASE STRATEGY
-**Phased removal, not all-at-once:**
-
-1. First: Strip auth from the Tauri build (conditional: if `window.__TAURI__`, skip Firebase init)
-2. Second: Migrate Firestore reads to SQLite
-3. Third: Delete Firebase imports entirely
-
-This way the web version stays unaffected while we migrate the desktop.
+Firebase/auth is removed from active runtime code. ColorWizard Desktop is the product boundary: local license, local projects, and no required cloud account. Any future web companion should reintroduce auth behind a separate web-only boundary rather than sharing it with the desktop app shell.
 
 ---
 
 ## RISK AREAS
-- **Firebase in Web Workers**: Verify `comlink` workers don't import Firebase
 - **Next.js static export compatibility**: `output: 'export'` — ensure pages don't need server
 - **Image loading in Tauri**: `file://` vs `http://` URL handling for assets
 - **Performance**: SQLite reads need to not block React render (use Web Worker or Tauri async commands)

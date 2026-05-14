@@ -5,7 +5,7 @@
  * Contains image selector, transform controls, quick actions, and canvas controls.
  */
 
-import { useCallback, useState, useEffect, memo } from 'react'
+import { useState, useEffect, memo } from 'react'
 import type { SelectedImage } from './InfiniteCanvas'
 
 interface DrawingControlPanelProps {

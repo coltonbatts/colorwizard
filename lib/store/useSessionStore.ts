@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
-import { safeStorage } from './storage'
+import { sessionPersistStorage } from './storage'
 import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
 
 type SampledColor = {
@@ -82,7 +82,7 @@ export const useSessionStore = create<SessionState>()(
         }),
         {
             name: 'colorwizard-session',
-            storage: safeStorage,
+            storage: sessionPersistStorage,
             partialize: (state) => ({
                 pinnedColors: state.pinnedColors,
                 valueModeEnabled: state.valueModeEnabled,

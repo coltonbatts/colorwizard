@@ -1,6 +1,6 @@
 /**
  * Stable import path for canvas/shared code: IPC + image URL helpers.
- * Implementation lives under lib/desktop/ (ColorWizard Pro boundary).
+ * Implementation lives under lib/desktop/.
  */
 'use client'
 

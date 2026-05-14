@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getColorName } from '@/lib/colorNaming';
-import { ColorNameMatch, ColorSource } from '@/lib/colorNaming/types';
+import { ColorNameMatch } from '@/lib/colorNaming/types';
 import { getMatchConfidence } from '@/lib/colorUtils';
 
 interface ColorNamingDisplayProps {
@@ -10,7 +10,7 @@ interface ColorNamingDisplayProps {
 }
 
 export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
-    const [source, setSource] = useState<ColorSource>('extended');
+    const source = 'extended';
     const [match, setMatch] = useState<ColorNameMatch | null>(null);
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState<'name' | 'hex' | null>(null);

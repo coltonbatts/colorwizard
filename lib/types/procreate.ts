@@ -47,7 +47,7 @@ export interface ProcreateSwatchesFile {
 export interface ProcreateExportOptions {
     /** Palette name (defaults to "ColorWizard Palette") */
     paletteName?: string;
-    /** Sort colors by value/brightness (Pro feature) */
+    /** Sort colors by value/brightness */
     sortByValue?: boolean;
     /** Maximum colors allowed (enforced by tier) */
     maxColors?: number;

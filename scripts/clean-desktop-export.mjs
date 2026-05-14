@@ -1,73 +1,29 @@
 /**
- * scripts/clean-desktop-export.mjs
+ * Keep the Tauri export hook explicit.
  *
- * After `next build` (static export), this strips marketing-only pages
- * from the `out/` directory so they are never bundled into the Tauri desktop app.
- *
- * The web deployment is unaffected — this only touches the local `out/` folder
- * used by Tauri as `frontendDist`.
- *
- * Why Next.js `output: 'export'` creates these:
- *   Static export generates a separate .html file + .txt RSC payload for every
- *   route in the app/ folder, even if the page body is just `redirect('/')`.
- *   Tauri serves files directly and does not execute Next.js server middleware,
- *   so client-side redirects in those pages cause a flash of the wrong UI.
- *
- * Kept:
- *   /            — the main tool (index.html)
- *   /404.html    — error page (Next.js convention)
- *   /data/       — static color name and DMC floss JSON data
- *
- * Removed:
- *   pricing, support, dashboard, settings, trace, color-theory
+ * The app currently has a single user-facing route (`/`), so there are no
+ * marketing or server-only pages to strip from `out/`.
  */
 
-import { readdirSync, rmSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { readdirSync, statSync } from 'node:fs'
 
 const OUT_DIR = new URL('../out', import.meta.url).pathname
 
-const REMOVE_PAGES = [
-  'pricing',
-  'support',
-  'dashboard',
-  'settings',
-  'trace',
-  'color-theory',
-]
-
-let removed = 0
-
-for (const page of REMOVE_PAGES) {
-  // Remove .html files
-  const htmlFile = join(OUT_DIR, `${page}.html`)
-  if (exists(htmlFile)) {
-    rmSync(htmlFile, { force: true })
-    console.log(`[clean-desktop-export] removed ${page}.html`)
-    removed++
-  }
-
-  // Remove .txt RSC payload files
-  const txtFile = join(OUT_DIR, `${page}.txt`)
-  if (exists(txtFile)) {
-    rmSync(txtFile, { force: true })
-    console.log(`[clean-desktop-export] removed ${page}.txt`)
-    removed++
-  }
-
-  // Remove directories too (in case Next.js changes output format)
-  const dirPath = join(OUT_DIR, page)
-  if (exists(dirPath)) {
-    rmSync(dirPath, { recursive: true, force: true })
-    console.log(`[clean-desktop-export] removed ${page}/`)
-    removed++
-  }
+if (!exists(OUT_DIR)) {
+  console.log('[clean-desktop-export] out/ does not exist yet')
+  process.exit(0)
 }
 
 const remaining = readdirSync(OUT_DIR)
-  .filter((n) => n !== '_next' && !n.startsWith('.') && n !== '404.html' && n !== 'data')
-console.log(`[clean-desktop-export] removed ${removed} files, remaining: ${remaining.join(', ') || '(clean)'}`)
+  .filter((name) => name !== '_next' && !name.startsWith('.') && name !== '404.html' && name !== 'data')
 
-function exists(p) {
-  try { statSync(p); return true } catch { return false }
+console.log(`[clean-desktop-export] desktop export ready; remaining top-level entries: ${remaining.join(', ') || '(clean)'}`)
+
+function exists(path) {
+  try {
+    statSync(path)
+    return true
+  } catch {
+    return false
+  }
 }

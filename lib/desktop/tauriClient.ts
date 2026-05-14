@@ -1,5 +1,5 @@
 /**
- * ColorWizard Pro — Tauri v2 IPC and file URL helpers.
+ * ColorWizard — Tauri v2 IPC and file URL helpers.
  * Do not import from shared UI except via @/lib/tauri (compat) or from components/desktop/*.
  */
 'use client'

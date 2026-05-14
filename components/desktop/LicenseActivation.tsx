@@ -121,7 +121,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             <span className="text-2xl font-serif text-[#f5f0e8] font-bold">C</span>
           </div>
           <h2 className="text-xl font-bold text-[#1a1a1a] mb-1">
-            ColorWizard Pro
+            ColorWizard
           </h2>
           <p className="text-sm text-[#666]">
             Enter your license key to unlock this copy on this Mac.

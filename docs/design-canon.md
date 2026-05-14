@@ -1,8 +1,8 @@
-# ColorWizard Pro Design Canon
+# ColorWizard Design Canon
 
 Status: canonical
 
-This document defines the "warm paper workbench" design language for ColorWizard Pro.
+This document defines the "warm paper workbench" design language for ColorWizard.
 
 Read this before making UI changes. If any current surface in the app contradicts this document, this document wins.
 
@@ -10,7 +10,7 @@ This canon was extracted from the parts of the codebase that already speak the r
 
 ## Design Intent
 
-ColorWizard Pro should feel like a real painter's instrument, not a web app in a shell.
+ColorWizard should feel like a real painter's instrument, not a web app in a shell.
 
 The target is:
 

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
-import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
 import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
 import TauriAppShell from '@/components/desktop/TauriAppShell'
@@ -106,7 +105,7 @@ export default function RootLayout({
 
         <div className="desktop-boot-splash" aria-hidden="true">
           <div className="desktop-boot-splash__panel">
-            <p className="desktop-boot-splash__eyebrow">ColorWizard Pro</p>
+            <p className="desktop-boot-splash__eyebrow">ColorWizard</p>
             <h1 className="desktop-boot-splash__title">Opening studio…</h1>
             <p className="desktop-boot-splash__subtitle">Loading your workspace, library, and last session.</p>
           </div>
@@ -119,7 +118,7 @@ export default function RootLayout({
           </a>
           <StoreBootstrap />
           <TauriAppShell>
-            <AuthProvider>{children}</AuthProvider>
+            {children}
           </TauriAppShell>
         </div>
       </body>

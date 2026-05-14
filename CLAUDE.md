@@ -30,9 +30,9 @@ npm run generate:data    # Generate static DMC floss + color names JSON to publi
 
 ### Web vs. Desktop Split
 
-The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The `postbuild` script (`scripts/clean-desktop-export.mjs`) strips web-only routes (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`) from `out/` before Tauri bundles it. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
+The app deploys from a single Next.js codebase as both a web app and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for production static generation. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
 
-Cloud features (Firebase auth, Stripe) are conditionally loaded when `OPEN_SOURCE_MODE` is not set — import them lazily via `lib/auth/` to avoid dead code in offline builds.
+Cloud auth is disabled by default through `lib/appMode.ts`. Keep server integrations lazy and optional so offline desktop builds stay clean.
 
 ### State Management
 
