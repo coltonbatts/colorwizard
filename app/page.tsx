@@ -145,6 +145,7 @@ export default function Home() {
   const saveCalibration = useCalibrationStore(state => state.saveCalibration)
   const resetCalibration = useCalibrationStore(state => state.resetCalibration)
   const loadCalibrationFromStorage = useCalibrationStore(state => state.loadCalibrationFromStorage)
+  const setMeasureMode = useCalibrationStore(state => state.setMeasureMode)
   const measureMode = useCalibrationStore(state => state.measureMode)
   const measurePointA = useCalibrationStore(state => state.measurePointA)
   const measurePointB = useCalibrationStore(state => state.measurePointB)
@@ -208,6 +209,8 @@ export default function Home() {
     setBreakdownValue(0)
     setHistogramBins([])
     setValueScaleResult(null)
+    setMeasureMode(false)
+    setMeasurePoints(null, null)
     normalizeValueWorkflow(false)
     setActiveTab('sample')
     setIsNavOpen(false)
@@ -215,7 +218,7 @@ export default function Home() {
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
     lastProcessedRef.current = null
-  }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
+  }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setMeasureMode, setMeasurePoints, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
 
   const lastProcessedRef = useRef<string | null>(null)
 
@@ -511,6 +514,7 @@ export default function Home() {
 
   // Session palette check for layout padding
   const hasSessionColors = useHasSessionColors()
+  const showSessionPalette = Boolean(image && hasSessionColors)
   const isPinnedSample = !!sampledColor && pinnedColors.some((p) => p.hex === sampledColor.hex)
   const desktopCanvasMode = (activeTab === 'deck' ? 'sample' : activeTab) as Exclude<TabType, 'deck'>
   const activeDesktopPanel =
@@ -556,7 +560,7 @@ export default function Home() {
       id="main-content"
       tabIndex={-1}
       suppressHydrationWarning
-      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${hasSessionColors ? 'pb-14 md:pb-0' : ''}`}
+      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${showSessionPalette ? 'pb-14 md:pb-0' : ''}`}
     >
       {!isMobile ? (
         <div
@@ -873,7 +877,7 @@ export default function Home() {
         </>
       )}
 
-      <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />
+      {image && <SessionPaletteStrip onColorSelect={handleSessionColorSelect} />}
 
       <PaletteManager
         isOpen={showPaletteManager}

@@ -75,9 +75,9 @@ const FitIcon = () => (
 
 const HomeIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="5" width="18" height="14" rx="3" />
-    <path d="M12 8v8" />
-    <path d="M8 12h8" />
+    <path d="M3 11.5 12 4l9 7.5" />
+    <path d="M5 10.5V20h14v-9.5" />
+    <path d="M9 20v-6h6v6" />
   </svg>
 )
 
@@ -189,6 +189,16 @@ export default function CompactToolbar({
         <div className="pointer-events-auto mx-auto mb-2 flex w-fit items-center gap-0.5 rounded-[16px] border border-ink-hairline bg-paper-elevated/95 p-1 shadow-[0_14px_28px_rgba(26,26,26,0.12)] backdrop-blur-md">
           <button
             type="button"
+            onClick={onGoHome}
+            title="Home"
+            aria-label="Return home and choose another image"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
+          >
+            <HomeIcon />
+          </button>
+
+          <button
+            type="button"
             onClick={onResetView}
             title="Fit"
             aria-label="Snap to fit"
@@ -265,11 +275,12 @@ export default function CompactToolbar({
         <button
           type="button"
           onClick={onGoHome}
-          title="New image"
-          aria-label="New image"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-ink-hairline bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+          title="Home"
+          aria-label="Return home and choose another image"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
         >
           <HomeIcon />
+          <span>Home</span>
         </button>
         <CommandButton label="Fit" icon={<FitIcon />} onClick={onResetView} />
         <CommandButton label="Value mode" icon={<ValueIcon />} active={valueModeEnabled} onClick={onToggleValueMode} />
