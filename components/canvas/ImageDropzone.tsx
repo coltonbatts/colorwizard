@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useState, useId } from 'react';
-import {
-    ReferenceWorkbenchIcon,
-} from '@/components/workbenchIcons';
+import { ReferenceWorkbenchIcon } from '@/components/workbenchIcons';
 
 /**
  * Web workbench empty state: load a reference image (drag/drop or file picker).
@@ -387,7 +385,11 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
             />
 
             <div
-                className="pointer-events-none absolute inset-0 opacity-[0.18]"
+                className="pointer-events-none absolute inset-0 bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] opacity-[0.34] mix-blend-multiply"
+                aria-hidden="true"
+            />
+            <div
+                className="pointer-events-none absolute inset-0 opacity-[0.12]"
                 style={{
                     backgroundImage: `
                         linear-gradient(to right, rgba(109,94,73,0.16) 1px, transparent 1px),
@@ -398,31 +400,31 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                 aria-hidden="true"
             />
             <div
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.9),transparent_34%),linear-gradient(180deg,rgba(245,240,232,0.96),rgba(235,229,219,0.96))]"
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,252,245,0.78),transparent_34%),linear-gradient(180deg,rgba(246,239,229,0.78),rgba(232,222,207,0.76))]"
                 aria-hidden="true"
             />
 
-            <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col px-5 py-6 sm:px-8">
-                <header className="flex items-center justify-between gap-4 border-b border-ink-hairline pb-4">
+            <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-5xl items-center justify-center px-5 py-6 sm:px-8">
+                <header className="absolute left-5 right-5 top-6 z-10 flex items-center justify-between gap-4 border-b border-ink-hairline pb-4 sm:left-8 sm:right-8">
                     <p className="font-display text-2xl leading-none text-ink">ColorWizard</p>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-graphite-muted">
                         Local. Private.
                     </p>
                 </header>
 
-                <div className="flex flex-1 items-center justify-center py-8 sm:py-12">
+                <div className="w-full pt-16">
                     <section
-                        className={`w-full max-w-3xl border p-4 shadow-[0_20px_70px_rgba(26,26,26,0.07)] transition-[border-color,box-shadow,transform,background-color] duration-200 sm:p-6 ${isDragging
+                        className={`w-full max-w-3xl border bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] p-4 shadow-[0_20px_70px_rgba(26,26,26,0.07)] transition-[border-color,box-shadow,transform,background-color] duration-200 sm:p-6 ${isDragging
                             ? 'scale-[1.01] border-graphite bg-paper-elevated shadow-[0_24px_80px_rgba(26,26,26,0.11)]'
-                            : 'border-linen bg-paper-elevated/86'
+                            : 'border-linen bg-paper-elevated'
                             }`}
                     >
-                        <div className="border border-dashed border-linen-strong bg-[#f8f4ed] px-5 py-10 text-center sm:px-10 sm:py-14">
+                        <div className="border border-dashed border-linen-strong bg-[#fbf4e8]/88 px-5 py-10 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] sm:px-10 sm:py-14">
                             <div className="mx-auto mb-8 grid max-w-xs grid-cols-5 gap-2" aria-hidden="true">
-                                {['#a33b32', '#d2ae72', '#78845f', '#60778a', '#34302a'].map((color) => (
+                                {['#b84235', '#e1b45f', '#7c9457', '#5b819c', '#312b23'].map((color) => (
                                     <span
                                         key={color}
-                                        className="h-10 border border-black/10 sm:h-12"
+                                        className="h-10 border border-black/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] sm:h-12"
                                         style={{ backgroundColor: color }}
                                     />
                                 ))}
