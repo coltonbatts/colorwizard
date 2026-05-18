@@ -414,7 +414,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
 
                 <div className="w-full pt-16">
                     <section
-                        className={`w-full max-w-3xl border bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] p-4 shadow-[0_20px_70px_rgba(26,26,26,0.07)] transition-[border-color,box-shadow,transform,background-color] duration-200 sm:p-6 ${isDragging
+                        className={`mx-auto w-full max-w-3xl border bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] p-4 shadow-[0_20px_70px_rgba(26,26,26,0.07)] transition-[border-color,box-shadow,transform,background-color] duration-200 sm:p-6 ${isDragging
                             ? 'scale-[1.01] border-graphite bg-paper-elevated shadow-[0_24px_80px_rgba(26,26,26,0.11)]'
                             : 'border-linen bg-paper-elevated'
                             }`}

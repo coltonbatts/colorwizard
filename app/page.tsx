@@ -523,11 +523,13 @@ export default function Home() {
       : DESKTOP_PANEL_META[activeTab as Exclude<TabType, 'sample'>]
   const desktopLayoutMode = getWorkbenchLayoutMode(workspaceFrameSize.width, workspaceFrameSize.height)
   const desktopShellClass =
-    desktopLayoutMode === 'wide'
-      ? 'workbench-desktop-shell--wide'
-      : desktopLayoutMode === 'medium'
-        ? 'workbench-desktop-shell--medium'
-        : 'workbench-desktop-shell--narrow'
+    !image
+      ? 'workbench-desktop-shell--empty'
+      : desktopLayoutMode === 'wide'
+        ? 'workbench-desktop-shell--wide'
+        : desktopLayoutMode === 'medium'
+          ? 'workbench-desktop-shell--medium'
+          : 'workbench-desktop-shell--narrow'
   const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'

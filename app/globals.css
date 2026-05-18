@@ -708,6 +708,11 @@ body {
     grid-template-rows: minmax(0, 1fr) auto;
 }
 
+.workbench-desktop-shell--empty {
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .workbench-desktop-stage,
 .workbench-desktop-inspector {
     min-width: 0;
