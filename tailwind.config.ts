@@ -23,6 +23,7 @@ const config: Config = {
       colors: {
         // Paper tones — Warm, print-like backgrounds
         paper: {
+          shell: '#F5F0E8',
           DEFAULT: '#F2F0E9',
           elevated: '#FAFAF7',
           recessed: '#E8E6DF',
@@ -46,6 +47,14 @@ const config: Config = {
           DEFAULT: '#566D7B',
           hover: '#455A66',
           muted: 'rgba(86, 109, 123, 0.15)',
+        },
+        graphite: {
+          DEFAULT: '#6D5E49',
+          muted: '#8F7F69',
+        },
+        linen: {
+          DEFAULT: '#DDD1C0',
+          strong: '#C7BAA5',
         },
         // Legacy studio colors (mapped to new system for backwards compatibility)
         studio: {

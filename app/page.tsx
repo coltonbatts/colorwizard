@@ -803,7 +803,7 @@ export default function Home() {
               </ErrorBoundary>
             </div>
 
-            {isMobileSampleLayout && (
+            {image && isMobileSampleLayout && (
               <div className="px-2 pb-[calc(env(safe-area-inset-bottom,0px)+3.75rem)] pt-1.5">
                 <MobileDashboard
                   sampledColor={sampledColor}

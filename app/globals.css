@@ -157,7 +157,6 @@
     display: none;
 }
 
-html[data-runtime='boot'] .runtime-app-root,
 html[data-runtime='desktop']:not([data-react-mounted='true']) .runtime-app-root {
     opacity: 0;
     pointer-events: none;

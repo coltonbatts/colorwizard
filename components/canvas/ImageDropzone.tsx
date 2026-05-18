@@ -1,6 +1,9 @@
 'use client';
 
 import { useCallback, useState, useId } from 'react';
+import {
+    ReferenceWorkbenchIcon,
+} from '@/components/workbenchIcons';
 
 /**
  * Web workbench empty state: load a reference image (drag/drop or file picker).
@@ -359,7 +362,7 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`workspace-reference-dropzone relative flex-1 overflow-y-auto transition-colors duration-300 ${isDragging ? 'bg-signal-muted' : 'bg-paper'
+            className={`workspace-reference-dropzone relative flex-1 overflow-y-auto bg-paper-shell transition-colors duration-300 ${isDragging ? 'bg-signal-muted' : ''
                 }`}
             role="region"
             aria-label="Load reference image"
@@ -383,34 +386,81 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                 className="sr-only"
             />
 
-            <div className="relative flex min-h-full w-full flex-col items-center justify-center px-4 py-10 sm:px-6">
-                <div
-                    className={`w-full max-w-md rounded-[28px] border-2 border-dashed px-6 py-10 text-center transition-[border-color,box-shadow,transform] duration-200 sm:px-8 sm:py-12 ${isDragging
-                        ? 'scale-[1.01] border-signal bg-paper-elevated shadow-[0_20px_48px_rgba(26,26,26,0.1)]'
-                        : 'border-ink-hairline bg-paper-elevated/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]'
-                        }`}
-                >
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-ink-faint">Reference</p>
-                    <h2 className="mt-3 font-display text-xl font-semibold tracking-tight text-ink sm:text-2xl">
-                        Open an image
-                    </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
-                        Drop a file here or choose one. Your image stays on this device.
+            <div
+                className="pointer-events-none absolute inset-0 opacity-[0.18]"
+                style={{
+                    backgroundImage: `
+                        linear-gradient(to right, rgba(109,94,73,0.16) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(109,94,73,0.16) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '32px 32px',
+                }}
+                aria-hidden="true"
+            />
+            <div
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.9),transparent_34%),linear-gradient(180deg,rgba(245,240,232,0.96),rgba(235,229,219,0.96))]"
+                aria-hidden="true"
+            />
+
+            <div className="relative mx-auto flex min-h-full w-full max-w-5xl flex-col px-5 py-6 sm:px-8">
+                <header className="flex items-center justify-between gap-4 border-b border-ink-hairline pb-4">
+                    <p className="font-display text-2xl leading-none text-ink">ColorWizard</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-graphite-muted">
+                        Local. Private.
                     </p>
-                    <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-                        <label
-                            htmlFor={inputId}
-                            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-full bg-signal px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-hover"
-                        >
-                            {isConverting ? 'Converting HEIC…' : 'Choose file'}
-                        </label>
-                        <label
-                            htmlFor={cameraInputId}
-                            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-full border border-ink-hairline bg-paper px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-paper-recessed sm:hidden"
-                        >
-                            Camera
-                        </label>
-                    </div>
+                </header>
+
+                <div className="flex flex-1 items-center justify-center py-8 sm:py-12">
+                    <section
+                        className={`w-full max-w-3xl border p-4 shadow-[0_20px_70px_rgba(26,26,26,0.07)] transition-[border-color,box-shadow,transform,background-color] duration-200 sm:p-6 ${isDragging
+                            ? 'scale-[1.01] border-graphite bg-paper-elevated shadow-[0_24px_80px_rgba(26,26,26,0.11)]'
+                            : 'border-linen bg-paper-elevated/86'
+                            }`}
+                    >
+                        <div className="border border-dashed border-linen-strong bg-[#f8f4ed] px-5 py-10 text-center sm:px-10 sm:py-14">
+                            <div className="mx-auto mb-8 grid max-w-xs grid-cols-5 gap-2" aria-hidden="true">
+                                {['#a33b32', '#d2ae72', '#78845f', '#60778a', '#34302a'].map((color) => (
+                                    <span
+                                        key={color}
+                                        className="h-10 border border-black/10 sm:h-12"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-graphite-muted">
+                                Start here
+                            </p>
+                            <h1 className="mt-4 font-display text-[clamp(2.8rem,9vw,5.8rem)] font-medium leading-[0.9] tracking-[-0.01em] text-ink">
+                                Drop an image.
+                            </h1>
+                            <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-ink-secondary sm:text-lg">
+                                Sample colors locally. Get artist-friendly recipes.
+                            </p>
+
+                            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                                <label
+                                    htmlFor={inputId}
+                                    className="inline-flex min-h-[46px] cursor-pointer items-center justify-center gap-2 bg-graphite px-6 py-3 text-sm font-semibold text-paper transition-colors hover:bg-ink"
+                                >
+                                    <ReferenceWorkbenchIcon aria-hidden="true" className="h-5 w-5" />
+                                    {isConverting ? 'Converting HEIC...' : 'Choose image'}
+                                </label>
+                                <label
+                                    htmlFor={cameraInputId}
+                                    className="inline-flex min-h-[46px] cursor-pointer items-center justify-center border border-ink-hairline bg-paper px-5 py-3 text-sm font-semibold text-ink transition-colors hover:bg-paper-recessed sm:hidden"
+                                >
+                                    Camera
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-3 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-ink-muted">
+                            <span>No sign-up</span>
+                            <span>Images stay here</span>
+                            <span>Paint + thread matches</span>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
