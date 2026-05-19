@@ -19,6 +19,8 @@ export type {
 } from './dmc/types'
 
 export interface DMCMatch extends DMCColor {
+  /** CIEDE2000 distance (same value as `distance`). */
+  deltaE00: number
   distance: number
   similarity: number
   confidenceLabel: string
@@ -41,6 +43,7 @@ export async function findClosestDMCColors(
 
   return ranked.slice(0, count).map((thread) => ({
     ...thread,
+    deltaE00: thread.deltaE00,
     distance: thread.deltaE00,
     similarity: Math.max(0, 100 - thread.deltaE00),
   }))

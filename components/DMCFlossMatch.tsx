@@ -358,7 +358,7 @@ function SecondaryMatchCard({
   onCopy: (e: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>, code: string) => void
   copiedCode: string | null
 }) {
-  const deltaE00 = match.deltaE00 ?? match.distance
+  const deltaE00 = match.deltaE00
 
   return (
     <div className="flex flex-col rounded-xl border border-ink-hairline bg-paper p-2 transition-colors hover:bg-paper-recessed">
