@@ -113,23 +113,29 @@
     --toolbar-height: 56px;
     --max-content-width: 1440px;
 
-    /* === BORDERS & RADII — Soft precision === */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
-    --radius-2xl: 24px;
+    /* === BORDERS & RADII — Tactile studio geometry === */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+    --radius-2xl: 30px;
+    --radius-control: 14px;
+    --radius-instrument: 24px;
+    --radius-tray: 34px;
 
     /* Rule weights */
     --rule-hairline: 1px;
     --rule-light: 1px;
     --rule-medium: 2px;
 
-    /* === SHADOWS — Subtle, functional === */
+    /* === SHADOWS — Subtle, functional, material-aware === */
     --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
-    --shadow-md: 0 4px 12px rgba(26, 26, 26, 0.06);
-    --shadow-lg: 0 8px 24px rgba(26, 26, 26, 0.08);
-    --shadow-floating: 0 20px 80px rgba(26, 26, 26, 0.18);
+    --shadow-md: 0 8px 22px rgba(33, 24, 14, 0.07);
+    --shadow-lg: 0 18px 46px rgba(33, 24, 14, 0.11);
+    --shadow-floating: 0 24px 80px rgba(33, 24, 14, 0.18);
+    --shadow-tactile: 0 14px 36px rgba(33, 24, 14, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.68);
+    --shadow-tray: 0 30px 90px rgba(33, 24, 14, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    --shadow-pressed: inset 0 2px 8px rgba(33, 24, 14, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.46);
 
     /* === TRANSITIONS === */
     --duration-fast: 120ms;
@@ -556,6 +562,87 @@ body {
         color: var(--subsignal);
         background: var(--subsignal-muted);
         border-color: var(--subsignal);
+    }
+
+    /* Studio tray — tactile intake surfaces and controls */
+    .studio-tray {
+        border: var(--rule-hairline) solid rgba(79, 65, 49, 0.16);
+        border-radius: var(--radius-tray);
+        background:
+            linear-gradient(180deg, rgba(255, 252, 247, 0.94), rgba(242, 234, 222, 0.9)),
+            var(--paper-elevated);
+        box-shadow: var(--shadow-tray);
+    }
+
+    .studio-tray-recess {
+        border: var(--rule-hairline) solid rgba(79, 65, 49, 0.12);
+        border-radius: calc(var(--radius-tray) - 10px);
+        background:
+            radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 32%),
+            linear-gradient(180deg, rgba(238, 228, 214, 0.8), rgba(255, 252, 247, 0.78));
+        box-shadow: var(--shadow-pressed);
+    }
+
+    .studio-action {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        border: var(--rule-hairline) solid rgba(26, 26, 26, 0.1);
+        border-radius: var(--radius-control);
+        background: var(--ink);
+        color: var(--paper-elevated);
+        box-shadow: 0 12px 24px rgba(33, 24, 14, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+        font-size: var(--text-sm);
+        font-weight: 700;
+        transition:
+            background-color var(--duration-fast) var(--ease-out),
+            border-color var(--duration-fast) var(--ease-out),
+            box-shadow var(--duration-fast) var(--ease-out),
+            color var(--duration-fast) var(--ease-out),
+            transform var(--duration-fast) var(--ease-out);
+    }
+
+    .studio-action:hover {
+        background: #2a241d;
+        box-shadow: 0 15px 30px rgba(33, 24, 14, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+        transform: translateY(-1px);
+    }
+
+    .studio-action:active {
+        transform: translateY(0);
+        box-shadow: 0 8px 18px rgba(33, 24, 14, 0.16), inset 0 1px 4px rgba(0, 0, 0, 0.18);
+    }
+
+    .studio-action-secondary {
+        background: rgba(255, 252, 247, 0.78);
+        color: var(--ink);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .studio-action-secondary:hover {
+        background: var(--paper-elevated);
+        box-shadow: var(--shadow-md);
+    }
+
+    .studio-swatch-tile {
+        position: relative;
+        overflow: hidden;
+        border: var(--rule-hairline) solid rgba(26, 26, 26, 0.1);
+        border-radius: var(--radius-control);
+        box-shadow:
+            0 12px 24px rgba(33, 24, 14, 0.11),
+            inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .studio-swatch-tile::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%, rgba(0, 0, 0, 0.08));
+        pointer-events: none;
     }
 }
 

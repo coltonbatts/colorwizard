@@ -211,7 +211,7 @@ export default function PaintRecipe({
       : 'Built from the core six-color palette.'
   const provenanceLabel = recipe.source === 'solver' ? 'Starting Mix' : 'Studio Guide'
   const provenanceNote = recipe.source === 'solver'
-    ? 'Use this as a practical first pass. Adjust by eye for your paint, surface, and light.'
+    ? 'Spectral mix is a model prediction for on-screen guidance—not a guarantee of wet paint. Adjust by eye for your surface and light.'
     : 'Use this value-first studio guide as a practical first pass. Adjust by eye for your paint, surface, and light.'
   const isCompactLayout = effectiveVariant === 'compact'
   const isBoardLayout = effectiveVariant === 'board'

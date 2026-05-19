@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getColorName } from '@/lib/colorNaming';
 import { ColorNameMatch, ColorSource } from '@/lib/colorNaming/types';
-import { getMatchConfidence } from '@/lib/colorUtils';
+import { getCatalogMatchPresentation } from '@/lib/colorSemantics';
 
 interface ColorNamingDisplayProps {
     hex: string;
@@ -38,7 +38,7 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
         return () => { active = false; };
     }, [hex, source]);
 
-    const confidence = match ? getMatchConfidence(match.distance) : null;
+    const confidence = match ? getCatalogMatchPresentation(match.distance) : null;
 
     const copyToClipboard = (text: string, type: 'name' | 'hex') => {
         navigator.clipboard.writeText(text);
@@ -89,7 +89,7 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                                 {confidence.label}
                             </span>
                             <span className="text-[10px] text-studio-muted font-mono">
-                                (ΔE: {match?.distance.toFixed(1)})
+                                ({confidence.metricLabel})
                             </span>
                         </div>
                     )}

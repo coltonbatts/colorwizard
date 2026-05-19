@@ -28,15 +28,15 @@
 - [`app/api/ai/suggestions/route.ts`](./app/api/ai/suggestions/route.ts) uses `tier` from the request body to decide whether the caller is Pro.
 - This is not secure and should be treated as demo logic only.
 
-### 5. Typecheck is not independently runnable
+### 5. Typecheck depends on a complete dependency install
 
-- [`tsconfig.json`](./tsconfig.json) includes `.next/types/**/*.ts`.
-- Running `npx tsc --noEmit` before a fresh Next build fails if those generated files are missing or stale.
+- `npx tsc --noEmit` passes after the npm dependency tree is complete.
+- A partial `node_modules` install can make Firebase and Firebase Admin imports fail to resolve even though they are present in [`package.json`](./package.json) and [`package-lock.json`](./package-lock.json).
 
-### 6. Tests do not boot
+### 6. Tests currently boot and pass
 
-- `npm test -- --run` fails before executing tests because Vitest cannot load its config cleanly in the current Vite/Vitest/module state.
-- This means tests are present but not presently trustworthy as a routine quality gate.
+- `npm test -- --run` currently passes the full Vitest suite.
+- The Vite CJS Node API deprecation warning still appears, so the config should eventually be modernized, but the tests are usable as a routine quality gate.
 
 ### 7. Webhook env validation is incomplete
 
@@ -214,6 +214,6 @@ Strong examples:
 
 1. Make auth authoritative or clearly disable tiered/billing surfaces.
 2. Decide whether dashboard/pricing/settings/support/trace/color-theory are real or should move out of the app tree.
-3. Fix `tsc` and `vitest` so repo checks are independently runnable.
+3. Keep `tsc` and `vitest` green, and make dependency drift obvious when a checkout is incomplete.
 4. Resolve dependency drift and the `@next/swc` mismatch.
 5. Physically separate active thin-core code from experimental or retained code.

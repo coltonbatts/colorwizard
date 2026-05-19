@@ -35,7 +35,7 @@ function rgbToLab(r: number, g: number, b: number): { l: number; a: number; b: n
 }
 
 /**
- * Calculate Delta E (CIE76) between two Lab colors.
+ * Fast Lab distance for highlight overlays (CIE76-style, approximate — not CIEDE2000).
  */
 function deltaE(
     lab1: { l: number; a: number; b: number },

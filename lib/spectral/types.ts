@@ -40,9 +40,9 @@ export interface SpectralRecipe {
     }>;
     /** Predicted hex color of the mix */
     predictedHex: string;
-    /** Perceptual error (Delta E in OKLab) */
+    /** OKLab model error between predicted mix and target (not CIEDE2000) */
     error: number;
-    /** Match quality label */
+    /** Model-fit band derived from OKLab error thresholds */
     matchQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor';
     /** Step-by-step mixing instructions */
     steps: string[];
@@ -51,7 +51,7 @@ export interface SpectralRecipe {
 }
 
 /**
- * Match quality thresholds (Delta E OKLab)
+ * Spectral model-fit thresholds (OKLab error, not CIEDE2000)
  */
 export const MATCH_THRESHOLDS = {
     EXCELLENT: 1.0,
@@ -60,7 +60,7 @@ export const MATCH_THRESHOLDS = {
 } as const;
 
 /**
- * Get match quality label from error value.
+ * Get model-fit band from OKLab error value.
  */
 export function getMatchQuality(error: number): SpectralRecipe['matchQuality'] {
     if (error < MATCH_THRESHOLDS.EXCELLENT) return 'Excellent';

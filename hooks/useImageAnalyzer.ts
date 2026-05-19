@@ -11,6 +11,7 @@ import type { ImageProcessorWorker } from '@/lib/workers/imageProcessor.worker';
 import { computeValueScale, ValueScaleResult } from '@/lib/valueScale';
 import { ValueScaleSettings } from '@/lib/types/valueScale';
 import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode';
+import { computeScaledDimensions, MAX_SOURCE_DIM } from '@/lib/imagePipeline';
 
 
 export interface LabBuffer {
@@ -70,8 +71,6 @@ export interface UseImageAnalyzerReturn {
     /** Whether breakdown generation is in progress */
     isGeneratingBreakdown: boolean;
 }
-
-const MAX_PROCESS_DIM = 1000;
 
 async function getWorker(): Promise<Remote<ImageProcessorWorker>> {
     return getImageProcessorWorker();
@@ -133,18 +132,11 @@ export function useImageAnalyzer(
         (currentImageRef.current as any) = image;
         setIsAnalyzing(true);
         setError(null);
-        // Create a temporary canvas to read pixel data
+        const sourceWidth = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
+        const sourceHeight = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
+        const { width, height } = computeScaledDimensions(sourceWidth, sourceHeight, MAX_SOURCE_DIM);
+
         const canvas = document.createElement('canvas');
-        let width = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);
-        let height = image instanceof HTMLImageElement ? image.height : (image instanceof HTMLCanvasElement ? image.height : 0);
-
-        // Limit processing resolution for performance
-        if (width > MAX_PROCESS_DIM || height > MAX_PROCESS_DIM) {
-            const ratio = Math.min(MAX_PROCESS_DIM / width, MAX_PROCESS_DIM / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-        }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');

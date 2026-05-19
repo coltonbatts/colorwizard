@@ -1,6 +1,7 @@
 'use client'
 
 import { useSessionStore } from '@/lib/store/useSessionStore'
+import { HIGHLIGHT_TOLERANCE_NOTE } from '@/lib/colorSemantics'
 
 export default function HighlightControls() {
   const activeHighlightColor = useSessionStore(state => state.activeHighlightColor)
@@ -27,7 +28,7 @@ export default function HighlightControls() {
               Highlight
             </div>
             <div className="truncate font-mono text-sm font-bold text-ink">
-              tolerance {highlightTolerance}
+              window {highlightTolerance}
             </div>
           </div>
         </div>
@@ -81,6 +82,9 @@ export default function HighlightControls() {
           onChange={(e) => setHighlightTolerance(Number(e.target.value))}
           className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-paper-recessed accent-[var(--signal)]"
         />
+        <p className="mt-2 text-[10px] leading-4 text-ink-faint">
+          {HIGHLIGHT_TOLERANCE_NOTE}
+        </p>
       </div>
     </div>
   )

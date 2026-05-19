@@ -19,7 +19,7 @@ export interface DMCMatch extends DMCColor {
 
 /**
  * Finds the closest DMC embroidery floss colors to a given RGB color
- * using Delta E (CIEDE2000) for perceptual accuracy.
+ * using CIEDE2000 (ΔE₀₀) for perceptual accuracy.
  */
 export async function findClosestDMCColors(
   rgb: { r: number; g: number; b: number },

@@ -55,7 +55,7 @@ interface ImageCanvasProps {
   onImageLoad: (img: HTMLImageElement) => void
   onColorSample: (color: ColorData) => void
   highlightColor?: RGB | null
-  highlightTolerance?: number // Delta E
+  highlightTolerance?: number // Lab-distance window (approximate overlay map)
   highlightMode?: 'solid' | 'heatmap'
   onReset: () => void
   valueScaleSettings?: ValueScaleSettings
@@ -341,7 +341,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   useEffect(() => {
     sourceBufferRef.current = null
     setMetrics(null)
-    setAnalysisSource(image)
+    setAnalysisSource(null)
 
     if (!image || image.width === 0 || image.height === 0) {
       return

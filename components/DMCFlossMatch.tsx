@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { findClosestDMCColors } from '@/lib/dmcFloss'
+import { formatCatalogDeltaE00 } from '@/lib/colorSemantics'
 import type { KeyboardEvent, MouseEvent } from 'react'
 
 interface DMCFlossMatchProps {
@@ -99,6 +100,9 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
               <div className="text-right">
                 <div className="font-mono text-sm font-black tracking-tight text-ink">
                   {Math.round(match.similarity)}%
+                </div>
+                <div className="mt-0.5 font-mono text-[10px] font-bold text-ink-faint">
+                  {formatCatalogDeltaE00(match.distance)}
                 </div>
               </div>
             </button>

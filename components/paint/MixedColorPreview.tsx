@@ -5,6 +5,11 @@
  */
 
 import { motion } from 'framer-motion'
+import {
+    formatSpectralModelError,
+    getSpectralModelFitPresentation,
+    SPECTRAL_RECIPE_DISCLAIMER,
+} from '@/lib/colorSemantics'
 
 interface MixedColorPreviewProps {
     /** Target hex color we're trying to match */
@@ -58,6 +63,7 @@ export default function MixedColorPreview({
     const isCompact = variant === 'compact'
     const isBoard = variant === 'board'
     const styles = preview ? QUALITY_STYLES[preview.matchQuality] : null
+    const modelFit = preview ? getSpectralModelFitPresentation(preview.error) : null
 
     if (isBoard) {
         return (
@@ -82,21 +88,21 @@ export default function MixedColorPreview({
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-                                        Solver Fit
+                                        Model fit
                                     </div>
                                     <div className="mt-1 flex items-center gap-2">
                                         <div className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
                                         <span className={`text-sm font-semibold ${styles.text}`}>
-                                            {preview.matchQuality}
+                                            {modelFit?.label ?? preview.matchQuality}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-mono text-[11px] font-black uppercase tracking-[0.16em] text-ink-faint">
-                                        Delta
+                                        OKLab
                                     </div>
                                     <div className="mt-1 font-mono text-xl font-black text-ink">
-                                        {preview.error.toFixed(1)}
+                                        {formatSpectralModelError(preview.error)}
                                     </div>
                                 </div>
                             </div>
@@ -115,6 +121,9 @@ export default function MixedColorPreview({
                                     </div>
                                 </div>
                             </div>
+                            <p className="mt-3 text-[10px] leading-4 text-ink-faint">
+                                {SPECTRAL_RECIPE_DISCLAIMER}
+                            </p>
                         </div>
                     ) : (
                         <div className="mt-4 rounded-[22px] border border-subsignal/20 bg-subsignal-muted/70 px-4 py-3">
@@ -174,18 +183,23 @@ export default function MixedColorPreview({
                 </div>
 
                 {preview && styles ? (
+                    <>
                     <div className="mt-3 flex items-center justify-between gap-2">
                         <div className={`inline-flex items-center gap-1.5 rounded-full border ${styles.bg} ${styles.border} ${isCompact ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
                             <div className={`h-2 w-2 rounded-full ${styles.dot}`} />
                             <span className={`${isCompact ? 'text-[10px]' : 'text-sm'} font-semibold ${styles.text}`}>
-                                {preview.matchQuality} screen fit
+                                {modelFit?.label ?? preview.matchQuality}
                             </span>
                         </div>
 
                         <div className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
-                            dE {preview.error.toFixed(1)}
+                            {formatSpectralModelError(preview.error)}
                         </div>
                     </div>
+                    <p className="mt-2 px-1 text-[10px] leading-4 text-ink-faint">
+                        {SPECTRAL_RECIPE_DISCLAIMER}
+                    </p>
+                    </>
                 ) : (
                     <div className="mt-3 rounded-[18px] border border-subsignal/20 bg-subsignal-muted/70 px-3 py-2.5">
                         <div className="text-[9px] font-black uppercase tracking-[0.18em] text-subsignal">
@@ -194,7 +208,7 @@ export default function MixedColorPreview({
                         <p className={`mt-1 text-ink-secondary ${isCompact ? 'text-[10px] leading-4' : 'text-[11px] leading-5'}`}>
                             {isCompact
                                 ? 'Using the reference swatch until a solver fit is available.'
-                                : 'Built from hue and value heuristics. No predicted mix swatch or deltaE score is shown until the solver returns.'}
+                                : 'Built from hue and value heuristics. No predicted mix swatch or model error is shown until the solver returns.'}
                         </p>
                     </div>
                 )}
