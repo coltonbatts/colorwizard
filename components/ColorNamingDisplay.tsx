@@ -10,7 +10,7 @@ interface ColorNamingDisplayProps {
 }
 
 export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
-    const [source, setSource] = useState<ColorSource>('extended');
+    const [source] = useState<ColorSource>('extended');
     const [match, setMatch] = useState<ColorNameMatch | null>(null);
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState<'name' | 'hex' | null>(null);

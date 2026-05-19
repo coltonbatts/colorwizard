@@ -10,7 +10,7 @@ export interface ImageDimensions {
     height: number;
 }
 
-export interface ScaledDimensions extends ImageDimensions {}
+export type ScaledDimensions = ImageDimensions;
 
 /**
  * Scale dimensions to fit within maxDim while preserving aspect ratio.
