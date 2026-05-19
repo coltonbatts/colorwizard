@@ -1,11 +1,10 @@
 /**
  * Desktop project workspace before a reference image exists.
- * Tool-first: drop zone + open dialog + keyboard — no web marketing copy.
  */
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import ColorWizardSplashLottie from '@/components/splash/ColorWizardSplashLottie'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import { pickImagePath } from '@/lib/desktop/tauriClient'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
@@ -25,7 +24,6 @@ export default function DesktopWorkspaceEmpty() {
   const setReferenceImage = useCanvasStore((s) => s.setReferenceImage)
   const [busy, setBusy] = useState(false)
   const [dragOver, setDragOver] = useState(false)
-  const reduceMotion = useReducedMotion()
 
   const handleOpen = useCallback(async () => {
     if (busy) return
@@ -130,57 +128,33 @@ export default function DesktopWorkspaceEmpty() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex items-center justify-center bg-[#f0ebe3]/95 p-6 backdrop-blur-[2px]"
+      className="pointer-events-auto absolute inset-0 z-[200] flex items-center justify-center bg-paper-shell p-6"
       role="region"
-      aria-label="Add reference"
+      aria-label="Load reference image"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      {/* Neutral drafting grid — no palette or product marketing */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, #c9bfb0 1px, transparent 1px),
-            linear-gradient(to bottom, #c9bfb0 1px, transparent 1px)
-          `,
-          backgroundSize: '24px 24px',
-        }}
-        aria-hidden="true"
-      />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f5f0e8]/80 to-[#ebe4da]/90" aria-hidden="true" />
-
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-        className={`relative z-10 flex w-full max-w-lg flex-col items-center rounded-[28px] border-2 border-dashed px-8 py-12 text-center shadow-[0_24px_60px_rgba(26,26,26,0.08)] transition-[border-color,transform,box-shadow] duration-200 ${
-          dragOver
-            ? 'scale-[1.02] border-[#1a1a1a] bg-white/95 shadow-[0_28px_70px_rgba(26,26,26,0.14)]'
-            : 'border-[#c7baa5] bg-white/88'
+        className={`relative z-10 flex w-full max-w-md flex-col items-center text-center transition-transform duration-200 ${
+          dragOver ? 'scale-[1.02]' : ''
         }`}
       >
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">Workspace</p>
-        <h2 className="mt-3 font-serif text-2xl text-[#1a1a1a] sm:text-3xl">Add a reference</h2>
-        <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#5c5145]">
-          Drop a file on this window, or choose one from disk. Keyboard:{' '}
-          <kbd className="rounded border border-[#d7cab8] bg-[#faf7f2] px-1.5 py-0.5 font-mono text-xs text-[#1a1a1a]">
-            {typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent) ? '⌘' : 'Ctrl+'}
-            O
-          </kbd>
-        </p>
+        <ColorWizardSplashLottie className="h-[min(52vw,280px)] w-[min(52vw,280px)] max-h-[280px] max-w-[280px]" />
+
+        <h1 className="mt-8 font-display text-[clamp(2.25rem,6vw,3.25rem)] font-medium leading-none tracking-tight text-ink">
+          ColorWizard
+        </h1>
 
         <button
           type="button"
           disabled={busy}
           onClick={() => void handleOpen()}
-          className="mt-8 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#1a1a1a] px-8 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+          className="studio-action mt-10 min-h-[44px] px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? 'Opening…' : 'Open file…'}
+          {busy ? 'Opening…' : 'Choose file'}
         </button>
-        <p className="mt-4 text-xs text-[#8f7f69]">JPEG, PNG, WebP, HEIC, and common formats</p>
-      </motion.div>
+      </div>
     </div>
   )
 }
