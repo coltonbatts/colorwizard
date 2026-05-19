@@ -43,6 +43,15 @@ function formatFamilyPosition(rank: number, total: number): string {
   return `Shade ${rank + 1} of ${total} in family`
 }
 
+/** One-line value label without redundant shade words (e.g. "Dark value · Dark"). */
+function formatValueSummary(oklab: OklabCoords, shadeStep: ShadeStep): string {
+  const band = formatValueBand(oklab)
+  const shade = formatShadeStep(shadeStep)
+  if (!shade) return band
+  if (band.toLowerCase().includes(shade.toLowerCase())) return band
+  return `${band} · ${shade}`
+}
+
 function formatLadderHint(
   thread: ScoredDMCThread,
   ladder: ScoredDMCThread[],
@@ -97,7 +106,6 @@ function SectionLabel({ children }: { children: ReactNode }) {
 }
 
 function ValueReadout({ thread, ladder }: { thread: ScoredDMCThread; ladder: ScoredDMCThread[] }) {
-  const shade = formatShadeStep(thread.shadeStep)
   const hint = formatLadderHint(thread, ladder)
 
   return (
@@ -106,11 +114,14 @@ function ValueReadout({ thread, ladder }: { thread: ScoredDMCThread; ladder: Sco
         <dt className="text-xs font-bold uppercase tracking-wide text-graphite">Value</dt>
         <dd className="text-sm font-bold text-ink">{formatValueBand(thread.oklab)}</dd>
       </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-secondary">
-        <span className="font-mono font-semibold text-ink">{formatValuePercent(thread.oklab)}</span>
-        {shade ? <span>{shade}</span> : null}
+      <div className="space-y-1 text-sm leading-snug text-ink-secondary">
+        <p>
+          <span className="font-mono font-semibold text-ink">{formatValuePercent(thread.oklab)}</span>
+          {' · '}
+          {formatValueSummary(thread.oklab, thread.shadeStep)}
+        </p>
         {thread.familySize > 1 ? (
-          <span>{formatFamilyPosition(thread.shadeRank, thread.familySize)}</span>
+          <p>{formatFamilyPosition(thread.shadeRank, thread.familySize)}</p>
         ) : null}
       </div>
       {hint ? <p className="text-sm leading-snug text-ink-secondary">{hint}</p> : null}
@@ -272,10 +283,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
               onClick={() => onColorSelect(primary.rgb)}
               className="flex shrink-0 flex-col items-center gap-2 sm:items-start"
             >
-              <div className="relative">
-                <div className={`absolute -left-1 top-2 bottom-2 w-1.5 rounded-full ${primary.confidenceBgColor}`} />
-                <ThreadSwatch hex={primary.hex} size="hero" selected />
-              </div>
+              <ThreadSwatch hex={primary.hex} size="hero" selected />
               <span className="text-xs font-bold uppercase tracking-wide text-graphite">Tap swatch to sample</span>
             </button>
 
@@ -304,7 +312,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
               <ValueReadout thread={primary} ladder={familyLadder} />
 
               {ladderPosition && (ladderPosition.lighter || ladderPosition.darker) ? (
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-2">
                   {ladderPosition.lighter ? (
                     <CompanionCard
                       label="Go lighter"
@@ -489,21 +497,18 @@ function CompanionCard({
   thread: ScoredDMCThread
   onSelect: (rgb: { r: number; g: number; b: number }) => void
 }) {
-  const shade = formatShadeStep(thread.shadeStep)
-
   return (
     <button
       type="button"
       onClick={() => onSelect(thread.rgb)}
-      className="flex items-center gap-3 rounded-xl border-2 border-linen bg-paper px-3 py-3 text-left transition-colors hover:border-graphite-muted hover:bg-paper-recessed"
+      className="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border-2 border-linen bg-paper px-3 py-3 text-left transition-colors hover:border-graphite-muted hover:bg-paper-recessed"
     >
       <ThreadSwatch hex={thread.hex} size="md" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-wide text-graphite">{label}</p>
-        <p className="font-mono text-base font-black text-ink">{thread.number}</p>
-        <p className="text-sm text-ink-secondary">
-          {formatValueBand(thread.oklab)}
-          {shade ? ` · ${shade}` : ''}
+        <p className="font-mono text-base font-black leading-tight text-ink">{thread.number}</p>
+        <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-ink-secondary">
+          {formatValueSummary(thread.oklab, thread.shadeStep)}
         </p>
       </div>
     </button>
