@@ -83,6 +83,59 @@ export interface ThreadLadderPosition {
   darker?: ScoredDMCThread
 }
 
+/** Artist-facing value band within the current image (OKLab L, image-normalized). */
+export type ImageValueBand =
+  | 'highlight'
+  | 'light'
+  | 'mid'
+  | 'dark'
+  | 'deepest-dark'
+
+export interface ImageOklabLRange {
+  min: number
+  max: number
+}
+
+/** Image-wide anchors for relative value (from analyzed pixels). */
+export interface ImageValueContext {
+  oklabLRange: ImageOklabLRange
+  clipPercent?: number
+}
+
+/** Sample color value relative to the loaded image. */
+export interface SampleValueContext {
+  oklabL: number
+  /** 0 = darkest meaningful anchor, 100 = lightest. */
+  normalizedPosition: number
+  band: ImageValueBand
+  bandLabel: string
+  /** Rendering role for this sample in the image (V1: mirrors band). */
+  renderingRole: ImageValueBand
+}
+
+export type ValueWarningCode =
+  | 'hue-match-too-light'
+  | 'hue-match-too-dark'
+  | 'ladder-too-compressed'
+
+export interface ValueWarning {
+  code: ValueWarningCode
+  message: string
+  severity: 'info' | 'caution'
+}
+
+export type RenderingSetRole = 'highlight' | 'base' | 'shadow' | 'anchor-dark'
+
+export interface RenderingThreadSuggestion {
+  role: RenderingSetRole
+  thread: ScoredDMCThread
+  note?: string
+}
+
+export interface SuggestedRenderingSet {
+  suggestions: RenderingThreadSuggestion[]
+}
+
 /** Family-aware match context for embroidery substitution workflows. */
 export interface ThreadMatchResult {
   primary: ScoredDMCThread
@@ -93,4 +146,10 @@ export interface ThreadMatchResult {
   /** Strongest matches outside the primary family. */
   alternatives: ScoredDMCThread[]
   ladderPosition?: ThreadLadderPosition
+  /** Image-relative value of the sampled color. */
+  sampleValue: SampleValueContext
+  /** Ranked matches for alternates UI (single pipeline; avoids duplicate ranking). */
+  topMatches: ScoredDMCThread[]
+  valueWarnings: ValueWarning[]
+  suggestedSet: SuggestedRenderingSet
 }

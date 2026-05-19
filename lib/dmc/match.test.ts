@@ -15,6 +15,23 @@ describe('dmc match', () => {
     expect(ranked[0].deltaE00).toBe(0)
   })
 
+  it('includes image-relative sample value when image context is provided', async () => {
+    const context = await getThreadMatchContext(
+      { r: 241, g: 135, b: 135 },
+      {
+        imageValue: {
+          oklabLRange: { min: 0.1, max: 0.95 },
+        },
+      },
+    )
+    expect(context?.sampleValue.normalizedPosition).toBeGreaterThanOrEqual(0)
+    expect(context?.sampleValue.normalizedPosition).toBeLessThanOrEqual(100)
+    expect(context?.sampleValue.bandLabel).toBeTruthy()
+    expect(context?.valueWarnings).toBeInstanceOf(Array)
+    expect(context?.suggestedSet.suggestions.length).toBeGreaterThanOrEqual(1)
+    expect(context?.topMatches.length).toBeGreaterThanOrEqual(1)
+  })
+
   it('returns family-aware context for a salmon sample', async () => {
     const context = await getThreadMatchContext({ r: 241, g: 135, b: 135 })
     expect(context).not.toBeNull()

@@ -13,10 +13,16 @@ export {
   rankDmcThreadsByDeltaE,
 } from './dmc/match'
 export type {
+  ImageValueBand,
+  ImageValueContext,
+  SampleValueContext,
   ScoredDMCThread,
+  SuggestedRenderingSet,
   ThreadLadderPosition,
   ThreadMatchResult,
+  ValueWarning,
 } from './dmc/types'
+export { buildImageValueContext } from './dmc/match'
 
 export interface DMCMatch extends DMCColor {
   /** CIEDE2000 distance (same value as `distance`). */

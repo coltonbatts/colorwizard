@@ -4,6 +4,7 @@
  * Uses Comlink for clean RPC-style communication.
  */
 import { expose } from 'comlink';
+import { rgbToOklabL } from '../color/oklab';
 
 /**
  * Convert RGB to CIE Lab color space.
@@ -95,6 +96,8 @@ export interface ImageBufferResult {
         height: number;
     };
     sortedLuminances: Float32Array;
+    /** OKLab L per pixel, sorted ascending (for image-relative thread value). */
+    sortedOklabL: Float32Array;
     histogram: number[];
 }
 
@@ -113,6 +116,7 @@ function processImageData(
     const aBuffer = new Float32Array(pixelCount);
     const bBuffer = new Float32Array(pixelCount);
     const yBuffer = new Float32Array(pixelCount);
+    const oklabLBuffer = new Float32Array(pixelCount);
 
     // Process all pixels
     for (let i = 0; i < pixelCount; i++) {
@@ -126,10 +130,12 @@ function processImageData(
         bBuffer[i] = lab.b;
 
         yBuffer[i] = getRelativeLuminance(r, g, b);
+        oklabLBuffer[i] = rgbToOklabL({ r, g, b });
     }
 
     // Compute sorted luminances for percentile calculations
     const sortedLuminances = new Float32Array(yBuffer).sort();
+    const sortedOklabL = new Float32Array(oklabLBuffer).sort();
 
     // Compute histogram (100 bins)
     const histogram = new Array(100).fill(0);
@@ -147,6 +153,7 @@ function processImageData(
         labBuffer: { l: lBuffer, a: aBuffer, b: bBuffer, width, height },
         valueBuffer: { y: yBuffer, width, height },
         sortedLuminances,
+        sortedOklabL,
         histogram,
     };
 }

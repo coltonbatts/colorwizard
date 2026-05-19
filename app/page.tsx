@@ -35,6 +35,7 @@ import { getWorkbenchLayoutMode } from '@/lib/layout/workbenchLayout'
 import { useElementSize } from '@/hooks/useElementSize'
 import { isTauri, resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode'
+import { buildImageValueContext } from '@/lib/dmcFloss'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -301,7 +302,14 @@ export default function Home() {
   const {
     valueScaleResult: analyzerValueScaleResult,
     histogramBins: analyzerHistogramBins,
+    sortedOklabL: analyzerSortedOklabL,
+    valueBuffer: analyzerValueBuffer,
   } = useImageAnalyzer(image, valueScaleSettings)
+
+  const threadImageValue = useMemo(
+    () => buildImageValueContext(analyzerSortedOklabL, valueScaleSettings.clip ?? 0),
+    [analyzerSortedOklabL, valueScaleSettings.clip],
+  )
 
   const syncActiveBandFromColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
     if (!color) return
@@ -455,6 +463,9 @@ export default function Home() {
         return (
           <MatchesTab
             sampledColor={sampledColor}
+            imageValue={threadImageValue}
+            valueBuffer={analyzerValueBuffer}
+            valueScaleClip={valueScaleSettings.clip ?? 0}
             onColorSelect={(rgb) => {
               applySampleColor({
                 rgb,
@@ -850,6 +861,9 @@ export default function Home() {
                   ) : (
                     <MatchesTab
                       sampledColor={sampledColor}
+                      imageValue={threadImageValue}
+                      valueBuffer={analyzerValueBuffer}
+                      valueScaleClip={valueScaleSettings.clip ?? 0}
                       onColorSelect={(rgb) => {
                         applySampleColor({
                           rgb,

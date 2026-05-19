@@ -35,6 +35,8 @@ export interface UseImageAnalyzerReturn {
     valueBuffer: ValueBuffer | null;
     /** Sorted luminances for percentile calculations */
     sortedLuminances: Float32Array | null;
+    /** Sorted OKLab L per pixel (image-relative thread value) */
+    sortedOklabL: Float32Array | null;
     /** Value scale result with thresholds */
     valueScaleResult: ValueScaleResult | null;
     /** Histogram bins (normalized) */
@@ -83,6 +85,7 @@ export function useImageAnalyzer(
     const [labBuffer, setLabBuffer] = useState<LabBuffer | null>(null);
     const [valueBuffer, setValueBuffer] = useState<ValueBuffer | null>(null);
     const [sortedLuminances, setSortedLuminances] = useState<Float32Array | null>(null);
+    const [sortedOklabL, setSortedOklabL] = useState<Float32Array | null>(null);
     const [valueScaleResult, setValueScaleResult] = useState<ValueScaleResult | null>(null);
     const [histogramBins, setHistogramBins] = useState<number[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -114,6 +117,7 @@ export function useImageAnalyzer(
             setLabBuffer(null);
             setValueBuffer(null);
             setSortedLuminances(null);
+            setSortedOklabL(null);
             setValueScaleResult(null);
             setHistogramBins([]);
             setBreakdownBuffers({
@@ -169,6 +173,7 @@ export function useImageAnalyzer(
                 setLabBuffer(result.labBuffer);
                 setValueBuffer(result.valueBuffer);
                 setSortedLuminances(result.sortedLuminances);
+                setSortedOklabL(result.sortedOklabL);
                 setHistogramBins(result.histogram);
 
                 // Compute value scale from worker result
@@ -312,6 +317,7 @@ export function useImageAnalyzer(
         labBuffer,
         valueBuffer,
         sortedLuminances,
+        sortedOklabL,
         valueScaleResult,
         histogramBins,
         isAnalyzing,

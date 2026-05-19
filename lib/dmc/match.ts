@@ -4,13 +4,38 @@
 
 import { deltaE, getMatchConfidence, rgbToLab, type Lab } from '../colorUtils'
 import { loadDmcCatalog, getDmcFamilyThreads } from './catalog'
-import type { DMCThread, ScoredDMCThread, ThreadMatchResult } from './types'
+import { analyzeSampleImageValue } from './imageValue'
+import {
+  buildSuggestedRenderingSet,
+  buildValueWarnings,
+} from './valueAnalysis'
+import type {
+  DMCThread,
+  ImageValueContext,
+  ScoredDMCThread,
+  ThreadMatchResult,
+} from './types'
 
-export type { ScoredDMCThread, ThreadLadderPosition, ThreadMatchResult } from './types'
+export type {
+  ImageValueBand,
+  ImageValueContext,
+  SampleValueContext,
+  ScoredDMCThread,
+  SuggestedRenderingSet,
+  ThreadLadderPosition,
+  ThreadMatchResult,
+  ValueWarning,
+} from './types'
+
+export { buildImageValueContext, computeImageOklabLRange } from './imageValue'
 
 export interface ThreadMatchOptions {
   /** Max cross-family alternatives (default 3). */
   alternativeCount?: number
+  /** Image-relative OKLab L anchors (from analyzed image). */
+  imageValue?: ImageValueContext | null
+  /** How many ranked matches to retain for alternates UI (default 5). */
+  topMatchCount?: number
 }
 
 function scoreThread(targetLab: Lab, thread: DMCThread): ScoredDMCThread {
@@ -72,8 +97,10 @@ export async function getThreadMatchContext(
   }
 
   const alternativeCount = options.alternativeCount ?? 3
+  const topMatchCount = options.topMatchCount ?? 5
   const ranked = rankDmcThreadsByDeltaE(rgb, threads)
   const primary = ranked[0]
+  const sampleValue = analyzeSampleImageValue(rgb, options.imageValue)
 
   const sameFamily = ranked
     .filter((thread) => thread.familyId === primary.familyId)
@@ -89,11 +116,25 @@ export async function getThreadMatchContext(
     .filter((thread) => thread.familyId !== primary.familyId)
     .slice(0, Math.max(0, alternativeCount))
 
+  const ladderPosition = buildLadderPosition(primary, familyLadder)
+  const valueWarnings = buildValueWarnings(sampleValue, primary, ladderPosition)
+  const suggestedSet = buildSuggestedRenderingSet(
+    sampleValue,
+    primary,
+    familyLadder,
+    alternatives,
+    ladderPosition,
+  )
+
   return {
     primary,
     sameFamily,
     familyLadder,
     alternatives,
-    ladderPosition: buildLadderPosition(primary, familyLadder),
+    ladderPosition,
+    sampleValue,
+    topMatches: ranked.slice(0, Math.max(topMatchCount, alternativeCount + 1)),
+    valueWarnings,
+    suggestedSet,
   }
 }
