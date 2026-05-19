@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { getThreadMatchContext } from '@/lib/dmcFloss'
+import { findClosestDMCColors, getThreadMatchContext } from '@/lib/dmcFloss'
 import type { ThreadMatchResult } from '@/lib/dmcFloss'
+import type { DMCMatch } from '@/lib/dmcFloss'
 import type { ScoredDMCThread, ShadeStep } from '@/lib/dmc/types'
 import { formatCatalogDeltaE00, PICKED_COLOR_DISCLAIMER } from '@/lib/colorSemantics'
 import type { KeyboardEvent, MouseEvent } from 'react'
@@ -20,17 +21,24 @@ function formatShadeStep(step: ShadeStep): string | null {
     .join(' ')
 }
 
+/** Secondary choices use 40px swatches; hero is 120px (200% larger than 40px). */
 function ThreadSwatch({
   hex,
   size = 'md',
   selected = false,
 }: {
   hex: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'hero'
   selected?: boolean
 }) {
   const sizeClass =
-    size === 'lg' ? 'h-14 w-14 rounded-2xl' : size === 'sm' ? 'h-8 w-8 rounded-lg' : 'h-10 w-10 rounded-xl'
+    size === 'hero'
+      ? 'h-[7.5rem] w-[7.5rem] rounded-2xl'
+      : size === 'xs'
+        ? 'h-10 w-10 rounded-xl'
+        : size === 'sm'
+          ? 'h-8 w-8 rounded-lg'
+          : 'h-10 w-10 rounded-xl'
 
   return (
     <div
@@ -79,9 +87,12 @@ function CopyCodeButton({
   )
 }
 
+const VISIBLE_MATCH_COUNT = 5
+
 export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [context, setContext] = useState<ThreadMatchResult | null>(null)
+  const [topMatches, setTopMatches] = useState<DMCMatch[]>([])
   const [showAlternatives, setShowAlternatives] = useState(false)
 
   useEffect(() => {
@@ -89,13 +100,18 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
 
     if (!rgb) {
       setContext(null)
+      setTopMatches([])
       return
     }
 
-    getThreadMatchContext(rgb, { alternativeCount: 3 })
-      .then((result) => {
+    Promise.all([
+      getThreadMatchContext(rgb, { alternativeCount: 3 }),
+      findClosestDMCColors(rgb, VISIBLE_MATCH_COUNT),
+    ])
+      .then(([result, ranked]) => {
         if (!cancelled) {
           setContext(result)
+          setTopMatches(ranked)
           setShowAlternatives(false)
         }
       })
@@ -103,6 +119,7 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
         console.error('DMC Matching Error:', error)
         if (!cancelled) {
           setContext(null)
+          setTopMatches([])
         }
       })
 
@@ -125,6 +142,10 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
   const { primary, familyLadder, alternatives, ladderPosition } = context
   const shadeLabel = formatShadeStep(primary.shadeStep)
   const showLadder = familyLadder.length > 1
+  const otherChoices = topMatches.filter((match) => match.id !== primary.id).slice(0, VISIBLE_MATCH_COUNT - 1)
+  const extraAlternatives = alternatives.filter(
+    (thread) => !topMatches.some((match) => match.id === thread.id),
+  )
 
   return (
     <section className="overflow-hidden rounded-xl border border-ink-hairline bg-paper animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -147,12 +168,12 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
           >
             <div className="relative pt-0.5">
               <div className={`absolute inset-y-1 -left-3 w-1 rounded-full ${primary.confidenceBgColor}`} />
-              <ThreadSwatch hex={primary.hex} size="lg" selected />
+              <ThreadSwatch hex={primary.hex} size="hero" selected />
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-lg font-black tracking-tight text-ink">
+                <span className="font-mono text-xl font-black tracking-tight text-ink sm:text-2xl">
                   {primary.number}
                 </span>
                 <span
@@ -203,6 +224,25 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
             ) : null}
           </div>
         ) : null}
+
+        {otherChoices.length > 0 ? (
+          <div className="mt-4 border-t border-ink-hairline pt-3">
+            <div className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-ink-faint">
+              Also consider
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {otherChoices.map((match) => (
+                <SecondaryMatchCard
+                  key={match.id}
+                  match={match}
+                  onSelect={onColorSelect}
+                  onCopy={handleCopyCode}
+                  copiedCode={copiedCode}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Family ladder */}
@@ -242,8 +282,8 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
         </div>
       ) : null}
 
-      {/* Cross-family alternatives */}
-      {alternatives.length > 0 ? (
+      {/* Cross-family alternatives not already shown above */}
+      {extraAlternatives.length > 0 ? (
         <div className="bg-paper-elevated">
           <button
             type="button"
@@ -255,13 +295,13 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
               Other families
             </span>
             <span className="font-mono text-[10px] font-bold text-ink-faint">
-              {showAlternatives ? '−' : `${alternatives.length}`}
+              {showAlternatives ? '−' : `${extraAlternatives.length}`}
             </span>
           </button>
 
           {showAlternatives ? (
             <div className="border-t border-ink-hairline">
-              {alternatives.map((thread, index) => (
+              {extraAlternatives.map((thread, index) => (
                 <div
                   key={thread.id}
                   className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition-colors hover:bg-paper-recessed ${
@@ -304,6 +344,42 @@ export default function DMCFlossMatch({ rgb, onColorSelect }: DMCFlossMatchProps
         {PICKED_COLOR_DISCLAIMER}
       </p>
     </section>
+  )
+}
+
+function SecondaryMatchCard({
+  match,
+  onSelect,
+  onCopy,
+  copiedCode,
+}: {
+  match: DMCMatch
+  onSelect: (rgb: { r: number; g: number; b: number }) => void
+  onCopy: (e: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>, code: string) => void
+  copiedCode: string | null
+}) {
+  const deltaE00 = match.deltaE00 ?? match.distance
+
+  return (
+    <div className="flex flex-col rounded-xl border border-ink-hairline bg-paper p-2 transition-colors hover:bg-paper-recessed">
+      <button
+        type="button"
+        onClick={() => onSelect(match.rgb)}
+        className="flex flex-col items-center gap-1.5 text-center"
+      >
+        <ThreadSwatch hex={match.hex} size="xs" />
+        <span className="font-mono text-[11px] font-black text-ink">{match.number}</span>
+        <span className="line-clamp-2 min-h-[2rem] text-[9px] font-semibold leading-tight text-ink-secondary">
+          {match.name}
+        </span>
+        <span className="font-mono text-[9px] font-bold text-ink-faint">
+          {formatCatalogDeltaE00(deltaE00)}
+        </span>
+      </button>
+      <div className="mt-1.5 flex justify-center">
+        <CopyCodeButton code={match.number} copiedCode={copiedCode} onCopy={onCopy} />
+      </div>
+    </div>
   )
 }
 
