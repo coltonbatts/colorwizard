@@ -3,11 +3,20 @@
  * Data is loaded lazily from /data/dmc-floss.json and cached in memory.
  */
 
-import { rgbToLab, deltaE, getMatchConfidence, Lab } from './colorUtils'
-import { getDmcFloss } from './dataCache'
+import { loadDmcCatalog } from './dmc/catalog'
+import { rankDmcThreadsByDeltaE } from './dmc/match'
 import type { DMCColor } from './dmcFlossTypes'
 
 export type { DMCColor } from './dmcFlossTypes'
+export {
+  getThreadMatchContext,
+  rankDmcThreadsByDeltaE,
+} from './dmc/match'
+export type {
+  ScoredDMCThread,
+  ThreadLadderPosition,
+  ThreadMatchResult,
+} from './dmc/types'
 
 export interface DMCMatch extends DMCColor {
   distance: number
@@ -27,27 +36,12 @@ export async function findClosestDMCColors(
 ): Promise<DMCMatch[]> {
   if (count <= 0) return []
 
-  const targetLab = rgbToLab(rgb.r, rgb.g, rgb.b)
-  const dmcColors = await getDmcFloss()
+  const { threads } = await loadDmcCatalog()
+  const ranked = rankDmcThreadsByDeltaE(rgb, threads)
 
-  const matches = dmcColors.map((dmcColor) => {
-    if (!dmcColor.lab) {
-      dmcColor.lab = rgbToLab(dmcColor.rgb.r, dmcColor.rgb.g, dmcColor.rgb.b)
-    }
-
-    const distance = deltaE(targetLab, dmcColor.lab as Lab)
-    const similarity = Math.max(0, 100 - distance)
-    const { label, color, bgColor } = getMatchConfidence(distance)
-
-    return {
-      ...dmcColor,
-      distance,
-      similarity,
-      confidenceLabel: label,
-      confidenceColor: color,
-      confidenceBgColor: bgColor,
-    }
-  })
-
-  return matches.sort((a, b) => a.distance - b.distance).slice(0, count)
+  return ranked.slice(0, count).map((thread) => ({
+    ...thread,
+    distance: thread.deltaE00,
+    similarity: Math.max(0, 100 - thread.deltaE00),
+  }))
 }

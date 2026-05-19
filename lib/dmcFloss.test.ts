@@ -47,17 +47,13 @@ describe('dmcFloss', () => {
         }
     })
 
-    it('caches computed Lab values on the loaded color objects', async () => {
-        const target = dmcColors.find((color) => color.number === '666')
-        expect(target).toBeDefined()
+    it('returns enriched catalog fields on matches', async () => {
+        const matches = await findClosestDMCColors({ r: 255, g: 0, b: 0 }, 1)
+        const match = matches[0]
 
-        if (!target) return
-        delete target.lab
-
-        await findClosestDMCColors({ r: 255, g: 0, b: 0 }, 5)
-
-        expect(target.lab).toBeDefined()
-        expect(target.lab!.mode).toBe('lab')
+        expect(match.familyId).toBeTruthy()
+        expect(match.deltaE00).toBeGreaterThanOrEqual(0)
+        expect(match.distance).toBe(match.deltaE00)
     })
 
     it('returns no matches when count is zero', async () => {

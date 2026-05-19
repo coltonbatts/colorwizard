@@ -1,0 +1,3898 @@
+[
+  {
+    "id": "salmon",
+    "label": "Salmon",
+    "threadIds": [
+      "dmc:3713",
+      "dmc:761",
+      "dmc:760",
+      "dmc:3712",
+      "dmc:3328",
+      "dmc:347"
+    ],
+    "threadNumbers": [
+      "3713",
+      "761",
+      "760",
+      "3712",
+      "3328",
+      "347"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "peach",
+    "label": "Peach",
+    "threadIds": [
+      "dmc:353"
+    ],
+    "threadNumbers": [
+      "353"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "coral",
+    "label": "Coral",
+    "threadIds": [
+      "dmc:352",
+      "dmc:351",
+      "dmc:350",
+      "dmc:349"
+    ],
+    "threadNumbers": [
+      "352",
+      "351",
+      "350",
+      "349"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "coral-red",
+    "label": "Coral Red",
+    "threadIds": [
+      "dmc:817"
+    ],
+    "threadNumbers": [
+      "817"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "melon",
+    "label": "Melon",
+    "threadIds": [
+      "dmc:3708",
+      "dmc:3706",
+      "dmc:3705",
+      "dmc:3801"
+    ],
+    "threadNumbers": [
+      "3708",
+      "3706",
+      "3705",
+      "3801"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "bright-red",
+    "label": "Bright Red",
+    "threadIds": [
+      "dmc:666"
+    ],
+    "threadNumbers": [
+      "666"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "red",
+    "label": "Red",
+    "threadIds": [
+      "dmc:321",
+      "dmc:304",
+      "dmc:498"
+    ],
+    "threadNumbers": [
+      "321",
+      "304",
+      "498"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "garnet",
+    "label": "Garnet",
+    "threadIds": [
+      "dmc:816",
+      "dmc:815",
+      "dmc:814"
+    ],
+    "threadNumbers": [
+      "816",
+      "815",
+      "814"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "carnation",
+    "label": "Carnation",
+    "threadIds": [
+      "dmc:894",
+      "dmc:893",
+      "dmc:892",
+      "dmc:891"
+    ],
+    "threadNumbers": [
+      "894",
+      "893",
+      "892",
+      "891"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "baby-pink",
+    "label": "Baby Pink",
+    "threadIds": [
+      "dmc:818"
+    ],
+    "threadNumbers": [
+      "818"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "geranium",
+    "label": "Geranium",
+    "threadIds": [
+      "dmc:957",
+      "dmc:956"
+    ],
+    "threadNumbers": [
+      "957",
+      "956"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "rose",
+    "label": "Rose",
+    "threadIds": [
+      "dmc:309"
+    ],
+    "threadNumbers": [
+      "309"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "dusty-rose",
+    "label": "Dusty Rose",
+    "threadIds": [
+      "dmc:963"
+    ],
+    "threadNumbers": [
+      "963"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-med-vy-lt",
+    "label": "Dusty Rose Med Vy Lt",
+    "threadIds": [
+      "dmc:3716"
+    ],
+    "threadNumbers": [
+      "3716"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-2",
+    "label": "Dusty Rose",
+    "threadIds": [
+      "dmc:962",
+      "dmc:961"
+    ],
+    "threadNumbers": [
+      "962",
+      "961"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "raspberry",
+    "label": "Raspberry",
+    "threadIds": [
+      "dmc:3833",
+      "dmc:3832",
+      "dmc:3831",
+      "dmc:777"
+    ],
+    "threadNumbers": [
+      "3833",
+      "3832",
+      "3831",
+      "777"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "baby-pink-2",
+    "label": "Baby Pink",
+    "threadIds": [
+      "dmc:819"
+    ],
+    "threadNumbers": [
+      "819"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "rose-2",
+    "label": "Rose",
+    "threadIds": [
+      "dmc:3326"
+    ],
+    "threadNumbers": [
+      "3326"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "pink",
+    "label": "Pink",
+    "threadIds": [
+      "dmc:776"
+    ],
+    "threadNumbers": [
+      "776"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "rose-3",
+    "label": "Rose",
+    "threadIds": [
+      "dmc:899",
+      "dmc:335",
+      "dmc:326"
+    ],
+    "threadNumbers": [
+      "899",
+      "335",
+      "326"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-vry-lt",
+    "label": "Dusty Rose Vry Lt",
+    "threadIds": [
+      "dmc:151"
+    ],
+    "threadNumbers": [
+      "151"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-3",
+    "label": "Dusty Rose",
+    "threadIds": [
+      "dmc:3354",
+      "dmc:3733",
+      "dmc:3731"
+    ],
+    "threadNumbers": [
+      "3354",
+      "3733",
+      "3731"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-ultra",
+    "label": "Dusty Rose Ultra",
+    "threadIds": [
+      "dmc:3350"
+    ],
+    "threadNumbers": [
+      "3350"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "dusty-rose-4",
+    "label": "Dusty Rose",
+    "threadIds": [
+      "dmc:150"
+    ],
+    "threadNumbers": [
+      "150"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "mauve",
+    "label": "Mauve",
+    "threadIds": [
+      "dmc:3689",
+      "dmc:3688",
+      "dmc:3687",
+      "dmc:3803",
+      "dmc:3685"
+    ],
+    "threadNumbers": [
+      "3689",
+      "3688",
+      "3687",
+      "3803",
+      "3685"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "cranberry",
+    "label": "Cranberry",
+    "threadIds": [
+      "dmc:605",
+      "dmc:604",
+      "dmc:603",
+      "dmc:602",
+      "dmc:601",
+      "dmc:600"
+    ],
+    "threadNumbers": [
+      "605",
+      "604",
+      "603",
+      "602",
+      "601",
+      "600"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "cyclamen-pink",
+    "label": "Cyclamen Pink",
+    "threadIds": [
+      "dmc:3806",
+      "dmc:3805",
+      "dmc:3804"
+    ],
+    "threadNumbers": [
+      "3806",
+      "3805",
+      "3804"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "plum-ultra",
+    "label": "Plum Ultra",
+    "threadIds": [
+      "dmc:3609"
+    ],
+    "threadNumbers": [
+      "3609"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "plum",
+    "label": "Plum",
+    "threadIds": [
+      "dmc:3608",
+      "dmc:3607",
+      "dmc:718",
+      "dmc:917",
+      "dmc:915"
+    ],
+    "threadNumbers": [
+      "3608",
+      "3607",
+      "718",
+      "917",
+      "915"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "shell-pink",
+    "label": "Shell Pink",
+    "threadIds": [
+      "dmc:225",
+      "dmc:224"
+    ],
+    "threadNumbers": [
+      "225",
+      "224"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "shell-pink-med",
+    "label": "Shell Pink Med",
+    "threadIds": [
+      "dmc:152"
+    ],
+    "threadNumbers": [
+      "152"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "shell-pink-2",
+    "label": "Shell Pink",
+    "threadIds": [
+      "dmc:223"
+    ],
+    "threadNumbers": [
+      "223"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "shell-pink-med-2",
+    "label": "Shell Pink Med",
+    "threadIds": [
+      "dmc:3722"
+    ],
+    "threadNumbers": [
+      "3722"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "shell-pink-3",
+    "label": "Shell Pink",
+    "threadIds": [
+      "dmc:3721"
+    ],
+    "threadNumbers": [
+      "3721"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "shell-pink-vy-dk",
+    "label": "Shell Pink Vy Dk",
+    "threadIds": [
+      "dmc:221"
+    ],
+    "threadNumbers": [
+      "221"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve-vy-lt",
+    "label": "Antique Mauve Vy Lt",
+    "threadIds": [
+      "dmc:778"
+    ],
+    "threadNumbers": [
+      "778"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve",
+    "label": "Antique Mauve",
+    "threadIds": [
+      "dmc:3727"
+    ],
+    "threadNumbers": [
+      "3727"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve-med",
+    "label": "Antique Mauve Med",
+    "threadIds": [
+      "dmc:316"
+    ],
+    "threadNumbers": [
+      "316"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve-2",
+    "label": "Antique Mauve",
+    "threadIds": [
+      "dmc:3726"
+    ],
+    "threadNumbers": [
+      "3726"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve-md-dk",
+    "label": "Antique Mauve Md Dk",
+    "threadIds": [
+      "dmc:315"
+    ],
+    "threadNumbers": [
+      "315"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-mauve-vy-dk",
+    "label": "Antique Mauve Vy Dk",
+    "threadIds": [
+      "dmc:3802"
+    ],
+    "threadNumbers": [
+      "3802"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "garnet-2",
+    "label": "Garnet",
+    "threadIds": [
+      "dmc:902"
+    ],
+    "threadNumbers": [
+      "902"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "antique-violet-vy-lt",
+    "label": "Antique Violet Vy Lt",
+    "threadIds": [
+      "dmc:3743"
+    ],
+    "threadNumbers": [
+      "3743"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "antique-violet",
+    "label": "Antique Violet",
+    "threadIds": [
+      "dmc:3042",
+      "dmc:3041",
+      "dmc:3740"
+    ],
+    "threadNumbers": [
+      "3042",
+      "3041",
+      "3740"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "grape",
+    "label": "Grape",
+    "threadIds": [
+      "dmc:3836",
+      "dmc:3835",
+      "dmc:3834",
+      "dmc:154"
+    ],
+    "threadNumbers": [
+      "3836",
+      "3835",
+      "3834",
+      "154"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "lavender",
+    "label": "Lavender",
+    "threadIds": [
+      "dmc:211",
+      "dmc:210",
+      "dmc:209",
+      "dmc:208"
+    ],
+    "threadNumbers": [
+      "211",
+      "210",
+      "209",
+      "208"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "lavender-ultra",
+    "label": "Lavender Ultra",
+    "threadIds": [
+      "dmc:3837"
+    ],
+    "threadNumbers": [
+      "3837"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "violet",
+    "label": "Violet",
+    "threadIds": [
+      "dmc:153",
+      "dmc:554",
+      "dmc:553",
+      "dmc:552",
+      "dmc:327",
+      "dmc:550"
+    ],
+    "threadNumbers": [
+      "153",
+      "554",
+      "553",
+      "552",
+      "327",
+      "550"
+    ],
+    "hueBucket": "red"
+  },
+  {
+    "id": "blue-violet-vy-lt",
+    "label": "Blue Violet Vy Lt",
+    "threadIds": [
+      "dmc:3747"
+    ],
+    "threadNumbers": [
+      "3747"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "blue-violet",
+    "label": "Blue Violet",
+    "threadIds": [
+      "dmc:341"
+    ],
+    "threadNumbers": [
+      "341"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "blue-violet-med-lt",
+    "label": "Blue Violet Med Lt",
+    "threadIds": [
+      "dmc:156"
+    ],
+    "threadNumbers": [
+      "156"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "blue-violet-2",
+    "label": "Blue Violet",
+    "threadIds": [
+      "dmc:340"
+    ],
+    "threadNumbers": [
+      "340"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "blue-violet-med",
+    "label": "Blue Violet Med",
+    "threadIds": [
+      "dmc:155"
+    ],
+    "threadNumbers": [
+      "155"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "blue-violet-3",
+    "label": "Blue Violet",
+    "threadIds": [
+      "dmc:3746",
+      "dmc:333"
+    ],
+    "threadNumbers": [
+      "3746",
+      "333"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "cornflower-blue-vy-lt",
+    "label": "Cornflower Blue Vy Lt",
+    "threadIds": [
+      "dmc:157"
+    ],
+    "threadNumbers": [
+      "157"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "cornflower-blue",
+    "label": "Cornflower Blue",
+    "threadIds": [
+      "dmc:794"
+    ],
+    "threadNumbers": [
+      "794"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "cornflower-blue-med",
+    "label": "Cornflower Blue Med",
+    "threadIds": [
+      "dmc:793"
+    ],
+    "threadNumbers": [
+      "793"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "cornflower-blue-2",
+    "label": "Cornflower Blue",
+    "threadIds": [
+      "dmc:3807",
+      "dmc:792"
+    ],
+    "threadNumbers": [
+      "3807",
+      "792"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "cornflower-blu-m-v-d",
+    "label": "Cornflower Blu M V D",
+    "threadIds": [
+      "dmc:158"
+    ],
+    "threadNumbers": [
+      "158"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "cornflower-blue-v-d",
+    "label": "Cornflower Blue V D",
+    "threadIds": [
+      "dmc:791"
+    ],
+    "threadNumbers": [
+      "791"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "lavender-blue",
+    "label": "Lavender Blue",
+    "threadIds": [
+      "dmc:3840"
+    ],
+    "threadNumbers": [
+      "3840"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "lavender-blue-med",
+    "label": "Lavender Blue Med",
+    "threadIds": [
+      "dmc:3839"
+    ],
+    "threadNumbers": [
+      "3839"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "lavender-blue-2",
+    "label": "Lavender Blue",
+    "threadIds": [
+      "dmc:3838"
+    ],
+    "threadNumbers": [
+      "3838"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "delft-blue",
+    "label": "Delft Blue",
+    "threadIds": [
+      "dmc:800",
+      "dmc:809",
+      "dmc:799",
+      "dmc:798"
+    ],
+    "threadNumbers": [
+      "800",
+      "809",
+      "799",
+      "798"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "royal-blue",
+    "label": "Royal Blue",
+    "threadIds": [
+      "dmc:797",
+      "dmc:796",
+      "dmc:820"
+    ],
+    "threadNumbers": [
+      "797",
+      "796",
+      "820"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "blue",
+    "label": "Blue",
+    "threadIds": [
+      "dmc:162",
+      "dmc:827",
+      "dmc:813",
+      "dmc:826",
+      "dmc:825",
+      "dmc:824"
+    ],
+    "threadNumbers": [
+      "162",
+      "827",
+      "813",
+      "826",
+      "825",
+      "824"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "electric-blue",
+    "label": "Electric Blue",
+    "threadIds": [
+      "dmc:996",
+      "dmc:3843",
+      "dmc:995"
+    ],
+    "threadNumbers": [
+      "996",
+      "3843",
+      "995"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "turquoise-bright",
+    "label": "Turquoise Bright",
+    "threadIds": [
+      "dmc:3846"
+    ],
+    "threadNumbers": [
+      "3846"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "turquoise-bright-med",
+    "label": "Turquoise Bright Med",
+    "threadIds": [
+      "dmc:3845"
+    ],
+    "threadNumbers": [
+      "3845"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "turquoise-bright-2",
+    "label": "Turquoise Bright",
+    "threadIds": [
+      "dmc:3844"
+    ],
+    "threadNumbers": [
+      "3844"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "blue-gray",
+    "label": "Blue Gray",
+    "threadIds": [
+      "dmc:159",
+      "dmc:160",
+      "dmc:161"
+    ],
+    "threadNumbers": [
+      "159",
+      "160",
+      "161"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "baby-blue",
+    "label": "Baby Blue",
+    "threadIds": [
+      "dmc:3756",
+      "dmc:775",
+      "dmc:3841",
+      "dmc:3325",
+      "dmc:3755",
+      "dmc:334",
+      "dmc:322",
+      "dmc:312",
+      "dmc:803"
+    ],
+    "threadNumbers": [
+      "3756",
+      "775",
+      "3841",
+      "3325",
+      "3755",
+      "334",
+      "322",
+      "312",
+      "803"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "navy-blue",
+    "label": "Navy Blue",
+    "threadIds": [
+      "dmc:336",
+      "dmc:823",
+      "dmc:939"
+    ],
+    "threadNumbers": [
+      "336",
+      "823",
+      "939"
+    ],
+    "hueBucket": "violet"
+  },
+  {
+    "id": "antique-blue",
+    "label": "Antique Blue",
+    "threadIds": [
+      "dmc:3753"
+    ],
+    "threadNumbers": [
+      "3753"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "antique-blue-very-lt",
+    "label": "Antique Blue Very Lt",
+    "threadIds": [
+      "dmc:3752"
+    ],
+    "threadNumbers": [
+      "3752"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "antique-blue-2",
+    "label": "Antique Blue",
+    "threadIds": [
+      "dmc:932",
+      "dmc:931",
+      "dmc:930"
+    ],
+    "threadNumbers": [
+      "932",
+      "931",
+      "930"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "antique-blue-very-dk",
+    "label": "Antique Blue Very Dk",
+    "threadIds": [
+      "dmc:3750"
+    ],
+    "threadNumbers": [
+      "3750"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "sky-blue-vy-lt",
+    "label": "Sky Blue Vy Lt",
+    "threadIds": [
+      "dmc:828"
+    ],
+    "threadNumbers": [
+      "828"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "sky-blue",
+    "label": "Sky Blue",
+    "threadIds": [
+      "dmc:3761",
+      "dmc:519"
+    ],
+    "threadNumbers": [
+      "3761",
+      "519"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "wedgewood",
+    "label": "Wedgewood",
+    "threadIds": [
+      "dmc:518"
+    ],
+    "threadNumbers": [
+      "518"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "wedgewood-med",
+    "label": "Wedgewood Med",
+    "threadIds": [
+      "dmc:3760"
+    ],
+    "threadNumbers": [
+      "3760"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "wedgewood-2",
+    "label": "Wedgewood",
+    "threadIds": [
+      "dmc:517"
+    ],
+    "threadNumbers": [
+      "517"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "wedgewood-vry-dk",
+    "label": "Wedgewood Vry Dk",
+    "threadIds": [
+      "dmc:3842"
+    ],
+    "threadNumbers": [
+      "3842"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "wedgewood-ult-vydk",
+    "label": "Wedgewood Ult VyDk",
+    "threadIds": [
+      "dmc:311"
+    ],
+    "threadNumbers": [
+      "311"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "peacock-blue-vy-lt",
+    "label": "Peacock Blue Vy Lt",
+    "threadIds": [
+      "dmc:747"
+    ],
+    "threadNumbers": [
+      "747"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "peacock-blue",
+    "label": "Peacock Blue",
+    "threadIds": [
+      "dmc:3766",
+      "dmc:807",
+      "dmc:806"
+    ],
+    "threadNumbers": [
+      "3766",
+      "807",
+      "806"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "peacock-blue-vy-dk",
+    "label": "Peacock Blue Vy Dk",
+    "threadIds": [
+      "dmc:3765"
+    ],
+    "threadNumbers": [
+      "3765"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "turquoise",
+    "label": "Turquoise",
+    "threadIds": [
+      "dmc:3811",
+      "dmc:598",
+      "dmc:597",
+      "dmc:3810"
+    ],
+    "threadNumbers": [
+      "3811",
+      "598",
+      "597",
+      "3810"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "turquoise-vy",
+    "label": "Turquoise Vy",
+    "threadIds": [
+      "dmc:3809"
+    ],
+    "threadNumbers": [
+      "3809"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "turquoise-2",
+    "label": "Turquoise",
+    "threadIds": [
+      "dmc:3808"
+    ],
+    "threadNumbers": [
+      "3808"
+    ],
+    "hueBucket": "blue"
+  },
+  {
+    "id": "gray-green-vy-lt",
+    "label": "Gray Green Vy Lt",
+    "threadIds": [
+      "dmc:928"
+    ],
+    "threadNumbers": [
+      "928"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "gray-green",
+    "label": "Gray Green",
+    "threadIds": [
+      "dmc:927"
+    ],
+    "threadNumbers": [
+      "927"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "gray-green-med",
+    "label": "Gray Green Med",
+    "threadIds": [
+      "dmc:926"
+    ],
+    "threadNumbers": [
+      "926"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "gray-green-2",
+    "label": "Gray Green",
+    "threadIds": [
+      "dmc:3768"
+    ],
+    "threadNumbers": [
+      "3768"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "gray-green-vy",
+    "label": "Gray Green Vy",
+    "threadIds": [
+      "dmc:924"
+    ],
+    "threadNumbers": [
+      "924"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "teal-green",
+    "label": "Teal Green",
+    "threadIds": [
+      "dmc:3849"
+    ],
+    "threadNumbers": [
+      "3849"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "teal-green-med",
+    "label": "Teal Green Med",
+    "threadIds": [
+      "dmc:3848"
+    ],
+    "threadNumbers": [
+      "3848"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "teal-green-2",
+    "label": "Teal Green",
+    "threadIds": [
+      "dmc:3847"
+    ],
+    "threadNumbers": [
+      "3847"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "sea-green",
+    "label": "Sea Green",
+    "threadIds": [
+      "dmc:964"
+    ],
+    "threadNumbers": [
+      "964"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "sea-green-med",
+    "label": "Sea Green Med",
+    "threadIds": [
+      "dmc:959"
+    ],
+    "threadNumbers": [
+      "959"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "sea-green-2",
+    "label": "Sea Green",
+    "threadIds": [
+      "dmc:958"
+    ],
+    "threadNumbers": [
+      "958"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "sea-green-vy-dk",
+    "label": "Sea Green Vy Dk",
+    "threadIds": [
+      "dmc:3812"
+    ],
+    "threadNumbers": [
+      "3812"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "green-bright-lt",
+    "label": "Green Bright Lt",
+    "threadIds": [
+      "dmc:3851"
+    ],
+    "threadNumbers": [
+      "3851"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "green-bright-md",
+    "label": "Green Bright Md",
+    "threadIds": [
+      "dmc:943"
+    ],
+    "threadNumbers": [
+      "943"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "green-bright-dk",
+    "label": "Green Bright Dk",
+    "threadIds": [
+      "dmc:3850"
+    ],
+    "threadNumbers": [
+      "3850"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "aquamarine-vy-lt",
+    "label": "Aquamarine Vy Lt",
+    "threadIds": [
+      "dmc:993"
+    ],
+    "threadNumbers": [
+      "993"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "aquamarine-lt",
+    "label": "Aquamarine Lt",
+    "threadIds": [
+      "dmc:992"
+    ],
+    "threadNumbers": [
+      "992"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "aquamarine",
+    "label": "Aquamarine",
+    "threadIds": [
+      "dmc:3814"
+    ],
+    "threadNumbers": [
+      "3814"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "aquamarine-dk",
+    "label": "Aquamarine Dk",
+    "threadIds": [
+      "dmc:991"
+    ],
+    "threadNumbers": [
+      "991"
+    ],
+    "hueBucket": "cyan"
+  },
+  {
+    "id": "jade-ultra-vy-lt",
+    "label": "Jade Ultra Vy Lt",
+    "threadIds": [
+      "dmc:966"
+    ],
+    "threadNumbers": [
+      "966"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "jade",
+    "label": "Jade",
+    "threadIds": [
+      "dmc:564",
+      "dmc:563",
+      "dmc:562"
+    ],
+    "threadNumbers": [
+      "564",
+      "563",
+      "562"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "jade-green",
+    "label": "Jade Green",
+    "threadIds": [
+      "dmc:505"
+    ],
+    "threadNumbers": [
+      "505"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "celadon-green-lt",
+    "label": "Celadon Green Lt",
+    "threadIds": [
+      "dmc:3817"
+    ],
+    "threadNumbers": [
+      "3817"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "celadon-green",
+    "label": "Celadon Green",
+    "threadIds": [
+      "dmc:3816"
+    ],
+    "threadNumbers": [
+      "3816"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "celadon-green-md",
+    "label": "Celadon Green Md",
+    "threadIds": [
+      "dmc:163"
+    ],
+    "threadNumbers": [
+      "163"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "celadon-green-dk",
+    "label": "Celadon Green Dk",
+    "threadIds": [
+      "dmc:3815"
+    ],
+    "threadNumbers": [
+      "3815"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "celadon-green-vd",
+    "label": "Celadon Green VD",
+    "threadIds": [
+      "dmc:561"
+    ],
+    "threadNumbers": [
+      "561"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "blue-green-vy-lt",
+    "label": "Blue Green Vy Lt",
+    "threadIds": [
+      "dmc:504"
+    ],
+    "threadNumbers": [
+      "504"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "blue-green-lt",
+    "label": "Blue Green Lt",
+    "threadIds": [
+      "dmc:3813"
+    ],
+    "threadNumbers": [
+      "3813"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "blue-green-med",
+    "label": "Blue Green Med",
+    "threadIds": [
+      "dmc:503"
+    ],
+    "threadNumbers": [
+      "503"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "blue-green",
+    "label": "Blue Green",
+    "threadIds": [
+      "dmc:502",
+      "dmc:501"
+    ],
+    "threadNumbers": [
+      "502",
+      "501"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "blue-green-vy-dk",
+    "label": "Blue Green Vy Dk",
+    "threadIds": [
+      "dmc:500"
+    ],
+    "threadNumbers": [
+      "500"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "nile-green",
+    "label": "Nile Green",
+    "threadIds": [
+      "dmc:955",
+      "dmc:954"
+    ],
+    "threadNumbers": [
+      "955",
+      "954"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "nile-green-med",
+    "label": "Nile Green Med",
+    "threadIds": [
+      "dmc:913"
+    ],
+    "threadNumbers": [
+      "913"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "emerald-green-lt",
+    "label": "Emerald Green Lt",
+    "threadIds": [
+      "dmc:912"
+    ],
+    "threadNumbers": [
+      "912"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "emerald-green-med",
+    "label": "Emerald Green Med",
+    "threadIds": [
+      "dmc:911"
+    ],
+    "threadNumbers": [
+      "911"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "emerald-green",
+    "label": "Emerald Green",
+    "threadIds": [
+      "dmc:910"
+    ],
+    "threadNumbers": [
+      "910"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "emerald-green-vy-dk",
+    "label": "Emerald Green Vy Dk",
+    "threadIds": [
+      "dmc:909"
+    ],
+    "threadNumbers": [
+      "909"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "emerald-grn-ult-v-dk",
+    "label": "Emerald Grn Ult V Dk",
+    "threadIds": [
+      "dmc:3818"
+    ],
+    "threadNumbers": [
+      "3818"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-green-vy-lt",
+    "label": "Pistachio Green Vy Lt",
+    "threadIds": [
+      "dmc:369"
+    ],
+    "threadNumbers": [
+      "369"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-green-lt",
+    "label": "Pistachio Green Lt",
+    "threadIds": [
+      "dmc:368"
+    ],
+    "threadNumbers": [
+      "368"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-green-med",
+    "label": "Pistachio Green Med",
+    "threadIds": [
+      "dmc:320"
+    ],
+    "threadNumbers": [
+      "320"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-green-dk",
+    "label": "Pistachio Green Dk",
+    "threadIds": [
+      "dmc:367"
+    ],
+    "threadNumbers": [
+      "367"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-grn-vy-dk",
+    "label": "Pistachio Grn Vy Dk",
+    "threadIds": [
+      "dmc:319"
+    ],
+    "threadNumbers": [
+      "319"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "pistachio-grn-ult-v-d",
+    "label": "Pistachio Grn Ult V D",
+    "threadIds": [
+      "dmc:890"
+    ],
+    "threadNumbers": [
+      "890"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "forest-green-lt",
+    "label": "Forest Green Lt",
+    "threadIds": [
+      "dmc:164"
+    ],
+    "threadNumbers": [
+      "164"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "forest-green",
+    "label": "Forest Green",
+    "threadIds": [
+      "dmc:989"
+    ],
+    "threadNumbers": [
+      "989"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "forest-green-med",
+    "label": "Forest Green Med",
+    "threadIds": [
+      "dmc:988"
+    ],
+    "threadNumbers": [
+      "988"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "forest-green-dk",
+    "label": "Forest Green Dk",
+    "threadIds": [
+      "dmc:987"
+    ],
+    "threadNumbers": [
+      "987"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "forest-green-vy-dk",
+    "label": "Forest Green Vy Dk",
+    "threadIds": [
+      "dmc:986"
+    ],
+    "threadNumbers": [
+      "986"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "yellow-green-vy-lt",
+    "label": "Yellow Green Vy Lt",
+    "threadIds": [
+      "dmc:772"
+    ],
+    "threadNumbers": [
+      "772"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "yellow-green-lt",
+    "label": "Yellow Green Lt",
+    "threadIds": [
+      "dmc:3348"
+    ],
+    "threadNumbers": [
+      "3348"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "yellow-green-med",
+    "label": "Yellow Green Med",
+    "threadIds": [
+      "dmc:3347"
+    ],
+    "threadNumbers": [
+      "3347"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "hunter-green",
+    "label": "Hunter Green",
+    "threadIds": [
+      "dmc:3346"
+    ],
+    "threadNumbers": [
+      "3346"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "hunter-green-dk",
+    "label": "Hunter Green Dk",
+    "threadIds": [
+      "dmc:3345"
+    ],
+    "threadNumbers": [
+      "3345"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "hunter-green-vy-dk",
+    "label": "Hunter Green Vy Dk",
+    "threadIds": [
+      "dmc:895"
+    ],
+    "threadNumbers": [
+      "895"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "chartreuse-bright",
+    "label": "Chartreuse Bright",
+    "threadIds": [
+      "dmc:704"
+    ],
+    "threadNumbers": [
+      "704"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "chartreuse",
+    "label": "Chartreuse",
+    "threadIds": [
+      "dmc:703"
+    ],
+    "threadNumbers": [
+      "703"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "kelly-green",
+    "label": "Kelly Green",
+    "threadIds": [
+      "dmc:702"
+    ],
+    "threadNumbers": [
+      "702"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "green",
+    "label": "Green",
+    "threadIds": [
+      "dmc:701"
+    ],
+    "threadNumbers": [
+      "701"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "green-bright",
+    "label": "Green Bright",
+    "threadIds": [
+      "dmc:700"
+    ],
+    "threadNumbers": [
+      "700"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "green-2",
+    "label": "Green",
+    "threadIds": [
+      "dmc:699"
+    ],
+    "threadNumbers": [
+      "699"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "parrot-green-lt",
+    "label": "Parrot Green Lt",
+    "threadIds": [
+      "dmc:907"
+    ],
+    "threadNumbers": [
+      "907"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "parrot-green-md",
+    "label": "Parrot Green Md",
+    "threadIds": [
+      "dmc:906"
+    ],
+    "threadNumbers": [
+      "906"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "parrot-green-dk",
+    "label": "Parrot Green Dk",
+    "threadIds": [
+      "dmc:905"
+    ],
+    "threadNumbers": [
+      "905"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "parrot-green-v-dk",
+    "label": "Parrot Green V Dk",
+    "threadIds": [
+      "dmc:904"
+    ],
+    "threadNumbers": [
+      "904"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-grn-u-lt",
+    "label": "Avocado Grn U Lt",
+    "threadIds": [
+      "dmc:472"
+    ],
+    "threadNumbers": [
+      "472"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-grn-v-lt",
+    "label": "Avocado Grn V Lt",
+    "threadIds": [
+      "dmc:471"
+    ],
+    "threadNumbers": [
+      "471"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-grn-lt",
+    "label": "Avocado Grn Lt",
+    "threadIds": [
+      "dmc:470"
+    ],
+    "threadNumbers": [
+      "470"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-green",
+    "label": "Avocado Green",
+    "threadIds": [
+      "dmc:469"
+    ],
+    "threadNumbers": [
+      "469"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-green-md",
+    "label": "Avocado Green Md",
+    "threadIds": [
+      "dmc:937"
+    ],
+    "threadNumbers": [
+      "937"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-grn-v-dk",
+    "label": "Avocado Grn V Dk",
+    "threadIds": [
+      "dmc:936"
+    ],
+    "threadNumbers": [
+      "936"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-green-dk",
+    "label": "Avocado Green Dk",
+    "threadIds": [
+      "dmc:935"
+    ],
+    "threadNumbers": [
+      "935"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "avocado-grn-black",
+    "label": "Avocado Grn Black",
+    "threadIds": [
+      "dmc:934"
+    ],
+    "threadNumbers": [
+      "934"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "fern-green-lt",
+    "label": "Fern Green Lt",
+    "threadIds": [
+      "dmc:523"
+    ],
+    "threadNumbers": [
+      "523"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "green-gray",
+    "label": "Green Gray",
+    "threadIds": [
+      "dmc:3053"
+    ],
+    "threadNumbers": [
+      "3053"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "green-gray-md",
+    "label": "Green Gray Md",
+    "threadIds": [
+      "dmc:3052"
+    ],
+    "threadNumbers": [
+      "3052"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "green-gray-dk",
+    "label": "Green Gray Dk",
+    "threadIds": [
+      "dmc:3051"
+    ],
+    "threadNumbers": [
+      "3051"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "fern-green-vy-lt",
+    "label": "Fern Green Vy Lt",
+    "threadIds": [
+      "dmc:524"
+    ],
+    "threadNumbers": [
+      "524"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "fern-green",
+    "label": "Fern Green",
+    "threadIds": [
+      "dmc:522",
+      "dmc:520"
+    ],
+    "threadNumbers": [
+      "522",
+      "520"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "pine-green",
+    "label": "Pine Green",
+    "threadIds": [
+      "dmc:3364"
+    ],
+    "threadNumbers": [
+      "3364"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "pine-green-md",
+    "label": "Pine Green Md",
+    "threadIds": [
+      "dmc:3363"
+    ],
+    "threadNumbers": [
+      "3363"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "pine-green-dk",
+    "label": "Pine Green Dk",
+    "threadIds": [
+      "dmc:3362"
+    ],
+    "threadNumbers": [
+      "3362"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "moss-green-vy-lt",
+    "label": "Moss Green Vy Lt",
+    "threadIds": [
+      "dmc:165"
+    ],
+    "threadNumbers": [
+      "165"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "moss-green-lt",
+    "label": "Moss Green Lt",
+    "threadIds": [
+      "dmc:3819"
+    ],
+    "threadNumbers": [
+      "3819"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "moss-green-md-lt",
+    "label": "Moss Green Md Lt",
+    "threadIds": [
+      "dmc:166"
+    ],
+    "threadNumbers": [
+      "166"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "moss-green",
+    "label": "Moss Green",
+    "threadIds": [
+      "dmc:581"
+    ],
+    "threadNumbers": [
+      "581"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "moss-green-dk",
+    "label": "Moss Green Dk",
+    "threadIds": [
+      "dmc:580"
+    ],
+    "threadNumbers": [
+      "580"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "olive-green-lt",
+    "label": "Olive Green Lt",
+    "threadIds": [
+      "dmc:734"
+    ],
+    "threadNumbers": [
+      "734"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "olive-green-md",
+    "label": "Olive Green Md",
+    "threadIds": [
+      "dmc:733"
+    ],
+    "threadNumbers": [
+      "733"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "olive-green",
+    "label": "Olive Green",
+    "threadIds": [
+      "dmc:732"
+    ],
+    "threadNumbers": [
+      "732"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "olive-green-dk",
+    "label": "Olive Green Dk",
+    "threadIds": [
+      "dmc:731"
+    ],
+    "threadNumbers": [
+      "731"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "olive-green-v-dk",
+    "label": "Olive Green V Dk",
+    "threadIds": [
+      "dmc:730"
+    ],
+    "threadNumbers": [
+      "730"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "khaki-green-lt",
+    "label": "Khaki Green Lt",
+    "threadIds": [
+      "dmc:3013"
+    ],
+    "threadNumbers": [
+      "3013"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "khaki-green-md",
+    "label": "Khaki Green Md",
+    "threadIds": [
+      "dmc:3012"
+    ],
+    "threadNumbers": [
+      "3012"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "khaki-green-dk",
+    "label": "Khaki Green Dk",
+    "threadIds": [
+      "dmc:3011"
+    ],
+    "threadNumbers": [
+      "3011"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "mustard-lt",
+    "label": "Mustard Lt",
+    "threadIds": [
+      "dmc:372"
+    ],
+    "threadNumbers": [
+      "372"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "mustard",
+    "label": "Mustard",
+    "threadIds": [
+      "dmc:371",
+      "dmc:370"
+    ],
+    "threadNumbers": [
+      "371",
+      "370"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive-vy-lt",
+    "label": "Golden Olive Vy Lt",
+    "threadIds": [
+      "dmc:834"
+    ],
+    "threadNumbers": [
+      "834"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive-lt",
+    "label": "Golden Olive Lt",
+    "threadIds": [
+      "dmc:833"
+    ],
+    "threadNumbers": [
+      "833"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive",
+    "label": "Golden Olive",
+    "threadIds": [
+      "dmc:832"
+    ],
+    "threadNumbers": [
+      "832"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive-md",
+    "label": "Golden Olive Md",
+    "threadIds": [
+      "dmc:831"
+    ],
+    "threadNumbers": [
+      "831"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive-dk",
+    "label": "Golden Olive Dk",
+    "threadIds": [
+      "dmc:830"
+    ],
+    "threadNumbers": [
+      "830"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-olive-vy-dk",
+    "label": "Golden Olive Vy Dk",
+    "threadIds": [
+      "dmc:829"
+    ],
+    "threadNumbers": [
+      "829"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "drab-brown-v-lt",
+    "label": "Drab Brown V Lt",
+    "threadIds": [
+      "dmc:613"
+    ],
+    "threadNumbers": [
+      "613"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "drab-brown-lt",
+    "label": "Drab Brown Lt",
+    "threadIds": [
+      "dmc:612"
+    ],
+    "threadNumbers": [
+      "612"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "drab-brown",
+    "label": "Drab Brown",
+    "threadIds": [
+      "dmc:611"
+    ],
+    "threadNumbers": [
+      "611"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "drab-brown-dk",
+    "label": "Drab Brown Dk",
+    "threadIds": [
+      "dmc:610"
+    ],
+    "threadNumbers": [
+      "610"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "yellow-beige-lt",
+    "label": "Yellow Beige Lt",
+    "threadIds": [
+      "dmc:3047"
+    ],
+    "threadNumbers": [
+      "3047"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow-beige-md",
+    "label": "Yellow Beige Md",
+    "threadIds": [
+      "dmc:3046"
+    ],
+    "threadNumbers": [
+      "3046"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow-beige-dk",
+    "label": "Yellow Beige Dk",
+    "threadIds": [
+      "dmc:3045"
+    ],
+    "threadNumbers": [
+      "3045"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow-beige-v-dk",
+    "label": "Yellow Beige V Dk",
+    "threadIds": [
+      "dmc:167"
+    ],
+    "threadNumbers": [
+      "167"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "off-white",
+    "label": "Off White",
+    "threadIds": [
+      "dmc:746"
+    ],
+    "threadNumbers": [
+      "746"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "old-gold-vy-lt",
+    "label": "Old Gold Vy Lt",
+    "threadIds": [
+      "dmc:677"
+    ],
+    "threadNumbers": [
+      "677"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "hazelnut-brown-lt",
+    "label": "Hazelnut Brown Lt",
+    "threadIds": [
+      "dmc:422"
+    ],
+    "threadNumbers": [
+      "422"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "hazelnut-brown",
+    "label": "Hazelnut Brown",
+    "threadIds": [
+      "dmc:3828"
+    ],
+    "threadNumbers": [
+      "3828"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "hazelnut-brown-dk",
+    "label": "Hazelnut Brown Dk",
+    "threadIds": [
+      "dmc:420"
+    ],
+    "threadNumbers": [
+      "420"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "hazelnut-brown-v-dk",
+    "label": "Hazelnut Brown V Dk",
+    "threadIds": [
+      "dmc:869"
+    ],
+    "threadNumbers": [
+      "869"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "topaz",
+    "label": "Topaz",
+    "threadIds": [
+      "dmc:728",
+      "dmc:783",
+      "dmc:782",
+      "dmc:781"
+    ],
+    "threadNumbers": [
+      "728",
+      "783",
+      "782",
+      "781"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "topaz-ultra-vy-dk",
+    "label": "Topaz Ultra Vy Dk",
+    "threadIds": [
+      "dmc:780"
+    ],
+    "threadNumbers": [
+      "780"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "old-gold-lt",
+    "label": "Old Gold Lt",
+    "threadIds": [
+      "dmc:676"
+    ],
+    "threadNumbers": [
+      "676"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "old-gold",
+    "label": "Old Gold",
+    "threadIds": [
+      "dmc:729",
+      "dmc:680"
+    ],
+    "threadNumbers": [
+      "729",
+      "680"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "old-gold-vy",
+    "label": "Old Gold Vy",
+    "threadIds": [
+      "dmc:3829"
+    ],
+    "threadNumbers": [
+      "3829"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "straw",
+    "label": "Straw",
+    "threadIds": [
+      "dmc:3822",
+      "dmc:3821",
+      "dmc:3820",
+      "dmc:3852"
+    ],
+    "threadNumbers": [
+      "3822",
+      "3821",
+      "3820",
+      "3852"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "lemon",
+    "label": "Lemon",
+    "threadIds": [
+      "dmc:445",
+      "dmc:307"
+    ],
+    "threadNumbers": [
+      "445",
+      "307"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "canary-bright",
+    "label": "Canary Bright",
+    "threadIds": [
+      "dmc:973"
+    ],
+    "threadNumbers": [
+      "973"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "lemon-2",
+    "label": "Lemon",
+    "threadIds": [
+      "dmc:444"
+    ],
+    "threadNumbers": [
+      "444"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "golden-yellow-vy-lt",
+    "label": "Golden Yellow Vy Lt",
+    "threadIds": [
+      "dmc:3078"
+    ],
+    "threadNumbers": [
+      "3078"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "topaz-vy-lt",
+    "label": "Topaz Vy Lt",
+    "threadIds": [
+      "dmc:727"
+    ],
+    "threadNumbers": [
+      "727"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "topaz-2",
+    "label": "Topaz",
+    "threadIds": [
+      "dmc:726"
+    ],
+    "threadNumbers": [
+      "726"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "topaz-med-lt",
+    "label": "Topaz Med Lt",
+    "threadIds": [
+      "dmc:725"
+    ],
+    "threadNumbers": [
+      "725"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "canary-deep",
+    "label": "Canary Deep",
+    "threadIds": [
+      "dmc:972"
+    ],
+    "threadNumbers": [
+      "972"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow-pale",
+    "label": "Yellow Pale",
+    "threadIds": [
+      "dmc:745"
+    ],
+    "threadNumbers": [
+      "745"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow",
+    "label": "Yellow",
+    "threadIds": [
+      "dmc:744"
+    ],
+    "threadNumbers": [
+      "744"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "yellow-med",
+    "label": "Yellow Med",
+    "threadIds": [
+      "dmc:743"
+    ],
+    "threadNumbers": [
+      "743"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "tangerine",
+    "label": "Tangerine",
+    "threadIds": [
+      "dmc:742"
+    ],
+    "threadNumbers": [
+      "742"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "tangerine-med",
+    "label": "Tangerine Med",
+    "threadIds": [
+      "dmc:741"
+    ],
+    "threadNumbers": [
+      "741"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "tangerine-2",
+    "label": "Tangerine",
+    "threadIds": [
+      "dmc:740"
+    ],
+    "threadNumbers": [
+      "740"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "pumpkin",
+    "label": "Pumpkin",
+    "threadIds": [
+      "dmc:970",
+      "dmc:971"
+    ],
+    "threadNumbers": [
+      "970",
+      "971"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "burnt-orange",
+    "label": "Burnt Orange",
+    "threadIds": [
+      "dmc:947"
+    ],
+    "threadNumbers": [
+      "947"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "burnt-orange-med",
+    "label": "Burnt Orange Med",
+    "threadIds": [
+      "dmc:946"
+    ],
+    "threadNumbers": [
+      "946"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "burnt-orange-2",
+    "label": "Burnt Orange",
+    "threadIds": [
+      "dmc:900"
+    ],
+    "threadNumbers": [
+      "900"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "apricot",
+    "label": "Apricot",
+    "threadIds": [
+      "dmc:967",
+      "dmc:3824",
+      "dmc:3341"
+    ],
+    "threadNumbers": [
+      "967",
+      "3824",
+      "3341"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "apricot-med",
+    "label": "Apricot Med",
+    "threadIds": [
+      "dmc:3340"
+    ],
+    "threadNumbers": [
+      "3340"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "burnt-orange-bright",
+    "label": "Burnt Orange Bright",
+    "threadIds": [
+      "dmc:608"
+    ],
+    "threadNumbers": [
+      "608"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "orange-red-bright",
+    "label": "Orange Red Bright",
+    "threadIds": [
+      "dmc:606"
+    ],
+    "threadNumbers": [
+      "606"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "tawny",
+    "label": "Tawny",
+    "threadIds": [
+      "dmc:951"
+    ],
+    "threadNumbers": [
+      "951"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany",
+    "label": "Mahogany",
+    "threadIds": [
+      "dmc:3856"
+    ],
+    "threadNumbers": [
+      "3856"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "orange-spice",
+    "label": "Orange Spice",
+    "threadIds": [
+      "dmc:722"
+    ],
+    "threadNumbers": [
+      "722"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "orange-spice-med",
+    "label": "Orange Spice Med",
+    "threadIds": [
+      "dmc:721"
+    ],
+    "threadNumbers": [
+      "721"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "orange-spice-2",
+    "label": "Orange Spice",
+    "threadIds": [
+      "dmc:720"
+    ],
+    "threadNumbers": [
+      "720"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "pumpkin-2",
+    "label": "Pumpkin",
+    "threadIds": [
+      "dmc:3825"
+    ],
+    "threadNumbers": [
+      "3825"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "copper",
+    "label": "Copper",
+    "threadIds": [
+      "dmc:922",
+      "dmc:921"
+    ],
+    "threadNumbers": [
+      "922",
+      "921"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "copper-med",
+    "label": "Copper Med",
+    "threadIds": [
+      "dmc:920"
+    ],
+    "threadNumbers": [
+      "920"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "red-copper",
+    "label": "Red Copper",
+    "threadIds": [
+      "dmc:919",
+      "dmc:918"
+    ],
+    "threadNumbers": [
+      "919",
+      "918"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "tawny-vy",
+    "label": "Tawny Vy",
+    "threadIds": [
+      "dmc:3770"
+    ],
+    "threadNumbers": [
+      "3770"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "tawny-2",
+    "label": "Tawny",
+    "threadIds": [
+      "dmc:945"
+    ],
+    "threadNumbers": [
+      "945"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany-vy-lt",
+    "label": "Mahogany Vy Lt",
+    "threadIds": [
+      "dmc:402"
+    ],
+    "threadNumbers": [
+      "402"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany-2",
+    "label": "Mahogany",
+    "threadIds": [
+      "dmc:3776"
+    ],
+    "threadNumbers": [
+      "3776"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany-med",
+    "label": "Mahogany Med",
+    "threadIds": [
+      "dmc:301"
+    ],
+    "threadNumbers": [
+      "301"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany-3",
+    "label": "Mahogany",
+    "threadIds": [
+      "dmc:400"
+    ],
+    "threadNumbers": [
+      "400"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mahogany-vy-dk",
+    "label": "Mahogany Vy Dk",
+    "threadIds": [
+      "dmc:300"
+    ],
+    "threadNumbers": [
+      "300"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "yellow-ultra",
+    "label": "Yellow Ultra",
+    "threadIds": [
+      "dmc:3823"
+    ],
+    "threadNumbers": [
+      "3823"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "autumn-gold-lt",
+    "label": "Autumn Gold Lt",
+    "threadIds": [
+      "dmc:3855"
+    ],
+    "threadNumbers": [
+      "3855"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "autumn-gold-med",
+    "label": "Autumn Gold Med",
+    "threadIds": [
+      "dmc:3854"
+    ],
+    "threadNumbers": [
+      "3854"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "autumn-gold-dk",
+    "label": "Autumn Gold Dk",
+    "threadIds": [
+      "dmc:3853"
+    ],
+    "threadNumbers": [
+      "3853"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "golden-brown",
+    "label": "Golden Brown",
+    "threadIds": [
+      "dmc:3827",
+      "dmc:977"
+    ],
+    "threadNumbers": [
+      "3827",
+      "977"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "golden-brown-med",
+    "label": "Golden Brown Med",
+    "threadIds": [
+      "dmc:976"
+    ],
+    "threadNumbers": [
+      "976"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "golden-brown-2",
+    "label": "Golden Brown",
+    "threadIds": [
+      "dmc:3826"
+    ],
+    "threadNumbers": [
+      "3826"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "golden-brown-dk",
+    "label": "Golden Brown Dk",
+    "threadIds": [
+      "dmc:975"
+    ],
+    "threadNumbers": [
+      "975"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "peach-2",
+    "label": "Peach",
+    "threadIds": [
+      "dmc:948",
+      "dmc:754"
+    ],
+    "threadNumbers": [
+      "948",
+      "754"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "terra-cotta",
+    "label": "Terra Cotta",
+    "threadIds": [
+      "dmc:3771"
+    ],
+    "threadNumbers": [
+      "3771"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "terra-cotta-vy-lt",
+    "label": "Terra Cotta Vy Lt",
+    "threadIds": [
+      "dmc:758"
+    ],
+    "threadNumbers": [
+      "758"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "terra-cotta-2",
+    "label": "Terra Cotta",
+    "threadIds": [
+      "dmc:3778"
+    ],
+    "threadNumbers": [
+      "3778"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "terra-cotta-med",
+    "label": "Terra Cotta Med",
+    "threadIds": [
+      "dmc:356"
+    ],
+    "threadNumbers": [
+      "356"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "terra-cotta-3",
+    "label": "Terra Cotta",
+    "threadIds": [
+      "dmc:3830",
+      "dmc:355"
+    ],
+    "threadNumbers": [
+      "3830",
+      "355"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "terra-cotta-vy-dk",
+    "label": "Terra Cotta Vy Dk",
+    "threadIds": [
+      "dmc:3777"
+    ],
+    "threadNumbers": [
+      "3777"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "rosewood",
+    "label": "Rosewood",
+    "threadIds": [
+      "dmc:3779",
+      "dmc:3859"
+    ],
+    "threadNumbers": [
+      "3779",
+      "3859"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "rosewood-med",
+    "label": "Rosewood Med",
+    "threadIds": [
+      "dmc:3858"
+    ],
+    "threadNumbers": [
+      "3858"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "rosewood-2",
+    "label": "Rosewood",
+    "threadIds": [
+      "dmc:3857"
+    ],
+    "threadNumbers": [
+      "3857"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "desert-sand-vy-lt",
+    "label": "Desert Sand Vy Lt",
+    "threadIds": [
+      "dmc:3774"
+    ],
+    "threadNumbers": [
+      "3774"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "desert-sand",
+    "label": "Desert Sand",
+    "threadIds": [
+      "dmc:950",
+      "dmc:3064"
+    ],
+    "threadNumbers": [
+      "950",
+      "3064"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "desert-sand-med",
+    "label": "Desert Sand Med",
+    "threadIds": [
+      "dmc:407"
+    ],
+    "threadNumbers": [
+      "407"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "desert-sand-2",
+    "label": "Desert Sand",
+    "threadIds": [
+      "dmc:3773"
+    ],
+    "threadNumbers": [
+      "3773"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "desert-sand-vy-dk",
+    "label": "Desert Sand Vy Dk",
+    "threadIds": [
+      "dmc:3772"
+    ],
+    "threadNumbers": [
+      "3772"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "desert-sand-3",
+    "label": "Desert Sand",
+    "threadIds": [
+      "dmc:632"
+    ],
+    "threadNumbers": [
+      "632"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "shell-gray",
+    "label": "Shell Gray",
+    "threadIds": [
+      "dmc:453"
+    ],
+    "threadNumbers": [
+      "453"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "shell-gray-med",
+    "label": "Shell Gray Med",
+    "threadIds": [
+      "dmc:452"
+    ],
+    "threadNumbers": [
+      "452"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "shell-gray-2",
+    "label": "Shell Gray",
+    "threadIds": [
+      "dmc:451"
+    ],
+    "threadNumbers": [
+      "451"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "cocoa",
+    "label": "Cocoa",
+    "threadIds": [
+      "dmc:3861",
+      "dmc:3860",
+      "dmc:779"
+    ],
+    "threadNumbers": [
+      "3861",
+      "3860",
+      "779"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "cream",
+    "label": "Cream",
+    "threadIds": [
+      "dmc:712"
+    ],
+    "threadNumbers": [
+      "712"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "tan",
+    "label": "Tan",
+    "threadIds": [
+      "dmc:739",
+      "dmc:738",
+      "dmc:437",
+      "dmc:436"
+    ],
+    "threadNumbers": [
+      "739",
+      "738",
+      "437",
+      "436"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "brown",
+    "label": "Brown",
+    "threadIds": [
+      "dmc:435",
+      "dmc:434"
+    ],
+    "threadNumbers": [
+      "435",
+      "434"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "brown-med",
+    "label": "Brown Med",
+    "threadIds": [
+      "dmc:433"
+    ],
+    "threadNumbers": [
+      "433"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "coffee-brown-dk",
+    "label": "Coffee Brown Dk",
+    "threadIds": [
+      "dmc:801"
+    ],
+    "threadNumbers": [
+      "801"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "coffee-brown-vy-dk",
+    "label": "Coffee Brown Vy Dk",
+    "threadIds": [
+      "dmc:898"
+    ],
+    "threadNumbers": [
+      "898"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "coffee-brown-ult-dk",
+    "label": "Coffee Brown Ult Dk",
+    "threadIds": [
+      "dmc:938"
+    ],
+    "threadNumbers": [
+      "938"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "black-brown",
+    "label": "Black Brown",
+    "threadIds": [
+      "dmc:3371"
+    ],
+    "threadNumbers": [
+      "3371"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beige-brown",
+    "label": "Beige Brown",
+    "threadIds": [
+      "dmc:543"
+    ],
+    "threadNumbers": [
+      "543"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "mocha-beige",
+    "label": "Mocha Beige",
+    "threadIds": [
+      "dmc:3864"
+    ],
+    "threadNumbers": [
+      "3864"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "mocha-beige-med",
+    "label": "Mocha Beige Med",
+    "threadIds": [
+      "dmc:3863"
+    ],
+    "threadNumbers": [
+      "3863"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "mocha-beige-2",
+    "label": "Mocha Beige",
+    "threadIds": [
+      "dmc:3862"
+    ],
+    "threadNumbers": [
+      "3862"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mocha-brown-vy-dk",
+    "label": "Mocha Brown Vy Dk",
+    "threadIds": [
+      "dmc:3031"
+    ],
+    "threadNumbers": [
+      "3031"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "snow-white",
+    "label": "Snow White",
+    "threadIds": [
+      "dmc:B5200"
+    ],
+    "threadNumbers": [
+      "B5200"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "white",
+    "label": "White",
+    "threadIds": [
+      "dmc:White"
+    ],
+    "threadNumbers": [
+      "White"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "winter-white",
+    "label": "Winter White",
+    "threadIds": [
+      "dmc:3865"
+    ],
+    "threadNumbers": [
+      "3865"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "ecru",
+    "label": "Ecru",
+    "threadIds": [
+      "dmc:Ecru"
+    ],
+    "threadNumbers": [
+      "Ecru"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beige-gray",
+    "label": "Beige Gray",
+    "threadIds": [
+      "dmc:822"
+    ],
+    "threadNumbers": [
+      "822"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beige-gray-med",
+    "label": "Beige Gray Med",
+    "threadIds": [
+      "dmc:644"
+    ],
+    "threadNumbers": [
+      "644"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beige-gray-2",
+    "label": "Beige Gray",
+    "threadIds": [
+      "dmc:642"
+    ],
+    "threadNumbers": [
+      "642"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "beige-gray-vy-dk",
+    "label": "Beige Gray Vy Dk",
+    "threadIds": [
+      "dmc:640"
+    ],
+    "threadNumbers": [
+      "640"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "brown-gray",
+    "label": "Brown Gray",
+    "threadIds": [
+      "dmc:3787"
+    ],
+    "threadNumbers": [
+      "3787"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "brown-gray-vy-dk",
+    "label": "Brown Gray Vy Dk",
+    "threadIds": [
+      "dmc:3021"
+    ],
+    "threadNumbers": [
+      "3021"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "brown-gray-vy-lt",
+    "label": "Brown Gray Vy Lt",
+    "threadIds": [
+      "dmc:3024"
+    ],
+    "threadNumbers": [
+      "3024"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "brown-gray-2",
+    "label": "Brown Gray",
+    "threadIds": [
+      "dmc:3023"
+    ],
+    "threadNumbers": [
+      "3023"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "brown-gray-med",
+    "label": "Brown Gray Med",
+    "threadIds": [
+      "dmc:3022"
+    ],
+    "threadNumbers": [
+      "3022"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "ash-gray-vy-lt",
+    "label": "Ash Gray Vy Lt",
+    "threadIds": [
+      "dmc:535"
+    ],
+    "threadNumbers": [
+      "535"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "mocha-brown-vy-lt",
+    "label": "Mocha Brown Vy Lt",
+    "threadIds": [
+      "dmc:3033"
+    ],
+    "threadNumbers": [
+      "3033"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "mocha-brown-lt",
+    "label": "Mocha Brown Lt",
+    "threadIds": [
+      "dmc:3782"
+    ],
+    "threadNumbers": [
+      "3782"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mocha-brown-med",
+    "label": "Mocha Brown Med",
+    "threadIds": [
+      "dmc:3032"
+    ],
+    "threadNumbers": [
+      "3032"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beige-gray-ult-dk",
+    "label": "Beige Gray Ult Dk",
+    "threadIds": [
+      "dmc:3790"
+    ],
+    "threadNumbers": [
+      "3790"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mocha-brown-dk",
+    "label": "Mocha Brown Dk",
+    "threadIds": [
+      "dmc:3781"
+    ],
+    "threadNumbers": [
+      "3781"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "mocha-brn",
+    "label": "Mocha Brn",
+    "threadIds": [
+      "dmc:3866"
+    ],
+    "threadNumbers": [
+      "3866"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beige-brown-vy-lt",
+    "label": "Beige Brown Vy Lt",
+    "threadIds": [
+      "dmc:842"
+    ],
+    "threadNumbers": [
+      "842"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beige-brown-lt",
+    "label": "Beige Brown Lt",
+    "threadIds": [
+      "dmc:841"
+    ],
+    "threadNumbers": [
+      "841"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beige-brown-med",
+    "label": "Beige Brown Med",
+    "threadIds": [
+      "dmc:840"
+    ],
+    "threadNumbers": [
+      "840"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beige-brown-dk",
+    "label": "Beige Brown Dk",
+    "threadIds": [
+      "dmc:839"
+    ],
+    "threadNumbers": [
+      "839"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beige-brown-vy-dk",
+    "label": "Beige Brown Vy Dk",
+    "threadIds": [
+      "dmc:838"
+    ],
+    "threadNumbers": [
+      "838"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "beaver-gray-vy-lt",
+    "label": "Beaver Gray Vy Lt",
+    "threadIds": [
+      "dmc:3072"
+    ],
+    "threadNumbers": [
+      "3072"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beaver-gray-lt",
+    "label": "Beaver Gray Lt",
+    "threadIds": [
+      "dmc:648"
+    ],
+    "threadNumbers": [
+      "648"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beaver-gray-med",
+    "label": "Beaver Gray Med",
+    "threadIds": [
+      "dmc:647"
+    ],
+    "threadNumbers": [
+      "647"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beaver-gray-dk",
+    "label": "Beaver Gray Dk",
+    "threadIds": [
+      "dmc:646"
+    ],
+    "threadNumbers": [
+      "646"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beaver-gray-vy-dk",
+    "label": "Beaver Gray Vy Dk",
+    "threadIds": [
+      "dmc:645"
+    ],
+    "threadNumbers": [
+      "645"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "beaver-gray-ult-dk",
+    "label": "Beaver Gray Ult Dk",
+    "threadIds": [
+      "dmc:844"
+    ],
+    "threadNumbers": [
+      "844"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "pearl-gray-vy-lt",
+    "label": "Pearl Gray Vy Lt",
+    "threadIds": [
+      "dmc:762"
+    ],
+    "threadNumbers": [
+      "762"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "pearl-gray",
+    "label": "Pearl Gray",
+    "threadIds": [
+      "dmc:415"
+    ],
+    "threadNumbers": [
+      "415"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "steel-gray-lt",
+    "label": "Steel Gray Lt",
+    "threadIds": [
+      "dmc:318"
+    ],
+    "threadNumbers": [
+      "318"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "steel-gray-dk",
+    "label": "Steel Gray Dk",
+    "threadIds": [
+      "dmc:414"
+    ],
+    "threadNumbers": [
+      "414"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "pewter",
+    "label": "Pewter",
+    "threadIds": [
+      "dmc:168",
+      "dmc:169"
+    ],
+    "threadNumbers": [
+      "168",
+      "169"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "pewter-gray",
+    "label": "Pewter Gray",
+    "threadIds": [
+      "dmc:317",
+      "dmc:413"
+    ],
+    "threadNumbers": [
+      "317",
+      "413"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "pewter-gray-vy-dk",
+    "label": "Pewter Gray Vy Dk",
+    "threadIds": [
+      "dmc:3799"
+    ],
+    "threadNumbers": [
+      "3799"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "black",
+    "label": "Black",
+    "threadIds": [
+      "dmc:310"
+    ],
+    "threadNumbers": [
+      "310"
+    ],
+    "hueBucket": "neutral"
+  }
+]

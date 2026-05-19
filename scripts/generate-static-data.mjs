@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { enrichDmcCatalog } from './dmc-enrich.mjs'
 
 const repoRoot = process.cwd()
 const publicDataDir = `${repoRoot}/public/data`
@@ -33,7 +34,10 @@ async function generateDmcFloss() {
 
   const arrayLiteral = source.slice(startIndex, endIndex + 2)
   const dmcColors = Function(`"use strict"; return (${arrayLiteral});`)()
-  await writeFile(`${publicDataDir}/dmc-floss.json`, `${JSON.stringify(dmcColors, null, 2)}\n`)
+  const { threads, families } = enrichDmcCatalog(dmcColors)
+
+  await writeFile(`${publicDataDir}/dmc-floss.json`, `${JSON.stringify(threads, null, 2)}\n`)
+  await writeFile(`${publicDataDir}/dmc-families.json`, `${JSON.stringify(families, null, 2)}\n`)
 }
 
 await ensureDir(publicDataDir)
