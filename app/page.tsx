@@ -541,6 +541,19 @@ export default function Home() {
         : desktopLayoutMode === 'medium'
           ? 'workbench-desktop-shell--medium'
           : 'workbench-desktop-shell--narrow'
+  const desktopCanvasInsetClass = !image
+    ? 'p-0'
+    : desktopLayoutMode === 'wide'
+      ? 'px-6 pb-6 pt-24 lg:pl-[6.75rem]'
+      : desktopLayoutMode === 'medium'
+        ? 'px-4 pb-4 pt-20 pl-20 pr-4'
+        : 'px-3 pb-3 pt-[4.5rem] pl-[4.75rem] pr-3'
+  const desktopToolbarMaxClass =
+    desktopLayoutMode === 'wide'
+      ? 'max-w-[min(76rem,calc(100%-13rem))]'
+      : desktopLayoutMode === 'medium'
+        ? 'max-w-[min(72rem,calc(100%-10rem))]'
+        : 'max-w-[calc(100%-7.5rem)]'
   const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'
@@ -573,7 +586,7 @@ export default function Home() {
       id="main-content"
       tabIndex={-1}
       suppressHydrationWarning
-      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${showSessionPalette ? 'pb-14 md:pb-0' : ''}`}
+      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${showSessionPalette ? 'pb-14 lg:pb-0' : ''}`}
     >
       {!isMobile ? (
         <div
@@ -594,7 +607,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="pointer-events-none absolute left-1/2 top-6 z-40 w-full max-w-[min(76rem,calc(100%-13rem))] -translate-x-1/2 px-6">
+                <div className={`pointer-events-none absolute left-1/2 top-6 z-40 w-full -translate-x-1/2 px-4 ${desktopToolbarMaxClass}`}>
                   <div className="pointer-events-auto">
                     <CompactToolbar
                       calibration={calibration}
@@ -633,7 +646,7 @@ export default function Home() {
               </>
             )}
 
-            <div className={`flex flex-1 min-h-0 min-w-0 flex-col ${image ? 'px-6 pb-6 pt-24 lg:pl-[6.75rem]' : 'p-0'}`}>
+            <div className={`workbench-desktop-canvas-inset flex flex-1 min-h-0 min-w-0 flex-col ${desktopCanvasInsetClass}`}>
               <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
                 {image && (
                   <div className="pointer-events-none absolute inset-[4%] rounded-[36px] bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.55),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(198,181,154,0.18),transparent_42%)] blur-2xl" />

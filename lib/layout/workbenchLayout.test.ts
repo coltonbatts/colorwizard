@@ -10,8 +10,13 @@ describe('getWorkbenchLayoutMode', () => {
     expect(getWorkbenchLayoutMode(1366, 820)).toBe('medium')
   })
 
+  it('uses the medium layout for common laptop sizes', () => {
+    expect(getWorkbenchLayoutMode(1280, 720)).toBe('medium')
+    expect(getWorkbenchLayoutMode(1180, 800)).toBe('medium')
+  })
+
   it('uses the narrow layout when the shell becomes constrained', () => {
-    expect(getWorkbenchLayoutMode(1180, 800)).toBe('narrow')
+    expect(getWorkbenchLayoutMode(1100, 700)).toBe('narrow')
   })
 })
 

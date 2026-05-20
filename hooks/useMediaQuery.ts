@@ -31,9 +31,13 @@ export function useMediaQuery(query: string): boolean {
     return matches
 }
 
+/** Viewports at or below this width use the touch-first mobile workbench. */
+export const MOBILE_WORKBENCH_MAX_WIDTH_PX = 1024
+
 /**
- * Convenience hook for mobile detection (max-width: 768px)
+ * Touch-first workbench (bottom sheet, compact toolbar) for phones, tablets,
+ * and smaller laptop windows where the studio desktop chrome is too cramped.
  */
 export function useIsMobile() {
-    return useMediaQuery('(max-width: 768px)')
+    return useMediaQuery(`(max-width: ${MOBILE_WORKBENCH_MAX_WIDTH_PX}px)`)
 }

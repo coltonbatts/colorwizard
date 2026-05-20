@@ -785,14 +785,14 @@ body {
 }
 
 .workbench-desktop-shell--medium {
-    gap: 1.25rem;
-    grid-template-columns: minmax(0, 1fr) clamp(20.5rem, 28vw, 28rem);
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) clamp(18rem, 26vw, 26rem);
 }
 
 .workbench-desktop-shell--narrow {
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0.875rem;
+    grid-template-columns: minmax(0, 1fr) clamp(16.5rem, 24vw, 22rem);
+    grid-template-rows: minmax(0, 1fr);
 }
 
 .workbench-desktop-shell--empty {
@@ -810,8 +810,16 @@ body {
     display: flex;
 }
 
-.workbench-desktop-shell--narrow .workbench-desktop-inspector {
-    max-height: clamp(24rem, 42dvh, 38rem);
+/* Stack inspector below canvas only on very tight desktop viewports */
+@media (max-width: 920px), (max-height: 640px) {
+    .workbench-desktop-shell--narrow {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .workbench-desktop-shell--narrow .workbench-desktop-inspector {
+        max-height: clamp(18rem, 38dvh, 32rem);
+    }
 }
 
 .workbench-mode-rail {
@@ -1125,10 +1133,52 @@ body {
 }
 
 /* ============================================
-   MOBILE RESPONSIVE (≤768px)
+   LAPTOP / COMPACT DESKTOP (≤1280px)
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 1280px) {
+    .workbench-desktop-shell--wide {
+        gap: 1.25rem;
+        grid-template-columns: minmax(0, 1fr) clamp(21rem, 29vw, 29rem);
+    }
+
+    .workbench-mode-rail {
+        width: 54px;
+        min-width: 54px;
+        padding: 12px 5px;
+        border-radius: 22px;
+    }
+
+    .workbench-mode-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+    }
+
+    .workbench-floating-panel {
+        border-radius: 28px;
+    }
+
+    .workbench-sample-hud {
+        padding: 1rem;
+    }
+
+    .compact-toolbar .workbench-toolbar-group select {
+        min-width: 8.5rem;
+    }
+
+    .workbench-desktop-shell[data-layout="medium"] .compact-toolbar,
+    .workbench-desktop-shell[data-layout="narrow"] .compact-toolbar {
+        margin-inline: auto;
+        max-width: 100%;
+    }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE (≤1024px)
+   ============================================ */
+
+@media (max-width: 1024px) {
     :root {
         --mobile-touch-target: 44px;
         --sidebar-width: 100%;
@@ -1271,7 +1321,7 @@ body {
     display: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .mobile-header {
         display: block;
         position: sticky;
@@ -1932,7 +1982,7 @@ body {
     overflow: hidden;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .canvas-primary {
         flex: 0 0 55%;
         max-height: 55vh;
@@ -2050,7 +2100,7 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: var(--shadow-sm);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     input[type="range"] {
         min-height: var(--mobile-touch-target);
         touch-action: none;
