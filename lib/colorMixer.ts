@@ -74,7 +74,7 @@ export function generatePaintRecipe(hsl: { h: number; s: number; l: number }): M
   const baseRecipe = determineIngredients(hsl);
 
   // 2. Generate steps
-  const steps = generateMixingSteps(baseRecipe.colors, hsl.l, baseRecipe.notes);
+  const steps = generateMixingSteps(baseRecipe.colors, hsl.l, baseRecipe.notes, hsl);
 
   return {
     ...baseRecipe,
@@ -85,7 +85,12 @@ export function generatePaintRecipe(hsl: { h: number; s: number; l: number }): M
 /**
  * Helper to generate logical mixing steps from ingredients
  */
-function generateMixingSteps(colors: PaintColor[], targetLightness: number, notes?: string): string[] {
+function generateMixingSteps(
+  colors: PaintColor[],
+  targetLightness: number,
+  notes?: string,
+  targetHsl?: { h: number; s: number; l: number }
+): string[] {
   return generatePainterlyMixingSteps(
     colors.map((color) => ({
       name: color.name,
@@ -96,6 +101,7 @@ function generateMixingSteps(colors: PaintColor[], targetLightness: number, note
     })),
     {
       targetLightness,
+      targetHsl,
       notes,
     }
   )

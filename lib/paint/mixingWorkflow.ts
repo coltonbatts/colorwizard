@@ -1,3 +1,6 @@
+import { hexToRgb, rgbToHsl } from '../color/conversions'
+import type { HSL } from '../color/types'
+
 export interface WorkflowIngredient {
   id?: string
   name: string
@@ -7,8 +10,37 @@ export interface WorkflowIngredient {
   tintingStrength?: number
 }
 
+export type MixPushDirection =
+  | 'lighter'
+  | 'darker'
+  | 'warmer'
+  | 'cooler'
+  | 'less_chroma'
+  | 'more_chroma'
+
+export type MixIngredientRole =
+  | 'value_base'
+  | 'value_lighten'
+  | 'value_darken'
+  | 'neutralize'
+  | 'warm_bias'
+  | 'cool_bias'
+  | 'hue_nudge'
+  | 'strong_tinter'
+
+export interface MixIngredientPush {
+  ingredient: WorkflowIngredient
+  role: MixIngredientRole
+  roleLabel: string
+  explanation: string
+  pushes: MixPushDirection[]
+  pigmentHex?: string
+}
+
 interface GenerateWorkflowOptions {
   targetLightness?: number
+  targetHex?: string
+  targetHsl?: HSL
   notes?: string
 }
 
@@ -235,6 +267,184 @@ export function choosePainterBase(
   return white ?? activeIngredients[0]
 }
 
+function resolveTargetHsl(options: GenerateWorkflowOptions): HSL | null {
+  if (options.targetHsl) return options.targetHsl
+  if (!options.targetHex) return null
+  const rgb = hexToRgb(options.targetHex)
+  if (!rgb) return null
+  return rgbToHsl(rgb.r, rgb.g, rgb.b)
+}
+
+function isMutedTarget(hsl: HSL): boolean {
+  // Muted sampling colors (e.g. #5A8FB8) often sit in the high-30s/low-40s saturation in HSL.
+  return hsl.s < 48
+}
+
+function isCoolTarget(hsl: HSL): boolean {
+  return hsl.h >= 160 && hsl.h <= 270
+}
+
+function isWarmTarget(hsl: HSL): boolean {
+  return hsl.h < 55 || hsl.h > 305
+}
+
+function classifyIngredientRole(
+  ingredient: WorkflowIngredient,
+  target: HSL | null,
+  dominantChromatic: WorkflowIngredient | null
+): MixIngredientRole {
+  if (isWhite(ingredient)) {
+    return ingredient.weight >= 0.45 ? 'value_base' : 'value_lighten'
+  }
+
+  if (isBlack(ingredient)) {
+    return 'value_darken'
+  }
+
+  if (isStrongTinter(ingredient)) {
+    return 'strong_tinter'
+  }
+
+  if (target && (isCadmiumRed(ingredient) || isYellowOchre(ingredient))) {
+    const traceComplement =
+      ingredient.weight < 0.14 &&
+      isMutedTarget(target) &&
+      (isCoolTarget(target) || isPhthalo(dominantChromatic ?? ingredient))
+
+    if (traceComplement) {
+      return 'neutralize'
+    }
+
+    if (isWarmTarget(target) && ingredient.weight >= 0.12) {
+      return 'warm_bias'
+    }
+  }
+
+  if (target && isPhthalo(ingredient) && isCoolTarget(target)) {
+    return 'cool_bias'
+  }
+
+  return 'hue_nudge'
+}
+
+function pushesForRole(role: MixIngredientRole, ingredient: WorkflowIngredient): MixPushDirection[] {
+  switch (role) {
+    case 'value_base':
+    case 'value_lighten':
+      return ['lighter', 'less_chroma']
+    case 'value_darken':
+      return ['darker', 'less_chroma']
+    case 'neutralize':
+      return ['less_chroma', 'warmer']
+    case 'warm_bias':
+      return ['warmer', 'more_chroma']
+    case 'cool_bias':
+      return isPhthaloGreen(ingredient) ? ['cooler', 'more_chroma'] : ['cooler', 'more_chroma']
+    case 'strong_tinter':
+      return isPhthaloGreen(ingredient) ? ['cooler', 'more_chroma'] : ['cooler', 'more_chroma']
+    case 'hue_nudge':
+    default:
+      if (isYellowOchre(ingredient)) return ['warmer', 'less_chroma']
+      if (isCadmiumRed(ingredient)) return ['warmer', 'more_chroma']
+      return ['more_chroma']
+  }
+}
+
+function roleLabelForRole(role: MixIngredientRole): string {
+  switch (role) {
+    case 'value_base':
+      return 'Value base'
+    case 'value_lighten':
+      return 'Lighten'
+    case 'value_darken':
+      return 'Darken'
+    case 'neutralize':
+      return 'Mute'
+    case 'warm_bias':
+      return 'Warm'
+    case 'cool_bias':
+      return 'Cool hue'
+    case 'strong_tinter':
+      return 'Strong tinter'
+    case 'hue_nudge':
+    default:
+      return 'Hue'
+  }
+}
+
+function explanationForRole(role: MixIngredientRole, ingredient: WorkflowIngredient): string {
+  switch (role) {
+    case 'value_base':
+      return 'Builds the pile value before chroma.'
+    case 'value_lighten':
+      return 'Lifts value without shifting hue much.'
+    case 'value_darken':
+      return 'Pulls value down—use sparingly to avoid mud.'
+    case 'neutralize':
+      return 'Tiny complement in the six-color model to dull phthalo bias—not a red accent.'
+    case 'warm_bias':
+      return 'Shifts temperature warmer in the model.'
+    case 'cool_bias':
+      return 'Adds a cool undertone; strong tint—add last.'
+    case 'strong_tinter':
+      return 'High tinting strength; small amounts move hue fast.'
+    case 'hue_nudge':
+    default:
+      return 'Shifts hue toward the target in the model.'
+  }
+}
+
+function stepTextForRole(role: MixIngredientRole, ingredient: WorkflowIngredient): string {
+  const dose = getDosePhrase(ingredient)
+  const name = ingredient.name
+
+  switch (role) {
+    case 'neutralize':
+      return `Mute and balance with ${dose} of **${name}**—a trace complement in this palette, not a warm accent.`
+    case 'warm_bias':
+      return `Warm the mix with ${dose} of **${name}**.`
+    case 'cool_bias':
+      return `Shift cool with ${dose} of **${name}**.`
+    case 'hue_nudge':
+      return `Nudge the hue with ${dose} of **${name}**.`
+    case 'strong_tinter':
+      return `Add the strong tinter last: ${dose} of **${name}**.`
+    case 'value_lighten':
+      return `Lighten with ${dose} of **${name}**.`
+    case 'value_darken':
+      return `If it still runs light, darken with ${dose} of **${name}** only to lock value.`
+    default:
+      return `Adjust with ${dose} of **${name}**.`
+  }
+}
+
+/** Classify how each pigment pushes the mix toward the target (for UI + honest steps). */
+export function classifyMixPushes(
+  ingredients: WorkflowIngredient[],
+  options: GenerateWorkflowOptions = {}
+): MixIngredientPush[] {
+  const activeIngredients = ingredients
+    .filter((ingredient) => ingredient.weight > 0)
+    .sort((a, b) => b.weight - a.weight)
+
+  const target = resolveTargetHsl(options)
+  const dominantChromatic =
+    activeIngredients
+      .filter((ingredient) => !isValueAdjuster(ingredient))
+      .sort((a, b) => b.weight - a.weight)[0] ?? null
+
+  return activeIngredients.map((ingredient) => {
+    const role = classifyIngredientRole(ingredient, target, dominantChromatic)
+    return {
+      ingredient,
+      role,
+      roleLabel: roleLabelForRole(role),
+      explanation: explanationForRole(role, ingredient),
+      pushes: pushesForRole(role, ingredient),
+    }
+  })
+}
+
 export function generatePainterlyMixingSteps(
   ingredients: WorkflowIngredient[],
   options: GenerateWorkflowOptions = {}
@@ -253,12 +463,8 @@ export function generatePainterlyMixingSteps(
   const white = others.find(isWhite)
   const black = others.find(isBlack)
   const nonValueAdjusters = others.filter((ingredient) => !isValueAdjuster(ingredient))
-  const strongTinters = nonValueAdjusters.filter(isStrongTinter)
-  const chromaticAdjusters = nonValueAdjusters.filter((ingredient) => !isStrongTinter(ingredient))
-  const temperatureAdjusters = chromaticAdjusters.filter(
-    (ingredient) => isYellowOchre(ingredient) || isCadmiumRed(ingredient)
-  )
-  const hueAdjusters = chromaticAdjusters.filter((ingredient) => !temperatureAdjusters.includes(ingredient))
+  const pushes = classifyMixPushes(activeIngredients, options)
+  const pushByIngredient = new Map(pushes.map((push) => [push.ingredient, push]))
   const valueBuildBits: string[] = []
   const steps: string[] = []
 
@@ -285,17 +491,23 @@ export function generatePainterlyMixingSteps(
     steps.push('Build the value pile first and lock the value before you chase hue.')
   }
 
-  temperatureAdjusters.forEach((ingredient) => {
-    steps.push(`Adjust temperature with ${getDosePhrase(ingredient)} of **${ingredient.name}**.`)
-  })
+  const chromaticOthers = nonValueAdjusters.filter((ingredient) => ingredient !== base)
+  const roleOrder: MixIngredientRole[] = [
+    'neutralize',
+    'warm_bias',
+    'cool_bias',
+    'hue_nudge',
+    'strong_tinter',
+  ]
 
-  hueAdjusters.forEach((ingredient) => {
-    steps.push(`Nudge the hue with ${getDosePhrase(ingredient)} of **${ingredient.name}**.`)
-  })
-
-  strongTinters.forEach((ingredient) => {
-    steps.push(`Add the strong tinter last: ${getDosePhrase(ingredient)} of **${ingredient.name}**.`)
-  })
+  for (const role of roleOrder) {
+    chromaticOthers
+      .filter((ingredient) => pushByIngredient.get(ingredient)?.role === role)
+      .forEach((ingredient) => {
+        const push = pushByIngredient.get(ingredient)
+        if (push) steps.push(stepTextForRole(push.role, ingredient))
+      })
+  }
 
   steps.push('Mix thoroughly with your palette knife.')
 

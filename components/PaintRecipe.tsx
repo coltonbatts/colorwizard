@@ -11,6 +11,7 @@ import { SkeletonPaintRecipe } from '@/components/ui/SkeletonLoader'
 import { useDebouncedLoading } from '@/hooks/useDebounce'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import PuddleRecipeDisplay from './paint/PuddleRecipeDisplay'
+import MixColorPushMap from './paint/MixColorPushMap'
 import ProcreateExportButton from './ProcreateExportButton'
 import type { ProcreateColor } from '@/lib/types/procreate'
 
@@ -273,6 +274,13 @@ export default function PaintRecipe({
             ingredients={recipe.ingredients}
             targetHex={targetHex}
             preview={recipe.preview}
+            mixSource={recipe.source}
+            variant={effectiveVariant}
+          />
+
+          <MixColorPushMap
+            targetHex={targetHex}
+            ingredients={recipe.ingredients}
             mixSource={recipe.source}
             variant={effectiveVariant}
           />

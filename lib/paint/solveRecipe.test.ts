@@ -71,7 +71,12 @@ describe('solveRecipe pigment accuracy', () => {
 
         const valueStepIdx = recipe.steps.findIndex(step => step.includes('Build the value pile') || step.includes('Lock the value'))
         const hueStepIdx = recipe.steps.findIndex(
-            step => step.includes('Adjust temperature') || step.includes('Nudge the hue') || step.includes('strong tinter last')
+            step =>
+                step.includes('Mute and balance') ||
+                step.includes('Warm the mix') ||
+                step.includes('Shift cool') ||
+                step.includes('Nudge the hue') ||
+                step.includes('strong tinter last')
         )
 
         expect(valueStepIdx).toBeGreaterThanOrEqual(0);
@@ -85,6 +90,14 @@ describe('solveRecipe pigment accuracy', () => {
         expect(recipe.steps.some(step => step.includes('strong tinter last') && step.includes('Phthalo Blue'))).toBe(true);
         expect(recipe.steps.some(step => step.includes('Tip:') && step.includes('Phthalo Blue'))).toBe(true);
     });
+
+    it('labels trace cadmium red on muted blue as mute, not a warm accent step', async () => {
+        const recipe = await solveRecipe('#5A8FB8')
+
+        expect(recipe.ingredients.some((ingredient) => ingredient.pigment.id === 'cadmium-red')).toBe(true)
+        expect(recipe.steps.some((step) => step.includes('Mute and balance'))).toBe(true)
+        expect(recipe.steps.some((step) => step.includes('Adjust temperature'))).toBe(false)
+    })
 
     it('stays on the six-color default palette and does not pull in Raw Umber', async () => {
         const recipe = await solveRecipe('#6b4a2f');

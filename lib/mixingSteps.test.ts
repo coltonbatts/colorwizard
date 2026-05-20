@@ -37,7 +37,12 @@ describe('mixing steps refinement', () => {
 
         const valueStepIdx = recipe.steps.findIndex(s => s.includes('Build the value pile') || s.includes('Lock the value'))
         const hueStepIdx = recipe.steps.findIndex(
-            s => s.includes('Adjust temperature') || s.includes('Nudge the hue') || s.includes('strong tinter last')
+            s =>
+                s.includes('Mute and balance') ||
+                s.includes('Warm the mix') ||
+                s.includes('Shift cool') ||
+                s.includes('Nudge the hue') ||
+                s.includes('strong tinter last')
         )
 
         if (valueStepIdx !== -1 && hueStepIdx !== -1) {

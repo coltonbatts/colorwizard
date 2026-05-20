@@ -266,7 +266,8 @@ function refineCandidateSync(
  */
 function generateSteps(
     ingredients: SpectralRecipe['ingredients'],
-    targetLightness: number
+    targetLightness: number,
+    targetHex: string
 ): string[] {
     return generatePainterlyMixingSteps(
         ingredients.map((ingredient) => ({
@@ -277,7 +278,7 @@ function generateSteps(
             isValueAdjuster: ingredient.pigment.isValueAdjuster,
             tintingStrength: ingredient.pigment.tintingStrength,
         })),
-        { targetLightness }
+        { targetLightness, targetHex }
     );
 }
 
@@ -401,7 +402,7 @@ export async function solveRecipe(
         predictedHex: best.hex,
         error: best.error,
         matchQuality: getMatchQuality(best.error),
-        steps: generateSteps(ingredients, targetLightness),
+        steps: generateSteps(ingredients, targetLightness, targetHex),
     };
 }
 
