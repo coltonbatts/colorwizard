@@ -112,7 +112,7 @@ function ThreadSwatch({
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-graphite">
+    <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-graphite">
       {children}
     </h3>
   )
@@ -139,19 +139,17 @@ function ValueWarningsList({ warnings }: { warnings: ValueWarning[] }) {
 }
 
 function SampleValueHero({ context }: { context: ThreadMatchResult }) {
-  const { sampleValue, primary, ladderPosition, familyLadder } = context
+  const { sampleValue, primary, familyLadder } = context
   const hint = formatLadderHint(primary, familyLadder)
   return (
     <div className="rounded-xl border-2 border-ink/15 bg-paper-recessed px-3 py-3">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-graphite">Value role in this image</p>
-      <p className="mt-1 text-2xl font-black leading-tight text-ink">{sampleValue.bandLabel}</p>
-      <p className="mt-1 font-mono text-sm font-bold text-ink-secondary">
-        {sampleValue.normalizedPosition} on image value scale (0 = darkest, 100 = lightest)
-      </p>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-2xl font-black leading-tight text-ink">{sampleValue.bandLabel}</p>
+        <p className="shrink-0 font-mono text-sm font-bold tabular-nums text-ink-secondary">
+          {sampleValue.normalizedPosition}
+        </p>
+      </div>
       {hint ? <p className="mt-2 text-sm text-ink-secondary">{hint}</p> : null}
-      {ladderPosition && (ladderPosition.lighter || ladderPosition.darker) ? (
-        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-graphite">Light-to-dark ladder neighbors available</p>
-      ) : null}
     </div>
   )
 }
@@ -167,7 +165,6 @@ function SuggestedRenderingSetSection({
   return (
     <div className="border-b-2 border-linen px-4 py-5">
       <SectionLabel>Suggested rendering set</SectionLabel>
-      <p className="mt-1 mb-4 text-sm text-ink-secondary">Light-to-dark passes using this family when possible.</p>
       <ul className="space-y-2">
         {context.suggestedSet.suggestions.map((entry) => (
           <li key={`${entry.role}-${entry.thread.id}`}>
@@ -324,8 +321,6 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
 
       {/* Primary match */}
       <div className="border-b-2 border-linen px-4 py-5">
-        <p className="mb-4 text-sm font-semibold text-ink-secondary">Plan value first — then pick thread</p>
-
         <div className="rounded-2xl border-2 border-linen bg-paper-elevated p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <button
@@ -334,7 +329,6 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
               className="flex shrink-0 flex-col items-center gap-2 sm:items-start"
             >
               <ThreadSwatch hex={primary.hex} size="hero" selected />
-              <span className="text-xs font-bold uppercase tracking-wide text-graphite">Tap swatch to sample</span>
             </button>
 
             <div className="min-w-0 flex-1">
@@ -395,10 +389,6 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
       {showLadder ? (
         <div className="border-b-2 border-linen px-4 py-5">
           <SectionLabel>{primary.familyLabel} — light to dark</SectionLabel>
-          <p className="mt-1 mb-4 text-sm text-ink-secondary">
-            Light-to-dark rendering ladder in this hue family.
-          </p>
-
           <FamilyValueScale ladder={familyLadder} primaryId={primary.id} onSelect={onColorSelect} />
 
           <div className="mt-4 space-y-2">
@@ -445,9 +435,6 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
       {otherChoices.length > 0 ? (
         <div className="border-b-2 border-linen px-4 py-5">
           <SectionLabel>Other close matches</SectionLabel>
-          <p className="mt-1 mb-4 text-sm text-ink-secondary">
-            Different families or values — compare before you commit to a skein.
-          </p>
           <ul className="space-y-3">
             {otherChoices.map((match) => (
               <li key={match.id}>
@@ -562,9 +549,6 @@ function ReducedValueMapPreview({
   return (
     <div className="border-b-2 border-linen px-4 py-5">
       <SectionLabel>Value grouping preview</SectionLabel>
-      <p className="mt-1 mb-3 text-sm text-ink-secondary">
-        Rough 3- or 5-value groupings of the loaded image (for planning, not stitching charts).
-      </p>
       <div className="mb-3 flex flex-wrap gap-2">
         {(['original', '3', '5'] as ValueMapMode[]).map((option) => (
           <button

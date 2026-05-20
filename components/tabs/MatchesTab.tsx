@@ -2,7 +2,7 @@
 
 /**
  * MatchesTab - The "Threads" tab content
- * Shows value-first DMC embroidery floss planning for the sampled color
+ * Shows DMC embroidery floss matches for the sampled color
  */
 
 import DMCFlossMatch from '../DMCFlossMatch'
@@ -66,7 +66,7 @@ function ThreadsEmptyState() {
                 </svg>
             </div>
             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Threads</div>
-            <p className="mt-2 text-sm font-semibold text-ink">Sample to plan value and thread.</p>
+            <p className="mt-2 text-sm font-semibold text-ink">Sample a color on the canvas.</p>
         </div>
     )
 }
