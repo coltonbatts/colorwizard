@@ -111,7 +111,7 @@ export function buildSuggestedRenderingSet(
     pickByTargetL(crossPool, sampleL - 0.22, primary.id)
 
   const suggestions: SuggestedRenderingSet['suggestions'] = [
-    { role: 'base', thread: primary, note: 'Closest hue/chroma match' },
+    { role: 'base', thread: primary, note: 'Closest in catalog' },
   ]
 
   if (highlight && highlight.id !== primary.id) {

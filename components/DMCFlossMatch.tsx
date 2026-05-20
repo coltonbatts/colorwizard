@@ -10,7 +10,7 @@ import type {
   ShadeStep,
   ValueWarning,
 } from '@/lib/dmc/types'
-import { formatCatalogDeltaE00, PICKED_COLOR_DISCLAIMER } from '@/lib/colorSemantics'
+import { formatCatalogDeltaE00, PICKED_COLOR_DISCLAIMER, VALUE_ANALYSIS_NOTE } from '@/lib/colorSemantics'
 import { computeValueScale, getStepIndex, stepToGray } from '@/lib/valueScale'
 import type { ValueBuffer } from '@/hooks/useImageAnalyzer'
 
@@ -337,7 +337,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
 
               <div className="mt-4 flex items-start justify-between gap-3 border-t border-linen pt-4">
                 <div className="min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wide text-graphite">Closest hue match</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-graphite">Closest in catalog</p>
                   <p className="font-mono text-3xl font-black leading-none tracking-tight text-ink">
                     {primary.number}
                   </p>
@@ -487,9 +487,10 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
         rgb={rgb}
       />
 
-      <p className="px-4 py-3 text-sm leading-relaxed text-ink-secondary">
-        {PICKED_COLOR_DISCLAIMER}
-      </p>
+      <footer className="space-y-2 px-4 py-3 text-sm leading-relaxed text-ink-secondary">
+        <p>{PICKED_COLOR_DISCLAIMER}</p>
+        <p>{VALUE_ANALYSIS_NOTE}</p>
+      </footer>
     </section>
   )
 }

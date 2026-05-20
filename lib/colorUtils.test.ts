@@ -149,69 +149,69 @@ describe('colorUtils', () => {
     })
 
     describe('getMatchConfidence', () => {
-        it('returns "Exact Match" for dE < 1.0', () => {
+        it('returns "Very close in catalog" for dE < 1.0', () => {
             const result = getMatchConfidence(0.5)
-            expect(result.label).toBe('Exact Match')
+            expect(result.label).toBe('Very close in catalog')
             expect(result.color).toBe('text-green-500')
             expect(result.bgColor).toBe('bg-green-500')
         })
 
-        it('returns "Very Close" for dE 1.0-2.5', () => {
+        it('returns "Close in catalog" for dE 1.0-2.5', () => {
             const result = getMatchConfidence(1.5)
-            expect(result.label).toBe('Very Close')
+            expect(result.label).toBe('Close in catalog')
             expect(result.color).toBe('text-emerald-400')
             expect(result.bgColor).toBe('bg-emerald-400')
         })
 
-        it('returns "Close" for dE 2.5-5.0', () => {
+        it('returns "Fair in catalog" for dE 2.5-5.0', () => {
             const result = getMatchConfidence(3.5)
-            expect(result.label).toBe('Close')
+            expect(result.label).toBe('Fair in catalog')
             expect(result.color).toBe('text-blue-400')
             expect(result.bgColor).toBe('bg-blue-400')
         })
 
-        it('returns "Similar" for dE 5.0-10.0', () => {
+        it('returns "Loose in catalog" for dE 5.0-10.0', () => {
             const result = getMatchConfidence(7.5)
-            expect(result.label).toBe('Similar')
+            expect(result.label).toBe('Loose in catalog')
             expect(result.color).toBe('text-yellow-400')
             expect(result.bgColor).toBe('bg-yellow-400')
         })
 
-        it('returns "Distant" for dE >= 10.0', () => {
+        it('returns "Distant in catalog" for dE >= 10.0', () => {
             const result = getMatchConfidence(15)
-            expect(result.label).toBe('Distant')
+            expect(result.label).toBe('Distant in catalog')
             expect(result.color).toBe('text-gray-400')
             expect(result.bgColor).toBe('bg-gray-400')
         })
 
-        it('handles boundary at exactly 1.0 as "Very Close"', () => {
+        it('handles boundary at exactly 1.0 as "Close in catalog"', () => {
             const result = getMatchConfidence(1.0)
-            expect(result.label).toBe('Very Close')
+            expect(result.label).toBe('Close in catalog')
         })
 
-        it('handles boundary at exactly 2.5 as "Close"', () => {
+        it('handles boundary at exactly 2.5 as "Fair in catalog"', () => {
             const result = getMatchConfidence(2.5)
-            expect(result.label).toBe('Close')
+            expect(result.label).toBe('Fair in catalog')
         })
 
-        it('handles boundary at exactly 5.0 as "Similar"', () => {
+        it('handles boundary at exactly 5.0 as "Loose in catalog"', () => {
             const result = getMatchConfidence(5.0)
-            expect(result.label).toBe('Similar')
+            expect(result.label).toBe('Loose in catalog')
         })
 
-        it('handles boundary at exactly 10.0 as "Distant"', () => {
+        it('handles boundary at exactly 10.0 as "Distant in catalog"', () => {
             const result = getMatchConfidence(10.0)
-            expect(result.label).toBe('Distant')
+            expect(result.label).toBe('Distant in catalog')
         })
 
-        it('handles zero as "Exact Match"', () => {
+        it('handles zero as "Very close in catalog"', () => {
             const result = getMatchConfidence(0)
-            expect(result.label).toBe('Exact Match')
+            expect(result.label).toBe('Very close in catalog')
         })
 
-        it('handles very large values as "Distant"', () => {
+        it('handles very large values as "Distant in catalog"', () => {
             const result = getMatchConfidence(100)
-            expect(result.label).toBe('Distant')
+            expect(result.label).toBe('Distant in catalog')
         })
     })
 })

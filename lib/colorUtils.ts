@@ -66,12 +66,13 @@ export function rgbToHsl(r: number, g: number, b: number): HSL {
 }
 
 /**
- * Helper to get a strict match confidence label
+ * Catalog match strength from CIEDE2000 (sample sRGB vs DMC reference sRGB).
+ * Wording is intentionally "in catalog" — not a claim about physical thread or the photo.
  */
 export function getMatchConfidence(dE: number): { label: string; color: string; bgColor: string } {
-  if (dE < 1.0) return { label: 'Exact Match', color: 'text-green-500', bgColor: 'bg-green-500' };
-  if (dE < 2.5) return { label: 'Very Close', color: 'text-emerald-400', bgColor: 'bg-emerald-400' };
-  if (dE < 5.0) return { label: 'Close', color: 'text-blue-400', bgColor: 'bg-blue-400' };
-  if (dE < 10.0) return { label: 'Similar', color: 'text-yellow-400', bgColor: 'bg-yellow-400' };
-  return { label: 'Distant', color: 'text-gray-400', bgColor: 'bg-gray-400' };
+  if (dE < 1.0) return { label: 'Very close in catalog', color: 'text-green-500', bgColor: 'bg-green-500' };
+  if (dE < 2.5) return { label: 'Close in catalog', color: 'text-emerald-400', bgColor: 'bg-emerald-400' };
+  if (dE < 5.0) return { label: 'Fair in catalog', color: 'text-blue-400', bgColor: 'bg-blue-400' };
+  if (dE < 10.0) return { label: 'Loose in catalog', color: 'text-yellow-400', bgColor: 'bg-yellow-400' };
+  return { label: 'Distant in catalog', color: 'text-gray-400', bgColor: 'bg-gray-400' };
 }

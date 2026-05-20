@@ -20,7 +20,7 @@ describe('colorSemantics', () => {
     });
 
     it('maps catalog distance to CIEDE2000 confidence labels', () => {
-        expect(getCatalogMatchPresentation(0.5).label).toBe('Exact Match');
+        expect(getCatalogMatchPresentation(0.5).label).toBe('Very close in catalog');
         expect(getCatalogMatchPresentation(0.5).metricLabel).toBe('ΔE₀₀ 0.5');
     });
 });
