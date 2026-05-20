@@ -37,6 +37,8 @@ interface PaintRecipeProps {
   hideHeader?: boolean
   /** Hide compact footer metadata */
   hideFooter?: boolean
+  /** Fired when display recipe is ready (for pipeline peek, Mix Lab, etc.) */
+  onRecipeResolved?: (recipe: DisplayRecipe) => void
 }
 
 const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
@@ -48,7 +50,7 @@ const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
   'Phthalo Blue': { hex: '#0F2E53', id: 'phthalo-blue' },
 }
 
-type DisplayRecipe = {
+export type DisplayRecipe = {
   source: 'solver' | 'heuristic'
   ingredients: SpectralRecipe['ingredients']
   steps: string[]
@@ -71,6 +73,7 @@ export default function PaintRecipe({
   showExportButton = true,
   hideHeader = false,
   hideFooter = false,
+  onRecipeResolved,
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -217,6 +220,11 @@ export default function PaintRecipe({
   const isBoardLayout = effectiveVariant === 'board'
   const shouldShowInlineSteps = isCompactLayout || isBoardLayout
   const renderedStepCount = recipe.steps.length
+
+  useEffect(() => {
+    if (isLoading || isEmptyCatalog) return
+    onRecipeResolved?.(recipe)
+  }, [isLoading, isEmptyCatalog, onRecipeResolved, recipe, targetHex])
 
   useEffect(() => {
     setShowSteps(!shouldShowInlineSteps)

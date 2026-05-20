@@ -36,6 +36,7 @@ import { useElementSize } from '@/hooks/useElementSize'
 import { isTauri, resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode'
 import { buildImageValueContext } from '@/lib/dmcFloss'
+import { createSolidColorDemoImage, hexToSampleColor } from '@/lib/demoColor'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -160,6 +161,7 @@ export default function Home() {
 
   const compactMode = useLayoutStore(state => state.compactMode)
   const simpleMode = useLayoutStore(state => state.simpleMode)
+  const setSimpleMode = useLayoutStore(state => state.setSimpleMode)
   const toggleSimpleMode = useLayoutStore(state => state.toggleSimpleMode)
 
   const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
@@ -332,6 +334,20 @@ export default function Home() {
     syncActiveBandFromColor(color)
   }, [setSampledColor, syncActiveBandFromColor])
 
+  const handleTryDemoColor = useCallback(
+    async (hex: string) => {
+      try {
+        const img = await createSolidColorDemoImage(hex)
+        handleImageLoad(img)
+        applySampleColor(hexToSampleColor(hex))
+        setActiveTab('mix')
+      } catch (err) {
+        console.error('[demo] Failed to load demo swatch:', err)
+      }
+    },
+    [applySampleColor, handleImageLoad],
+  )
+
   // Use the hook's results to update the store
   useEffect(() => {
     if (analyzerValueScaleResult) setValueScaleResult(analyzerValueScaleResult)
@@ -481,6 +497,7 @@ export default function Home() {
           <OilMixTab
             sampledColor={sampledColor}
             activePalette={activePalette}
+            artistMode={simpleMode}
             onColorSelect={(rgb) => {
               applySampleColor({
                 rgb,
@@ -632,6 +649,8 @@ export default function Home() {
                       valueModeSteps={valueModeSteps}
                       onToggleValueMode={handleToggleValueMode}
                       onValueModeStepsChange={setValueModeSteps}
+                      artistMode={simpleMode}
+                      onArtistModeChange={setSimpleMode}
                     />
                   </div>
                 </div>
@@ -664,6 +683,7 @@ export default function Home() {
                     ref={imageCanvasRef}
                     image={image}
                     onImageLoad={handleImageLoad}
+                    onTryDemoColor={handleTryDemoColor}
                     onReset={handleClearImage}
                     dismissPreviewSignal={dismissPreviewSignal}
                     suppressPreviewOverlay={showPaletteManager}
@@ -775,6 +795,8 @@ export default function Home() {
                   valueModeSteps={valueModeSteps}
                   onToggleValueMode={handleToggleValueMode}
                   onValueModeStepsChange={setValueModeSteps}
+                  artistMode={simpleMode}
+                  onArtistModeChange={setSimpleMode}
                 />
               </div>
             )}
@@ -795,6 +817,7 @@ export default function Home() {
                   ref={imageCanvasRef}
                   image={image}
                   onImageLoad={handleImageLoad}
+                  onTryDemoColor={handleTryDemoColor}
                   onReset={handleClearImage}
                   dismissPreviewSignal={dismissPreviewSignal}
                   suppressPreviewOverlay={showPaletteManager}

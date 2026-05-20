@@ -7,6 +7,7 @@ import { CanvasSettings } from '@/lib/types/canvas'
 import { TabType } from './CollapsibleSidebar'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { WordmarkCompact } from './Wordmark'
+import ArtistLabToggle from './workbench/ArtistLabToggle'
 import {
   DeckWorkbenchIcon,
   SampleWorkbenchIcon,
@@ -36,6 +37,8 @@ interface CompactToolbarProps {
   valueModeSteps: 5 | 7 | 9 | 11
   onToggleValueMode: () => void
   onValueModeStepsChange: (steps: 5 | 7 | 9 | 11) => void
+  artistMode?: boolean
+  onArtistModeChange?: (artist: boolean) => void
 }
 
 const GridIcon = () => (
@@ -172,6 +175,8 @@ export default function CompactToolbar({
   onResetView,
   valueModeEnabled,
   onToggleValueMode,
+  artistMode = true,
+  onArtistModeChange,
 }: CompactToolbarProps) {
   const isMobile = useIsMobile()
   const mobileTabAction =
@@ -349,7 +354,13 @@ export default function CompactToolbar({
         </div>
       </details>
 
-      <div className="workbench-toolbar-group ml-auto shrink-0">
+      <div className="workbench-toolbar-group ml-auto shrink-0 flex flex-wrap items-center gap-2">
+        {onArtistModeChange && (
+          <ArtistLabToggle
+            artistMode={artistMode}
+            onArtistModeChange={onArtistModeChange}
+          />
+        )}
         <select
           value={activePalette.id}
           onChange={(e) => onSelectPalette(e.target.value)}

@@ -8,6 +8,12 @@ import ColorWizardSplashLottie from '@/components/splash/ColorWizardSplashLottie
 import { isDesktopApp } from '@/lib/desktop/detect'
 import { pickImagePath } from '@/lib/desktop/tauriClient'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
+import { useSessionStore } from '@/lib/store/useSessionStore'
+import {
+  createSolidColorDemoDataUrl,
+  DEMO_COLOR_SWATCHES,
+  hexToSampleColor,
+} from '@/lib/demoColor'
 
 function isImageFile(file: File): boolean {
   if (file.type && file.type.startsWith('image/')) return true
@@ -22,6 +28,7 @@ export default function DesktopWorkspaceEmpty() {
   const referenceImage = useCanvasStore((s) => s.referenceImage)
   const runtimeImage = useCanvasStore((s) => s.image)
   const setReferenceImage = useCanvasStore((s) => s.setReferenceImage)
+  const setSampledColor = useSessionStore((s) => s.setSampledColor)
   const [busy, setBusy] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
@@ -146,14 +153,45 @@ export default function DesktopWorkspaceEmpty() {
           ColorWizard
         </h1>
 
+        <p className="mt-4 max-w-sm text-center text-sm leading-relaxed text-ink-secondary">
+          Sample a color. Get a limited-palette mix grounded in how light combines in paint.
+        </p>
+
         <button
           type="button"
           disabled={busy}
           onClick={() => void handleOpen()}
-          className="studio-action mt-10 min-h-[44px] px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="studio-action mt-8 min-h-[44px] px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? 'Opening…' : 'Choose file'}
         </button>
+
+        <div className="mt-8 w-full max-w-sm">
+          <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+            Try a demo color
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {DEMO_COLOR_SWATCHES.map((swatch) => (
+              <button
+                key={swatch.hex}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
+                  setSampledColor(hexToSampleColor(swatch.hex))
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-3 py-2 text-[11px] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+              >
+                <span
+                  className="h-5 w-5 shrink-0 rounded-full border border-black/10"
+                  style={{ backgroundColor: swatch.hex }}
+                  aria-hidden="true"
+                />
+                {swatch.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

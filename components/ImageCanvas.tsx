@@ -53,6 +53,8 @@ import type { ColorData, RGB, ImageDrawInfo, PointerCoord } from '@/components/I
 interface ImageCanvasProps {
   image: HTMLImageElement | null
   onImageLoad: (img: HTMLImageElement) => void
+  /** Splash demo swatches — loads solid-color canvas + sample */
+  onTryDemoColor?: (hex: string) => void
   onColorSample: (color: ColorData) => void
   highlightColor?: RGB | null
   highlightTolerance?: number // Lab-distance window (approximate overlay map)
@@ -102,6 +104,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const {
     image,
     onImageLoad,
+    onTryDemoColor,
     onColorSample,
     valueScaleSettings,
     onHistogramComputed,
@@ -1054,7 +1057,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             />
           </div>
         ) : (
-          <ImageDropzone onImageLoad={onImageLoad} />
+          <ImageDropzone onImageLoad={onImageLoad} onTryDemoColor={onTryDemoColor} />
         )
       ) : (
         <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>

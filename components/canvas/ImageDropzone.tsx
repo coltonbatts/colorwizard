@@ -3,6 +3,7 @@
 import { useCallback, useState, useId } from 'react';
 import ColorWizardSplashLottie from '@/components/splash/ColorWizardSplashLottie';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
+import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 
 /**
  * Web workbench empty state: Lottie splash, title, and file picker (drag/drop supported).
@@ -11,9 +12,11 @@ import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePip
 interface ImageDropzoneProps {
     /** Called when an image is successfully loaded */
     onImageLoad: (img: HTMLImageElement) => void;
+    /** Optional demo swatch — loads workbench with preset color */
+    onTryDemoColor?: (hex: string) => void;
 }
 
-export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
+export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDropzoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const inputId = useId();
@@ -362,12 +365,41 @@ export default function ImageDropzone({ onImageLoad }: ImageDropzoneProps) {
                     ColorWizard
                 </h1>
 
+                <p className="mt-4 max-w-sm text-center text-sm leading-relaxed text-ink-secondary">
+                    Sample a color. Get a limited-palette mix grounded in how light combines in paint.
+                </p>
+
                 <label
                     htmlFor={inputId}
-                    className={`studio-action mt-10 cursor-pointer px-8 py-3.5 transition-transform duration-200 ${isDragging ? 'scale-[1.02]' : ''}`}
+                    className={`studio-action mt-8 cursor-pointer px-8 py-3.5 transition-transform duration-200 ${isDragging ? 'scale-[1.02]' : ''}`}
                 >
                     {isConverting ? 'Converting…' : 'Choose file'}
                 </label>
+
+                {onTryDemoColor && (
+                    <div className="mt-8 w-full max-w-sm">
+                        <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                            Try a demo color
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {DEMO_COLOR_SWATCHES.map((swatch) => (
+                                <button
+                                    key={swatch.hex}
+                                    type="button"
+                                    onClick={() => onTryDemoColor(swatch.hex)}
+                                    className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-3 py-2 text-[11px] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <span
+                                        className="h-5 w-5 shrink-0 rounded-full border border-black/10"
+                                        style={{ backgroundColor: swatch.hex }}
+                                        aria-hidden="true"
+                                    />
+                                    {swatch.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
