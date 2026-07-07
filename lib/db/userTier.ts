@@ -1,176 +1,87 @@
 /**
- * Firebase user tier management
- * Handles user document creation, tier updates, and subscription tracking
+ * Supabase user tier management
+ * Handles user profile creation, tier updates, and subscription tracking
  */
 
-import { getFirestoreDb } from '@/lib/firebase'
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  Timestamp,
-  serverTimestamp
-} from 'firebase/firestore'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import type { UserTier } from '@/lib/featureFlags'
 
-export interface UserTierDoc {
+export interface UserProfile {
+  id: string
   tier: UserTier
-  stripeCustomerId?: string
-  subscriptionId?: string // Deprecated: for subscription model only
-  priceId?: string // Deprecated: for subscription model only
-  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'pending' | 'trialing' // Deprecated: for subscription model only
-  createdAt: Timestamp
-  upgradeDate?: Timestamp
-  proUnlockedAt?: Timestamp // Timestamp of lifetime unlock
-  canceledAt?: Timestamp
-  nextBillingDate?: Timestamp // Deprecated: for subscription model only
-  currentPeriodEnd?: Timestamp // Deprecated: for subscription model only
-  currentPeriodStart?: Timestamp // Deprecated: for subscription model only
-  email?: string
-  // Lifetime purchase tracking
-  stripe?: {
-    customerId?: string
-    lastCheckoutSessionId?: string // Idempotency: track processed sessions
-    lastPaymentIntentId?: string // Alternative idempotency key
+  email?: string | null
+  stripe_customer_id?: string | null
+  pro_unlocked_at?: string | null
+  created_at: string
+  stripe_last_checkout_session_id?: string | null
+}
+
+function mapProfile(row: Record<string, unknown>): UserProfile {
+  return {
+    id: String(row.id),
+    tier: row.tier as UserTier,
+    email: (row.email as string | null | undefined) ?? null,
+    stripe_customer_id: (row.stripe_customer_id as string | null | undefined) ?? null,
+    pro_unlocked_at: (row.pro_unlocked_at as string | null | undefined) ?? null,
+    created_at: String(row.created_at),
+    stripe_last_checkout_session_id:
+      (row.stripe_last_checkout_session_id as string | null | undefined) ?? null,
   }
 }
 
-/**
- * Create a new user document with free tier
- */
-export async function createUserDoc(userId: string, email?: string): Promise<UserTierDoc> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
-  const userData: UserTierDoc = {
-    tier: 'free',
-    createdAt: serverTimestamp() as Timestamp,
-    email,
-  }
+/** @deprecated Use UserProfile */
+export type UserTierDoc = UserProfile
 
-  await setDoc(userRef, userData)
-  return userData
+/**
+ * Create a new user profile with free tier
+ */
+export async function createUserDoc(userId: string, email?: string): Promise<UserProfile> {
+  const supabase = getSupabaseAdmin()
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .insert({
+      id: userId,
+      tier: 'free',
+      email: email ?? null,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return mapProfile(data)
 }
 
 /**
  * Get user's tier information
  */
-export async function getUserTier(userId: string): Promise<UserTierDoc | null> {
-  const db = getFirestoreDb()
-  if (!db) return null
-  const userRef = doc(db, 'users', userId)
-  const docSnap = await getDoc(userRef)
+export async function getUserTier(userId: string): Promise<UserProfile | null> {
+  const supabase = getSupabaseAdmin()
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
 
-  if (!docSnap.exists()) {
-    return null
-  }
-
-  return docSnap.data() as UserTierDoc
-}
-
-/**
- * Update user tier to Pro permanently
- */
-export async function upgradeToPro(
-  userId: string,
-  {
-    stripeCustomerId,
-    subscriptionId,
-    priceId,
-    subscriptionStatus = 'active',
-  }: {
-    stripeCustomerId?: string
-    subscriptionId?: string
-    priceId?: string
-    subscriptionStatus?: string
-  }
-): Promise<void> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
-
-  await updateDoc(userRef, {
-    tier: 'pro',
-    stripeCustomerId: stripeCustomerId || null,
-    subscriptionId: subscriptionId || null,
-    priceId: priceId || null,
-    subscriptionStatus,
-    upgradeDate: serverTimestamp(),
-  })
-}
-
-/**
- * Update subscription status (called from Stripe webhook)
- */
-export async function updateSubscriptionStatus(
-  userId: string,
-  {
-    subscriptionStatus,
-    nextBillingDate,
-    currentPeriodEnd,
-    currentPeriodStart,
-  }: {
-    subscriptionStatus: string
-    nextBillingDate?: Date
-    currentPeriodEnd?: Date
-    currentPeriodStart?: Date
-  }
-): Promise<void> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
-
-  const updateData: any = {
-    subscriptionStatus,
-  }
-
-  if (nextBillingDate) {
-    updateData.nextBillingDate = Timestamp.fromDate(nextBillingDate)
-  }
-  if (currentPeriodEnd) {
-    updateData.currentPeriodEnd = Timestamp.fromDate(currentPeriodEnd)
-  }
-  if (currentPeriodStart) {
-    updateData.currentPeriodStart = Timestamp.fromDate(currentPeriodStart)
-  }
-
-  await updateDoc(userRef, updateData)
-}
-
-/**
- * Cancel subscription and downgrade to free
- */
-export async function cancelSubscription(userId: string): Promise<void> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
-
-  await updateDoc(userRef, {
-    tier: 'free',
-    subscriptionStatus: 'canceled',
-    canceledAt: serverTimestamp(),
-  })
+  if (error) return null
+  if (!data) return null
+  return mapProfile(data)
 }
 
 /**
  * Link a Stripe customer to user (if signing up later)
  */
 export async function linkStripeCustomer(userId: string, stripeCustomerId: string): Promise<void> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
+  const supabase = getSupabaseAdmin()
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ stripe_customer_id: stripeCustomerId })
+    .eq('id', userId)
 
-  await updateDoc(userRef, {
-    stripeCustomerId,
-  })
+  if (error) throw error
 }
 
 /**
  * Unlock Pro Lifetime tier for a user (idempotent one-time purchase)
- * @param userId - Firebase user ID
- * @param checkoutSessionId - Stripe checkout session ID for idempotency
- * @param stripeCustomerId - Stripe customer ID
  * @returns true if newly unlocked, false if already processed
  */
 export async function unlockProLifetime(
@@ -181,45 +92,38 @@ export async function unlockProLifetime(
   }: {
     checkoutSessionId: string
     stripeCustomerId?: string
-  }
+  },
 ): Promise<boolean> {
-  const db = getFirestoreDb()
-  if (!db) throw new Error('Database not initialized')
-  const userRef = doc(db, 'users', userId)
+  const supabase = getSupabaseAdmin()
+  const existing = await getUserTier(userId)
 
-  // Check if already processed
-  const userDoc = await getDoc(userRef)
-  if (!userDoc.exists()) {
-    // User doc doesn't exist yet, create it
-    await setDoc(userRef, {
+  if (!existing) {
+    const { error } = await supabase.from('user_profiles').insert({
+      id: userId,
       tier: 'pro_lifetime',
-      createdAt: serverTimestamp(),
-      proUnlockedAt: serverTimestamp(),
-      stripe: {
-        customerId: stripeCustomerId,
-        lastCheckoutSessionId: checkoutSessionId,
-      },
+      pro_unlocked_at: new Date().toISOString(),
+      stripe_customer_id: stripeCustomerId ?? null,
+      stripe_last_checkout_session_id: checkoutSessionId,
     })
+    if (error) throw error
     return true
   }
 
-  const userData = userDoc.data() as UserTierDoc
-
-  // Idempotency check: if we've already processed this session, do nothing
-  if (userData.stripe?.lastCheckoutSessionId === checkoutSessionId) {
+  if (existing.stripe_last_checkout_session_id === checkoutSessionId) {
     console.log(`Checkout session ${checkoutSessionId} already processed for user ${userId}`)
     return false
   }
 
-  // First-time unlock: update tier to pro_lifetime
-  await updateDoc(userRef, {
-    tier: 'pro_lifetime',
-    proUnlockedAt: serverTimestamp(),
-    stripe: {
-      customerId: stripeCustomerId || userData.stripeCustomerId,
-      lastCheckoutSessionId: checkoutSessionId,
-    },
-  })
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({
+      tier: 'pro_lifetime',
+      pro_unlocked_at: new Date().toISOString(),
+      stripe_customer_id: stripeCustomerId ?? existing.stripe_customer_id ?? null,
+      stripe_last_checkout_session_id: checkoutSessionId,
+    })
+    .eq('id', userId)
 
+  if (error) throw error
   return true
 }

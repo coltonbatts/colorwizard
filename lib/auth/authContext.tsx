@@ -1,18 +1,23 @@
 'use client'
 
 import { createContext, useContext } from 'react'
-import type { User } from 'firebase/auth'
+import type { AuthUser } from './types'
+import { noopAuthAction } from './types'
 
 export interface AuthContextType {
-  user: User | null
+  user: AuthUser | null
   loading: boolean
   isSignedIn: boolean
+  signInWithGoogle: () => Promise<void>
+  signOut: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isSignedIn: false,
+  signInWithGoogle: noopAuthAction,
+  signOut: noopAuthAction,
 })
 
 export function useAuth() {
