@@ -46,7 +46,7 @@ export default function OilMixTab({
   const [mixLabOpen, setMixLabOpen] = useState(!artistMode)
 
   const handleRecipeResolved = useCallback((recipe: DisplayRecipe) => {
-    setResolvedRecipe(recipe)
+    setResolvedRecipe((current) => (current === recipe ? current : recipe))
   }, [])
 
   useEffect(() => {

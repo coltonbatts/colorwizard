@@ -21,7 +21,8 @@ import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { CalibrationData, type TransformState, screenToImage } from '@/lib/calibration'
 import { MeasurementLayer } from '@/lib/types/measurement'
-import { useImageAnalyzer } from '@/hooks/useImageAnalyzer'
+import { useImageAnalyzer, type ValueBuffer } from '@/hooks/useImageAnalyzer'
+import type { ValueScaleResult } from '@/lib/valueScale'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
 import CanvasHUD from '@/components/CanvasHUD'
@@ -64,6 +65,7 @@ interface ImageCanvasProps {
   onValueScaleChange?: (settings: ValueScaleSettings) => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: import('@/lib/valueScale').ValueScaleResult) => void
+  onAnalysisChange?: (analysis: ImageAnalysisSnapshot) => void
   canvasSettings?: AppCanvasSettings
   /** Enable measurement mode - when true, clicks report canvas-space coordinates */
   measureMode?: boolean
@@ -100,6 +102,30 @@ export interface ImageCanvasHandle {
   resetView: () => void
 }
 
+export interface ImageAnalysisSnapshot {
+  valueScaleResult: ValueScaleResult | null
+  histogramBins: number[]
+  sortedOklabL: Float32Array | null
+  valueBuffer: ValueBuffer | null
+}
+
+function sameCanvasDimensions(
+  a: { width: number; height: number },
+  b: { width: number; height: number },
+) {
+  return a.width === b.width && a.height === b.height
+}
+
+function sameImageDrawInfo(a: ImageDrawInfo | null, b: ImageDrawInfo) {
+  return (
+    a !== null &&
+    a.x === b.x &&
+    a.y === b.y &&
+    a.width === b.width &&
+    a.height === b.height
+  )
+}
+
 const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref) => {
   const {
     image,
@@ -109,6 +135,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     valueScaleSettings,
     onHistogramComputed,
     onValueScaleResult,
+    onAnalysisChange,
     onTransformChange,
     onMeasureClick,
     onMeasurePointsChange,
@@ -225,6 +252,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     labBuffer,
     valueBuffer,
     sortedLuminances,
+    sortedOklabL,
     valueScaleResult: analyzerValueScaleResult,
     histogramBins,
     isAnalyzing,
@@ -245,6 +273,15 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       onValueScaleResult(valueScaleResult)
     }
   }, [valueScaleResult, onValueScaleResult])
+
+  useEffect(() => {
+    onAnalysisChange?.({
+      valueScaleResult,
+      histogramBins,
+      sortedOklabL,
+      valueBuffer,
+    })
+  }, [onAnalysisChange, valueScaleResult, histogramBins, sortedOklabL, valueBuffer])
 
   const [splitMode, setSplitMode] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
@@ -272,7 +309,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }>({ imageData: null, width: 0, height: 0 })
 
   const resetPan = useCallback(() => {
-    setPanOffset({ x: 0, y: 0 })
+    setPanOffset((current) => (
+      current.x === 0 && current.y === 0 ? current : { x: 0, y: 0 }
+    ))
   }, [])
 
   const zoom = useZoomController({
@@ -381,10 +420,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     const updateDimensions = () => {
       const rect = canvasContainer.getBoundingClientRect()
       if (rect.width > 0 && rect.height > 0) {
-        setCanvasDimensions({
+        const next = {
           width: Math.floor(rect.width),
           height: Math.floor(rect.height),
-        })
+        }
+        setCanvasDimensions((current) => (
+          sameCanvasDimensions(current, next) ? current : next
+        ))
         return true
       }
       return false
@@ -400,10 +442,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       for (const entry of entries) {
         const { width, height } = entry.contentRect
         if (width > 0 && height > 0) {
-          setCanvasDimensions({
+          const next = {
             width: Math.floor(width),
             height: Math.floor(height),
-          })
+          }
+          setCanvasDimensions((current) => (
+            sameCanvasDimensions(current, next) ? current : next
+          ))
         }
       }
     })
@@ -432,7 +477,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       if (mobileSampleLayout) {
         fittedInfo.y = 0
       }
-      setImageDrawInfo(fittedInfo)
+      setImageDrawInfo((current) => (
+        sameImageDrawInfo(current, fittedInfo) ? current : fittedInfo
+      ))
       setZoomLevel(1)
       resetPan()
       initialFitKeyRef.current = fitKey
@@ -453,7 +500,9 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (mobileSampleLayout) {
       info.y = 0
     }
-    setImageDrawInfo(info)
+    setImageDrawInfo((current) => (
+      sameImageDrawInfo(current, info) ? current : info
+    ))
   }, [canvasDimensions.width, canvasDimensions.height, image, surfaceImageElement, mobileSampleLayout])
 
   const drawCanvas = useCallback(() => {
@@ -513,7 +562,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     const run = async () => {
       if (!labBuffer || !highlightColor || !generateHighlightOverlay) {
         if (!isActive) return
-        setHighlightOverlay({ imageData: null, width: 0, height: 0 })
+        setHighlightOverlay((current) => (
+          current.imageData === null && current.width === 0 && current.height === 0
+            ? current
+            : { imageData: null, width: 0, height: 0 }
+        ))
         return
       }
 
@@ -1063,7 +1116,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div
             ref={canvasContainerRef}
-            className={`canvas-viewport ${mobileSampleLayout ? 'canvas-viewport--sample h-[clamp(15rem,34dvh,21rem)] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
+            className={`canvas-viewport ${mobileSampleLayout ? 'canvas-viewport--sample h-full min-h-[14rem] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
+            data-testid="image-canvas-viewport"
           >
             {showHud && (
               <CanvasHUD

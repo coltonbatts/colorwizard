@@ -131,7 +131,9 @@ export default function MobileDashboard({
         <div className={`${isInline
             ? 'rounded-[16px] border border-ink-hairline bg-paper-elevated/96 shadow-[0_8px_18px_rgba(26,26,26,0.06)] backdrop-blur-md'
             : 'h-full min-h-0 flex flex-col overflow-hidden rounded-t-[24px] border-t border-gray-200 bg-white/96 shadow-[0_-16px_40px_rgba(0,0,0,0.14)] backdrop-blur-md dashboard-mode'
-            }`}>
+            }`}
+            data-testid={isInline ? 'mobile-inline-dashboard' : 'mobile-dashboard-sheet'}
+        >
             {sampledColor ? (
                 <>
                     <section className={`${shellPadding} shrink-0 ${isInline ? '' : 'border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white'}`}>

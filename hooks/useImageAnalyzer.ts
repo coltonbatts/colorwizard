@@ -105,8 +105,12 @@ export function useImageAnalyzer(
         spectralGlaze: null,
     });
 
+    const valueScaleSteps = valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT;
+    const valueScaleMode = valueScaleSettings?.mode || 'Even';
+    const valueScaleClip = valueScaleSettings?.clip || 0;
+
     // Track current image to handle race conditions
-    const currentImageRef = useRef<HTMLImageElement | null>(null);
+    const currentImageRef = useRef<CanvasImageSource | null>(null);
 
     // Process image when it changes
     useEffect(() => {
@@ -176,15 +180,6 @@ export function useImageAnalyzer(
                 setSortedOklabL(result.sortedOklabL);
                 setHistogramBins(result.histogram);
 
-                // Compute value scale from worker result
-                const valueScale = computeValueScale(
-                    result.valueBuffer.y,
-                    valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
-                    valueScaleSettings?.mode || 'Even',
-                    valueScaleSettings?.clip || 0
-                );
-                setValueScaleResult(valueScale);
-
             } catch (err) {
                 console.error('Worker processing failed:', err);
                 setError(err instanceof Error ? err.message : 'Image processing failed');
@@ -195,7 +190,7 @@ export function useImageAnalyzer(
             }
         })();
 
-    }, [image, valueScaleSettings]);
+    }, [image]);
 
     // Recompute value scale when settings change
     useEffect(() => {
@@ -203,24 +198,24 @@ export function useImageAnalyzer(
 
         const result = computeValueScale(
             valueBuffer.y,
-            valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
-            valueScaleSettings?.mode || 'Even',
-            valueScaleSettings?.clip || 0
+            valueScaleSteps,
+            valueScaleMode,
+            valueScaleClip
         );
         setValueScaleResult(result);
-    }, [valueScaleSettings, valueBuffer]);
+    }, [valueBuffer, valueScaleSteps, valueScaleMode, valueScaleClip]);
 
     const recomputeValueScale = useCallback(() => {
         if (!valueBuffer) return;
 
         const result = computeValueScale(
             valueBuffer.y,
-            valueScaleSettings?.steps || DEFAULT_VALUE_STEP_COUNT,
-            valueScaleSettings?.mode || 'Even',
-            valueScaleSettings?.clip || 0
+            valueScaleSteps,
+            valueScaleMode,
+            valueScaleClip
         );
         setValueScaleResult(result);
-    }, [valueBuffer, valueScaleSettings]);
+    }, [valueBuffer, valueScaleSteps, valueScaleMode, valueScaleClip]);
 
     // Generate value map overlay data in worker
     const generateValueMapData = useCallback(async (thresholds: number[]): Promise<Uint8ClampedArray | null> => {

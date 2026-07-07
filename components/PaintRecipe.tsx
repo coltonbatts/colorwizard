@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { generatePaintRecipe, HEURISTIC_WEIGHT_MAP } from '@/lib/colorMixer'
 import { getSolverWorker } from '@/lib/workers'
@@ -86,7 +86,11 @@ export default function PaintRecipe({
   const showLoading = useDebouncedLoading(isLoading, 100)
 
   // Fallback recipe from HSL heuristics
-  const heuristicRecipe = generatePaintRecipe(hsl)
+  const { h, s, l } = hsl
+  const heuristicRecipe = useMemo(
+    () => generatePaintRecipe({ h, s, l }),
+    [h, s, l],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -153,7 +157,7 @@ export default function PaintRecipe({
     }
   }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
 
-  const getMappedHeuristicIngredients = (): SpectralRecipe['ingredients'] => {
+  const mappedHeuristicIngredients = useMemo<SpectralRecipe['ingredients']>(() => {
     const rawIngredients = heuristicRecipe.colors.map(c => {
       const pigmentInfo = HEURISTIC_PIGMENT_MAP[c.name] || { hex: '#888888', id: 'unknown' }
       const weight = HEURISTIC_WEIGHT_MAP[c.amount] || 0.1
@@ -176,11 +180,12 @@ export default function PaintRecipe({
         weight: totalWeight > 0 ? ing.weight / totalWeight : 0,
         percentage: ing.percentage === 'none' ? '0%' : ing.percentage,
       })).filter(ing => ing.weight > 0)
-  }
+  }, [heuristicRecipe.colors])
 
   // Determine which recipe to show
-  const recipe: DisplayRecipe = spectralRecipe
-    ? {
+  const recipe: DisplayRecipe = useMemo(() => (
+    spectralRecipe
+      ? {
         source: 'solver',
         ingredients: spectralRecipe.ingredients,
         steps: spectralRecipe.steps,
@@ -190,12 +195,13 @@ export default function PaintRecipe({
           error: spectralRecipe.error,
         },
       }
-    : {
+      : {
         source: 'heuristic',
-        ingredients: getMappedHeuristicIngredients(),
+        ingredients: mappedHeuristicIngredients,
         steps: heuristicRecipe.steps,
         preview: null,
       }
+  ), [heuristicRecipe.steps, mappedHeuristicIngredients, spectralRecipe])
   const effectiveVariant =
     variant === 'compact' || variant === 'dashboard' || variant === 'board'
       ? variant

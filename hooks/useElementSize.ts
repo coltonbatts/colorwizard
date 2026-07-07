@@ -18,10 +18,13 @@ export function useElementSize<T extends HTMLElement>() {
     let frame = 0
     const updateSize = () => {
       const rect = element.getBoundingClientRect()
-      setSize({
+      const next = {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
-      })
+      }
+      setSize((current) => (
+        current.width === next.width && current.height === next.height ? current : next
+      ))
     }
 
     updateSize()
@@ -47,4 +50,3 @@ export function useElementSize<T extends HTMLElement>() {
 
   return { ref, size }
 }
-

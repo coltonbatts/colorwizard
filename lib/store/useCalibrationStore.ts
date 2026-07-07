@@ -18,6 +18,24 @@ const DEFAULT_TRANSFORM_STATE: TransformState = {
     panOffset: { x: 0, y: 0 }
 }
 
+function sameTransformState(a: TransformState, b: TransformState): boolean {
+    const aInfo = a.imageDrawInfo
+    const bInfo = b.imageDrawInfo
+
+    return (
+        a.zoomLevel === b.zoomLevel &&
+        a.panOffset.x === b.panOffset.x &&
+        a.panOffset.y === b.panOffset.y &&
+        ((!aInfo && !bInfo) ||
+            (Boolean(aInfo) &&
+                Boolean(bInfo) &&
+                aInfo!.x === bInfo!.x &&
+                aInfo!.y === bInfo!.y &&
+                aInfo!.width === bInfo!.width &&
+                aInfo!.height === bInfo!.height))
+    )
+}
+
 interface CalibrationState {
     calibration: CalibrationData | null
     calibrationStale: boolean
@@ -120,7 +138,12 @@ export const useCalibrationStore = create<CalibrationState>()(
             },
 
             setGridOpacity: (gridOpacity) => set({ gridOpacity }),
-            setTransformState: (transformState) => set({ transformState }),
+            setTransformState: (transformState) =>
+                set((state) => (
+                    sameTransformState(state.transformState, transformState)
+                        ? state
+                        : { transformState }
+                )),
         }),
         {
             name: 'colorwizard-calibration-ui',
@@ -133,4 +156,3 @@ export const useCalibrationStore = create<CalibrationState>()(
         }
     )
 )
-

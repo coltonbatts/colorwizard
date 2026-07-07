@@ -387,6 +387,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                                     key={swatch.hex}
                                     type="button"
                                     onClick={() => onTryDemoColor(swatch.hex)}
+                                    aria-label={`Try demo color ${swatch.label}`}
                                     className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-3 py-2 text-[11px] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <span

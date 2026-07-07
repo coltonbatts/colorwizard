@@ -190,7 +190,7 @@ export default function CompactToolbar({
     if (!hasImage) return null
 
     return (
-      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] safe-area-bottom">
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] safe-area-bottom" data-testid="mobile-bottom-toolbar">
         <div className="pointer-events-auto mx-auto mb-2 flex w-fit items-center gap-0.5 rounded-[16px] border border-ink-hairline bg-paper-elevated/95 p-1 shadow-[0_14px_28px_rgba(26,26,26,0.12)] backdrop-blur-md">
           <button
             type="button"
