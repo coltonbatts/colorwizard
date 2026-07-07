@@ -329,7 +329,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
       </div>
 
       {/* TABS */}
-      <div className="flex border-b border-gray-800 bg-gray-900/30">
+      <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
         <button
           onClick={() => setActiveTab('painter')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'painter'
@@ -342,7 +342,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         <button
           onClick={() => setActiveTab('thread')}
           className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'thread'
-            ? 'text-studio border-b-2 border-pink-600 bg-white'
+            ? 'text-studio border-b-2 border-black dark:border-white bg-white'
             : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
             }`}
         >

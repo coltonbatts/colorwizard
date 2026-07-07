@@ -57,7 +57,7 @@ export default function DMCSkein({
         dims.container
       } ${
         selected
-          ? 'ring-2 ring-pink-600 dark:ring-pink-500 scale-[1.02] shadow-md border-pink-300 dark:border-pink-900'
+          ? 'ring-2 ring-black dark:ring-white scale-[1.02] shadow-md border-black dark:border-white'
           : 'hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700'
       }`}
       role="button"

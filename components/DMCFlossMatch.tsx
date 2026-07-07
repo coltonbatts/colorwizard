@@ -203,7 +203,7 @@ export default function DMCFlossMatch({
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-all text-center ${
                 isActive
-                  ? 'border-pink-600 text-pink-600 bg-white dark:bg-gray-900/50 font-black'
+                  ? 'border-black text-gray-900 bg-white dark:bg-gray-900/50 dark:border-white dark:text-white font-black'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50/50'
               }`}
             >
@@ -278,7 +278,7 @@ export default function DMCFlossMatch({
                         onClick={() => onColorSelect(match.rgb)}
                         className={`flex items-center gap-3 border rounded-xl p-2 bg-white dark:bg-gray-950 transition-all cursor-pointer ${
                           isBest
-                            ? 'border-pink-200 dark:border-pink-900 bg-pink-50/10 dark:bg-pink-950/5 ring-1 ring-pink-100 dark:ring-pink-900/20'
+                            ? 'border-gray-900 dark:border-gray-100 bg-gray-50/30 dark:bg-gray-900/30 ring-1 ring-gray-200 dark:ring-gray-800'
                             : 'border-gray-200 dark:border-gray-800 hover:border-gray-350 hover:bg-gray-50/50'
                         }`}
                       >
@@ -312,7 +312,7 @@ export default function DMCFlossMatch({
                         <button
                           type="button"
                           onClick={(e) => handleCopyCode(e, match.number)}
-                          className="p-1.5 border border-gray-250/70 dark:border-gray-800 rounded-lg text-gray-400 hover:text-pink-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors shrink-0"
+                          className="p-1.5 border border-gray-250/70 dark:border-gray-800 rounded-lg text-gray-400 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors shrink-0"
                           title="Copy DMC color number"
                         >
                           {copiedCode === match.number ? (
@@ -363,7 +363,7 @@ export default function DMCFlossMatch({
                           onClick={() => onColorSelect(thread.rgb)}
                           className={`flex items-center gap-1.5 shrink-0 border rounded-lg px-2 py-1 text-[10px] leading-none ${
                             isPrimary
-                              ? 'border-pink-500 bg-pink-50/15 dark:bg-pink-950/10 font-bold'
+                              ? 'border-black dark:border-white bg-gray-50/15 dark:bg-gray-900/10 font-bold'
                               : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 hover:bg-gray-50'
                           }`}
                         >
