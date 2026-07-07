@@ -119,28 +119,28 @@ export default function MixLab({
     solverRecipe.ingredients.length > 0
 
   return (
-    <div className="rounded-[24px] border border-ink-hairline bg-[rgba(255,252,247,0.88)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]">
+    <div className="rounded-lg border border-ink-hairline bg-paper-elevated p-4">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-            Mix Lab
+          <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+            Subtractive mixing
           </h3>
           <p className="mt-1 text-[11px] text-ink-secondary">
-            Kubelka–Munk mix in real time
+            Pigments mix as paint, not as light — Kubelka–Munk, computed spectrally
           </p>
         </div>
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-full border border-ink-hairline bg-paper px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+          className="rounded-md border border-ink-hairline bg-paper px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
         >
           Reset
         </button>
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-6 rounded-[22px] border border-ink-hairline bg-[rgba(245,239,229,0.5)] px-4 py-6">
+      <div className="mb-6 flex flex-wrap items-center justify-center gap-6 rounded-md border border-ink-hairline bg-paper px-4 py-6">
         <div className="flex flex-col items-center">
-          <div className="mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
             Mixed
           </div>
           <div
@@ -150,12 +150,12 @@ export default function MixLab({
             }}
             onDragLeave={() => setIsOverResult(false)}
             onDrop={handleDropOnResult}
-            className={`h-28 w-28 rounded-full border-4 border-ink-hairline shadow-[0_14px_32px_rgba(33,24,14,0.12)] transition-transform ${
-              isOverResult ? 'scale-105 border-signal' : ''
+            className={`h-28 w-28 rounded-full border transition-shadow ${
+              isOverResult ? 'border-ink shadow-[0_0_0_2px_rgba(26,26,26,0.2)]' : 'border-ink-hairline'
             }`}
             style={{ backgroundColor: mixedHex }}
           />
-          <div className="mt-2 font-mono text-[10px] font-bold text-ink-secondary">
+          <div className="mt-2 font-mono text-[11px] text-ink-secondary">
             {isCalculating ? 'Mixing…' : mixedHex.toUpperCase()}
           </div>
           {targetHex && mixError !== null && (
@@ -174,7 +174,7 @@ export default function MixLab({
 
         {targetHex && (
           <div className="flex flex-col items-center">
-            <div className="mb-2 text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
               Target
             </div>
             <div
@@ -183,8 +183,8 @@ export default function MixLab({
                 setIsOverTarget(true)
               }}
               onDragLeave={() => setIsOverTarget(false)}
-              className={`h-20 w-20 rounded-full border-2 border-dashed transition-transform ${
-                isOverTarget ? 'scale-105 border-signal' : 'border-ink-hairline'
+              className={`h-20 w-20 rounded-full border border-dashed ${
+                isOverTarget ? 'border-ink' : 'border-ink-hairline'
               }`}
               style={{ backgroundColor: targetHex }}
             />
@@ -194,7 +194,7 @@ export default function MixLab({
       </div>
 
       <div className="mb-6">
-        <h4 className="mb-3 text-center text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+        <h4 className="mb-3 text-center text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
           Drag pigments into the mix
         </h4>
         <div className="flex flex-wrap justify-center gap-3">
@@ -213,10 +213,10 @@ export default function MixLab({
               title={`Drag ${pigment.name}`}
             >
               <div
-                className="h-10 w-10 rounded-full border-2 border-ink-hairline shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
+                className="h-10 w-10 rounded-full border border-ink-hairline"
                 style={{ backgroundColor: pigment.hex }}
               />
-              <span className="w-14 text-center text-[8px] font-bold uppercase leading-none text-ink-faint">
+              <span className="w-14 text-center text-[9px] font-medium uppercase leading-none text-ink-muted">
                 {pigment.name.split(' ')[0]}
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function MixLab({
       </div>
 
       <div className="space-y-3 border-t border-ink-hairline pt-4">
-        <h4 className="text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+        <h4 className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
           Fine tune
         </h4>
         {PALETTE.map((pigment) => {
@@ -241,9 +241,9 @@ export default function MixLab({
                 aria-label={`Toggle ${pigment.name}`}
               />
               <div className="min-w-0 flex-1">
-                <div className="flex justify-between text-[10px] font-semibold text-ink-secondary">
+                <div className="flex justify-between text-[11px] text-ink-secondary">
                   <span className="truncate">{pigment.name}</span>
-                  <span className={percentage > 0 ? 'text-signal' : ''}>{percentage}%</span>
+                  <span className={`font-mono tabular-nums ${percentage > 0 ? 'text-ink' : ''}`}>{percentage}%</span>
                 </div>
                 <input
                   type="range"
@@ -251,7 +251,7 @@ export default function MixLab({
                   max={100}
                   value={value}
                   onChange={(e) => handleSliderChange(pigment.id, parseInt(e.target.value, 10))}
-                  className="mt-1 h-1 w-full cursor-pointer appearance-none rounded-lg bg-paper-recessed accent-signal"
+                  className="mt-1 h-1 w-full cursor-pointer appearance-none rounded-lg bg-paper-recessed accent-ink"
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export default function MixLab({
         <button
           type="button"
           onClick={applySolverRecipe}
-          className="studio-action mt-4 w-full py-3 text-[10px] font-black uppercase tracking-[0.14em]"
+          className="studio-action mt-4 w-full py-3 text-[11px] font-medium uppercase tracking-[0.08em]"
         >
           Apply solver recipe to well
         </button>
@@ -279,7 +279,7 @@ export default function MixLab({
           type="button"
           onClick={() => onUseRecipe(mixInputs)}
           disabled={mixInputs.length === 0}
-          className="mt-2 w-full rounded-[18px] border border-ink-hairline bg-paper-recessed py-3 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink disabled:opacity-40"
+          className="mt-2 w-full rounded-md border border-ink-hairline bg-paper-recessed py-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink disabled:opacity-40"
         >
           Set as base recipe
         </button>

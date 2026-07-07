@@ -24,9 +24,9 @@ export default function ArtistLabToggle({
         type="button"
         onClick={() => onArtistModeChange(true)}
         aria-pressed={artistMode}
-        className={`rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+        className={`rounded-md px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors ${
           artistMode
-            ? 'bg-signal text-white shadow-[0_6px_14px_rgba(200,35,25,0.2)]'
+            ? 'bg-ink text-paper'
             : 'text-ink-secondary hover:text-ink'
         }`}
       >
@@ -36,9 +36,9 @@ export default function ArtistLabToggle({
         type="button"
         onClick={() => onArtistModeChange(false)}
         aria-pressed={!artistMode}
-        className={`rounded-md px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+        className={`rounded-md px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors ${
           !artistMode
-            ? 'bg-ink text-paper shadow-[0_6px_14px_rgba(33,24,14,0.15)]'
+            ? 'bg-ink text-paper'
             : 'text-ink-secondary hover:text-ink'
         }`}
       >

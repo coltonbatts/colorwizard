@@ -191,7 +191,7 @@ export default function CompactToolbar({
 
     return (
       <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] safe-area-bottom" data-testid="mobile-bottom-toolbar">
-        <div className="pointer-events-auto mx-auto mb-2 flex w-fit items-center gap-0.5 rounded-[16px] border border-ink-hairline bg-paper-elevated/95 p-1 shadow-[0_14px_28px_rgba(26,26,26,0.12)] backdrop-blur-md">
+        <div className="pointer-events-auto mx-auto mb-2 flex w-fit items-center gap-0.5 rounded-lg border border-ink-hairline bg-paper-elevated p-1 shadow-sm">
           <button
             type="button"
             onClick={onGoHome}
@@ -282,7 +282,7 @@ export default function CompactToolbar({
           onClick={onGoHome}
           title="Home"
           aria-label="Return home and choose another image"
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
         >
           <HomeIcon />
           <span>Home</span>
@@ -293,7 +293,7 @@ export default function CompactToolbar({
 
       <details className="group relative shrink-0">
         <summary
-          className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink [&::-webkit-details-marker]:hidden"
+          className="inline-flex h-9 cursor-pointer list-none items-center gap-2 rounded-md px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink [&::-webkit-details-marker]:hidden"
           aria-label="Studio tools"
           title="Studio tools"
         >
@@ -301,8 +301,8 @@ export default function CompactToolbar({
           Tools
         </summary>
 
-        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-2xl border border-ink-hairline bg-paper-elevated/98 p-2 shadow-[0_18px_44px_rgba(33,24,14,0.16)] backdrop-blur-md">
-          <div className="px-2 pb-2 pt-1 text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">
+        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-lg border border-ink-hairline bg-paper-elevated p-2 shadow-md">
+          <div className="px-2 pb-2 pt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
             Studio tools
           </div>
 
@@ -337,7 +337,7 @@ export default function CompactToolbar({
                 type="button"
                 onClick={onResetCalibration}
                 title="Reset calibration"
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+                className="inline-flex h-9 items-center justify-center rounded-md border border-ink-hairline bg-paper px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
               >
                 Reset calibration
               </button>
@@ -345,7 +345,7 @@ export default function CompactToolbar({
             <button
               type="button"
               onClick={onOpenCanvasSettings}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-ink-hairline bg-paper px-3 text-[10px] font-black uppercase tracking-[0.16em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-ink-hairline bg-paper px-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
             >
               <SlidersIcon />
               Canvas settings
@@ -364,7 +364,7 @@ export default function CompactToolbar({
         <select
           value={activePalette.id}
           onChange={(e) => onSelectPalette(e.target.value)}
-          className="h-9 min-w-[10rem] rounded-lg border border-ink-hairline bg-paper px-3 text-sm font-semibold text-ink outline-none transition-colors focus:border-ink-muted"
+          className="h-9 min-w-[10rem] rounded-md border border-ink-hairline bg-paper px-3 text-sm text-ink outline-none transition-colors focus:border-ink-muted"
           aria-label="Select active palette"
         >
           {palettes.map((palette) => (

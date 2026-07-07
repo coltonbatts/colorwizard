@@ -50,25 +50,21 @@ export default function CanvasHUD({
     return (
         <div className="absolute top-3 left-3 z-20 pointer-events-none max-w-[18rem]">
             <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-panel rounded-[18px] px-3 py-2 text-xs shadow-[0_12px_30px_rgba(33,24,14,0.12)]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="glass-panel px-3 py-2 text-xs"
             >
                 <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-secondary">
+                    <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary">
                         {formattedModeLabel}
                     </div>
-                    <div className="font-mono text-[10px] font-bold text-ink-faint">
-                        {Math.round(zoomLevel * 100)}%
+                    <div className="font-mono text-[10px] text-ink-muted" title="Zoom level">
+                        zoom {Math.round(zoomLevel * 100)}%
                     </div>
                     {activeModes.map((mode) => (
                         <span
                             key={mode.label}
-                            className={`rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ${
-                                mode.tone === 'subsignal'
-                                    ? 'border-subsignal bg-subsignal-muted text-subsignal'
-                                    : 'border-signal bg-signal-muted text-signal'
-                            }`}
+                            className="rounded-sm border border-ink-hairline bg-paper-recessed px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] text-ink"
                         >
                             {mode.label}
                         </span>
@@ -79,10 +75,10 @@ export default function CanvasHUD({
                     <div className="mt-2 flex items-center gap-2 border-t border-ink-hairline pt-2">
                         <motion.div
                             layoutId="live-color-swatch"
-                            className="h-5 w-5 rounded-[7px] border border-black/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.28)]"
+                            className="h-5 w-5 rounded-sm border border-ink-hairline"
                             style={{ backgroundColor: liveColorHex }}
                         />
-                        <div className="font-mono text-[11px] font-bold text-ink">
+                        <div className="font-mono text-[11px] text-ink">
                             {liveColorHex.toUpperCase()}
                         </div>
 
@@ -90,7 +86,7 @@ export default function CanvasHUD({
                             <div className="ml-auto flex items-center gap-1.5 text-[10px] text-ink-secondary">
                                 <motion.div
                                     layoutId="paint-mix-swatch"
-                                    className="h-4 w-4 rounded-[4px] border border-black/10"
+                                    className="h-4 w-4 rounded-sm border border-ink-hairline"
                                     style={{ backgroundColor: livePaintMixHex }}
                                 />
                                 <span>

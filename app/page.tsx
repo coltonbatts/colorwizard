@@ -725,10 +725,6 @@ export default function Home() {
 
             <div className={`workbench-desktop-canvas-inset flex flex-1 min-h-0 min-w-0 flex-col ${desktopCanvasInsetClass}`}>
               <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
-                {image && (
-                  <div className="pointer-events-none absolute inset-[4%] rounded-[36px] bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.55),transparent_38%),radial-gradient(circle_at_50%_100%,rgba(198,181,154,0.18),transparent_42%)] blur-2xl" />
-                )}
-
                 <ErrorBoundary
                   fallback={({ resetError }) => (
                     <CanvasErrorFallback
@@ -933,7 +929,7 @@ export default function Home() {
                 )}
                 key={activeTab}
               >
-                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-[24px] border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-16px_36px_rgba(0,0,0,0.16)]`}>
+                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-lg border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-2px_8px_rgba(26,26,26,0.06)]`}>
                   {activeTab === 'sample' ? (
                     <MobileDashboard
                       sampledColor={sampledColor}

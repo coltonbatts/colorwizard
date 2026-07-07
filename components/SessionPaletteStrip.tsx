@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { getBestContrast, getContrastRatio } from '@/lib/color/a11y'
 import ProcreateExportButton from './ProcreateExportButton'
 import type { ProcreateColor } from '@/lib/types/procreate'
 
@@ -109,15 +108,10 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
 
     return (
         <div className="fixed bottom-[4.5rem] left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:bottom-4 md:w-[min(calc(100vw-10rem),92rem)] md:px-0">
-            <div className="glass-panel-elevated rounded-[30px] px-3 py-3 md:px-4">
+            <div className="glass-panel-elevated px-3 py-2 md:px-4">
                 <div className="flex items-center gap-3 overflow-x-auto">
-                    <div className="shrink-0 pr-1">
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-                            Session Dock
-                        </div>
-                        <div className="mt-1 text-sm font-black tracking-tight text-ink">
-                            {colors.length} saved
-                        </div>
+                    <div className="shrink-0 pr-1 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+                        Saved · {colors.length}
                     </div>
 
                     <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
@@ -134,29 +128,22 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                         setActivePopup(null)
                                         onColorSelect?.(color)
                                     }}
-                                    className={`flex h-14 w-14 items-end justify-start rounded-[22px] border p-2 shadow-[0_14px_28px_rgba(33,24,14,0.10)] transition-all md:h-16 md:w-16 ${
+                                    className={`h-10 w-10 rounded-md border transition-shadow md:h-11 md:w-11 ${
                                         activePopup === color.id
-                                            ? 'scale-[1.04] border-signal ring-2 ring-signal/20'
-                                            : 'border-ink-hairline hover:-translate-y-0.5 hover:scale-[1.03]'
+                                            ? 'border-ink shadow-[inset_0_0_0_1px_rgba(26,26,26,0.4)]'
+                                            : 'border-ink-hairline hover:shadow-[inset_0_0_0_1px_rgba(26,26,26,0.25)]'
                                     }`}
                                     style={{ backgroundColor: color.hex }}
                                     title="Tap for actions, double-tap to sample again"
                                     aria-label={`Session swatch ${color.label}. Tap for actions, double-tap to sample again.`}
-                                >
-                                    <span
-                                        className="rounded-md bg-white/72 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tight"
-                                        style={{ color: getBestContrast(color.hex) }}
-                                    >
-                                        {getContrastRatio(color.hex, getBestContrast(color.hex)).toFixed(1)}
-                                    </span>
-                                </button>
+                                />
 
                                 <div className={`absolute bottom-full left-1/2 z-50 mb-2 w-40 -translate-x-1/2 transition-opacity ${
                                     activePopup === color.id
                                         ? 'pointer-events-auto opacity-100'
                                         : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
                                 }`}>
-                                    <div className="rounded-2xl border border-ink-hairline bg-ink px-3 py-3 shadow-[0_18px_40px_rgba(26,26,26,0.24)]">
+                                    <div className="rounded-lg border border-ink-hairline bg-ink px-3 py-3 shadow-md">
                                         {editingId === color.id ? (
                                             <input
                                                 type="text"
@@ -168,26 +155,26 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                                 autoFocus
                                             />
                                         ) : (
-                                            <div className="text-sm font-bold text-white">{color.label}</div>
+                                            <div className="text-sm font-medium text-white">{color.label}</div>
                                         )}
                                         <div className="mt-1 font-mono text-[11px] text-white/70">{color.hex}</div>
 
                                         <div className="mt-3 flex gap-1">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setEditingId(color.id); setEditLabel(color.label) }}
-                                                className="flex-1 rounded-lg bg-white/10 px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-white/15"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15"
                                             >
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); copyHex(color.hex, color.id) }}
-                                                className="flex-1 rounded-lg bg-white/10 px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-white/15"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15"
                                             >
                                                 {copied === color.id ? 'Copied' : 'Copy'}
                                             </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); removeColor(color.id) }}
-                                                className="flex-1 rounded-lg bg-signal px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-signal-hover"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-signal"
                                             >
                                                 Drop
                                             </button>
@@ -209,17 +196,17 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                 }))}
                             paletteName="Session Palette"
                             variant="minimal"
-                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary"
+                            className="rounded-md border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-secondary"
                         />
                         <button
                             onClick={exportPalette}
-                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+                            className="rounded-md border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
                         >
                             JSON
                         </button>
                         <button
                             onClick={clearAll}
-                            className="rounded-full border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-signal"
+                            className="rounded-md border border-ink-hairline bg-paper px-3 py-2 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
                         >
                             Clear
                         </button>

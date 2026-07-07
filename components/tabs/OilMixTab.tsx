@@ -88,27 +88,7 @@ export default function OilMixTab({
 
   return (
     <div className="min-h-0 min-h-full space-y-6 bg-paper-elevated p-4 font-sans text-ink lg:p-6">
-      <section>
-        <h3 className="mb-3 text-[10px] font-black uppercase tracking-widest text-ink-faint">
-          Color Position
-        </h3>
-        <PhotoshopColorWheel
-          color={hex}
-          onChange={(newHex) => {
-            if (onColorSelect) {
-              const parsed = culoriRgb(newHex)
-              if (parsed) {
-                onColorSelect({
-                  r: Math.round(parsed.r * 255),
-                  g: Math.round(parsed.g * 255),
-                  b: Math.round(parsed.b * 255),
-                })
-              }
-            }
-          }}
-        />
-      </section>
-
+      {/* Subtractive mixing leads — this is what ColorWizard is for. */}
       <section>
         <ErrorBoundary
           fallback={({ error, resetError }) => (
@@ -142,8 +122,7 @@ export default function OilMixTab({
       </section>
 
       <CollapsibleSection
-        title="Mix Lab"
-        accentColor="purple"
+        title="Subtractive mixing"
         isOpen={mixLabOpen}
         onToggle={() => setMixLabOpen((open) => !open)}
       >
@@ -154,18 +133,39 @@ export default function OilMixTab({
         />
       </CollapsibleSection>
 
-      <section className="space-y-8">
-        <AISuggestions rgb={sampledColor.rgb} />
+      <section className="border-t border-ink-hairline pt-4">
+        <h3 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+          Color position
+        </h3>
+        <PhotoshopColorWheel
+          color={hex}
+          onChange={(newHex) => {
+            if (onColorSelect) {
+              const parsed = culoriRgb(newHex)
+              if (parsed) {
+                onColorSelect({
+                  r: Math.round(parsed.r * 255),
+                  g: Math.round(parsed.g * 255),
+                  b: Math.round(parsed.b * 255),
+                })
+              }
+            }
+          }}
+        />
+      </section>
 
-        <div className="border-t border-ink-hairline pt-4">
-          <h3 className="mb-4 text-[10px] font-black uppercase tracking-widest text-ink-faint">
-            Standard Harmonies
+      <section className="space-y-8 border-t border-ink-hairline pt-4">
+        <div>
+          <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+            Harmonies
           </h3>
           <ColorHarmonies
             rgb={sampledColor.rgb}
             onColorSelect={onColorSelect ?? (() => {})}
           />
         </div>
+
+        <AISuggestions rgb={sampledColor.rgb} />
       </section>
     </div>
   )

@@ -129,27 +129,27 @@ export default function MobileDashboard({
 
     return (
         <div className={`${isInline
-            ? 'rounded-[16px] border border-ink-hairline bg-paper-elevated/96 shadow-[0_8px_18px_rgba(26,26,26,0.06)] backdrop-blur-md'
-            : 'h-full min-h-0 flex flex-col overflow-hidden rounded-t-[24px] border-t border-gray-200 bg-white/96 shadow-[0_-16px_40px_rgba(0,0,0,0.14)] backdrop-blur-md dashboard-mode'
+            ? 'rounded-lg border border-ink-hairline bg-paper-elevated shadow-sm'
+            : 'h-full min-h-0 flex flex-col overflow-hidden rounded-t-lg border-t border-ink-hairline bg-paper-elevated dashboard-mode'
             }`}
             data-testid={isInline ? 'mobile-inline-dashboard' : 'mobile-dashboard-sheet'}
         >
             {sampledColor ? (
                 <>
-                    <section className={`${shellPadding} shrink-0 ${isInline ? '' : 'border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white'}`}>
+                    <section className={`${shellPadding} shrink-0 ${isInline ? '' : 'border-b border-ink-hairline bg-paper-elevated'}`}>
                         {isInline ? (
                             <div className="flex items-center justify-between gap-2">
                                 <div className="min-w-0 flex flex-1 items-center gap-2.5">
                                     <div
-                                        className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
+                                        className={`${swatchSize} shrink-0 rounded-md border border-ink-hairline`}
                                         style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
                                     />
 
                                     <div className="min-w-0 flex-1">
-                                        <div className="font-mono text-[15px] font-black tracking-[0.04em] text-ink">
+                                        <div className="font-mono text-[15px] tracking-[0.02em] text-ink">
                                             {sampledColor.hex.toUpperCase()}
                                         </div>
-                                        <div className="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+                                        <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">
                                             {isLoadingName ? '...' : inlineSubtitle || paletteLabelCompact}
                                         </div>
                                     </div>
@@ -206,16 +206,16 @@ export default function MobileDashboard({
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex flex-1 items-start gap-3">
                                     <div
-                                        className={`${swatchSize} shrink-0 rounded-xl border border-white shadow-[0_6px_16px_rgba(0,0,0,0.14)]`}
+                                        className={`${swatchSize} shrink-0 rounded-md border border-ink-hairline`}
                                         style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
                                     />
 
                                     <div className="min-w-0 flex-1">
-                                        <div className="text-[9px] font-black uppercase tracking-[0.24em] text-signal">
-                                            Sampled Color
+                                        <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+                                            Sampled color
                                         </div>
                                         <div className="mt-2 min-w-0">
-                                            <div className={`${titleSize} truncate font-black leading-tight text-ink`}>
+                                            <div className={`${titleSize} truncate font-medium leading-tight text-ink`}>
                                                 {isLoadingName ? (
                                                     <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-ink-muted border-t-transparent align-middle" />
                                                 ) : (
@@ -223,10 +223,10 @@ export default function MobileDashboard({
                                                 )}
                                             </div>
                                             <div className="mt-0.5 flex items-center gap-2 text-[10px]">
-                                                <span className="font-mono font-bold tracking-wide text-ink-secondary">
+                                                <span className="font-mono tracking-wide text-ink-secondary">
                                                     {sampledColor.hex.toUpperCase()}
                                                 </span>
-                                                <span className="truncate uppercase tracking-[0.16em] text-ink-faint">
+                                                <span className="truncate uppercase tracking-[0.08em] text-ink-muted">
                                                     {paletteLabel}
                                                 </span>
                                             </div>
@@ -235,11 +235,11 @@ export default function MobileDashboard({
                                 </div>
 
                                 <div className="flex shrink-0 flex-col items-end gap-2">
-                                    <div className="inline-flex rounded-full border border-ink-hairline bg-white p-0.5 shadow-sm">
+                                    <div className="inline-flex rounded-md border border-ink-hairline bg-paper p-0.5">
                                         <button
                                             type="button"
                                             aria-pressed={true}
-                                            className="flex h-7 items-center justify-center rounded-full bg-ink px-3 text-[11px] font-bold text-white"
+                                            className="flex h-7 items-center justify-center rounded-[4px] bg-ink px-3 text-[11px] font-medium text-paper"
                                         >
                                             Paint
                                         </button>
@@ -248,10 +248,10 @@ export default function MobileDashboard({
                                             onClick={() => onSwitchToMatches?.()}
                                             disabled={!onSwitchToMatches}
                                             aria-pressed={false}
-                                            className={`flex h-7 items-center justify-center rounded-full px-3 text-[11px] font-bold transition-colors ${
+                                            className={`flex h-7 items-center justify-center rounded-[4px] px-3 text-[11px] font-medium transition-colors ${
                                                 onSwitchToMatches
                                                     ? 'text-ink-secondary active:bg-paper-recessed'
-                                                    : 'cursor-default text-gray-400'
+                                                    : 'cursor-default text-ink-faint'
                                             }`}
                                         >
                                             Threads
@@ -262,10 +262,10 @@ export default function MobileDashboard({
                                         <button
                                             onClick={handlePin}
                                             disabled={isPinning || isPinned}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] transition-colors ${
                                                 isPinned
-                                                    ? 'border-subsignal bg-subsignal-muted text-subsignal'
-                                                    : 'border-ink-hairline bg-paper text-ink-secondary shadow-sm active:scale-95'
+                                                    ? 'border-ink-hairline bg-paper-recessed text-ink-muted'
+                                                    : 'border-ink-hairline bg-paper text-ink-secondary active:bg-paper-recessed'
                                             }`}
                                         >
                                             {isPinning ? 'Pinning…' : isPinned ? 'Pinned' : 'Pin'}
@@ -277,14 +277,14 @@ export default function MobileDashboard({
 
                         <div className="mt-3 border-t border-ink-hairline/50 pt-3">
                             <div className="flex items-center justify-between gap-2">
-                                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                                <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">
                                     Target value band
                                 </div>
                                 {sampleBandIndex0 !== null && (
                                     <span
-                                        className={`rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] ${
+                                        className={`rounded-sm px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em] ${
                                             bandMatchesTarget
-                                                ? 'bg-subsignal-muted text-subsignal'
+                                                ? 'bg-paper-recessed text-ink'
                                                 : 'bg-paper text-ink-secondary'
                                         }`}
                                     >
@@ -301,7 +301,7 @@ export default function MobileDashboard({
                                     value={activeValueBandIndex}
                                     onChange={(e) => setActiveValueBandIndex(Number(e.target.value))}
                                     aria-label="Target value band"
-                                    className="h-1.5 min-w-0 flex-1 cursor-pointer accent-signal"
+                                    className="h-1.5 min-w-0 flex-1 cursor-pointer accent-ink"
                                 />
                                 <span className="text-[9px] font-semibold text-ink-faint">Lt</span>
                             </div>
@@ -316,10 +316,10 @@ export default function MobileDashboard({
                             {!isInline && (
                                 <div className="flex items-end justify-between gap-3 px-1">
                                     <div className="min-w-0">
-                                        <div className="text-[10px] font-black uppercase tracking-[0.24em] text-signal">
-                                            Starting Mix
+                                        <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+                                            Paint recipe
                                         </div>
-                                        <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">
+                                        <div className="mt-1 text-[10px] uppercase tracking-[0.08em] text-ink-faint">
                                             {paletteLabel}
                                         </div>
                                     </div>
@@ -342,8 +342,8 @@ export default function MobileDashboard({
                 </>
             ) : (
                 <div className={`flex min-h-0 flex-col items-center justify-center px-4 py-5 text-ink-faint ${isInline ? '' : 'h-full'}`}>
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Sample</div>
-                    <p className="max-w-[14rem] text-center text-sm font-semibold text-ink">
+                    <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">Sample</div>
+                    <p className="max-w-[14rem] text-center text-sm text-ink">
                         Tap or click the image to sample.
                     </p>
                 </div>
