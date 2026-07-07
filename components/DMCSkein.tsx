@@ -11,6 +11,7 @@ interface DMCSkeinProps {
   selected?: boolean
   onClick?: () => void
   showActions?: boolean
+  simple?: boolean
 }
 
 export default function DMCSkein({
@@ -21,6 +22,7 @@ export default function DMCSkein({
   selected = false,
   onClick,
   showActions = true,
+  simple = false,
 }: DMCSkeinProps) {
   const { stash, shoppingList, toggleStash, toggleShoppingList } = useDmcStore()
   const [isHovered, setIsHovered] = useState(false)
@@ -39,8 +41,50 @@ export default function DMCSkein({
     }
   }, [hex])
 
-  // Dimensions based on size
+  // Dimensions based on size and style mode
   const dims = useMemo(() => {
+    if (simple) {
+      switch (size) {
+        case 'hero':
+          return {
+            container: 'w-20 h-40 sm:w-24 sm:h-44',
+            threadBody: 'w-10 sm:w-12 h-full rounded-2xl',
+            mainBand: '',
+            codeBand: '',
+            textSize: 'text-[9px] sm:text-[10px]',
+            numSize: 'text-sm sm:text-base font-black',
+          }
+        case 'lg':
+          return {
+            container: 'w-14 h-28',
+            threadBody: 'w-8 h-full rounded-xl',
+            mainBand: '',
+            codeBand: '',
+            textSize: 'text-[7px]',
+            numSize: 'text-xs font-black',
+          }
+        case 'sm':
+          return {
+            container: 'w-10 h-18',
+            threadBody: 'w-6 h-full rounded-lg',
+            mainBand: '',
+            codeBand: '',
+            textSize: 'text-[5px]',
+            numSize: 'text-[10px] font-black',
+          }
+        case 'md':
+        default:
+          return {
+            container: 'w-12 h-24',
+            threadBody: 'w-7 h-full rounded-xl',
+            mainBand: '',
+            codeBand: '',
+            textSize: 'text-[6px]',
+            numSize: 'text-xs font-black',
+          }
+      }
+    }
+
     switch (size) {
       case 'hero':
         return {
@@ -80,7 +124,7 @@ export default function DMCSkein({
           numSize: 'text-xs font-black',
         }
     }
-  }, [size])
+  }, [size, simple])
 
   // Gold Horse Head SVG (DMC Logo asset)
   const GoldHorseHead = () => (
@@ -132,48 +176,52 @@ export default function DMCSkein({
           />
 
           {/* Central Navy Wrapper Band */}
-          <div
-            className={`absolute left-1/2 -translate-x-1/2 bg-[#0c1328] border-y-[1.5px] border-[#cda250] shadow-[0_2px_4px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center pointer-events-none ${dims.mainBand}`}
-          >
-            {/* Gold trim lines inside */}
-            <div className="absolute inset-x-0 top-0.5 bottom-0.5 border-y-[0.5px] border-[#cda250]/40" />
-
-            <span
-              className={`font-serif text-[#cda250] font-semibold tracking-widest leading-none ${dims.textSize}`}
-              style={{ fontFamily: "'EB Garamond', serif" }}
+          {!simple && (
+            <div
+              className={`absolute left-1/2 -translate-x-1/2 bg-[#0c1328] border-y-[1.5px] border-[#cda250] shadow-[0_2px_4px_rgba(0,0,0,0.3)] flex flex-col items-center justify-center pointer-events-none ${dims.mainBand}`}
             >
-              D·M·C
-            </span>
-            <div className="scale-75 my-0.5">
-              <GoldHorseHead />
-            </div>
-            {size !== 'sm' && (
-              <span className="text-[4px] text-[#cda250]/80 tracking-[0.15em] uppercase font-mono leading-none">
-                Mouliné
+              {/* Gold trim lines inside */}
+              <div className="absolute inset-x-0 top-0.5 bottom-0.5 border-y-[0.5px] border-[#cda250]/40" />
+
+              <span
+                className={`font-serif text-[#cda250] font-semibold tracking-widest leading-none ${dims.textSize}`}
+                style={{ fontFamily: "'EB Garamond', serif" }}
+              >
+                D·M·C
               </span>
-            )}
-          </div>
+              <div className="scale-75 my-0.5">
+                <GoldHorseHead />
+              </div>
+              {size !== 'sm' && (
+                <span className="text-[4px] text-[#cda250]/80 tracking-[0.15em] uppercase font-mono leading-none">
+                  Mouliné
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Lower White Code Band */}
-          <div
-            className={`absolute left-1/2 -translate-x-1/2 bg-[#fafafa] border border-gray-300 text-gray-900 shadow-[0_2px_4px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center pointer-events-none ${dims.codeBand}`}
-          >
-            {/* Mini Barcode lines */}
-            {size !== 'sm' && (
-              <div className="flex gap-[1px] h-2 w-full justify-center px-1 opacity-70 mb-0.5">
-                <div className="w-[1.5px] bg-black h-full" />
-                <div className="w-[0.5px] bg-black h-full" />
-                <div className="w-[1.5px] bg-black h-full" />
-                <div className="w-[1px] bg-black h-full" />
-                <div className="w-[0.5px] bg-black h-full" />
-                <div className="w-[2px] bg-black h-full" />
-              </div>
-            )}
-            {/* Color Number */}
-            <span className={`font-mono font-black text-black leading-none select-text ${dims.numSize}`}>
-              {number}
-            </span>
-          </div>
+          {!simple && (
+            <div
+              className={`absolute left-1/2 -translate-x-1/2 bg-[#fafafa] border border-gray-300 text-gray-900 shadow-[0_2px_4px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center pointer-events-none ${dims.codeBand}`}
+            >
+              {/* Mini Barcode lines */}
+              {size !== 'sm' && (
+                <div className="flex gap-[1px] h-2 w-full justify-center px-1 opacity-70 mb-0.5">
+                  <div className="w-[1.5px] bg-black h-full" />
+                  <div className="w-[0.5px] bg-black h-full" />
+                  <div className="w-[1.5px] bg-black h-full" />
+                  <div className="w-[1px] bg-black h-full" />
+                  <div className="w-[0.5px] bg-black h-full" />
+                  <div className="w-[2px] bg-black h-full" />
+                </div>
+              )}
+              {/* Color Number */}
+              <span className={`font-mono font-black text-black leading-none select-text ${dims.numSize}`}>
+                {number}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

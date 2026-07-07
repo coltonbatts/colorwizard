@@ -372,35 +372,66 @@ export default function DMCFlossMatch({
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              {/* PRIMARY HERO MATCH */}
+              {/* SWATCH & TOP MATCHES ROW */}
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/10 p-5">
-                <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                  {/* Skeuomorphic Skein Visualizer */}
-                  <div className="flex justify-center shrink-0">
-                    <DMCSkein
-                      hex={primary.hex}
-                      number={primary.number}
-                      name={primary.name}
-                      size="hero"
-                      selected
-                    />
+                <div className="flex flex-col gap-6">
+                  {/* Swatch & Top 3 Side-by-Side */}
+                  <div className="flex flex-col items-center sm:flex-row sm:items-center justify-between gap-5 border-b border-gray-200 dark:border-gray-850 pb-5">
+                    {/* Sampled Color Swatch */}
+                    <div className="flex flex-col items-center shrink-0">
+                      <div
+                        className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl border-2 border-black/15 dark:border-white/10 shadow-md shrink-0 relative overflow-hidden"
+                        style={{ backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none" />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">
+                        Sampled Color
+                      </span>
+                      <span className="font-mono text-[10px] text-gray-400 mt-0.5 uppercase">
+                        {`#${rgb.r.toString(16).padStart(2, '0')}${rgb.g.toString(16).padStart(2, '0')}${rgb.b.toString(16).padStart(2, '0')}`}
+                      </span>
+                    </div>
+
+                    {/* Arrow Divider */}
+                    <div className="hidden sm:block text-gray-300 dark:text-gray-700 text-lg font-black shrink-0">➔</div>
+                    <div className="sm:hidden text-gray-300 dark:text-gray-700 text-lg font-black shrink-0">▼</div>
+
+                    {/* Top 3 thread matches */}
+                    <div className="flex-1 flex justify-center gap-4">
+                      {topMatches.slice(0, 3).map((match, idx) => (
+                        <div key={match.id} className="flex flex-col items-center">
+                          <DMCSkein
+                            hex={match.hex}
+                            number={match.number}
+                            name={match.name}
+                            size="md"
+                            simple={true}
+                            selected={idx === 0}
+                            onClick={() => onColorSelect(match.rgb)}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Right Side details */}
+                  {/* Detailed metadata card under matches */}
                   <div className="min-w-0 flex-1 space-y-4">
                     <SampleValueHero context={context} />
                     <ValueWarningsList warnings={valueWarnings} />
 
-                    <div className="pt-2 border-t border-gray-100 dark:border-gray-900">
+                    <div className="pt-2 border-t border-gray-150 dark:border-gray-800">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
                         Closest Perceptual Match
                       </p>
-                      <h3 className="text-3xl font-mono font-black text-gray-900 dark:text-gray-100 mt-1">
-                        {primary.number}
-                      </h3>
-                      <p className="text-base font-serif italic text-gray-800 dark:text-gray-200 mt-0.5">
-                        {primary.name}
-                      </p>
+                      <div className="flex flex-wrap items-baseline gap-2 mt-1">
+                        <h3 className="text-3xl font-mono font-black text-gray-900 dark:text-gray-100">
+                          {primary.number}
+                        </h3>
+                        <p className="text-base font-serif italic text-gray-800 dark:text-gray-200">
+                          {primary.name}
+                        </p>
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         {formatThreadValueBand(primary.oklab.L)} · {formatFamilyPosition(primary.shadeRank, primary.familySize)}
                       </p>
@@ -429,7 +460,7 @@ export default function DMCFlossMatch({
                           <button
                             type="button"
                             onClick={() => onColorSelect(ladderPosition.lighter!.rgb)}
-                            className="flex items-center gap-3 text-left border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-2.5 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+                            className="flex items-center gap-3 text-left border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 rounded-xl p-2.5 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
                           >
                             <div className="w-5 h-12 shrink-0 rounded overflow-hidden shadow-inner relative" style={{ backgroundColor: ladderPosition.lighter.hex }}>
                               <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/20" />
@@ -445,7 +476,7 @@ export default function DMCFlossMatch({
                           <button
                             type="button"
                             onClick={() => onColorSelect(ladderPosition.darker!.rgb)}
-                            className="flex items-center gap-3 text-left border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-xl p-2.5 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
+                            className="flex items-center gap-3 text-left border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 rounded-xl p-2.5 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
                           >
                             <div className="w-5 h-12 shrink-0 rounded overflow-hidden shadow-inner relative" style={{ backgroundColor: ladderPosition.darker.hex }}>
                               <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/20" />
@@ -462,6 +493,7 @@ export default function DMCFlossMatch({
                   </div>
                 </div>
               </div>
+
 
               {/* SUGGESTED RENDERING SET */}
               {suggestedSet.suggestions.length > 1 && (
@@ -484,6 +516,7 @@ export default function DMCFlossMatch({
                           name={entry.thread.name}
                           size="sm"
                           showActions={false}
+                          simple={true}
                         />
                         <span className="font-mono text-[10px] font-semibold text-gray-400">
                           ΔE: {formatCatalogDeltaE00(entry.thread.deltaE00)}
@@ -556,6 +589,7 @@ export default function DMCFlossMatch({
                               number={match.number}
                               name={match.name}
                               size="md"
+                              simple={true}
                             />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -605,6 +639,7 @@ export default function DMCFlossMatch({
                               number={match.number}
                               name={match.name}
                               size="md"
+                              simple={true}
                             />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -740,6 +775,7 @@ export default function DMCFlossMatch({
                             number={thread.number}
                             name={thread.name}
                             size="md"
+                            simple={true}
                             onClick={() => onColorSelect(thread.rgb)}
                           />
                         </div>
