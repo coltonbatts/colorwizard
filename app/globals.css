@@ -61,20 +61,20 @@
     --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
 
     /* Type Scale — Clear, limited, editorial */
-    --text-xs: 0.6875rem;
-    /* 11px - Micro labels */
-    --text-sm: 0.8125rem;
-    /* 13px - Secondary text */
-    --text-base: 0.9375rem;
-    /* 15px - Body */
-    --text-lg: 1.125rem;
-    /* 18px - Subheadings */
-    --text-xl: 1.375rem;
-    /* 22px - Section headers */
-    --text-2xl: 1.75rem;
-    /* 28px - Page titles */
-    --text-3xl: 2.25rem;
-    /* 36px - Display */
+    --text-xs: 0.75rem;
+    /* 12px - Micro labels */
+    --text-sm: 0.875rem;
+    /* 14px - Secondary text */
+    --text-base: 1rem;
+    /* 16px - Body */
+    --text-lg: 1.1875rem;
+    /* 19px - Subheadings */
+    --text-xl: 1.5rem;
+    /* 24px - Section headers */
+    --text-2xl: 2rem;
+    /* 32px - Page titles */
+    --text-3xl: 2.75rem;
+    /* 44px - Display */
 
     /* Line Heights — Generous for readability */
     --leading-tight: 1.25;
@@ -82,7 +82,7 @@
     --leading-relaxed: 1.75;
 
     /* Letter Spacing */
-    --tracking-tight: -0.02em;
+    --tracking-tight: 0;
     --tracking-normal: 0;
     --tracking-wide: 0.05em;
     --tracking-caps: 0.1em;
@@ -745,23 +745,23 @@ body {
 
 .workbench-desktop-shell {
     display: grid;
-    gap: 1.5rem;
+    gap: 1.75rem;
     align-items: stretch;
-    grid-template-columns: minmax(0, 1fr) clamp(23rem, 31vw, 31rem);
+    grid-template-columns: minmax(0, 1fr) clamp(25rem, 32vw, 34rem);
 }
 
 .workbench-desktop-shell--wide {
-    grid-template-columns: minmax(0, 1fr) clamp(24rem, 30vw, 32rem);
+    grid-template-columns: minmax(0, 1fr) clamp(26rem, 32vw, 35rem);
 }
 
 .workbench-desktop-shell--medium {
-    gap: 1rem;
-    grid-template-columns: minmax(0, 1fr) clamp(18rem, 26vw, 26rem);
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) clamp(22rem, 30vw, 30rem);
 }
 
 .workbench-desktop-shell--narrow {
-    gap: 0.875rem;
-    grid-template-columns: minmax(0, 1fr) clamp(16.5rem, 24vw, 22rem);
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) clamp(20rem, 28vw, 26rem);
     grid-template-rows: minmax(0, 1fr);
 }
 
@@ -793,12 +793,12 @@ body {
 }
 
 .workbench-mode-rail {
-    width: 52px;
-    min-width: 52px;
+    width: 60px;
+    min-width: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 5px;
+    padding: 10px 7px;
     border: var(--rule-hairline) solid var(--ink-hairline);
     border-radius: var(--radius-lg);
     background: var(--paper-elevated);
@@ -836,8 +836,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: var(--rule-hairline) solid transparent;
     border-radius: var(--radius-md);
@@ -930,11 +930,11 @@ body {
     border: var(--rule-hairline) solid var(--ink-hairline);
     border-radius: var(--radius-2xl);
     background: var(--paper-elevated);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-floating);
 }
 
 .workbench-sample-hud {
-    padding: 1.25rem;
+    padding: 1.5rem;
 }
 
 .workbench-swatch-object {
@@ -1066,22 +1066,22 @@ body {
 @media (max-width: 1280px) {
     .workbench-desktop-shell--wide {
         gap: 1.25rem;
-        grid-template-columns: minmax(0, 1fr) clamp(21rem, 29vw, 29rem);
+        grid-template-columns: minmax(0, 1fr) clamp(23rem, 31vw, 31rem);
     }
 
     .workbench-mode-rail {
-        width: 48px;
-        min-width: 48px;
+        width: 52px;
+        min-width: 52px;
         padding: 8px 4px;
     }
 
     .workbench-mode-btn {
-        width: 38px;
-        height: 38px;
+        width: 40px;
+        height: 40px;
     }
 
     .workbench-sample-hud {
-        padding: 1rem;
+        padding: 1.25rem;
     }
 
     .compact-toolbar .workbench-toolbar-group select {

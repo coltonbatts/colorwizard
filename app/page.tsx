@@ -619,10 +619,10 @@ export default function Home() {
   const desktopCanvasInsetClass = !image
     ? 'p-0'
     : desktopLayoutMode === 'wide'
-      ? 'px-6 pb-6 pt-24 lg:pl-[6.75rem]'
+      ? 'px-7 pb-7 pt-24 lg:pl-[7.5rem]'
       : desktopLayoutMode === 'medium'
-        ? 'px-4 pb-4 pt-20 pl-20 pr-4'
-        : 'px-3 pb-3 pt-[4.5rem] pl-[4.75rem] pr-3'
+        ? 'px-5 pb-5 pt-20 pl-[5.75rem] pr-5'
+        : 'px-4 pb-4 pt-[4.75rem] pl-[5.25rem] pr-4'
   const desktopToolbarMaxClass =
     desktopLayoutMode === 'wide'
       ? 'max-w-[min(76rem,calc(100%-13rem))]'
@@ -632,10 +632,10 @@ export default function Home() {
   const isMobileSampleLayout = isMobile && activeTab === 'sample'
   const mobileSheetHeightClass =
     activeTab === 'sample'
-      ? 'h-[clamp(15rem,30dvh,20rem)]'
+      ? 'h-[min(58dvh,30rem)] min-h-[18rem]'
       : activeTab === 'matches'
-        ? 'h-[clamp(18rem,38dvh,24rem)]'
-        : 'h-[clamp(19rem,40dvh,26rem)]'
+        ? 'h-[min(72dvh,36rem)] min-h-[22rem]'
+        : 'h-[min(72dvh,38rem)] min-h-[22rem]'
 
   useEffect(() => {
     if (!isMobile) return
@@ -903,7 +903,7 @@ export default function Home() {
           )}
           sampleDashboard={image && isMobileSampleLayout ? (
               <div
-                className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-[calc(env(safe-area-inset-bottom,0px)+3.75rem)] pt-1.5"
+                className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.25rem)] pt-2"
                 data-testid="mobile-sample-dashboard-region"
               >
                 <MobileDashboard
@@ -917,7 +917,7 @@ export default function Home() {
               </div>
           ) : null}
           controlsPanel={image && !isMobileSampleLayout ? (
-            <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-2 pt-2 pb-[env(safe-area-inset-bottom,0px)]">
+            <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-3 pt-3 pb-[env(safe-area-inset-bottom,0px)]">
               {activeHighlightColor && (
                 <div className="mb-2">
                   <HighlightControls />
@@ -929,7 +929,7 @@ export default function Home() {
                 )}
                 key={activeTab}
               >
-                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-lg border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-2px_8px_rgba(26,26,26,0.06)]`}>
+                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-lg border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-8px_30px_rgba(26,26,26,0.10)]`}>
                   {activeTab === 'sample' ? (
                     <MobileDashboard
                       sampledColor={sampledColor}

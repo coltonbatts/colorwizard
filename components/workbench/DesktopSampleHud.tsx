@@ -43,7 +43,7 @@ interface DesktopSampleHudProps {
   onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
 }
 
-const LABEL_CLASS = 'text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted'
+const LABEL_CLASS = 'text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted'
 
 function ValueRow({
   label,
@@ -61,10 +61,10 @@ function ValueRow({
       type="button"
       onClick={onCopy}
       title={`Copy ${label}`}
-      className="group flex w-full items-baseline justify-between gap-4 border-b border-ink-hairline py-2 text-left transition-colors last:border-b-0 hover:bg-paper-recessed/60"
+      className="group flex w-full items-baseline justify-between gap-4 border-b border-ink-hairline py-3 text-left transition-colors last:border-b-0 hover:bg-paper-recessed/60"
     >
       <span className={LABEL_CLASS}>{label}</span>
-      <span className="font-mono text-[12px] tabular-nums text-ink">
+      <span className="font-mono text-sm tabular-nums text-ink">
         {copied ? (
           <span className="text-ink-muted">Copied</span>
         ) : (
@@ -136,10 +136,10 @@ export default function DesktopSampleHud({
     return (
       <aside className="workbench-floating-panel workbench-sample-hud flex h-full min-h-0 w-full min-w-0 flex-col">
         <div className={LABEL_CLASS}>Sample</div>
-        <h2 className="mt-4 font-display text-2xl leading-tight tracking-tight text-ink">
+        <h2 className="mt-5 font-display text-2xl leading-tight text-ink">
           Click the image to sample a color
         </h2>
-        <p className="mt-3 max-w-[18rem] text-sm leading-6 text-ink-secondary">
+        <p className="mt-3 max-w-[22rem] text-base leading-7 text-ink-secondary">
           The sampled color, its value, and its paint mixture will appear here.
         </p>
       </aside>
@@ -194,7 +194,7 @@ export default function DesktopSampleHud({
   }
 
   const actionButtonClass =
-    'flex-1 border border-ink-hairline bg-transparent px-3 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink disabled:opacity-45 rounded-md'
+    'flex-1 border border-ink-hairline bg-transparent px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink disabled:opacity-45 rounded-md'
 
   return (
     <>
@@ -202,7 +202,7 @@ export default function DesktopSampleHud({
         className="workbench-floating-panel workbench-sample-hud flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden"
         data-layout={layoutMode}
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
           {/* Swatch — honest, flat, uncovered */}
           <section className="shrink-0">
             <button
@@ -213,13 +213,13 @@ export default function DesktopSampleHud({
                 setShowColorPreview(true)
               }}
               className="block w-full rounded-lg border border-ink-hairline p-0 transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(26,26,26,0.25)]"
-              style={{ backgroundColor: hex, minHeight: isWideLayout ? '7.5rem' : '6rem' }}
+              style={{ backgroundColor: hex, minHeight: isWideLayout ? '10.5rem' : '8.5rem' }}
             />
-            <div className="mt-3 flex items-baseline justify-between gap-3">
-              <h2 className="min-w-0 truncate font-display text-xl leading-tight tracking-tight text-ink">
+            <div className="mt-4 flex items-start justify-between gap-4">
+              <h2 className="min-w-0 font-display text-2xl leading-tight text-ink">
                 {displayName}
               </h2>
-              <span className="shrink-0 font-mono text-[12px] text-ink-secondary">{hex.toUpperCase()}</span>
+              <span className="shrink-0 rounded-md border border-ink-hairline bg-paper px-2.5 py-1 font-mono text-sm text-ink-secondary">{hex.toUpperCase()}</span>
             </div>
           </section>
 
@@ -255,37 +255,37 @@ export default function DesktopSampleHud({
 
           {/* Character — value, temperature, chroma in one quiet row */}
           <section className="grid shrink-0 grid-cols-3 gap-px overflow-hidden rounded-md border border-ink-hairline bg-ink-hairline">
-            <div className="bg-paper-elevated px-3 py-2.5">
+            <div className="bg-paper-elevated px-4 py-3.5">
               <div className={LABEL_CLASS}>Value</div>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="font-mono text-sm tabular-nums text-ink">{displayedValue}%</span>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="font-mono text-lg tabular-nums text-ink">{displayedValue}%</span>
                 <span
-                  className="h-3.5 w-3.5 rounded-sm border border-ink-hairline"
+                  className="h-4 w-4 rounded-sm border border-ink-hairline"
                   style={{ backgroundColor: grayscaleHex }}
                   aria-hidden
                 />
               </div>
-              <div className="mt-0.5 text-[11px] leading-tight text-ink-secondary">{valueBand}</div>
+              <div className="mt-1 text-sm leading-snug text-ink-secondary">{valueBand}</div>
             </div>
-            <div className="bg-paper-elevated px-3 py-2.5">
+            <div className="bg-paper-elevated px-4 py-3.5">
               <div className={LABEL_CLASS}>Temp</div>
-              <div className="mt-1.5 text-sm text-ink">{temperatureLabel}</div>
-              <div className="mt-0.5 truncate text-[11px] leading-tight text-ink-secondary">{harmonies.base.name}</div>
+              <div className="mt-2 text-base text-ink">{temperatureLabel}</div>
+              <div className="mt-1 text-sm leading-snug text-ink-secondary">{harmonies.base.name}</div>
             </div>
-            <div className="bg-paper-elevated px-3 py-2.5">
+            <div className="bg-paper-elevated px-4 py-3.5">
               <div className={LABEL_CLASS}>Chroma</div>
-              <div className="mt-1.5 text-sm text-ink">{chroma.label}</div>
-              <div className="mt-0.5 font-mono text-[11px] tabular-nums leading-tight text-ink-secondary">
+              <div className="mt-2 text-base text-ink">{chroma.label}</div>
+              <div className="mt-1 font-mono text-sm tabular-nums leading-snug text-ink-secondary">
                 {chroma.value.toFixed(3)}
               </div>
             </div>
           </section>
 
           {/* Value band control */}
-          <section className="shrink-0 border-t border-ink-hairline pt-3">
+          <section className="shrink-0 border-t border-ink-hairline pt-4">
             <div className="flex items-center gap-3">
               <div
-                className="relative h-3 w-16 shrink-0 overflow-hidden rounded-sm border border-ink-hairline"
+                className="relative h-4 w-20 shrink-0 overflow-hidden rounded-sm border border-ink-hairline"
                 aria-label={`Sample lightness near ${displayedValue} percent`}
               >
                 <div
@@ -306,12 +306,12 @@ export default function DesktopSampleHud({
                 aria-label="Canvas value overlay band"
                 className="h-1 min-w-0 flex-1 cursor-pointer accent-ink"
               />
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink-secondary">
+              <span className="shrink-0 font-mono text-sm tabular-nums text-ink-secondary">
                 {activeValueBandIndex + 1}/{referenceBandSteps}
               </span>
             </div>
             {valueModeMeta ? (
-              <div className="mt-2 font-mono text-[11px] text-ink-secondary">
+              <div className="mt-2 font-mono text-sm text-ink-secondary">
                 Value mode step {valueModeMeta.step}/{valueModeSteps}
               </div>
             ) : null}
@@ -323,7 +323,7 @@ export default function DesktopSampleHud({
               type="button"
               onClick={handlePin}
               disabled={isPinning || isPinned}
-              className={`flex-1 rounded-md border px-3 py-2 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors disabled:opacity-45 ${
+              className={`flex-1 rounded-md border px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] transition-colors disabled:opacity-45 ${
                 isPinned
                   ? 'border-ink-hairline bg-paper-recessed text-ink-muted'
                   : 'border-ink bg-ink text-paper-elevated hover:bg-[#2a241d]'
@@ -357,7 +357,7 @@ export default function DesktopSampleHud({
             <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 [&::-webkit-details-marker]:hidden">
               <div className="min-w-0">
                 <div className={LABEL_CLASS}>Paint recipe</div>
-                <div className="mt-1 truncate text-sm text-ink">
+                <div className="mt-1 text-base leading-snug text-ink">
                   {activePalette.isDefault ? 'Core six-color mix' : activePalette.name}
                 </div>
               </div>
@@ -388,7 +388,7 @@ export default function DesktopSampleHud({
             </div>
           </details>
 
-          <p className="shrink-0 text-[11px] leading-4 text-ink-faint">{PICKED_COLOR_DISCLAIMER}</p>
+          <p className="shrink-0 text-xs leading-5 text-ink-faint">{PICKED_COLOR_DISCLAIMER}</p>
         </div>
       </aside>
 

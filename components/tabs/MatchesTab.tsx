@@ -36,7 +36,7 @@ export default function MatchesTab({
 
     return (
         <div className="tab-content-scroll h-full">
-            <div className="p-3 md:p-4 lg:p-5 pb-4 md:pb-20">
+            <div className="pb-4 md:pb-20">
                 <ErrorBoundary
                     fallback={({ error, resetError }) => (
                         <SidebarErrorFallback error={error} resetError={resetError} />
@@ -65,8 +65,8 @@ function ThreadsEmptyState() {
                     <path d="M20.5 3.5 C22 2 23 4 21 6 C18 9 15 8 13 11 C11 14 12 17 9 19 C7 21 4 20 3 18" />
                 </svg>
             </div>
-            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Threads</div>
-            <p className="mt-2 text-sm font-semibold text-ink">Sample a color on the canvas.</p>
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-faint">Threads</div>
+            <p className="mt-2 text-base font-semibold text-ink">Sample a color on the canvas.</p>
         </div>
     )
 }

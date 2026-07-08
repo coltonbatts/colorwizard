@@ -72,16 +72,16 @@ const config: Config = {
         wordmark: ['EB Garamond', 'Georgia', 'Times New Roman', 'serif'],
       },
       fontSize: {
-        'xs': ['0.6875rem', { lineHeight: '1.5' }],    // 11px
-        'sm': ['0.8125rem', { lineHeight: '1.5' }],    // 13px
-        'base': ['0.9375rem', { lineHeight: '1.5' }],  // 15px
-        'lg': ['1.125rem', { lineHeight: '1.4' }],     // 18px
-        'xl': ['1.375rem', { lineHeight: '1.3' }],     // 22px
-        '2xl': ['1.75rem', { lineHeight: '1.25' }],    // 28px
-        '3xl': ['2.25rem', { lineHeight: '1.2' }],     // 36px
+        'xs': ['0.75rem', { lineHeight: '1.5' }],       // 12px
+        'sm': ['0.875rem', { lineHeight: '1.5' }],      // 14px
+        'base': ['1rem', { lineHeight: '1.55' }],       // 16px
+        'lg': ['1.1875rem', { lineHeight: '1.45' }],    // 19px
+        'xl': ['1.5rem', { lineHeight: '1.3' }],        // 24px
+        '2xl': ['2rem', { lineHeight: '1.2' }],         // 32px
+        '3xl': ['2.75rem', { lineHeight: '1.08' }],     // 44px
       },
       letterSpacing: {
-        tight: '-0.02em',
+        tight: '0',
         normal: '0',
         wide: '0.05em',
         caps: '0.1em',

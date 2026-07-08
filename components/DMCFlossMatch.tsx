@@ -55,7 +55,7 @@ function formatThreadValueBand(oklabL: number): string {
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-ink-muted mb-3">
+    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">
       {children}
     </h3>
   )
@@ -92,28 +92,28 @@ function SuggestedRenderingSetSection({
   if (suggestions.length <= 1) return null
 
   return (
-    <div className="py-4 border-t border-ink-hairline">
+    <div className="border-t border-ink-hairline py-5">
       <SectionLabel>Suggested Palette Deck</SectionLabel>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-3">
         {suggestions.map((entry) => (
           <button
             key={`${entry.role}-${entry.thread.id}`}
             type="button"
             onClick={() => onSelect(entry.thread.rgb)}
-            className="flex flex-col items-stretch p-2 rounded-lg border border-ink-hairline bg-paper-elevated hover:bg-paper-recessed/50 transition-all text-left group shadow-sm hover:scale-[1.02]"
+            className="group flex flex-col items-stretch rounded-lg border border-ink-hairline bg-paper-elevated p-3 text-left transition-all hover:bg-paper-recessed/50"
           >
             <div 
-              className="w-full h-8 rounded border border-ink-hairline shadow-inner transition-transform group-hover:scale-95 duration-200" 
+              className="h-11 w-full rounded border border-ink-hairline shadow-inner transition-transform duration-200 group-hover:scale-95" 
               style={{ backgroundColor: entry.thread.hex }}
             />
             <div className="mt-2 text-center min-w-0">
-              <span className="text-[8px] font-black uppercase tracking-wider text-ink-muted block truncate">
+              <span className="block text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
                 {RENDERING_ROLE_LABELS[entry.role]}
               </span>
-              <span className="font-mono text-xs font-bold text-ink block mt-0.5 leading-none">
+              <span className="mt-1 block font-mono text-sm font-bold leading-none text-ink">
                 {entry.thread.number}
               </span>
-              <span className="font-mono text-[9px] text-ink-secondary block mt-1">
+              <span className="mt-1 block font-mono text-xs text-ink-secondary">
                 {entry.thread.deltaE00.toFixed(1)}
               </span>
             </div>
@@ -137,11 +137,11 @@ function FamilyValueScale({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-ink-muted">
+      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
         <span>Light end</span>
         <span>Dark end</span>
       </div>
-      <div className="flex h-4 overflow-hidden rounded-md border border-ink-hairline shadow-sm">
+      <div className="flex h-6 overflow-hidden rounded-md border border-ink-hairline shadow-sm">
         {ladder.map((thread) => (
           <button
             key={thread.id}
@@ -210,17 +210,17 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
   const sampleHex = rgb ? `#${((1 << 24) + (rgb.r << 16) + (rgb.g << 8) + rgb.b).toString(16).slice(1).toUpperCase()}` : ''
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Symmetrical Pantone-Style Swatch Comparison Block */}
-      <div className="border border-ink-hairline rounded-xl overflow-hidden bg-paper-elevated shadow-md transition-all duration-300">
+      <div className="overflow-hidden rounded-xl border border-ink-hairline bg-paper-elevated shadow-md transition-all duration-300">
         
         {/* Symmetrical side-by-side color blocks with no gap */}
-        <div className="grid grid-cols-2 h-32 relative">
+        <div className="relative grid h-44 grid-cols-2">
           <div 
             className="w-full h-full relative" 
             style={{ backgroundColor: sampleHex }}
           >
-            <div className="absolute top-2.5 left-3 bg-black/40 text-[8px] font-black uppercase tracking-widest text-white/90 px-1.5 py-0.5 rounded backdrop-blur-sm select-none">
+            <div className="absolute left-3 top-3 select-none rounded bg-black/45 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/90 backdrop-blur-sm">
               Sampled
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
             className="w-full h-full relative border-l border-ink-hairline" 
             style={{ backgroundColor: primary.hex }}
           >
-            <div className="absolute top-2.5 right-3 bg-black/40 text-[8px] font-black uppercase tracking-widest text-white/90 px-1.5 py-0.5 rounded backdrop-blur-sm select-none">
+            <div className="absolute right-3 top-3 select-none rounded bg-black/45 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/90 backdrop-blur-sm">
               DMC Match
             </div>
           </div>
@@ -236,42 +236,42 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
 
         {/* Symmetrical metadata labels below color swatches */}
         <div className="grid grid-cols-2 divide-x divide-ink-hairline border-t border-ink-hairline">
-          <div className="p-4 flex flex-col justify-between">
+          <div className="flex flex-col justify-between p-5">
             <div>
-              <span className="text-[8px] font-black uppercase tracking-[0.16em] text-ink-muted">RGB Data</span>
-              <span className="font-mono text-base font-black text-ink block mt-1 tracking-tight">{sampleHex}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">RGB Data</span>
+              <span className="mt-1 block font-mono text-lg font-bold tracking-tight text-ink">{sampleHex}</span>
             </div>
-            <span className="font-mono text-[10px] text-ink-secondary mt-1 block">
+            <span className="mt-1 block font-mono text-sm text-ink-secondary">
               ({rgb.r}, {rgb.g}, {rgb.b})
             </span>
           </div>
 
-          <div className="p-4 flex flex-col justify-between">
+          <div className="flex flex-col justify-between p-5">
             <div>
-              <span className="text-[8px] font-black uppercase tracking-[0.16em] text-ink-muted">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">
                 {getDMCColorFamily(primary.rgb, primary.name)}
               </span>
-              <span className="font-serif text-base font-bold text-ink block mt-1 leading-none">
+              <span className="mt-1 block font-serif text-xl font-bold leading-tight text-ink">
                 DMC {primary.number}
               </span>
             </div>
-            <span className="text-xs text-ink-secondary truncate block mt-1" title={primary.name}>
+            <span className="mt-1 block text-sm leading-snug text-ink-secondary" title={primary.name}>
               {primary.name}
             </span>
           </div>
         </div>
 
         {/* Delta E score banner - centered and symmetrical */}
-        <div className="bg-paper-recessed/40 text-center py-2 px-3 border-t border-ink-hairline flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-[11px]">
-            <span className="font-bold text-ink font-mono bg-paper px-1.5 py-0.5 rounded border border-ink-hairline shadow-sm">
+        <div className="flex items-center justify-between border-t border-ink-hairline bg-paper-recessed/40 px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="rounded border border-ink-hairline bg-paper px-2 py-1 font-mono font-bold text-ink shadow-sm">
               {formatCatalogDeltaE00(primary.deltaE00)}
             </span>
-            <span className="text-ink-secondary font-medium font-sans">
+            <span className="font-sans font-medium text-ink-secondary">
               · {primary.confidenceLabel}
             </span>
           </div>
-          <span className="text-[10px] text-ink-muted font-mono">
+          <span className="font-mono text-xs text-ink-muted">
             {formatThreadValueBand(primary.oklab.L)}
           </span>
         </div>
@@ -280,7 +280,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
         <div className="grid grid-cols-2 divide-x divide-ink-hairline border-t border-ink-hairline bg-paper-elevated">
           <button
             onClick={() => onColorSelect(primary.rgb)}
-            className="py-2.5 text-[10px] font-black uppercase tracking-wider text-ink-secondary hover:text-ink hover:bg-paper-recessed/30 transition-all flex items-center justify-center gap-1.5"
+            className="flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase tracking-[0.1em] text-ink-secondary transition-all hover:bg-paper-recessed/30 hover:text-ink"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -291,7 +291,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
           
           <button
             onClick={() => handleCopyCode(primary.number)}
-            className="py-2.5 text-[10px] font-black uppercase tracking-wider text-ink-secondary hover:text-ink hover:bg-paper-recessed/30 transition-all flex items-center justify-center gap-1.5"
+            className="flex items-center justify-center gap-2 py-3 text-xs font-semibold uppercase tracking-[0.1em] text-ink-secondary transition-all hover:bg-paper-recessed/30 hover:text-ink"
           >
             {copiedCode === primary.number ? (
               <>
@@ -320,12 +320,12 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
 
       {/* Family value ladder */}
       {showLadder ? (
-        <div className="py-4 border-t border-ink-hairline space-y-3">
+        <div className="space-y-4 border-t border-ink-hairline py-5">
           <SectionLabel>{primary.familyLabel} Value Scale</SectionLabel>
           <FamilyValueScale ladder={familyLadder} primaryId={primary.id} onSelect={onColorSelect} />
 
           {/* Symmetrical list of family items in a clean double-column grid */}
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {familyLadder.map((thread) => {
               const isPrimary = thread.id === primary.id
 
@@ -334,24 +334,24 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
                   key={thread.id}
                   type="button"
                   onClick={() => onColorSelect(thread.rgb)}
-                  className={`flex items-center gap-2 rounded-lg border p-2 text-left transition-all ${
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
                     isPrimary
                       ? 'border-ink bg-paper-recessed/50'
                       : 'border-ink-hairline bg-paper-elevated/40 hover:bg-paper-recessed/30'
                   }`}
                 >
                   <div 
-                    className="w-7 h-7 rounded-md border border-ink-hairline shrink-0" 
+                    className="h-9 w-9 shrink-0 rounded-md border border-ink-hairline" 
                     style={{ backgroundColor: thread.hex }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-1">
-                      <span className="font-mono text-xs font-bold text-ink leading-none">{thread.number}</span>
+                    <div className="flex flex-wrap items-baseline gap-1.5">
+                      <span className="font-mono text-sm font-bold leading-none text-ink">{thread.number}</span>
                       {isPrimary && (
-                        <span className="text-[8px] font-black uppercase text-ink-muted">Match</span>
+                        <span className="text-xs font-semibold uppercase text-ink-muted">Match</span>
                       )}
                     </div>
-                    <p className="text-[10px] text-ink-secondary truncate mt-0.5">{thread.name}</p>
+                    <p className="mt-1 text-sm leading-snug text-ink-secondary">{thread.name}</p>
                   </div>
                 </button>
               )
@@ -362,9 +362,9 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
 
       {/* Alternative Matches list */}
       {otherChoices.length > 0 ? (
-        <div className="py-4 border-t border-ink-hairline space-y-3">
+        <div className="space-y-4 border-t border-ink-hairline py-5">
           <SectionLabel>Alternative Matches</SectionLabel>
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {otherChoices.map((match) => (
               <li key={match.id}>
                 <AlternateMatchRow
@@ -380,21 +380,21 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
       ) : null}
 
       {extraAlternatives.length > 0 ? (
-        <div className="border-t border-ink-hairline pt-3">
+        <div className="border-t border-ink-hairline pt-4">
           <button
             type="button"
             onClick={() => setShowAlternatives((open) => !open)}
-            className="flex w-full items-center justify-between gap-3 text-left transition-colors hover:text-ink text-ink-secondary py-1"
+            className="flex w-full items-center justify-between gap-3 py-1 text-left text-ink-secondary transition-colors hover:text-ink"
             aria-expanded={showAlternatives}
           >
-            <span className="text-[9px] font-black uppercase tracking-wider text-ink-muted">More Families to Consider</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-ink-muted">More Families to Consider</span>
             <span className="font-mono text-xs font-bold text-ink-muted">
               {showAlternatives ? 'Hide' : `Show ${extraAlternatives.length}`}
             </span>
           </button>
 
           {showAlternatives ? (
-            <ul className="space-y-1.5 mt-3 animate-in fade-in duration-200">
+            <ul className="mt-3 space-y-2 animate-in fade-in duration-200">
               {extraAlternatives.map((thread) => (
                 <li key={thread.id}>
                   <AlternateMatchRow
@@ -418,7 +418,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
         />
       </div>
 
-      <footer className="space-y-1.5 border-t border-ink-hairline pt-4 text-[10px] leading-relaxed text-ink-muted">
+      <footer className="space-y-2 border-t border-ink-hairline pt-4 text-xs leading-relaxed text-ink-muted">
         <p>{PICKED_COLOR_DISCLAIMER}</p>
         <p>{VALUE_ANALYSIS_NOTE}</p>
       </footer>
@@ -440,23 +440,23 @@ function AlternateMatchRow({
   const shade = formatShadeStep(match.shadeStep)
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-ink-hairline bg-paper-elevated/40 p-2.5 hover:bg-paper-recessed/30 transition-all">
+    <div className="flex items-center gap-3 rounded-lg border border-ink-hairline bg-paper-elevated/40 p-3 transition-all hover:bg-paper-recessed/30">
       <button
         type="button"
         onClick={() => onSelect(match.rgb)}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
         <div 
-          className="h-10 w-10 rounded-md border border-ink-hairline shrink-0" 
+          className="h-12 w-12 shrink-0 rounded-md border border-ink-hairline" 
           style={{ backgroundColor: match.hex }}
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="font-mono text-sm font-bold text-ink">DMC {match.number}</span>
-            <span className="text-[10px] text-ink-muted truncate">{match.familyLabel}</span>
+            <span className="font-mono text-base font-bold text-ink">DMC {match.number}</span>
+            <span className="text-xs text-ink-muted">{match.familyLabel}</span>
           </div>
-          <p className="text-xs font-semibold text-ink-secondary truncate">{match.name}</p>
-          <p className="text-[10px] text-ink-muted mt-0.5">
+          <p className="text-sm font-semibold leading-snug text-ink-secondary">{match.name}</p>
+          <p className="mt-1 text-xs leading-relaxed text-ink-muted">
             {formatThreadValueBand(match.oklab.L)}
             {shade ? ` · ${shade}` : ''}
             <span className="font-mono font-bold text-ink-secondary"> · {formatCatalogDeltaE00(match.deltaE00)}</span>
@@ -467,7 +467,7 @@ function AlternateMatchRow({
       <button
         type="button"
         onClick={() => onCopy(match.number)}
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-ink-hairline bg-paper-elevated text-ink-secondary hover:text-ink hover:bg-paper-recessed transition-all shadow-sm"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-ink-hairline bg-paper-elevated text-ink-secondary shadow-sm transition-all hover:bg-paper-recessed hover:text-ink"
         title="Copy DMC code"
       >
         {copiedCode === match.number ? (
@@ -543,13 +543,13 @@ function ReducedValueMapPreview({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <SectionLabel>Value Grouping Preview</SectionLabel>
-        <div className="flex bg-paper-recessed/60 rounded-md p-0.5 border border-ink-hairline">
+        <div className="flex rounded-md border border-ink-hairline bg-paper-recessed/60 p-0.5">
           {(['original', '3', '5'] as ValueMapMode[]).map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => setMode(option)}
-              className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
+              className={`rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.08em] transition-all ${
                 mode === option
                   ? 'bg-paper-elevated text-ink shadow-sm'
                   : 'text-ink-muted hover:text-ink-secondary'
