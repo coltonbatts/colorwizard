@@ -1207,7 +1207,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               className="absolute top-0 left-0 w-full h-full touch-none select-none"
               style={{
                 cursor: getCursorStyle(),
-                zIndex: imageDrawInfo ? 60 : 5,
+                zIndex: 0,
                 backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
                 pointerEvents: imageDrawInfo ? 'auto' : 'none',
                 touchAction: 'none',
