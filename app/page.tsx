@@ -46,6 +46,7 @@ import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
 import ReferenceTab from '@/components/tabs/ReferenceTab'
 import StructureTab from '@/components/tabs/StructureTab'
 import SurfaceTab from '@/components/tabs/SurfaceTab'
+import StitchTab from '@/components/tabs/StitchTab'
 import ColorDeckPanel from '@/components/ColorDeckPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import HighlightControls from '@/components/HighlightControls'
@@ -105,6 +106,10 @@ const DESKTOP_PANEL_META: Record<Exclude<TabType, 'sample'>, { title: string; su
     title: 'Deck',
     subtitle: 'Saved color studies',
   },
+  stitch: {
+    title: 'Embroidery Planner',
+    subtitle: 'DMC pattern controls and legend',
+  },
 }
 
 // Compatibility shim for stale Fast Refresh bundles that may still reference the
@@ -117,6 +122,7 @@ const INSPECTOR_TITLES: Record<Exclude<TabType, 'deck'>, string> = {
   reference: DESKTOP_PANEL_META.reference.title,
   structure: DESKTOP_PANEL_META.structure.title,
   surface: DESKTOP_PANEL_META.surface.title,
+  stitch: 'Stitch',
 }
 
 export default function Home() {
@@ -128,6 +134,7 @@ export default function Home() {
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [dismissPreviewSignal, setDismissPreviewSignal] = useState(0)
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysisSnapshot>(EMPTY_IMAGE_ANALYSIS)
+  const [stitchLegend, setStitchLegend] = useState<import('@/lib/image/quantization').QuantizationResult | null>(null)
   const { ref: workspaceFrameRef, size: workspaceFrameSize } = useElementSize<HTMLDivElement>()
 
   const sampledColor = useSessionStore(state => state.sampledColor)
@@ -579,6 +586,22 @@ export default function Home() {
             }}
           />
         )
+      case 'stitch':
+        return (
+          <StitchTab
+            legend={stitchLegend?.legend ?? []}
+            gridWidth={stitchLegend?.width ?? 0}
+            gridHeight={stitchLegend?.height ?? 0}
+            onColorSelect={(rgb) => {
+              applySampleColor({
+                rgb,
+                hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+                hsl: rgbToHsl(rgb.r, rgb.g, rgb.b),
+              })
+              setActiveHighlightColor(rgb)
+            }}
+          />
+        )
       case 'reference':
         return <ReferenceTab />
       case 'structure':
@@ -766,6 +789,7 @@ export default function Home() {
                     sampledColorHex={sampledColor?.hex ?? null}
                     workspaceModeLabel={desktopCanvasMode}
                     showHud={!!image}
+                    onStitchLegendChange={setStitchLegend}
                   />
                 </ErrorBoundary>
               </div>
@@ -898,6 +922,7 @@ export default function Home() {
                 workspaceModeLabel={desktopCanvasMode}
                 showHud={!isMobileSampleLayout}
                 mobileLayout={isMobileSampleLayout ? 'sample' : 'default'}
+                onStitchLegendChange={setStitchLegend}
               />
             </ErrorBoundary>
           )}

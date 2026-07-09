@@ -12,6 +12,7 @@ import {
     DeckWorkbenchIcon,
     SampleWorkbenchIcon,
     ThreadsWorkbenchIcon,
+    StitchWorkbenchIcon,
 } from './workbenchIcons'
 
 interface MobileNavigationProps {
@@ -151,6 +152,24 @@ export default function MobileNavigation({
                         </span>
                         <span className="mobile-nav-label">DMC Threads</span>
                         {activeTab === 'matches' && (
+                            <span className="mobile-nav-active-indicator" />
+                        )}
+                    </button>
+                </div>
+
+                <div className="mobile-nav-section">
+                    <span className="mobile-nav-section-label">Embroidery Canvas</span>
+                    <button
+                        type="button"
+                        onClick={() => handleTabSelect('stitch')}
+                        className={`mobile-nav-item ${activeTab === 'stitch' ? 'active' : ''}`}
+                        aria-pressed={activeTab === 'stitch'}
+                    >
+                        <span className="mobile-nav-icon">
+                            <StitchWorkbenchIcon />
+                        </span>
+                        <span className="mobile-nav-label">Embroidery Planner</span>
+                        {activeTab === 'stitch' && (
                             <span className="mobile-nav-active-indicator" />
                         )}
                     </button>

@@ -10,6 +10,7 @@ import {
     StructureWorkbenchIcon,
     SurfaceWorkbenchIcon,
     ThreadsWorkbenchIcon,
+    StitchWorkbenchIcon,
 } from './workbenchIcons'
 
 // Desktop workbench modes plus mobile-safe thin-core tabs.
@@ -22,6 +23,7 @@ type TabType =
     | 'structure'
     | 'surface'
     | 'deck'
+    | 'stitch'
 
 interface CollapsibleSidebarProps {
     collapsed: boolean
@@ -47,6 +49,12 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
         label: 'Threads',
         tooltip: 'DMC Floss Matches',
         icon: <ThreadsWorkbenchIcon />
+    },
+    {
+        id: 'stitch',
+        label: 'Stitch',
+        tooltip: 'DMC Embroidery Planner',
+        icon: <StitchWorkbenchIcon />
     },
     {
         id: 'mix',

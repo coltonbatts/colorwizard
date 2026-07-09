@@ -2067,3 +2067,104 @@ input[type="range"]::-moz-range-thumb {
         height: 24px;
     }
 }
+
+/* ============================================
+   PRINT STYLING OVERRIDES FOR STITCH MODE
+   ============================================ */
+@media print {
+  /* Hide all non-printable layout chrome */
+  header,
+  footer,
+  aside,
+  nav,
+  button,
+  input,
+  .workbench-desktop-stage > div:not(.workbench-desktop-canvas-inset),
+  .workbench-desktop-inspector,
+  .workbench-mode-rail,
+  .compact-toolbar,
+  .mobile-header,
+  .mobile-navigation,
+  .session-palette-strip,
+  .highlight-controls,
+  .stitch-tab-container > div:not(.stitch-legend-print-section) {
+    display: none !important;
+  }
+
+  /* Reset layout viewport constraints for direct page rendering */
+  body, 
+  html, 
+  main,
+  .workbench-shell,
+  .workbench-desktop-shell,
+  .workbench-desktop-stage {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  /* Scale canvas stage to print page */
+  .workbench-desktop-canvas-inset {
+    padding: 0 !important;
+    margin: 0 0 20px 0 !important;
+    position: static !important;
+    width: 100% !important;
+    height: 55vh !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .relative.flex-1.min-h-0 {
+    position: static !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Format print legend grid table */
+  .stitch-legend-print-section {
+    display: block !important;
+    width: 100% !important;
+    page-break-before: auto;
+    font-family: monospace;
+  }
+
+  .stitch-legend-print-section h3 {
+    font-size: 14px !important;
+    color: #000000 !important;
+    margin-bottom: 10px !important;
+  }
+
+  .stitch-legend-print-section table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .stitch-legend-print-section th,
+  .stitch-legend-print-section td {
+    border: 1px solid #000000 !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .stitch-legend-print-section th {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

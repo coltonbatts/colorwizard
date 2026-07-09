@@ -94,6 +94,14 @@ export const drawMainCanvas = (params: {
   sourceBuffer: HTMLCanvasElement | null
   canvasSettings?: AppCanvasSettings
   showHighlightOverlay: boolean
+  stitchModeEnabled?: boolean
+  stitchGridData?: import('@/lib/image/quantization').StitchCell[]
+  stitchGridWidth?: number
+  stitchGridHeight?: number
+  stitchOpacity?: number
+  stitchSymbolsEnabled?: boolean
+  stitchGridlinesEnabled?: boolean
+  highlightedDmcCode?: string | null
 }) => {
   const {
     canvas,
@@ -121,6 +129,14 @@ export const drawMainCanvas = (params: {
     sourceBuffer,
     canvasSettings,
     showHighlightOverlay,
+    stitchModeEnabled = false,
+    stitchGridData = [],
+    stitchGridWidth = 50,
+    stitchGridHeight = 50,
+    stitchOpacity = 1.0,
+    stitchSymbolsEnabled = true,
+    stitchGridlinesEnabled = true,
+    highlightedDmcCode = null,
   } = params
 
   if (!canvas) return
@@ -173,7 +189,45 @@ export const drawMainCanvas = (params: {
     ctx.translate(referenceTransform.x, referenceTransform.y)
   }
 
-  if (splitMode && valueMapCanvas) {
+  if (stitchModeEnabled && stitchGridData && stitchGridData.length > 0) {
+    const cellWidth = width / stitchGridWidth
+    const cellHeight = height / stitchGridHeight
+
+    for (const cell of stitchGridData) {
+      if (cell.isTransparent) continue
+
+      const cellX = x + cell.x * cellWidth
+      const cellY = y + cell.y * cellHeight
+
+      const isDimmed = highlightedDmcCode !== null && cell.dmcCode !== highlightedDmcCode
+      const alpha = isDimmed ? 0.15 : stitchOpacity
+
+      ctx.save()
+      ctx.globalAlpha = alpha
+
+      ctx.fillStyle = `rgb(${cell.r}, ${cell.g}, ${cell.b})`
+      ctx.fillRect(cellX, cellY, cellWidth, cellHeight)
+
+      if (stitchGridlinesEnabled) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)'
+        ctx.lineWidth = 0.5 / zoomLevel
+        ctx.strokeRect(cellX, cellY, cellWidth, cellHeight)
+      }
+
+      if (stitchSymbolsEnabled && cell.symbol) {
+        const luma = (cell.r * 299 + cell.g * 587 + cell.b * 114) / 1000
+        ctx.fillStyle = luma > 140 ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)'
+
+        const symbolFontSize = Math.max(5, Math.min(18, cellWidth * 0.55))
+        ctx.font = `bold ${symbolFontSize}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(cell.symbol, cellX + cellWidth / 2, cellY + cellHeight / 2)
+      }
+
+      ctx.restore()
+    }
+  } else if (splitMode && valueMapCanvas) {
     const splitX = width / 2
 
     ctx.save()

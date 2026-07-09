@@ -10,6 +10,7 @@ import {
   StructureWorkbenchIcon,
   SurfaceWorkbenchIcon,
   ThreadsWorkbenchIcon,
+  StitchWorkbenchIcon,
 } from './workbenchIcons'
 
 interface ModeRailItem {
@@ -43,6 +44,12 @@ const coreModes: ModeRailItem[] = [
     label: 'Threads',
     hint: 'Compare DMC matches',
     icon: <ThreadsWorkbenchIcon />,
+  },
+  {
+    id: 'stitch',
+    label: 'Stitch',
+    hint: 'DMC embroidery planner',
+    icon: <StitchWorkbenchIcon />,
   },
 ]
 

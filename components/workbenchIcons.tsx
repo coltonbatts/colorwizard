@@ -113,3 +113,22 @@ export function DeckWorkbenchIcon(props: SVGProps<SVGSVGElement>) {
     </WorkbenchIcon>
   )
 }
+
+export function StitchWorkbenchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <WorkbenchIcon {...props} strokeWidth={2}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M8 3v18" />
+      <path d="M16 3v18" />
+      <path d="M3 8h18" />
+      <path d="M3 16h18" />
+      {/* Needle diagonal */}
+      <path d="m19 5-8 8" strokeWidth={1.5} />
+      {/* Needle eye */}
+      <circle cx="18" cy="6" r="0.5" fill="currentColor" stroke="none" />
+      {/* Thread tail */}
+      <path d="M19 5c1 0 2 1.5 1 3s-3 1-4 3" strokeWidth={1} strokeDasharray="2 2" />
+    </WorkbenchIcon>
+  )
+}
+

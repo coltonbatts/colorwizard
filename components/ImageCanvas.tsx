@@ -35,6 +35,11 @@ import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
+import { useStitchStore } from '@/lib/store/useStitchStore'
+import { quantizeImageToDmc } from '@/lib/image/quantization'
+import { loadDmcCatalog } from '@/lib/dmc/catalog'
+import type { DMCThread } from '@/lib/dmc/types'
+import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 import { resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import {
   MAX_ZOOM,
@@ -96,6 +101,7 @@ interface ImageCanvasProps {
   mobileLayout?: 'default' | 'sample'
   dismissPreviewSignal?: number
   suppressPreviewOverlay?: boolean
+  onStitchLegendChange?: (result: import('@/lib/image/quantization').QuantizationResult | null) => void
 }
 
 export interface ImageCanvasHandle {
@@ -157,6 +163,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     mobileLayout = 'default',
     dismissPreviewSignal,
     suppressPreviewOverlay = false,
+    onStitchLegendChange,
   } = props
 
   const isMobile = useIsMobile()
@@ -170,6 +177,45 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const valueModeEnabled = useSessionStore(state => state.valueModeEnabled)
   const gridOpacity = useCalibrationStore(state => state.gridOpacity)
   const debugModeEnabled = useDebugStore(state => state.debugModeEnabled)
+
+  const {
+    fidelity,
+    maxColors,
+    symbolsEnabled,
+    gridlinesEnabled,
+    stitchOpacity,
+    highlightedDmcCode,
+  } = useStitchStore()
+
+  const [dmcThreads, setDmcThreads] = useState<DMCThread[]>([])
+
+  useEffect(() => {
+    let active = true
+    loadDmcCatalog().then(({ threads }) => {
+      if (active) setDmcThreads(threads)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const stitchModeEnabled = workspaceModeLabel === 'stitch'
+
+  const stitchGridResult = useMemo(() => {
+    if (!stitchModeEnabled || !image || dmcThreads.length === 0) return null
+    try {
+      return quantizeImageToDmc(image, fidelity, maxColors, dmcThreads)
+    } catch (err) {
+      console.error('Error during image quantization:', err)
+      return null
+    }
+  }, [stitchModeEnabled, image, fidelity, maxColors, dmcThreads])
+
+  useEffect(() => {
+    if (onStitchLegendChange) {
+      onStitchLegendChange(stitchGridResult)
+    }
+  }, [stitchGridResult, onStitchLegendChange])
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -532,6 +578,14 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       sourceBuffer: sourceBufferRef.current,
       canvasSettings,
       showHighlightOverlay: !!highlightOverlay.imageData,
+      stitchModeEnabled,
+      stitchGridData: stitchGridResult?.cells ?? [],
+      stitchGridWidth: stitchGridResult?.width ?? 50,
+      stitchGridHeight: stitchGridResult?.height ?? 50,
+      stitchOpacity,
+      stitchSymbolsEnabled: symbolsEnabled,
+      stitchGridlinesEnabled: gridlinesEnabled,
+      highlightedDmcCode,
     })
   }, [
     canvasDimensions,
@@ -554,6 +608,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     gridOpacity,
     canvasSettings,
     highlightOverlay.imageData,
+    stitchModeEnabled,
+    stitchGridResult,
+    stitchOpacity,
+    symbolsEnabled,
+    gridlinesEnabled,
+    highlightedDmcCode,
   ])
 
   useEffect(() => {
@@ -616,6 +676,29 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!canvas || !image || !imageDrawInfo) return
 
     const canvasCoords = clientToCanvas(clientX, clientY, canvas)
+
+    if (stitchModeEnabled && stitchGridResult) {
+      const screenRelX = (canvasCoords.cssX - panOffset.x) / zoomLevel
+      const screenRelY = (canvasCoords.cssY - panOffset.y) / zoomLevel
+
+      const normX = (screenRelX - imageDrawInfo.x) / imageDrawInfo.width
+      const normY = (screenRelY - imageDrawInfo.y) / imageDrawInfo.height
+
+      if (normX >= 0 && normX <= 1 && normY >= 0 && normY <= 1) {
+        const gridX = Math.floor(normX * stitchGridResult.width)
+        const gridY = Math.floor(normY * stitchGridResult.height)
+        const cell = stitchGridResult.cells.find((c) => c.x === gridX && c.y === gridY)
+        if (cell && !cell.isTransparent) {
+          onColorSample({
+            hex: rgbToHex(cell.r, cell.g, cell.b),
+            rgb: { r: cell.r, g: cell.g, b: cell.b },
+            hsl: rgbToHsl(cell.r, cell.g, cell.b),
+          })
+        }
+      }
+      return
+    }
+
     const color = sampleColor(canvasCoords.cssX, canvasCoords.cssY, canvas, {
       imageDrawInfo,
       zoomLevel,
@@ -629,7 +712,17 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (color) {
       onColorSample(color)
     }
-  }, [image, imageDrawInfo, zoomLevel, panOffset, valueScaleResult, sortedLuminances, onColorSample])
+  }, [
+    image,
+    imageDrawInfo,
+    zoomLevel,
+    panOffset,
+    valueScaleResult,
+    sortedLuminances,
+    onColorSample,
+    stitchModeEnabled,
+    stitchGridResult,
+  ])
 
   const measureStartPointRef = useRef<{ x: number; y: number } | null>(null)
   const isMeasuringRef = useRef(false)
