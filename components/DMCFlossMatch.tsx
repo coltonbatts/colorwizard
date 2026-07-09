@@ -316,51 +316,7 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
       {/* Warnings & Value Readouts */}
       <ValueWarningsList warnings={valueWarnings} />
 
-      <SuggestedRenderingSetSection context={context} onSelect={onColorSelect} />
-
-      {/* Family value ladder */}
-      {showLadder ? (
-        <div className="space-y-4 border-t border-ink-hairline py-5">
-          <SectionLabel>{primary.familyLabel} Value Scale</SectionLabel>
-          <FamilyValueScale ladder={familyLadder} primaryId={primary.id} onSelect={onColorSelect} />
-
-          {/* Symmetrical list of family items in a clean double-column grid */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {familyLadder.map((thread) => {
-              const isPrimary = thread.id === primary.id
-
-              return (
-                <button
-                  key={thread.id}
-                  type="button"
-                  onClick={() => onColorSelect(thread.rgb)}
-                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                    isPrimary
-                      ? 'border-ink bg-paper-recessed/50'
-                      : 'border-ink-hairline bg-paper-elevated/40 hover:bg-paper-recessed/30'
-                  }`}
-                >
-                  <div 
-                    className="h-9 w-9 shrink-0 rounded-md border border-ink-hairline" 
-                    style={{ backgroundColor: thread.hex }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline gap-1.5">
-                      <span className="font-mono text-sm font-bold leading-none text-ink">{thread.number}</span>
-                      {isPrimary && (
-                        <span className="text-xs font-semibold uppercase text-ink-muted">Match</span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm leading-snug text-ink-secondary">{thread.name}</p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Alternative Matches list */}
+      {/* Alternative Matches list — placed high for quick access */}
       {otherChoices.length > 0 ? (
         <div className="space-y-4 border-t border-ink-hairline py-5">
           <SectionLabel>Alternative Matches</SectionLabel>
@@ -407,6 +363,50 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
               ))}
             </ul>
           ) : null}
+        </div>
+      ) : null}
+
+      <SuggestedRenderingSetSection context={context} onSelect={onColorSelect} />
+
+      {/* Family value ladder */}
+      {showLadder ? (
+        <div className="space-y-4 border-t border-ink-hairline py-5">
+          <SectionLabel>{primary.familyLabel} Value Scale</SectionLabel>
+          <FamilyValueScale ladder={familyLadder} primaryId={primary.id} onSelect={onColorSelect} />
+
+          {/* Symmetrical list of family items in a clean double-column grid */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {familyLadder.map((thread) => {
+              const isPrimary = thread.id === primary.id
+
+              return (
+                <button
+                  key={thread.id}
+                  type="button"
+                  onClick={() => onColorSelect(thread.rgb)}
+                  className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-all ${
+                    isPrimary
+                      ? 'border-ink bg-paper-recessed/50'
+                      : 'border-ink-hairline bg-paper-elevated/40 hover:bg-paper-recessed/30'
+                  }`}
+                >
+                  <div 
+                    className="h-9 w-9 shrink-0 rounded-md border border-ink-hairline" 
+                    style={{ backgroundColor: thread.hex }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-1.5">
+                      <span className="font-mono text-sm font-bold leading-none text-ink">{thread.number}</span>
+                      {isPrimary && (
+                        <span className="text-xs font-semibold uppercase text-ink-muted">Match</span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm leading-snug text-ink-secondary">{thread.name}</p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
       ) : null}
 
