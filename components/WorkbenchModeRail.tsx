@@ -33,6 +33,12 @@ const coreModes: ModeRailItem[] = [
     icon: <SampleWorkbenchIcon />,
   },
   {
+    id: 'mix',
+    label: 'Mix',
+    hint: 'Explore harmonies and mixing',
+    icon: <MixWorkbenchIcon />,
+  },
+  {
     id: 'matches',
     label: 'Threads',
     hint: 'Compare DMC matches',
@@ -41,12 +47,6 @@ const coreModes: ModeRailItem[] = [
 ]
 
 const studioModes: ModeRailItem[] = [
-  {
-    id: 'mix',
-    label: 'Mix',
-    hint: 'Explore harmonies and mixing',
-    icon: <MixWorkbenchIcon />,
-  },
   {
     id: 'library',
     label: 'Library',

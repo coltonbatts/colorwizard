@@ -197,7 +197,7 @@ export default function CompactToolbar({
             onClick={onGoHome}
             title="Home"
             aria-label="Return home and choose another image"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
           >
             <HomeIcon />
           </button>
@@ -207,7 +207,7 @@ export default function CompactToolbar({
             onClick={onResetView}
             title="Fit"
             aria-label="Snap to fit"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-signal"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-signal"
           >
             <FitIcon />
           </button>
@@ -217,7 +217,7 @@ export default function CompactToolbar({
             onClick={onToggleValueMode}
             title="Value"
             aria-label="Toggle value mode"
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
               valueModeEnabled ? 'text-signal' : 'text-ink-secondary'
             }`}
           >
@@ -230,7 +230,7 @@ export default function CompactToolbar({
             disabled={!calibration}
             title="Grid"
             aria-label="Toggle grid"
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
               rulerGridEnabled ? 'text-subsignal' : 'text-ink-secondary'
             } ${!calibration ? 'opacity-30' : ''}`}
           >
@@ -243,7 +243,7 @@ export default function CompactToolbar({
             disabled={!calibration}
             title="Measure"
             aria-label="Toggle measure"
-            className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
               measureMode ? 'text-signal' : 'text-ink-secondary'
             } ${!calibration ? 'opacity-30' : ''}`}
           >
@@ -257,7 +257,7 @@ export default function CompactToolbar({
             }}
             title={mobileTabAction.label}
             aria-label={`Open ${mobileTabAction.label.toLowerCase()}`}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-subsignal"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-subsignal"
           >
             {mobileTabAction.icon}
           </button>

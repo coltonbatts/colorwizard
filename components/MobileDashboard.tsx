@@ -150,7 +150,7 @@ export default function MobileDashboard({
                                             {sampledColor.hex.toUpperCase()}
                                         </div>
                                         <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                            {isLoadingName ? '...' : inlineSubtitle || paletteLabelCompact}
+                                            {isLoadingName ? '…' : inlineSubtitle || paletteLabelCompact}
                                         </div>
                                     </div>
                                 </div>
@@ -162,7 +162,7 @@ export default function MobileDashboard({
                                             onClick={() => onSwitchToMatches()}
                                             aria-label="Threads"
                                             title="Threads"
-                                            className="inline-flex items-center justify-center rounded-full border border-ink-hairline bg-paper text-ink-secondary transition-colors active:bg-paper-recessed"
+                                            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-hairline bg-paper text-ink-secondary transition-colors active:bg-paper-recessed"
                                         >
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                                 <path d="M18.5 5.5 7 17" />
@@ -179,7 +179,7 @@ export default function MobileDashboard({
                                             disabled={isPinning || isPinned}
                                             aria-label={isPinned ? 'Pinned color' : 'Pin color'}
                                             title={isPinned ? 'Pinned' : 'Pin'}
-                                            className={`inline-flex items-center justify-center rounded-full border transition-all ${
+                                            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition-[background-color,border-color,color,transform] ${
                                                 isPinned
                                                     ? 'border-subsignal bg-subsignal-muted text-subsignal'
                                                     : 'border-ink-hairline bg-paper text-ink-secondary active:scale-95'
@@ -260,6 +260,7 @@ export default function MobileDashboard({
 
                                     {onPin && (
                                         <button
+                                            type="button"
                                             onClick={handlePin}
                                             disabled={isPinning || isPinned}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium uppercase tracking-[0.08em] transition-colors ${

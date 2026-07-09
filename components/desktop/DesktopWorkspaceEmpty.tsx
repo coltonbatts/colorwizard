@@ -15,6 +15,12 @@ import {
   hexToSampleColor,
 } from '@/lib/demoColor'
 
+const CORE_LOOP_STEPS = [
+  'Upload reference',
+  'Sample color',
+  'Mix / Threads / Pin',
+]
+
 function isImageFile(file: File): boolean {
   if (file.type && file.type.startsWith('image/')) return true
   const ext = file.name.toLowerCase().split('.').pop()
@@ -156,6 +162,25 @@ export default function DesktopWorkspaceEmpty() {
         <p className="mt-4 max-w-sm text-center text-sm leading-relaxed text-ink-secondary">
           Sample a color. Get a limited-palette mix grounded in how light combines in paint.
         </p>
+
+        <ol
+          aria-label="ColorWizard workflow"
+          className="mt-6 grid w-full max-w-sm grid-cols-3 border-y border-ink-hairline text-left"
+        >
+          {CORE_LOOP_STEPS.map((step, index) => (
+            <li
+              key={step}
+              className="min-w-0 border-r border-ink-hairline px-3 py-2.5 last:border-r-0"
+            >
+              <span className="block font-mono text-[10px] font-semibold tabular-nums text-ink-faint">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className="mt-1 block text-[10px] font-black uppercase leading-4 tracking-[0.14em] text-ink-muted">
+                {step}
+              </span>
+            </li>
+          ))}
+        </ol>
 
         <button
           type="button"

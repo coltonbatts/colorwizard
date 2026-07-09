@@ -6,11 +6,11 @@
  * overlays on top of a sampled color). One surface, hairline rules.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { lab as culoriLab } from 'culori'
 import ColorCardModal from '@/components/ColorCardModal'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
-import PaintRecipe from '@/components/PaintRecipe'
+import PaintRecipe, { type DisplayRecipe } from '@/components/PaintRecipe'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
 import type { ColorCard } from '@/lib/types/colorCard'
 import type { Palette } from '@/lib/types/palette'
@@ -61,7 +61,7 @@ function ValueRow({
       type="button"
       onClick={onCopy}
       title={`Copy ${label}`}
-      className="group flex w-full items-baseline justify-between gap-4 border-b border-ink-hairline py-3 text-left transition-colors last:border-b-0 hover:bg-paper-recessed/60"
+      className="group flex w-full items-baseline justify-between gap-4 border-b border-ink-hairline py-2.5 text-left transition-colors last:border-b-0 hover:bg-paper-recessed/60"
     >
       <span className={LABEL_CLASS}>{label}</span>
       <span className="font-mono text-sm tabular-nums text-ink">
@@ -92,6 +92,7 @@ export default function DesktopSampleHud({
   const [showColorPreview, setShowColorPreview] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
   const [showCardModal, setShowCardModal] = useState(false)
+  const [recipeSummary, setRecipeSummary] = useState<string | null>(null)
   const isWideLayout = layoutMode === 'wide'
 
   const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
@@ -116,6 +117,7 @@ export default function DesktopSampleHud({
   const referenceBandSteps = valueScaleSettings.steps
 
   useEffect(() => {
+    setRecipeSummary(null)
     if (!sampledColor) {
       setShowColorPreview(false)
       setShowCardModal(false)
@@ -131,6 +133,17 @@ export default function DesktopSampleHud({
     if (!parsed) return null
     return `${parsed.l.toFixed(1)}  ${(parsed.a ?? 0).toFixed(1)}  ${(parsed.b ?? 0).toFixed(1)}`
   }, [sampledColor])
+
+  const handleRecipeResolved = useCallback((recipe: DisplayRecipe) => {
+    const summary = recipe.ingredients
+      .slice()
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 3)
+      .map((ingredient) => `${ingredient.pigment.name} ${ingredient.percentage}`)
+      .join(' / ')
+
+    setRecipeSummary(summary || null)
+  }, [])
 
   if (!sampledColor) {
     return (
@@ -202,7 +215,7 @@ export default function DesktopSampleHud({
         className="workbench-floating-panel workbench-sample-hud flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden"
         data-layout={layoutMode}
       >
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           {/* Swatch — honest, flat, uncovered */}
           <section className="shrink-0">
             <button
@@ -213,9 +226,9 @@ export default function DesktopSampleHud({
                 setShowColorPreview(true)
               }}
               className="block w-full rounded-lg border border-ink-hairline p-0 transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(26,26,26,0.25)]"
-              style={{ backgroundColor: hex, minHeight: isWideLayout ? '10.5rem' : '8.5rem' }}
+              style={{ backgroundColor: hex, minHeight: isWideLayout ? '8.5rem' : '7.5rem' }}
             />
-            <div className="mt-4 flex items-start justify-between gap-4">
+            <div className="mt-3 flex items-start justify-between gap-4">
               <h2 className="min-w-0 font-display text-2xl leading-tight text-ink">
                 {displayName}
               </h2>
@@ -255,7 +268,7 @@ export default function DesktopSampleHud({
 
           {/* Character — value, temperature, chroma in one quiet row */}
           <section className="grid shrink-0 grid-cols-3 gap-px overflow-hidden rounded-md border border-ink-hairline bg-ink-hairline">
-            <div className="bg-paper-elevated px-4 py-3.5">
+            <div className="bg-paper-elevated px-4 py-3">
               <div className={LABEL_CLASS}>Value</div>
               <div className="mt-2 flex items-center gap-2">
                 <span className="font-mono text-lg tabular-nums text-ink">{displayedValue}%</span>
@@ -267,12 +280,12 @@ export default function DesktopSampleHud({
               </div>
               <div className="mt-1 text-sm leading-snug text-ink-secondary">{valueBand}</div>
             </div>
-            <div className="bg-paper-elevated px-4 py-3.5">
+            <div className="bg-paper-elevated px-4 py-3">
               <div className={LABEL_CLASS}>Temp</div>
               <div className="mt-2 text-base text-ink">{temperatureLabel}</div>
               <div className="mt-1 text-sm leading-snug text-ink-secondary">{harmonies.base.name}</div>
             </div>
-            <div className="bg-paper-elevated px-4 py-3.5">
+            <div className="bg-paper-elevated px-4 py-3">
               <div className={LABEL_CLASS}>Chroma</div>
               <div className="mt-2 text-base text-ink">{chroma.label}</div>
               <div className="mt-1 font-mono text-sm tabular-nums leading-snug text-ink-secondary">
@@ -282,7 +295,7 @@ export default function DesktopSampleHud({
           </section>
 
           {/* Value band control */}
-          <section className="shrink-0 border-t border-ink-hairline pt-4">
+          <section className="shrink-0 border-t border-ink-hairline pt-3">
             <div className="flex items-center gap-3">
               <div
                 className="relative h-4 w-20 shrink-0 overflow-hidden rounded-sm border border-ink-hairline"
@@ -317,76 +330,77 @@ export default function DesktopSampleHud({
             ) : null}
           </section>
 
+          {/* Paint recipe — subtractive mixture toward this color */}
+          <section className="shrink-0 border-t border-ink-hairline pt-3">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <div className={LABEL_CLASS}>Practical mix</div>
+                <div className="mt-1 text-base leading-snug text-ink">
+                  {activePalette.isDefault ? 'Core six-color mix' : activePalette.name}
+                </div>
+              </div>
+              <span className="shrink-0 rounded-full border border-ink-hairline bg-paper px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                Preview
+              </span>
+            </div>
+            {recipeSummary && (
+              <div
+                className="mb-3 rounded-md border border-ink-hairline bg-paper px-3 py-2 font-mono text-[11px] leading-5 text-ink-secondary"
+                aria-live="polite"
+              >
+                {recipeSummary}
+              </div>
+            )}
+            <PaintRecipe
+              hsl={hsl}
+              targetHex={hex}
+              activePalette={activePalette}
+              variant="compact"
+              showExportButton={false}
+              hideHeader
+              hideFooter
+              previewOnly
+              onRecipeResolved={handleRecipeResolved}
+            />
+          </section>
+
           {/* Actions */}
           <section className="flex shrink-0 items-stretch gap-2">
             <button
               type="button"
               onClick={handlePin}
               disabled={isPinning || isPinned}
+              aria-label={isPinned ? 'Pinned color' : 'Pin color with recipe'}
               className={`flex-1 rounded-md border px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] transition-colors disabled:opacity-45 ${
                 isPinned
                   ? 'border-ink-hairline bg-paper-recessed text-ink-muted'
                   : 'border-ink bg-ink text-paper-elevated hover:bg-[#2a241d]'
               }`}
             >
-              {isPinning ? 'Saving' : isPinned ? 'Pinned' : 'Pin'}
+              {isPinning ? 'Pinning…' : isPinned ? 'Pinned Color' : 'Pin Color'}
             </button>
             {!simpleMode && (
               <button
                 type="button"
                 onClick={handleCreateCard}
                 disabled={isCreatingCard}
+                aria-label="Make color card"
                 className={actionButtonClass}
               >
-                {isCreatingCard ? 'Making' : 'Card'}
+                {isCreatingCard ? 'Making Card…' : 'Make Card'}
               </button>
             )}
             {onAddToSession && (
               <button
                 type="button"
                 onClick={() => onAddToSession({ hex, rgb })}
+                aria-label="Save swatch to session"
                 className={actionButtonClass}
               >
-                Save
+                Save Swatch
               </button>
             )}
           </section>
-
-          {/* Paint recipe — subtractive mixture toward this color */}
-          <details className="group shrink-0 border-t border-ink-hairline pt-3">
-            <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 [&::-webkit-details-marker]:hidden">
-              <div className="min-w-0">
-                <div className={LABEL_CLASS}>Paint recipe</div>
-                <div className="mt-1 text-base leading-snug text-ink">
-                  {activePalette.isDefault ? 'Core six-color mix' : activePalette.name}
-                </div>
-              </div>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="shrink-0 text-ink-muted transition-transform group-open:rotate-180"
-                aria-hidden="true"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </summary>
-            <div className="mt-3">
-              <PaintRecipe
-                hsl={hsl}
-                targetHex={hex}
-                activePalette={activePalette}
-                variant="compact"
-                showExportButton={false}
-                hideFooter
-              />
-            </div>
-          </details>
 
           <p className="shrink-0 text-xs leading-5 text-ink-faint">{PICKED_COLOR_DISCLAIMER}</p>
         </div>

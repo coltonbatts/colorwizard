@@ -820,6 +820,17 @@ body {
     border-top: var(--rule-hairline) solid var(--ink-hairline);
 }
 
+.workbench-mode-section-tools .workbench-mode-btn {
+    color: var(--ink-muted);
+    opacity: 0.72;
+}
+
+.workbench-mode-section-tools .workbench-mode-btn:hover,
+.workbench-mode-section-tools .workbench-mode-btn.active {
+    color: var(--ink);
+    opacity: 1;
+}
+
 .workbench-mode-section-bottom {
     margin-top: auto;
     padding-top: 10px;
@@ -845,7 +856,8 @@ body {
     color: var(--ink-secondary);
     transition: background var(--duration-fast) ease,
         border-color var(--duration-fast) ease,
-        color var(--duration-fast) ease;
+        color var(--duration-fast) ease,
+        opacity var(--duration-fast) ease;
 }
 
 .workbench-mode-btn:hover {
@@ -1050,7 +1062,9 @@ body {
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
-    transition: all var(--duration-fast) ease;
+    transition:
+        opacity var(--duration-fast) ease,
+        visibility var(--duration-fast) ease;
     z-index: 50;
 }
 
