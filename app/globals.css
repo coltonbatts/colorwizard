@@ -45,6 +45,164 @@
 
     /* Font for wordmark */
     --font-wordmark: var(--font-outfit), var(--font-inter), sans-serif;
+
+    /* Legacy compatibility tokens used by the pre-redesign component layer. */
+    --paper-shell: #F5F0E8;
+    --paper: #F2F0E9;
+    --paper-elevated: #FAFAF7;
+    --paper-recessed: #E8E6DF;
+
+    --ink: #1A1A1A;
+    --ink-secondary: rgba(26, 26, 26, 0.7);
+    --ink-muted: rgba(26, 26, 26, 0.5);
+    --ink-faint: rgba(26, 26, 26, 0.25);
+    --ink-hairline: rgba(26, 26, 26, 0.1);
+
+    --graphite: #6D5E49;
+    --graphite-muted: #8F7F69;
+    --linen: #DDD1C0;
+    --linen-strong: #C7BAA5;
+
+    --signal: #C82319;
+    --signal-hover: #A81D15;
+    --signal-muted: rgba(200, 35, 25, 0.15);
+    --subsignal: #566D7B;
+    --subsignal-hover: #455A66;
+    --subsignal-muted: rgba(86, 109, 123, 0.15);
+
+    --font-ui: 'Helvetica Neue', 'Helvetica', -apple-system, 'Arial', sans-serif;
+    --font-display: 'EB Garamond', 'Georgia', 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', monospace;
+    --font-inter: var(--font-ui);
+    --font-outfit: var(--font-ui);
+
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.1875rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 2rem;
+    --text-3xl: 2.75rem;
+    --leading-tight: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.75;
+    --tracking-tight: 0;
+    --tracking-normal: 0;
+    --tracking-wide: 0.05em;
+    --tracking-caps: 0.1em;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-8: 3rem;
+    --space-10: 4rem;
+    --space-12: 6rem;
+
+    --sidebar-width: 360px;
+    --sidebar-collapsed-width: 48px;
+    --computed-sidebar-width: var(--sidebar-width);
+    --toolbar-height: 56px;
+    --max-content-width: 1440px;
+
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 10px;
+    --radius-2xl: 12px;
+    --radius-control: 8px;
+    --radius-instrument: 10px;
+    --radius-tray: 12px;
+    --rule-hairline: 1px;
+    --rule-light: 1px;
+    --rule-medium: 2px;
+
+    --shadow-sm: 0 1px 2px rgba(26, 26, 26, 0.05);
+    --shadow-md: 0 2px 8px rgba(26, 26, 26, 0.06);
+    --shadow-lg: 0 4px 16px rgba(26, 26, 26, 0.08);
+    --shadow-floating: 0 6px 24px rgba(26, 26, 26, 0.10);
+    --shadow-tactile: 0 1px 2px rgba(26, 26, 26, 0.05);
+    --shadow-tray: 0 2px 8px rgba(26, 26, 26, 0.06);
+    --shadow-pressed: inset 0 0 0 1px rgba(26, 26, 26, 0.04);
+
+    --duration-fast: 120ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --overlay-fade-duration: calc((var(--duration-fast) + var(--duration-normal)) / 2);
+    --overlay-backdrop: rgba(0, 0, 0, 0.32);
+    --dialog-spring-stiffness: 360;
+    --dialog-spring-damping: 32;
+}
+
+/* ============================================
+   DESKTOP BOOT SEQUENCE
+   ============================================ */
+
+.runtime-app-root {
+    opacity: 1;
+    transition: opacity 180ms var(--ease-out);
+}
+
+.desktop-boot-splash {
+    display: none;
+}
+
+html[data-runtime='desktop']:not([data-react-mounted='true']) .runtime-app-root {
+    opacity: 0;
+    pointer-events: none;
+}
+
+html[data-runtime='desktop']:not([data-react-mounted='true']) .desktop-boot-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background:
+        radial-gradient(circle at top right, rgba(148, 103, 70, 0.12), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.74), transparent 22%),
+        linear-gradient(180deg, #f4efe7 0%, #ece4d8 100%);
+}
+
+.desktop-boot-splash__panel {
+    width: min(32rem, 100%);
+    border: 1px solid rgba(26, 26, 26, 0.08);
+    border-radius: 1.75rem;
+    padding: 2rem 2.25rem;
+    background: rgba(255, 252, 247, 0.84);
+    box-shadow: 0 24px 60px rgba(26, 26, 26, 0.08);
+    backdrop-filter: blur(18px);
+}
+
+.desktop-boot-splash__eyebrow {
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #8f7f69;
+}
+
+.desktop-boot-splash__title {
+    margin: 0.7rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    color: #1a1a1a;
+}
+
+.desktop-boot-splash__subtitle {
+    margin: 0.9rem 0 0;
+    max-width: 28rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(26, 26, 26, 0.68);
 }
 
 body {
