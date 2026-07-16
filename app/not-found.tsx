@@ -2,20 +2,20 @@ import Link from 'next/link'
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-paper px-6 py-12 text-ink">
-      <div className="max-w-md text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted">404</p>
-        <h1 className="mt-4 font-display text-4xl tracking-tight">Page not found</h1>
-        <p className="mt-4 text-base leading-relaxed text-ink-secondary">
-          This page does not exist in ColorWizard.
-        </p>
+    <main className="system-page system-page--lost">
+      <div className="system-page-grid" aria-hidden="true" />
+      <div className="system-page-code" aria-hidden="true">404</div>
+      <section className="system-page-panel">
+        <span className="system-page-mark" aria-hidden="true" />
+        <p className="system-page-kicker">Off spectrum</p>
+        <h1>Nothing here.</h1>
         <Link
           href="/"
-          className="mt-8 inline-flex items-center justify-center rounded-full bg-signal px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-signal-hover"
+          className="system-page-action"
         >
-          Return home
+          Return <span aria-hidden="true">→</span>
         </Link>
-      </div>
+      </section>
     </main>
   )
 }

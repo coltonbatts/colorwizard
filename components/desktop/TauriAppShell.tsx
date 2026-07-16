@@ -106,7 +106,7 @@ function DesktopProjectFrame({
     : 'Just now'
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#f5f0e8] text-[#1a1a1a]">
+    <div className="tauri-project-shell fixed inset-0 flex flex-col bg-[#f5f0e8] text-[#1a1a1a]">
       <header className="border-b border-[#ddd1c0] bg-[#f5f0e8]/95 px-5 py-4 backdrop-blur">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
@@ -159,7 +159,7 @@ function DesktopDatabaseErrorScreen({
   onContinueOffline: () => void
 }) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
+    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
       <div className="w-full max-w-xl rounded-[30px] border border-[#c9a882] bg-white/90 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.1)] backdrop-blur-xl">
         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f5a3c]">ColorWizard Pro</p>
         <h1 className="mt-3 font-serif text-[clamp(1.8rem,4vw,2.6rem)] leading-tight tracking-[-0.03em] text-[#1a1a1a]">
@@ -225,7 +225,7 @@ function DesktopLaunchScreen({
   }, [])
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
+    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
       <div className="w-full max-w-xl rounded-[30px] border border-[#d7cab8] bg-white/84 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.08)] backdrop-blur-xl">
         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
         <h1 className="mt-3 font-serif text-[clamp(2.2rem,5vw,3.4rem)] leading-[0.95] tracking-[-0.04em] text-[#1a1a1a]">

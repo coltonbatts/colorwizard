@@ -379,14 +379,14 @@ export default function ProjectGallery({
 
   if (!isDesktopApp()) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#f5f0e8]">
+      <div className="project-gallery-swiss fixed inset-0 flex items-center justify-center bg-[#f5f0e8]">
         <p className="text-sm text-[#666]">ColorWizard Pro</p>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#ece3d6] text-[#1b1712]" style={shellStyle}>
+    <div className="project-gallery-swiss fixed inset-0 overflow-hidden bg-[#ece3d6] text-[#1b1712]" style={shellStyle}>
       <div
         className="pointer-events-none absolute inset-0 opacity-90"
         style={{

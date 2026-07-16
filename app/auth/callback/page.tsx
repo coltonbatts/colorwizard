@@ -30,8 +30,12 @@ export default function AuthCallbackPage() {
   }, [router])
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-paper p-8">
-      <p className="text-sm text-ink-muted">Signing you in…</p>
+    <main className="system-page system-page--auth">
+      <div className="system-page-grid" aria-hidden="true" />
+      <section className="auth-signal" aria-label="Signing you in">
+        <span /><span /><span /><span /><span />
+      </section>
+      <p className="system-page-kicker">Connecting</p>
     </main>
   )
 }

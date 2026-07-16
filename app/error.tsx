@@ -68,79 +68,18 @@ export default function Error({
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        padding: '20px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '600px',
-          padding: '40px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '24px',
-            marginBottom: '16px',
-            color: '#333',
-          }}
-        >
-          ColorWizard encountered an error
-        </h1>
-        
-        <p
-          style={{
-            fontSize: '16px',
-            lineHeight: '1.5',
-            color: '#666',
-            marginBottom: '24px',
-          }}
-        >
-          {chunkLoad ? (
-            <>
-              The app could not load one of its JavaScript bundles. This can happen after a new
-              deploy, a desktop dev-server restart, or an interrupted local connection. Reloading
-              usually fetches the current bundle set.
-            </>
-          ) : (
-            <>We&apos;re sorry - something went wrong. This has been logged and we&apos;ll investigate.</>
-          )}
-        </p>
+    <main className="system-page system-page--error">
+      <div className="system-page-grid" aria-hidden="true" />
+      <div className="system-page-code" aria-hidden="true">ERR</div>
+      <section className="system-page-panel">
+        <span className="system-page-mark" aria-hidden="true" />
+        <p className="system-page-kicker">Signal interrupted</p>
+        <h1>{chunkLoad ? 'Reload the instrument.' : 'The signal broke.'}</h1>
 
         {process.env.NODE_ENV === 'development' && (
-          <details
-            style={{
-              marginBottom: '24px',
-              padding: '12px',
-              backgroundColor: '#f9f9f9',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '14px',
-            }}
-          >
-            <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '8px' }}>
-              Error Details (Development Only)
-            </summary>
-            <pre
-              style={{
-                overflow: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontSize: '12px',
-                color: '#d32f2f',
-              }}
-            >
+          <details className="system-page-details">
+            <summary>Diagnostics</summary>
+            <pre>
               {error.message}
               {'\n\n'}
               {error.stack}
@@ -148,27 +87,12 @@ export default function Error({
           </details>
         )}
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="system-page-actions">
           <button
             onClick={chunkLoad ? handleHardReload : reset}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: 'white',
-              backgroundColor: '#2196F3',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1976D2'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#2196F3'
-            }}
+            className="system-page-action"
           >
-            {chunkLoad ? 'Reload page' : 'Try Again'}
+            {chunkLoad ? 'Reload' : 'Retry'} <span aria-hidden="true">↗</span>
           </button>
 
           <button
@@ -177,24 +101,9 @@ export default function Error({
                 window.location.href = '/'
               }
             }}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#333',
-              backgroundColor: '#f5f5f5',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e0e0e0'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f5f5'
-            }}
+            className="system-page-action system-page-action--quiet"
           >
-            Go Home
+            Home
           </button>
 
           <button
@@ -209,37 +118,14 @@ export default function Error({
                 window.location.reload()
               }
             }}
-            style={{
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#d32f2f',
-              backgroundColor: '#ffebee',
-              border: '1px solid #ef5350',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffcdd2'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#ffebee'
-            }}
+            className="system-page-action system-page-action--danger"
           >
-            Clear Data & Reload
+            Clear data
           </button>
         </div>
 
-        <p
-          style={{
-            marginTop: '24px',
-            fontSize: '14px',
-            color: '#999',
-          }}
-        >
-          Error ID: {error.digest || 'unknown'}
-        </p>
-      </div>
-    </div>
+        <p className="system-page-id">ID / {error.digest || 'unknown'}</p>
+      </section>
+    </main>
   )
 }

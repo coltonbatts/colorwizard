@@ -4,7 +4,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import ColorWizardSplashLottie from '@/components/splash/ColorWizardSplashLottie'
+import SwissWaveGraphic from '@/components/splash/SwissWaveGraphic'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import { pickImagePath } from '@/lib/desktop/tauriClient'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
@@ -14,12 +14,6 @@ import {
   DEMO_COLOR_SWATCHES,
   hexToSampleColor,
 } from '@/lib/demoColor'
-
-const CORE_LOOP_STEPS = [
-  'Upload reference',
-  'Sample color',
-  'Mix / Threads / Pin',
-]
 
 function isImageFile(file: File): boolean {
   if (file.type && file.type.startsWith('image/')) return true
@@ -141,83 +135,55 @@ export default function DesktopWorkspaceEmpty() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex items-center justify-center bg-paper-shell p-6"
+      className={`desktop-empty-swiss pointer-events-auto absolute inset-0 z-[200] ${dragOver ? 'is-dragging' : ''}`}
       role="region"
       aria-label="Load reference image"
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <div
-        className={`relative z-10 flex w-full max-w-md flex-col items-center text-center transition-transform duration-200 ${
-          dragOver ? 'scale-[1.02]' : ''
-        }`}
-      >
-        <ColorWizardSplashLottie className="h-[min(52vw,280px)] w-[min(52vw,280px)] max-h-[280px] max-w-[280px]" />
-
-        <h1 className="mt-8 font-display text-[clamp(2.25rem,6vw,3.25rem)] font-medium leading-none tracking-tight text-ink">
-          ColorWizard
-        </h1>
-
-        <p className="mt-4 max-w-sm text-center text-sm leading-relaxed text-ink-secondary">
-          Sample a color. Get a limited-palette mix grounded in how light combines in paint.
-        </p>
-
-        <ol
-          aria-label="ColorWizard workflow"
-          className="mt-6 grid w-full max-w-sm grid-cols-3 border-y border-ink-hairline text-left"
-        >
-          {CORE_LOOP_STEPS.map((step, index) => (
-            <li
-              key={step}
-              className="min-w-0 border-r border-ink-hairline px-3 py-2.5 last:border-r-0"
-            >
-              <span className="block font-mono text-[10px] font-semibold tabular-nums text-ink-faint">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span className="mt-1 block text-[10px] font-black uppercase leading-4 tracking-[0.14em] text-ink-muted">
-                {step}
-              </span>
-            </li>
-          ))}
-        </ol>
-
+      <header className="splash-grid-header">
+        <div className="splash-grid-brand">
+          <span className="splash-grid-mark" aria-hidden="true" />
+          <span>ColorWizard</span>
+        </div>
         <button
           type="button"
           disabled={busy}
           onClick={() => void handleOpen()}
-          className="studio-action mt-8 min-h-[44px] px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="splash-open-link disabled:cursor-wait disabled:opacity-60"
         >
-          {busy ? 'Opening…' : 'Choose file'}
+          <span>{busy ? 'Wait' : dragOver ? 'Release' : 'Open'}</span>
+          <b aria-hidden="true">+</b>
+        </button>
+      </header>
+
+      <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
+        <h1 className="sr-only">ColorWizard desktop color workbench</h1>
+        <button type="button" onClick={() => void handleOpen()} className="splash-wave-panel" aria-label="Open a reference image">
+          <SwissWaveGraphic />
         </button>
 
-        <div className="mt-8 w-full max-w-sm">
-          <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
-            Try a demo color
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {DEMO_COLOR_SWATCHES.map((swatch) => (
-              <button
-                key={swatch.hex}
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
-                  setSampledColor(hexToSampleColor(swatch.hex))
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-3 py-2 text-[11px] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-              >
-                <span
-                  className="h-5 w-5 shrink-0 rounded-full border border-black/10"
-                  style={{ backgroundColor: swatch.hex }}
-                  aria-hidden="true"
-                />
-                {swatch.label}
-              </button>
-            ))}
-          </div>
+        <div className="splash-color-key">
+          {DEMO_COLOR_SWATCHES.map((swatch) => (
+            <button
+              key={swatch.hex}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
+                setSampledColor(hexToSampleColor(swatch.hex))
+              }}
+              aria-label={`Try demo color ${swatch.label}`}
+              title={swatch.label}
+              style={{ backgroundColor: swatch.hex }}
+            />
+          ))}
         </div>
-      </div>
+
+        <div className="splash-grid-corner splash-grid-corner--a" aria-hidden="true" />
+        <div className="splash-grid-corner splash-grid-corner--b" aria-hidden="true" />
+      </section>
     </div>
   )
 }

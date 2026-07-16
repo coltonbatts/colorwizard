@@ -114,8 +114,8 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#f5f0e8] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e5e0d8]">
+    <div className="license-activation fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="license-activation-panel bg-[#f5f0e8] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e5e0d8]">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1a1a1a] mb-4">
             <span className="text-2xl font-serif text-[#f5f0e8] font-bold">C</span>
