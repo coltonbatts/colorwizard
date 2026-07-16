@@ -30,7 +30,7 @@ export default function MobileCoreShell({
   const previewClassName = [
     'flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area',
     hasImage ? 'workbench-stage-column' : '',
-    isSampleLayout ? 'mobile-preview-area--sample-loaded' : '',
+    isSampleLayout && hasImage ? 'mobile-preview-area--sample-loaded' : '',
     compactMode ? 'p-0 md:p-2' : 'p-0 md:p-3',
   ].filter(Boolean).join(' ')
 

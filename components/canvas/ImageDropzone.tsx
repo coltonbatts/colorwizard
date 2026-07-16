@@ -6,7 +6,27 @@ import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 
 /** First-load experience for the chromatic instrument workbench. */
 
-const BRAND_MARK_COLORS = ['#FF5A36', '#F8D54A', '#A9FF68', '#42E8FF', '#8B6CFF', '#FF4DB8'];
+const WAVE_PALETTE = [
+    '#f0efe7', '#f0efe7', '#f0efe7', '#ff5a36', '#f0efe7', '#f0efe7',
+    '#42c7e8', '#f0efe7', '#f0efe7', '#f0efe7', '#f6cc43', '#f0efe7',
+    '#f0efe7', '#ec4aa8', '#f0efe7', '#f0efe7', '#80cf5b', '#f0efe7',
+    '#f0efe7', '#7964e8', '#f0efe7', '#f0efe7', '#ff795b', '#f0efe7',
+];
+
+const WAVE_ROWS = Array.from({ length: 24 }, (_, row) => {
+    const baseY = 52 + row * 25.2;
+    const center = 470 + Math.sin(row * 0.58) * 78;
+    return Array.from({ length: 57 }, (_, point) => {
+        const x = point * (1000 / 56);
+        const distance = (x - center) / 235;
+        const envelope = Math.exp(-(distance * distance));
+        const pulse = Math.max(0, Math.sin(point * 0.52 + row * 0.71));
+        const fine = Math.sin(point * 1.13 - row * 0.33) * 5;
+        const lift = envelope * (20 + row * 0.95) * (0.28 + pulse * 0.72) + envelope * fine;
+        const y = baseY - lift - Math.sin(point * 0.18 + row) * 1.8;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+});
 
 interface ImageDropzoneProps {
     /** Called when an image is successfully loaded */
@@ -349,64 +369,49 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                 }}
                 className="sr-only"
             />
-            <div className="empty-grid-field" aria-hidden="true" />
-            <div className="empty-orbit empty-orbit--one" aria-hidden="true" />
-            <div className="empty-orbit empty-orbit--two" aria-hidden="true" />
-
-            <header className="empty-instrument-header">
-                <div className="empty-brand-lockup">
-                    <span className="empty-brand-mark" aria-hidden="true" />
+            <header className="splash-grid-header">
+                <div className="splash-grid-brand">
+                    <span className="splash-grid-mark" aria-hidden="true" />
                     <span>ColorWizard</span>
                 </div>
-                <span className="empty-edition" aria-hidden="true">27</span>
+                <label htmlFor={inputId} className="splash-open-link">
+                    <span>{isConverting ? 'Wait' : isDragging ? 'Release' : 'Open'}</span>
+                    <b aria-hidden="true">+</b>
+                </label>
             </header>
 
-            <section className="empty-visual-stage" aria-label="Begin a ColorWizard study">
+            <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
                 <h1 className="sr-only">ColorWizard color workbench</h1>
-                <div className="empty-spectral-blade" aria-hidden="true" />
-                <div className="empty-lens-frame" aria-hidden="true">
-                    <div className="chromatic-aperture" aria-hidden="true">
-                        <div className="chromatic-aperture__beam" />
-                        <div className="chromatic-aperture__core" />
-                        <div className="chromatic-aperture__axis chromatic-aperture__axis--x" />
-                        <div className="chromatic-aperture__axis chromatic-aperture__axis--y" />
-                        {BRAND_MARK_COLORS.map((color, index) => (
-                            <i key={color} style={{ '--aperture-color': color, '--aperture-index': index } as CSSProperties} />
+                <label htmlFor={inputId} className="splash-wave-panel" aria-label="Open a reference image">
+                    <svg viewBox="0 0 1000 680" preserveAspectRatio="none" aria-hidden="true">
+                        {WAVE_ROWS.map((points, index) => (
+                            <polyline
+                                key={index}
+                                points={points}
+                                className="splash-wave-line"
+                                style={{ '--wave-row': index, color: WAVE_PALETTE[index] } as CSSProperties}
+                            />
+                        ))}
+                    </svg>
+                </label>
+
+                {onTryDemoColor && (
+                    <div className="splash-color-key">
+                        {DEMO_COLOR_SWATCHES.map((swatch) => (
+                            <button
+                                key={swatch.hex}
+                                type="button"
+                                onClick={() => onTryDemoColor(swatch.hex)}
+                                aria-label={`Try demo color ${swatch.label}`}
+                                title={swatch.label}
+                                style={{ backgroundColor: swatch.hex }}
+                            />
                         ))}
                     </div>
-                    <div className="empty-pigment-orbit">
-                        {BRAND_MARK_COLORS.map((color, index) => (
-                            <span key={color} style={{ '--pigment': color, '--pigment-index': index } as CSSProperties} />
-                        ))}
-                    </div>
-                </div>
+                )}
 
-                <div className="empty-spectrum-meter" aria-hidden="true">
-                    {BRAND_MARK_COLORS.map((color) => <span key={color} style={{ backgroundColor: color }} />)}
-                </div>
-
-                <div className="empty-action-dock">
-                    <label htmlFor={inputId} className="empty-drop-trigger">
-                        <span>{isConverting ? 'Converting…' : isDragging ? 'Release' : 'Open image'}</span>
-                        <b aria-hidden="true">+</b>
-                    </label>
-                    {onTryDemoColor && (
-                        <div className="empty-demo-strip">
-                            <div>
-                                {DEMO_COLOR_SWATCHES.map((swatch) => (
-                                    <button
-                                        key={swatch.hex}
-                                        type="button"
-                                        onClick={() => onTryDemoColor(swatch.hex)}
-                                        aria-label={`Try demo color ${swatch.label}`}
-                                        title={swatch.label}
-                                        style={{ backgroundColor: swatch.hex }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <div className="splash-grid-corner splash-grid-corner--a" aria-hidden="true" />
+                <div className="splash-grid-corner splash-grid-corner--b" aria-hidden="true" />
             </section>
         </div>
     );

@@ -4943,3 +4943,284 @@ html[data-runtime='desktop']:not([data-react-mounted='true']) .desktop-boot-spla
         animation: none;
     }
 }
+
+/* ============================================================
+   OPENING — SWISS GRID / COLOR WAVE
+   ============================================================ */
+
+.workspace-reference-dropzone:has(.splash-grid-stage) {
+    color: #11120f;
+    background: #efeee7;
+}
+
+.workspace-reference-dropzone:has(.splash-grid-stage)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0.16;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+}
+
+.splash-grid-header {
+    position: relative;
+    z-index: 12;
+    display: grid;
+    min-height: 74px;
+    grid-template-columns: 1fr clamp(9rem, 16vw, 14rem);
+    border-bottom: 1px solid #11120f;
+    background: #efeee7;
+    animation: splash-grid-enter 480ms var(--ease-out) both;
+}
+
+.splash-grid-brand {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 0 clamp(1.25rem, 3vw, 3.5rem);
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -0.045em;
+}
+
+.splash-grid-mark {
+    width: 5px;
+    height: 30px;
+    background: linear-gradient(180deg, #ef4c35 0 25%, #f2c943 25% 50%, #38b8d4 50% 75%, #79bd58 75%);
+}
+
+.splash-open-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(1rem, 1.7vw, 1.65rem);
+    cursor: pointer;
+    color: #efeee7;
+    border-left: 1px solid #11120f;
+    background: #11120f;
+    font-size: 0.8rem;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 180ms ease, background 180ms ease;
+}
+
+.splash-open-link b {
+    font-size: 2rem;
+    font-weight: 320;
+    line-height: 1;
+    transition: transform 260ms var(--ease-out);
+}
+
+.splash-open-link:hover {
+    color: #11120f;
+    background: #ff5a36;
+}
+
+.splash-open-link:hover b {
+    transform: rotate(90deg);
+}
+
+.splash-grid-stage {
+    position: relative;
+    min-height: calc(100dvh - 74px);
+    overflow: hidden;
+    background-image:
+        linear-gradient(90deg, transparent calc(100% - 1px), rgba(17, 18, 15, 0.13) calc(100% - 1px)),
+        linear-gradient(transparent calc(100% - 1px), rgba(17, 18, 15, 0.13) calc(100% - 1px));
+    background-size: calc(100% / 12) 100%, 100% calc(100% / 8);
+    animation: splash-grid-enter 620ms 70ms var(--ease-out) both;
+}
+
+.splash-wave-panel {
+    position: absolute;
+    top: 7.5%;
+    right: 16.666%;
+    bottom: 10%;
+    left: 16.666%;
+    display: block;
+    overflow: hidden;
+    cursor: crosshair;
+    border: 1px solid #11120f;
+    background: #11120f;
+    box-shadow: 18px 18px 0 rgba(17, 18, 15, 0.08);
+    transition: transform 360ms var(--ease-out), box-shadow 360ms var(--ease-out);
+}
+
+.splash-wave-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent 49.92%, rgba(239, 238, 231, 0.14) 50%, transparent 50.08%);
+}
+
+.splash-wave-panel:hover {
+    transform: translate(-5px, -5px);
+    box-shadow: 28px 28px 0 #ff5a36;
+}
+
+.splash-wave-panel svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: clamp(1.5rem, 3.4vw, 3.75rem);
+}
+
+.splash-wave-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: square;
+    stroke-linejoin: bevel;
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    opacity: 0.92;
+    animation: splash-wave-draw 950ms calc(120ms + var(--wave-row) * 26ms) var(--ease-out) forwards;
+}
+
+.splash-color-key {
+    position: absolute;
+    z-index: 5;
+    bottom: 5%;
+    left: 4.166%;
+    display: grid;
+    grid-template-columns: repeat(3, clamp(2.5rem, 4vw, 4rem));
+    gap: 0;
+    border: 1px solid #11120f;
+}
+
+.splash-color-key button {
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    border-right: 1px solid #11120f;
+    border-radius: 0;
+    transition: transform 200ms var(--ease-out);
+}
+
+.splash-color-key button:last-child {
+    border-right: 0;
+}
+
+.splash-color-key button:hover,
+.splash-color-key button:focus-visible {
+    position: relative;
+    z-index: 2;
+    transform: scale(1.18) rotate(-3deg);
+    outline: 2px solid #11120f;
+}
+
+.splash-grid-corner {
+    position: absolute;
+    width: 8.333%;
+    aspect-ratio: 1;
+    pointer-events: none;
+}
+
+.splash-grid-corner--a {
+    top: 0;
+    left: 0;
+    border-right: 1px solid #11120f;
+    border-bottom: 1px solid #11120f;
+    background: #f2c943;
+}
+
+.splash-grid-corner--b {
+    right: 0;
+    bottom: 0;
+    border-top: 1px solid #11120f;
+    border-left: 1px solid #11120f;
+    background: #38b8d4;
+}
+
+.is-dragging .splash-grid-stage {
+    background-color: #f8d54a;
+}
+
+.is-dragging .splash-open-link {
+    color: #11120f;
+    background: #ff5a36;
+}
+
+.is-dragging .splash-wave-panel {
+    transform: scale(0.975);
+    box-shadow: 28px 28px 0 #42c7e8;
+}
+
+@keyframes splash-wave-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes splash-grid-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+    .splash-grid-header {
+        min-height: 62px;
+        grid-template-columns: 1fr 7rem;
+    }
+
+    .splash-grid-brand {
+        padding: 0 18px;
+        font-size: 0.95rem;
+    }
+
+    .splash-grid-mark {
+        height: 26px;
+    }
+
+    .splash-open-link {
+        padding: 0 14px;
+    }
+
+    .splash-grid-stage {
+        min-height: calc(100dvh - 62px);
+        background-size: 25% 100%, 100% 12.5%;
+    }
+
+    .splash-wave-panel {
+        top: 7%;
+        right: 4.5%;
+        bottom: 15%;
+        left: 4.5%;
+        box-shadow: 10px 10px 0 rgba(17, 18, 15, 0.1);
+    }
+
+    .splash-wave-panel svg {
+        padding: 1.1rem;
+    }
+
+    .splash-wave-line {
+        stroke-width: 1.35;
+    }
+
+    .splash-color-key {
+        bottom: 3.5%;
+        left: 4.5%;
+        grid-template-columns: repeat(3, 3rem);
+    }
+
+    .splash-grid-corner {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .splash-grid-header,
+    .splash-grid-stage,
+    .splash-wave-line {
+        animation: none;
+    }
+
+    .splash-wave-line {
+        stroke-dashoffset: 0;
+    }
+}
