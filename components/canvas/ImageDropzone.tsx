@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, useId } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 import SwissWaveGraphic from '@/components/splash/SwissWaveGraphic';
@@ -333,7 +334,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`workspace-reference-dropzone ${isDragging ? 'is-dragging' : ''}`}
+            className="workspace-reference-dropzone relative"
             role="region"
             aria-label="Load reference image"
         >
@@ -383,6 +384,47 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                 <div className="splash-grid-corner splash-grid-corner--a" aria-hidden="true" />
                 <div className="splash-grid-corner splash-grid-corner--b" aria-hidden="true" />
             </section>
+
+            <AnimatePresence>
+                {isDragging && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-paper-shell/90 p-8 text-ink backdrop-blur-sm pointer-events-none"
+                    >
+                        {/* Tactile border expansion container */}
+                        <motion.div
+                            initial={{ scale: 0.95, borderStyle: 'dashed' }}
+                            animate={{ scale: 1, borderStyle: 'solid' }}
+                            exit={{ scale: 0.95 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex flex-col items-center justify-center w-full h-full border-2 border-subsignal bg-paper-elevated/80 rounded-2xl shadow-lg p-6 relative overflow-hidden"
+                        >
+                            {/* Soft overlay glow */}
+                            <div className="absolute inset-0 bg-radial-glow opacity-30 animate-pulse pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(35,141,166,0.15) 0%, transparent 70%)' }} />
+                            
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth="1.2"
+                                stroke="currentColor"
+                                className="w-16 h-16 text-subsignal mb-4 animate-bounce"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v12m0 0-3-3m3 3 3-3m-9-6a9 9 0 1 1 18 0" />
+                            </svg>
+                            
+                            <h3 className="font-serif font-bold text-2xl mb-2 tracking-tight text-center">
+                                Place on Easel
+                            </h3>
+                            <p className="font-sans text-sm text-ink-muted tracking-wide text-center">
+                                Drop image to place on canvas
+                            </p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

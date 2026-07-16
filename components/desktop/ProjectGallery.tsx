@@ -114,27 +114,41 @@ function ProjectThumbnail({ project, thumbnail }: { project: ProjectInfo; thumbn
   }
 
   if (!loading && colors.length > 0) {
+    const gradientString = colors.length === 1
+      ? `linear-gradient(135deg, ${colors[0]} 0%, var(--paper-shell, #efeee7) 100%)`
+      : `linear-gradient(135deg, ${colors.slice(0, 4).join(', ')})`;
     return (
-      <div className="flex w-full h-full items-stretch overflow-hidden">
-        {colors.slice(0, 6).map((hex, idx) => (
-          <div
-            key={idx}
-            style={{ backgroundColor: hex }}
-            className="flex-1 h-full relative group transition-all duration-300 hover:flex-[1.5]"
-            title={hex}
-          />
-        ))}
+      <div className="relative w-full h-full overflow-hidden transition-transform duration-300 hover:scale-105" style={{ background: gradientString }}>
+        <div 
+          className="absolute inset-0 opacity-[0.07] mix-blend-overlay pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(to right, var(--ink, #11120f) 1px, transparent 1px), linear-gradient(to bottom, var(--ink, #11120f) 1px, transparent 1px)',
+            backgroundSize: '12px 12px',
+          }}
+        />
       </div>
     )
   }
 
   return (
     <div
-      className="w-full h-full transition-all duration-300"
+      className="relative w-full h-full overflow-hidden transition-transform duration-300 hover:scale-105"
       style={{
-        background: `linear-gradient(135deg, var(--project-signal, #f2c943) 0%, var(--paper, #f6f4ec) 50%, var(--paper-recessed, #deddd6) 100%)`,
+        background: `linear-gradient(135deg, var(--paper-elevated, #fffef7) 0%, var(--paper-recessed, #deddd6) 100%)`,
       }}
-    />
+    >
+      <div 
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{
+          backgroundImage: 'linear-gradient(to right, var(--ink, #11120f) 1px, transparent 1px), linear-gradient(to bottom, var(--ink, #11120f) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-[1px] h-1/3 bg-ink/10" />
+        <div className="h-[1px] w-1/3 bg-ink/10 absolute" />
+      </div>
+    </div>
   )
 }
 
@@ -266,14 +280,40 @@ export default function ProjectGallery({
                 {sortedProjects.map((project) => {
                   const thumbnail = project.thumbnail ? resolveTauriImageSrc(project.thumbnail) : null
                   return (
-                    <article key={project.id} className={project.id === featuredId ? 'featured' : ''}>
+                    <article key={project.id} className={`group relative ${project.id === featuredId ? 'featured' : ''}`}>
                       <button type="button" className="project-open" onClick={() => onSelectProject(project.id)}>
                         <div className="project-thumbnail">
                           <ProjectThumbnail project={project} thumbnail={thumbnail} />
                         </div>
-                        <div className="project-meta"><strong>{project.name}</strong><span>{relativeTime(project.modified_at)}</span></div>
+                        <div className="project-meta font-sans">
+                          <strong className="font-semibold text-sm">{project.name}</strong>
+                          <span className="text-xs text-ink-muted tracking-wide">{relativeTime(project.modified_at)}</span>
+                        </div>
                       </button>
-                      <footer><span>{projectStamp(project.modified_at)}</span><button type="button" onClick={() => void handleDelete(project)}>Delete</button></footer>
+                      <footer className="font-sans text-xs">
+                        <span className="text-ink-muted tracking-wide">{projectStamp(project.modified_at)}</span>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(project)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-out focus-visible:opacity-100 p-1 text-ink-muted hover:text-danger rounded-sm"
+                          aria-label="Delete study"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="1.5"
+                            stroke="currentColor"
+                            className="w-4 h-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                            />
+                          </svg>
+                        </button>
+                      </footer>
                     </article>
                   )
                 })}

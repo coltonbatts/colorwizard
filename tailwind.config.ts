@@ -54,7 +54,8 @@ const config: Config = {
       fontFamily: {
         sans: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
         ui: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
-        display: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
+        display: ['EB Garamond', 'Georgia', 'serif'],
+        serif: ['EB Garamond', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
         wordmark: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
       },

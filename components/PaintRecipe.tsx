@@ -185,8 +185,23 @@ export default function PaintRecipe({
 
       <p className="paint-next-action"><span>Next</span> Start with {firstPigment}, then add the smaller amounts gradually.</p>
 
-      <details className="paint-instructions">
-        <summary>Mixing instructions <span>{recipe.steps.length} steps</span></summary>
+      <details className="paint-instructions group">
+        <summary className="flex items-center justify-between cursor-pointer list-none hover:text-ink transition-colors duration-normal">
+          <span className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+              stroke="currentColor"
+              className="w-4 h-4 text-ink-muted group-hover:text-ink transform transition-transform duration-normal group-open:rotate-90"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            Mixing instructions
+          </span>
+          <span>{recipe.steps.length} steps</span>
+        </summary>
         <ol>
           {recipe.steps.map((step, index) => <li key={`${index}-${step}`}><b>{index + 1}</b><span>{step.replace(/\*\*/g, '')}</span></li>)}
         </ol>
@@ -194,8 +209,20 @@ export default function PaintRecipe({
 
       {!hideFooter && (
         <footer className="paint-recipe-footer">
-          <details>
-            <summary>About this prediction</summary>
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer list-none hover:text-ink transition-colors duration-normal">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2.5"
+                stroke="currentColor"
+                className="w-3.5 h-3.5 text-ink-muted group-hover:text-ink transform transition-transform duration-normal group-open:rotate-90"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+              About this prediction
+            </summary>
             <p>{recipe.source === 'solver' ? SPECTRAL_RECIPE_DISCLAIMER : 'This hue-and-value guide is a practical starting point. Adjust by eye for paint, surface, and light.'}</p>
           </details>
           {showExportButton && (

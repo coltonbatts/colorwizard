@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import RulerOverlay from '@/components/RulerOverlay'
 import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { useIsMobile } from '@/hooks/useMediaQuery'
@@ -330,6 +331,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }, [onAnalysisChange, valueScaleResult, histogramBins, sortedOklabL, valueBuffer])
 
   const [splitMode, setSplitMode] = useState(false)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [showImageFullScreen, setShowImageFullScreen] = useState(false)
   const [internalGridEnabled, setInternalGridEnabled] = useState(false)
   const [gridPhysicalWidth, setGridPhysicalWidth] = useState(20)
@@ -1063,11 +1066,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
   }, [image, breakdownBuffers.imprimatura, isGeneratingBreakdown, generateBreakdown])
 
-  const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.currentTarget
-    const file = input.files?.[0]
-    if (!file) return
-
+  const processFile = useCallback(async (file: File) => {
     const isImageFile = (value: File): boolean => {
       if (value.type && value.type.startsWith('image/')) return true
       const extension = value.name.toLowerCase().split('.').pop()
@@ -1081,9 +1080,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     if (!isImageFile(file)) {
       console.error('[ImageCanvas] Invalid file type:', file.type, 'File:', file.name)
       alert(`"${file.name}" is not a supported image format. Please use JPEG, PNG, WebP, HEIC, or other common image formats.`)
-      input.value = ''
       return
     }
+
+    setIsProcessing(true)
 
     let processedFile = file
 
@@ -1096,14 +1096,14 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       if (typeof window === 'undefined' || typeof Blob === 'undefined') {
         console.error('[ImageCanvas] HEIC conversion requires browser environment')
         alert('HEIC conversion is not available in this environment. Please convert your image to JPEG first.')
-        input.value = ''
+        setIsProcessing(false)
         return
       }
 
       const maxHeicSize = 50 * 1024 * 1024
       if (file.size > maxHeicSize) {
         alert(`HEIC file is too large (${Math.round(file.size / 1024 / 1024)}MB). Please convert to JPEG first or use a smaller file.`)
-        input.value = ''
+        setIsProcessing(false)
         return
       }
 
@@ -1141,7 +1141,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       } catch (error) {
         console.error('[ImageCanvas] HEIC conversion failed:', error)
         alert('Failed to convert HEIC image. Please convert the image to JPEG first or try a smaller HEIC file.')
-        input.value = ''
+        setIsProcessing(false)
         return
       }
     }
@@ -1164,10 +1164,13 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
         }
       }
 
-      onImageLoad(img)
-      if (img.src.startsWith('data:')) {
-        cleanup()
-      }
+      setTimeout(() => {
+        setIsProcessing(false)
+        onImageLoad(img)
+        if (img.src.startsWith('data:')) {
+          cleanup()
+        }
+      }, 1500)
     }
 
     img.onerror = () => {
@@ -1178,12 +1181,44 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       })
       alert(`Failed to open "${file.name}". The file was selected, but the image could not be decoded.`)
       cleanup()
-      input.value = ''
+      setIsProcessing(false)
     }
 
     img.src = objectUrl
-    input.value = ''
   }, [onImageLoad])
+
+  const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    const file = input.files?.[0]
+    if (!file) return
+    await processFile(file)
+    input.value = ''
+  }, [processFile])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragOver(true)
+    }
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      await processFile(file)
+    }
+  }, [processFile])
 
   const getCursorStyle = () => {
     if (pan.isPanning) return 'grabbing'
@@ -1192,15 +1227,41 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col" ref={containerRef} suppressHydrationWarning>
+    <div
+      className="flex h-full min-h-0 flex-col relative"
+      ref={containerRef}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      suppressHydrationWarning
+    >
       <DebugOverlay isVisible={debugModeEnabled} metrics={metrics} />
       {!image && !surfaceImage ? (
         desktopShell ? (
-          <div className="flex-1 min-h-0 p-4 md:p-6">
-            <div
-              className="h-full w-full rounded-[18px] border border-ink-hairline bg-paper-elevated/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
-              aria-hidden="true"
-            />
+          <div className="flex-1 min-h-0 p-4 md:p-6 flex items-center justify-center">
+            <label
+              htmlFor={desktopFileInputId}
+              className="group relative flex flex-col items-center justify-center w-full h-full border border-dashed border-stone-300 hover:border-ink bg-paper-elevated/60 shadow-sm rounded-[18px] cursor-pointer p-6 text-center transition-all duration-300 hover:bg-paper-elevated"
+            >
+              {/* Subtle grid pattern overlay */}
+              <div 
+                className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                style={{
+                  backgroundImage: 'linear-gradient(to right, var(--ink) 1px, transparent 1px), linear-gradient(to bottom, var(--ink) 1px, transparent 1px)',
+                  backgroundSize: '16px 16px',
+                }}
+              />
+              
+              <div className="flex items-center justify-center w-12 h-12 rounded-full border border-ink-hairline group-hover:border-ink mb-4 transition-colors duration-normal">
+                <span className="text-2xl font-light leading-none text-ink-muted group-hover:text-ink">+</span>
+              </div>
+              <h3 className="font-serif font-bold text-xl mb-1 text-ink group-hover:text-ink transition-colors duration-normal">
+                Prepare Canvas
+              </h3>
+              <p className="font-sans text-xs text-ink-muted tracking-wide max-w-xs leading-relaxed">
+                Drag & drop a reference photo here or click to choose from finder
+              </p>
+            </label>
           </div>
         ) : (
           <ImageDropzone onImageLoad={onImageLoad} onTryDemoColor={onTryDemoColor} />
@@ -1284,63 +1345,71 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               </button>
             </div>
 
-            <canvas
-              ref={canvasRef}
-              width={canvasDimensions.width}
-              height={canvasDimensions.height}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUpOrCancel}
-              onPointerCancel={handlePointerUpOrCancel}
-              onContextMenu={e => e.preventDefault()}
-              className="absolute top-0 left-0 w-full h-full touch-none select-none"
-              style={{
-                cursor: getCursorStyle(),
-                zIndex: 0,
-                backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
-                pointerEvents: imageDrawInfo ? 'auto' : 'none',
-                touchAction: 'none',
-                overscrollBehavior: 'contain',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-              }}
-            />
+            <motion.div
+              key={image?.src || surfaceImageElement?.src || 'empty'}
+              initial={{ opacity: 0, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, filter: 'blur(0px)' }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-0 w-full h-full"
+            >
+              <canvas
+                ref={canvasRef}
+                width={canvasDimensions.width}
+                height={canvasDimensions.height}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUpOrCancel}
+                onPointerCancel={handlePointerUpOrCancel}
+                onContextMenu={e => e.preventDefault()}
+                className="absolute top-0 left-0 w-full h-full touch-none select-none"
+                style={{
+                  cursor: getCursorStyle(),
+                  zIndex: 0,
+                  backgroundColor: imageDrawInfo ? 'transparent' : 'transparent',
+                  pointerEvents: imageDrawInfo ? 'auto' : 'none',
+                  touchAction: 'none',
+                  overscrollBehavior: 'contain',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                }}
+              />
 
-            <HighlightOverlay
-              ref={overlayCanvasRef}
-              imageData={highlightOverlay.imageData}
-              width={highlightOverlay.width}
-              height={highlightOverlay.height}
-              onRendered={drawCanvas}
-            />
-            <ValueOverlay
-              ref={valueMapCanvasRef}
-              valueBuffer={valueBuffer}
-              enabled={valueModeEnabled || (valueScaleSettings?.enabled ?? false)}
-              valueScaleResult={valueScaleResult}
-              onRendered={drawCanvas}
-            />
-            <canvas ref={breakdownCanvasRef} id="breakdown-canvas" style={{ display: 'none' }} />
+              <HighlightOverlay
+                ref={overlayCanvasRef}
+                imageData={highlightOverlay.imageData}
+                width={highlightOverlay.width}
+                height={highlightOverlay.height}
+                onRendered={drawCanvas}
+              />
+              <ValueOverlay
+                ref={valueMapCanvasRef}
+                valueBuffer={valueBuffer}
+                enabled={valueModeEnabled || (valueScaleSettings?.enabled ?? false)}
+                valueScaleResult={valueScaleResult}
+                onRendered={drawCanvas}
+              />
+              <canvas ref={breakdownCanvasRef} id="breakdown-canvas" style={{ display: 'none' }} />
 
-            <RulerOverlay
-              gridEnabled={gridEnabledProp || false}
-              gridSpacing={gridSpacing || 1}
-              gridOpacity={gridOpacity}
-              calibration={calibration || null}
-              measureEnabled={measureMode || false}
-              measurePointA={measurePointA}
-              measurePointB={measurePointB}
-              containerRef={canvasContainerRef}
-              onMeasurePointsChange={onMeasurePointsChange}
-              transformState={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
-              measurementLayer={measurementLayer}
-              image={image || surfaceImageElement}
-              canvasSettings={canvasSettings}
-            />
+              <RulerOverlay
+                gridEnabled={gridEnabledProp || false}
+                gridSpacing={gridSpacing || 1}
+                gridOpacity={gridOpacity}
+                calibration={calibration || null}
+                measureEnabled={measureMode || false}
+                measurePointA={measurePointA}
+                measurePointB={measurePointB}
+                containerRef={canvasContainerRef}
+                onMeasurePointsChange={onMeasurePointsChange}
+                transformState={{ zoomLevel, panOffset, imageDrawInfo: imageDrawInfo || undefined }}
+                measurementLayer={measurementLayer}
+                image={image || surfaceImageElement}
+                canvasSettings={canvasSettings}
+              />
+            </motion.div>
 
             <NavigatorMinimap
               image={image}
@@ -1386,6 +1455,80 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           />
         )}
       </FullScreenOverlay>
+
+      <AnimatePresence>
+        {isDragOver && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-paper-shell/90 p-8 text-ink backdrop-blur-sm pointer-events-none"
+          >
+            {/* Tactile border expansion container */}
+            <motion.div
+              initial={{ scale: 0.95, borderStyle: 'dashed' }}
+              animate={{ scale: 1, borderStyle: 'solid' }}
+              exit={{ scale: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center justify-center w-full h-full border-2 border-subsignal bg-paper-elevated/80 rounded-2xl shadow-lg p-6 relative overflow-hidden"
+            >
+              {/* Soft overlay glow */}
+              <div className="absolute inset-0 bg-radial-glow opacity-30 animate-pulse pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(35,141,166,0.15) 0%, transparent 70%)' }} />
+              
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.2"
+                stroke="currentColor"
+                className="w-16 h-16 text-subsignal mb-4 animate-bounce"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v12m0 0-3-3m3 3 3-3m-9-6a9 9 0 1 1 18 0" />
+              </svg>
+              
+              <h3 className="font-serif font-bold text-2xl mb-2 tracking-tight text-center">
+                Place on Easel
+              </h3>
+              <p className="font-sans text-sm text-ink-muted tracking-wide text-center">
+                Drop image to place on canvas
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {isProcessing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-paper-shell p-8 text-ink"
+          >
+            {/* Skeleton easel view */}
+            <div className="relative w-full h-full border border-ink-hairline bg-paper-elevated/40 rounded-2xl shadow-sm p-6 overflow-hidden flex flex-col items-center justify-center">
+              {/* Subtle grid pattern overlay */}
+              <div 
+                className="absolute inset-0 opacity-[0.06] pointer-events-none"
+                style={{
+                  backgroundImage: 'linear-gradient(to right, var(--ink) 1px, transparent 1px), linear-gradient(to bottom, var(--ink) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                }}
+              />
+              
+              <p className="font-mono text-xs uppercase tracking-widest text-ink-muted mb-4 animate-pulse">
+                Analyzing chromatic details...
+              </p>
+              
+              {/* Horizontal color scanline */}
+              <motion.div
+                initial={{ y: '-10%', opacity: 0.8 }}
+                animate={{ y: '110%', opacity: 0.8 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute left-0 right-0 h-1 bg-gradient-to-r from-[var(--signal)] via-[var(--warning)] to-[var(--subsignal)] shadow-[0_0_10px_rgba(35,141,166,0.6)]"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 })

@@ -116,10 +116,10 @@ export default function LicenseActivation({ onActivated, demo = false }: License
 
   return (
     <div className="license-activation fixed inset-0 z-[100] flex items-center justify-center bg-paper-shell p-6">
-      <div className="license-activation-panel w-full max-w-md border-t border-ink pt-5 text-ink">
+      <div className="license-activation-panel w-full max-w-md bg-paper-elevated border border-ink-hairline shadow-lg p-8 md:p-10 rounded-lg text-ink">
         <div className="mb-8">
           <p className="text-section">Desktop activation</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+          <h2 className="mt-3 font-serif font-bold text-3xl tracking-tight">
             ColorWizard Pro
           </h2>
           <p className="mt-2 text-sm text-ink-secondary">
@@ -144,8 +144,8 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             maxLength={15}
             aria-describedby={error ? `${inputId}-error` : undefined}
             aria-invalid={Boolean(error)}
-            className={`min-h-12 w-full border bg-paper-elevated px-4 py-3 text-center font-mono text-lg tracking-widest text-ink placeholder:text-ink-faint transition-all duration-300 focus:outline-none focus:ring-0 ${
-              error ? 'border-danger focus:border-danger' : 'border-ink-hairline focus:border-ink'
+            className={`min-h-12 w-full border bg-paper-elevated px-4 py-3 text-center font-mono text-lg tracking-widest text-ink placeholder:text-ink-faint transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-subsignal/40 focus:border-subsignal ${
+              error ? 'border-danger focus:border-danger focus:ring-danger/40' : 'border-stone-300'
             }`}
             disabled={isValidating}
             autoFocus
@@ -162,7 +162,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           className={`mb-6 min-h-12 w-full border text-xs uppercase tracking-widest font-black transition-all duration-300 active:scale-[0.985] ${
             !key.trim() || isValidating
               ? 'border-ink-hairline bg-paper-recessed text-ink-muted cursor-not-allowed opacity-60'
-              : 'border-ink bg-ink text-paper-elevated hover:bg-graphite hover:shadow-sm'
+              : 'border-ink bg-ink text-paper-elevated hover:bg-transparent hover:text-ink hover:border-ink'
           }`}
         >
           {isValidating ? 'Validating...' : 'Unlock'}

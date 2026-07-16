@@ -80,8 +80,23 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
         <button type="button" onClick={() => void copyCode(primary.number)}>{copiedCode === primary.number ? 'Copied' : 'Copy DMC code'}</button>
       </div>
 
-      <details className="threads-disclosure">
-        <summary>Alternative matches <span>{alternativesList.length}</span></summary>
+      <details className="threads-disclosure group">
+        <summary className="flex items-center justify-between cursor-pointer list-none hover:text-ink transition-colors duration-normal">
+          <span className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+              stroke="currentColor"
+              className="w-4 h-4 text-ink-muted group-hover:text-ink transform transition-transform duration-normal group-open:rotate-90"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            Alternative matches
+          </span>
+          <span>{alternativesList.length}</span>
+        </summary>
         <ul className="threads-alternatives">
           {alternativesList.map((thread) => (
             <li key={thread.id}>
@@ -96,8 +111,22 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
         </ul>
       </details>
 
-      <details className="threads-disclosure">
-        <summary>Thread planning</summary>
+      <details className="threads-disclosure group">
+        <summary className="flex items-center justify-between cursor-pointer list-none hover:text-ink transition-colors duration-normal">
+          <span className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+              stroke="currentColor"
+              className="w-4 h-4 text-ink-muted group-hover:text-ink transform transition-transform duration-normal group-open:rotate-90"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            Thread planning
+          </span>
+        </summary>
         <div className="threads-planning">
           {suggestions.length > 1 && (
             <section>

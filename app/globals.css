@@ -144,6 +144,13 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   outline-offset: 2px;
 }
 
+summary {
+  list-style: none !important;
+}
+summary::-webkit-details-marker {
+  display: none !important;
+}
+
 ::selection { color: var(--ink); background: #f2c943; }
 
 h1,

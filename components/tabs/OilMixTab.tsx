@@ -47,8 +47,22 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect, 
         />
       </ErrorBoundary>
 
-      <details className="mix-advanced">
-        <summary>Advanced</summary>
+      <details className="mix-advanced group">
+        <summary className="flex items-center justify-between cursor-pointer list-none hover:text-ink transition-colors duration-normal">
+          <span className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+              stroke="currentColor"
+              className="w-4 h-4 text-ink-muted group-hover:text-ink transform transition-transform duration-normal group-open:rotate-90"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+            Advanced
+          </span>
+        </summary>
         <div className="mix-advanced-content">
           <section>
             <h3>Adjust the mix</h3>
