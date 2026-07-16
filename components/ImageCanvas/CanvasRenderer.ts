@@ -209,17 +209,17 @@ export const drawMainCanvas = (params: {
       ctx.fillRect(cellX, cellY, cellWidth, cellHeight)
 
       if (stitchGridlinesEnabled) {
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)'
-        ctx.lineWidth = 0.5 / zoomLevel
+        ctx.strokeStyle = 'rgba(17, 18, 15, 0.08)'
+        ctx.lineWidth = 0.35 / zoomLevel
         ctx.strokeRect(cellX, cellY, cellWidth, cellHeight)
       }
 
       if (stitchSymbolsEnabled && cell.symbol) {
         const luma = (cell.r * 299 + cell.g * 587 + cell.b * 114) / 1000
-        ctx.fillStyle = luma > 140 ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.85)'
+        ctx.fillStyle = luma > 140 ? 'rgba(17, 18, 15, 0.45)' : 'rgba(255, 255, 255, 0.55)'
 
-        const symbolFontSize = Math.max(5, Math.min(18, cellWidth * 0.55))
-        ctx.font = `bold ${symbolFontSize}px sans-serif`
+        const symbolFontSize = Math.max(4, Math.min(16, cellWidth * 0.5))
+        ctx.font = `${symbolFontSize}px sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(cell.symbol, cellX + cellWidth / 2, cellY + cellHeight / 2)

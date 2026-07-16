@@ -1241,12 +1241,12 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               </div>
             )}
 
-            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-4 top-4 z-20 flex items-center gap-1.5 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.88)] p-1.5 shadow-[0_14px_30px_rgba(33,24,14,0.14)] backdrop-blur-md'}`}>
+            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-4 top-4 z-20 flex items-center gap-1.5 rounded-sm border border-ink bg-paper-elevated p-1 shadow-sm'}`}>
               {!isMobile && (
                 <>
                   <label
                     htmlFor={desktopFileInputId}
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[14px] bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+                    className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-all duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95"
                     title="Load image"
                     aria-label="Load image"
                   >
@@ -1269,8 +1269,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               <button
                 onClick={() => setShowImageFullScreen(true)}
                 className={`${mobileSampleLayout
-                  ? 'flex h-11 w-11 items-center justify-center rounded-lg border border-ink-hairline bg-paper-elevated/90 text-ink-secondary shadow-[0_8px_20px_rgba(26,26,26,0.12)] backdrop-blur-md transition-colors hover:text-ink'
-                  : 'flex h-9 w-9 items-center justify-center rounded-[14px] bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink'
+                  ? 'flex h-11 w-11 items-center justify-center rounded-sm border border-ink bg-paper-elevated text-ink-secondary transition-all duration-200 hover:text-ink active:scale-95'
+                  : 'flex h-8 w-8 items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-all duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95'
                 }`}
                 title="Full screen"
                 aria-label="Full screen"

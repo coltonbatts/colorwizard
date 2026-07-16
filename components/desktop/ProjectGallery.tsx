@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { isDesktopApp } from '@/lib/desktop/detect'
-import { listProjects, createProject, deleteProject, resolveTauriImageSrc, type ProjectInfo } from '@/lib/desktop/tauriClient'
+import { listProjects, createProject, deleteProject, resolveTauriImageSrc, loadPalettes, loadPinnedColors, type ProjectInfo } from '@/lib/desktop/tauriClient'
+import { PALETTE_MAP } from '@/lib/spectral/palette'
 import {
   DEFAULT_DESKTOP_WORKSPACE_PREFERENCES,
   type DesktopWorkspaceAccent,
@@ -42,6 +43,99 @@ function relativeTime(value?: string | null) {
   const days = Math.round(hours / 24)
   if (days < 30) return new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }).format(-days, 'day')
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date)
+}
+
+function ProjectThumbnail({ project, thumbnail }: { project: ProjectInfo; thumbnail: string | null }) {
+  const [colors, setColors] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function fetchColors() {
+      try {
+        const [palettes, pinned] = await Promise.all([
+          loadPalettes(project.id),
+          loadPinnedColors(project.id),
+        ])
+        if (!active) return
+
+        const uniqueColors = new Set<string>()
+
+        if (Array.isArray(pinned)) {
+          pinned.forEach((c: unknown) => {
+            const color = c as { hex?: string }
+            if (color && typeof color.hex === 'string') {
+              uniqueColors.add(color.hex.toUpperCase())
+            }
+          })
+        }
+
+        if (Array.isArray(palettes)) {
+          palettes.forEach((pal: unknown) => {
+            const p = pal as { colors?: Array<{ id?: string }> }
+            if (p && Array.isArray(p.colors)) {
+              p.colors.forEach((c: unknown) => {
+                const col = c as { id?: string }
+                if (col && typeof col.id === 'string') {
+                  const hex = PALETTE_MAP.get(col.id)?.hex
+                  if (hex) {
+                    uniqueColors.add(hex.toUpperCase())
+                  }
+                }
+              })
+            }
+          })
+        }
+
+        setColors(Array.from(uniqueColors))
+      } catch (e) {
+        console.error('Failed to load project colors/palettes:', e)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchColors()
+    return () => {
+      active = false
+    }
+  }, [project.id])
+
+  if (thumbnail) {
+    return (
+      <img
+        src={thumbnail}
+        alt=""
+        width="640"
+        height="400"
+        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+      />
+    )
+  }
+
+  if (!loading && colors.length > 0) {
+    return (
+      <div className="flex w-full h-full items-stretch overflow-hidden">
+        {colors.slice(0, 6).map((hex, idx) => (
+          <div
+            key={idx}
+            style={{ backgroundColor: hex }}
+            className="flex-1 h-full relative group transition-all duration-300 hover:flex-[1.5]"
+            title={hex}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="w-full h-full transition-all duration-300"
+      style={{
+        background: `linear-gradient(135deg, var(--project-signal, #f2c943) 0%, var(--paper, #f6f4ec) 50%, var(--paper-recessed, #deddd6) 100%)`,
+      }}
+    />
+  )
 }
 
 interface ProjectGalleryProps {
@@ -175,7 +269,7 @@ export default function ProjectGallery({
                     <article key={project.id} className={project.id === featuredId ? 'featured' : ''}>
                       <button type="button" className="project-open" onClick={() => onSelectProject(project.id)}>
                         <div className="project-thumbnail">
-                          {thumbnail ? <img src={thumbnail} alt="" width="640" height="400" /> : <span aria-hidden="true" />}
+                          <ProjectThumbnail project={project} thumbnail={thumbnail} />
                         </div>
                         <div className="project-meta"><strong>{project.name}</strong><span>{relativeTime(project.modified_at)}</span></div>
                       </button>

@@ -391,7 +391,12 @@ code,
   transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
 }
 .workbench-mode-btn:hover { color: var(--ink); background: var(--paper-elevated); }
-.workbench-mode-btn.active { color: var(--ink); background: #f2c943; }
+.workbench-mode-btn.active {
+  color: var(--ink);
+  background: rgba(242, 201, 67, 0.08);
+  border-left: 3px solid #f2c943;
+  padding-left: 3px;
+}
 .workbench-mode-icon { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; }
 .workbench-mode-icon svg { width: 19px; height: 19px; }
 .workbench-mode-name { line-height: 1; }
@@ -412,8 +417,12 @@ code,
 }
 .workbench-tools-surface button { display: flex; min-height: 44px; align-items: center; gap: 10px; border-bottom: 1px solid var(--ink-hairline); padding: 0 10px; text-align: left; font-size: 14px; }
 .workbench-tools-surface button:last-child { border-bottom: 0; }
-.workbench-tools-surface button:hover,
-.workbench-tools-surface button.active { background: #f2c943; }
+.workbench-tools-surface button:hover { background: var(--paper-recessed); }
+.workbench-tools-surface button.active {
+  background: rgba(242, 201, 67, 0.15);
+  border-left: 3px solid #f2c943;
+  padding-left: 7px;
+}
 .workbench-tools-surface svg { width: 17px; height: 17px; }
 
 .workbench-desktop-stage {
@@ -821,3 +830,150 @@ html[data-runtime='desktop']:not([data-react-mounted='true']) .desktop-boot-spla
 @keyframes splash-wave-draw { to { stroke-dashoffset: 0; } }
 @keyframes splash-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Premium Form Controls - Warm Paper & Charcoal print aesthetic */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="range"]:focus {
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--paper-recessed);
+  border: 1px solid var(--ink-hairline);
+  height: 6px;
+  border-radius: 0;
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--paper-recessed);
+  border: 1px solid var(--ink-hairline);
+  height: 6px;
+  border-radius: 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background-color: var(--ink);
+  border: 1px solid var(--ink);
+  height: 16px;
+  width: 10px;
+  border-radius: 0;
+  transition: background-color var(--duration-fast) ease, transform var(--duration-fast) ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background-color: var(--signal);
+  border-color: var(--signal);
+  transform: scaleY(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+  background-color: var(--ink);
+  border: 1px solid var(--ink);
+  height: 16px;
+  width: 10px;
+  border-radius: 0;
+  transition: background-color var(--duration-fast) ease, transform var(--duration-fast) ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  background-color: var(--signal);
+  border-color: var(--signal);
+  transform: scaleY(1.1);
+}
+
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--paper-elevated);
+  margin: 0;
+  font: inherit;
+  color: var(--ink);
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+input[type="checkbox"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  background-color: var(--ink);
+}
+
+input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--signal);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--paper-elevated);
+  margin: 0;
+  font: inherit;
+  color: var(--ink);
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+input[type="radio"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  background-color: var(--ink);
+}
+
+input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+
+input[type="radio"]:hover {
+  border-color: var(--signal);
+}
+
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+}

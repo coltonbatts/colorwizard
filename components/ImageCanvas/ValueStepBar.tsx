@@ -23,22 +23,22 @@ export default function ValueStepBar({
 
   return (
     <div
-      className={`pointer-events-auto rounded-[24px] border border-ink-hairline bg-[rgba(255,252,247,0.92)] p-2 shadow-[0_16px_34px_rgba(33,24,14,0.16)] backdrop-blur-md ${className}`}
+      className={`pointer-events-auto rounded-sm border border-ink bg-paper-elevated p-1 shadow-sm ${className}`}
       aria-label="Value steps"
       role="radiogroup"
     >
       <div className="relative">
         <div
-          className="pointer-events-none absolute bottom-1 top-1 z-10 rounded-[16px] border border-[rgba(58,43,31,0.72)] shadow-[0_8px_18px_rgba(33,24,14,0.18)] transition-transform duration-200 ease-out"
+          className="pointer-events-none absolute bottom-1 top-1 z-10 rounded-sm border border-ink shadow-sm transition-transform duration-200 ease-out"
           style={{
             width: `calc((100% - ${(safeSteps - 1) * 2}px) / ${safeSteps})`,
             transform: `translateX(calc(${selectedDisplayIndex} * (100% + 2px)))`,
           }}
         >
-          <div className="absolute left-1/2 top-[-8px] h-3 w-3 -translate-x-1/2 rotate-45 rounded-[3px] border border-[rgba(58,43,31,0.78)] bg-paper shadow-[0_6px_12px_rgba(33,24,14,0.16)]" />
+          <div className="absolute left-1/2 top-[-8px] h-3 w-3 -translate-x-1/2 rotate-45 rounded-sm border border-ink bg-paper shadow-sm" />
         </div>
 
-        <div className="flex gap-[2px] overflow-hidden rounded-[18px] border border-[rgba(58,43,31,0.12)] bg-[rgba(58,43,31,0.08)] p-[2px]">
+        <div className="flex gap-[2px] overflow-hidden rounded-sm border border-ink-hairline bg-paper-recessed p-[2px]">
           {Array.from({ length: safeSteps }, (_, displayIndex) => {
             const bandIndex = safeSteps - 1 - displayIndex
             const gray = stepToGray(bandIndex, safeSteps)
