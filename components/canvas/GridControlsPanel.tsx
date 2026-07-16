@@ -32,43 +32,55 @@ export default function GridControlsPanel({
     onSquareSizeChange,
 }: GridControlsPanelProps) {
     return (
-        <div className="bg-white/80 backdrop-blur-md p-3 rounded-2xl border border-gray-100 mb-4 flex flex-wrap items-center gap-4 text-sm shadow-sm">
+        <fieldset className="canvas-grid-controls">
+            <legend className="sr-only">Grid overlay settings</legend>
             <label className="flex items-center gap-2 cursor-pointer">
                 <input
+                    name="grid-overlay"
                     type="checkbox"
                     checked={gridEnabled}
                     onChange={(e) => onToggleGrid(e.target.checked)}
-                    className="w-4 h-4 rounded-md border-gray-200 bg-gray-50 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 accent-[var(--studio-accent)]"
                 />
                 <span className="text-studio font-bold">Grid Overlay</span>
             </label>
 
             <div className="flex items-center gap-2">
-                <span className="text-studio-dim font-black text-[10px] uppercase tracking-widest">Canvas:</span>
+                <span className="studio-section-label">Canvas</span>
+                <label htmlFor="grid-canvas-width" className="sr-only">Canvas width in inches</label>
                 <input
+                    id="grid-canvas-width"
+                    name="grid-canvas-width"
                     type="number"
                     value={physicalWidth}
                     onChange={(e) => onDimensionsChange(Number(e.target.value), physicalHeight)}
-                    className="w-16 px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-inner"
+                    className="canvas-grid-input"
                     min="1"
+                    inputMode="decimal"
                 />
                 <span className="text-gray-300">×</span>
+                <label htmlFor="grid-canvas-height" className="sr-only">Canvas height in inches</label>
                 <input
+                    id="grid-canvas-height"
+                    name="grid-canvas-height"
                     type="number"
                     value={physicalHeight}
                     onChange={(e) => onDimensionsChange(physicalWidth, Number(e.target.value))}
-                    className="w-16 px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-inner"
+                    className="canvas-grid-input"
                     min="1"
+                    inputMode="decimal"
                 />
                 <span className="text-studio-dim font-bold">in</span>
             </div>
 
             <div className="flex items-center gap-2">
-                <span className="text-studio-dim font-black text-[10px] uppercase tracking-widest">Size:</span>
+                <label htmlFor="grid-square-size" className="studio-section-label">Grid size</label>
                 <select
+                    id="grid-square-size"
+                    name="grid-square-size"
                     value={squareSize}
                     onChange={(e) => onSquareSizeChange(Number(e.target.value))}
-                    className="px-2 py-1 bg-gray-50 border border-gray-100 rounded-lg text-studio font-mono text-sm focus:border-blue-500 outline-none shadow-sm"
+                    className="canvas-grid-select"
                 >
                     <option value="0.25">0.25&quot;</option>
                     <option value="0.5">0.5&quot;</option>
@@ -77,6 +89,6 @@ export default function GridControlsPanel({
                     <option value="3">3&quot;</option>
                 </select>
             </div>
-        </div>
+        </fieldset>
     );
 }

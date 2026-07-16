@@ -47,21 +47,22 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
     };
 
     return (
-        <div className="w-full flex flex-col gap-4 p-5 lg:p-6 bg-white/60 backdrop-blur-md rounded-[2rem] border border-gray-100 shadow-xl shadow-studio/5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <section className="color-name-panel" aria-label="Perceptual color name">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col flex-1 min-w-0">
-                    <span className="text-[9px] text-studio-dim uppercase font-black tracking-[0.2em] mb-1 opacity-50">Perceptual Name</span>
+                    <span className="studio-section-label mb-1">Perceptual Name</span>
                     <div className="flex items-center gap-3">
-                        <h3 className={`text-2xl lg:text-3xl font-black text-studio tracking-tighter ${loading ? 'opacity-30' : 'opacity-100'} transition-all duration-500 leading-tight`}>
-                            {loading ? 'Analyzing...' : match?.name || 'Unknown'}
+                        <h3 className={`text-2xl lg:text-3xl font-bold text-studio tracking-tight ${loading ? 'opacity-50' : 'opacity-100'} leading-tight`} aria-live="polite">
+                            {loading ? 'Analyzing…' : match?.name || 'Unknown'}
                         </h3>
                         {match && !loading && (
                             <button
                                 onClick={() => copyToClipboard(match.name, 'name')}
-                                className="p-2 hover:bg-studio/5 rounded-xl transition-colors text-studio-muted hover:text-studio group relative shrink-0"
+                                className="studio-icon-button studio-icon-button-quiet shrink-0"
                                 title="Copy Name"
+                                aria-label={`Copy color name ${match.name}`}
                             >
-                                <span className="text-lg">{copied === 'name' ? '✅' : '📋'}</span>
+                                <span>{copied === 'name' ? '✓' : 'Copy'}</span>
                                 {copied === 'name' && (
                                     <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-studio text-white text-[10px] px-2 py-1 rounded shadow-xl whitespace-nowrap z-10">
                                         Copied!
@@ -73,18 +74,18 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                 </div>
 
                 <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-studio-dim uppercase font-black tracking-widest mb-1">Database</span>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">
+                    <span className="studio-section-label mb-1">Database</span>
+                    <span className="studio-status-badge">
                         Extended
                     </span>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
+            <div className="color-name-meta">
                 <div className="flex items-center gap-2">
                     {confidence && (
                         <div className="flex items-center gap-1.5">
-                            <div className={`w-2 h-2 rounded-full ${confidence.bgColor} animate-pulse`}></div>
+                            <div className={`w-2 h-2 rounded-full ${confidence.bgColor}`}></div>
                             <span className={`text-[11px] font-bold uppercase tracking-tight ${confidence.color}`}>
                                 {confidence.label}
                             </span>
@@ -95,14 +96,15 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                     )}
                 </div>
 
-                <div className="flex items-center gap-1 bg-studio/5 px-2 py-1 rounded-lg border border-studio/10">
+                <div className="color-name-hex">
                     <span className="font-mono text-xs font-bold text-studio/60 uppercase">{hex}</span>
                     <button
                         onClick={() => copyToClipboard(hex, 'hex')}
-                        className="p-1 hover:bg-studio/10 rounded transition-colors text-studio/40 hover:text-studio group relative"
+                        className="studio-icon-button studio-icon-button-quiet"
                         title="Copy Hex"
+                        aria-label={`Copy hex value ${hex}`}
                     >
-                        {copied === 'hex' ? '✅' : '📋'}
+                        {copied === 'hex' ? '✓' : 'Copy'}
                     </button>
                 </div>
             </div>
@@ -112,6 +114,7 @@ export default function ColorNamingDisplay({ hex }: ColorNamingDisplayProps) {
                     Extended dataset powered by meodai/color-names
                 </p>
             )}
-        </div>
+            <span className="sr-only" aria-live="polite">{copied ? `${copied} copied` : ''}</span>
+        </section>
     );
 }

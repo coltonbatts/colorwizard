@@ -270,11 +270,17 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
         }
     }
 
+    const updateChannel = (channel: keyof HSV, value: number) => {
+        const next = { ...hsvState, [channel]: value }
+        setHsvState(next)
+        notifyChange(next)
+    }
+
     return (
-        <div className="w-full bg-gray-900/50 rounded-xl p-4 border border-gray-800 shadow-inner">
-            <h4 className="text-[10px] lg:text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider flex justify-between items-center">
+        <div className="color-wheel-panel">
+            <h4 className="studio-section-label flex justify-between items-center">
                 <span>Color Wheel</span>
-                <span className="text-[9px] lg:text-[10px] text-gray-600 font-normal underline">HSB Logic</span>
+                <span className="font-normal">HSB</span>
             </h4>
 
             <div className="relative w-full flex justify-center py-2">
@@ -286,18 +292,26 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
-                    className="cursor-crosshair touch-none drop-shadow-2xl"
+                    className="cursor-crosshair touch-none"
                     style={{ width: wheelSize, height: wheelSize }}
+                    role="img"
+                    aria-label={`Color wheel. Hue ${Math.round(hsvState.h)} degrees, saturation ${Math.round(hsvState.s)} percent, brightness ${Math.round(hsvState.v)} percent.`}
                 />
             </div>
 
-            <div className="flex justify-between text-[10px] text-gray-400 mt-4 px-1 font-mono">
-                <div className="flex flex-col">
-                    <span>H: {Math.round(hsvState.h)}°</span>
-                </div>
-                <div className="flex flex-col text-right">
-                    <span>S: {Math.round(hsvState.s)}% B: {Math.round(hsvState.v)}%</span>
-                </div>
+            <div className="color-wheel-channels">
+                <label>
+                    <span>Hue <output>{Math.round(hsvState.h)}°</output></span>
+                    <input name="color-hue" type="range" min="0" max="359" value={Math.round(hsvState.h)} onChange={(event) => updateChannel('h', Number(event.target.value))} />
+                </label>
+                <label>
+                    <span>Saturation <output>{Math.round(hsvState.s)}%</output></span>
+                    <input name="color-saturation" type="range" min="0" max="100" value={Math.round(hsvState.s)} onChange={(event) => updateChannel('s', Number(event.target.value))} />
+                </label>
+                <label>
+                    <span>Brightness <output>{Math.round(hsvState.v)}%</output></span>
+                    <input name="color-brightness" type="range" min="0" max="100" value={Math.round(hsvState.v)} onChange={(event) => updateChannel('v', Number(event.target.value))} />
+                </label>
             </div>
         </div>
     )

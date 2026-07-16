@@ -48,7 +48,7 @@ export default function PaintPuddle({
 
     return (
         <motion.div
-            className="puddle-card group cursor-pointer"
+            className="puddle-card group"
             onClick={onClick}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -147,10 +147,10 @@ export default function PaintPuddle({
 
             {showLabel && (
                 <div className="mt-2 text-center">
-                    <p className="text-sm font-medium text-gray-200 truncate max-w-[100px]" title={name}>
+                    <p className="text-sm font-semibold text-studio truncate max-w-[100px]" title={name}>
                         {name}
                     </p>
-                    <p className="text-xs text-gray-400 font-mono">
+                    <p className="text-xs text-studio-muted font-mono tabular-nums">
                         {percentage}
                     </p>
                 </div>
