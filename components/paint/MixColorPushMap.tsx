@@ -70,10 +70,10 @@ function PushCard({
           <div className={`truncate font-semibold text-ink ${compact ? 'text-[11px]' : 'text-xs'}`}>
             {push.ingredient.name}
           </div>
-          <div className="mt-0.5 font-mono text-[10px] font-bold text-ink-secondary">{percentage}</div>
+          <div className="mt-0.5 font-mono text-[11px] font-bold text-ink-secondary">{percentage}</div>
         </div>
         <span
-          className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] ${ROLE_ACCENT[push.role]}`}
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.14em] ${ROLE_ACCENT[push.role]}`}
         >
           {push.roleLabel}
         </span>
@@ -83,14 +83,14 @@ function PushCard({
         {push.pushes.map((direction) => (
           <span
             key={direction}
-            className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] ${PUSH_CHIP[direction].className}`}
+            className={`rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.1em] ${PUSH_CHIP[direction].className}`}
           >
             {PUSH_CHIP[direction].label}
           </span>
         ))}
       </div>
 
-      <p className={`mt-2 leading-4 text-ink-faint ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
+      <p className={`mt-2 leading-4 text-ink-muted ${compact ? 'text-[11px]' : 'text-[11px]'}`}>
         {push.explanation}
       </p>
     </motion.div>
@@ -131,10 +131,10 @@ export default function MixColorPushMap({
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
             Color pushes
           </div>
-          <p className={`mt-1 text-ink-secondary ${compact ? 'text-[10px] leading-4' : 'text-[11px] leading-5'}`}>
+          <p className={`mt-1 text-ink-secondary ${compact ? 'text-[11px] leading-4' : 'text-[11px] leading-5'}`}>
             {mixSource === 'solver'
               ? 'How each pigment moves the on-screen mix toward your sample in the model—not wet-paint physics.'
               : 'How the studio guide reads each pigment’s job for this hue and value.'}
@@ -146,7 +146,7 @@ export default function MixColorPushMap({
             style={{ backgroundColor: targetHex }}
             title="Your sample"
           />
-          <span className="font-mono text-[9px] font-bold text-ink-faint">Target</span>
+          <span className="font-mono text-[11px] font-bold text-ink-muted">Target</span>
         </div>
       </div>
 

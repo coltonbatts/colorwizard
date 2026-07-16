@@ -132,7 +132,7 @@ export default function MixLab({
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-md border border-ink-hairline bg-paper px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+          className="rounded-md border border-ink-hairline bg-paper px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
         >
           Reset
         </button>
@@ -164,7 +164,7 @@ export default function MixLab({
                 {modelFit?.label}
               </span>
               {showMetrics && (
-                <div className="mt-0.5 font-mono text-[10px] text-ink-faint">
+                <div className="mt-0.5 font-mono text-[11px] text-ink-muted">
                   {formatSpectralModelError(mixError)}
                 </div>
               )}
@@ -188,7 +188,7 @@ export default function MixLab({
               }`}
               style={{ backgroundColor: targetHex }}
             />
-            <div className="mt-2 font-mono text-[10px] text-ink-faint">{targetHex.toUpperCase()}</div>
+            <div className="mt-2 font-mono text-[11px] text-ink-muted">{targetHex.toUpperCase()}</div>
           </div>
         )}
       </div>
@@ -199,8 +199,9 @@ export default function MixLab({
         </h4>
         <div className="flex flex-wrap justify-center gap-3">
           {PALETTE.map((pigment) => (
-            <div
+            <button
               key={pigment.id}
+              type="button"
               draggable
               onDragStart={(e) => {
                 e.dataTransfer.setData(
@@ -209,17 +210,20 @@ export default function MixLab({
                 )
                 e.dataTransfer.effectAllowed = 'copy'
               }}
-              className="flex cursor-grab flex-col items-center gap-1 active:cursor-grabbing"
-              title={`Drag ${pigment.name}`}
+              onClick={() => handleSliderChange(pigment.id, sliders[pigment.id] === 0 ? 50 : 0)}
+              className="flex min-h-16 flex-col items-center gap-1 rounded-md p-1 transition-colors hover:bg-paper-recessed"
+              title={`Add or drag ${pigment.name}`}
+              aria-pressed={sliders[pigment.id] > 0}
+              aria-label={`${sliders[pigment.id] > 0 ? 'Remove' : 'Add'} ${pigment.name} ${sliders[pigment.id] > 0 ? 'from' : 'to'} the mix`}
             >
               <div
                 className="h-10 w-10 rounded-full border border-ink-hairline"
                 style={{ backgroundColor: pigment.hex }}
               />
-              <span className="w-14 text-center text-[9px] font-medium uppercase leading-none text-ink-muted">
+              <span className="w-14 text-center text-[11px] font-medium leading-tight text-ink-muted">
                 {pigment.name.split(' ')[0]}
               </span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -246,6 +250,8 @@ export default function MixLab({
                   <span className={`font-mono tabular-nums ${percentage > 0 ? 'text-ink' : ''}`}>{percentage}%</span>
                 </div>
                 <input
+                  name={`mix-${pigment.id}`}
+                  aria-label={`Adjust ${pigment.name} amount`}
                   type="range"
                   min={0}
                   max={100}
@@ -258,7 +264,7 @@ export default function MixLab({
           )
         })}
         {totalWeight === 0 && (
-          <p className="py-2 text-center text-[10px] italic text-ink-faint">
+          <p className="py-2 text-center text-[11px] italic text-ink-muted">
             Drag pigments above or apply the solver recipe below.
           </p>
         )}

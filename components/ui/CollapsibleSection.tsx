@@ -15,12 +15,13 @@ interface CollapsibleSectionProps {
 export default function CollapsibleSection({
   title,
   icon,
-  accentColor = 'blue',
+  accentColor,
   defaultOpen = false,
   isOpen: controlledIsOpen,
   onToggle,
   children
 }: CollapsibleSectionProps) {
+  void accentColor
   const [internalIsOpen, setInternalIsOpen] = useState(defaultOpen)
 
   // Support both controlled and uncontrolled modes
@@ -33,30 +34,23 @@ export default function CollapsibleSection({
     }
   }
 
-  const accentClasses: Record<string, { border: string; text: string; bg: string }> = {
-    blue: { border: 'border-blue-500/30', text: 'text-blue-500', bg: 'bg-blue-500/5' },
-    purple: { border: 'border-purple-500/30', text: 'text-purple-500', bg: 'bg-purple-500/5' },
-    teal: { border: 'border-teal-500/30', text: 'text-teal-500', bg: 'bg-teal-500/5' },
-    yellow: { border: 'border-yellow-500/30', text: 'text-yellow-500', bg: 'bg-yellow-500/5' },
-    gray: { border: 'border-gray-300', text: 'text-gray-600', bg: 'bg-gray-50' },
-  }
-
-  const accent = accentClasses[accentColor] || accentClasses.blue
-
   return (
-    <div className={`rounded-xl border ${isOpen ? accent.border : 'border-gray-100'} overflow-hidden transition-all duration-200`}>
+    <section className={`overflow-hidden rounded-lg border bg-paper-elevated transition-[border-color,box-shadow] duration-200 ${isOpen ? 'border-ink-muted shadow-sm' : 'border-ink-hairline'}`}>
       <button
+        type="button"
         onClick={handleToggle}
-        className={`w-full flex items-center justify-between px-4 py-3 ${isOpen ? accent.bg : 'bg-gray-50/50 hover:bg-gray-50'} transition-colors`}
+        className={`flex min-h-11 w-full items-center justify-between px-4 py-3 text-left transition-colors ${isOpen ? 'bg-paper-recessed' : 'bg-paper-elevated hover:bg-paper-recessed'}`}
+        aria-expanded={isOpen}
       >
         <div className="flex items-center gap-2">
           {icon && <span className="text-base">{icon}</span>}
-          <span className={`text-sm font-bold uppercase tracking-wide ${isOpen ? accent.text : 'text-gray-600'}`}>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-secondary">
             {title}
           </span>
         </div>
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+          className={`h-4 w-4 text-ink-muted transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -65,15 +59,11 @@ export default function CollapsibleSection({
         </svg>
       </button>
 
-      <div
-        className={`transition-all duration-200 ease-in-out ${
-          isOpen ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
-        } overflow-hidden`}
-      >
-        <div className="p-3">
+      <div hidden={!isOpen}>
+        <div className="border-t border-ink-hairline p-3">
           {children}
         </div>
       </div>
-    </div>
+    </section>
   )
 }

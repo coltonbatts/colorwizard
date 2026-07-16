@@ -56,7 +56,7 @@ function StepCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.22 }}
     >
-      <div className="text-[9px] font-black uppercase tracking-[0.18em] text-ink-faint">{label}</div>
+      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">{label}</div>
       <div className="mt-2 min-w-0">{children}</div>
     </motion.div>
   )
@@ -81,10 +81,10 @@ export default function MixPipelinePeek({
       aria-label="How this mix was found"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+        <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
           How this mix was found
         </h3>
-        <span className="rounded-full border border-ink-hairline bg-paper px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-ink-secondary">
+        <span className="rounded-full border border-ink-hairline bg-paper px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-ink-secondary">
           {mixSource === 'solver' ? 'Spectral solver' : 'Studio guide'}
         </span>
       </div>
@@ -95,7 +95,7 @@ export default function MixPipelinePeek({
             className="h-14 w-full rounded-[14px] border border-black/8 shadow-[0_8px_20px_rgba(33,24,14,0.1)]"
             style={{ backgroundColor: targetHex }}
           />
-          <p className="mt-2 font-mono text-[10px] font-bold text-ink-secondary">{targetHex.toUpperCase()}</p>
+          <p className="mt-2 font-mono text-[11px] font-bold text-ink-secondary">{targetHex.toUpperCase()}</p>
         </StepCard>
 
         <StepCard label="Pigment recipe" delay={0.06}>
@@ -111,7 +111,7 @@ export default function MixPipelinePeek({
                   <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-ink">
                     {ing.pigment.name}
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] font-bold text-ink-secondary">
+                  <span className="shrink-0 font-mono text-[11px] font-bold text-ink-secondary">
                     {ing.percentage}
                   </span>
                 </li>
@@ -144,12 +144,12 @@ export default function MixPipelinePeek({
                   {modelFit?.label ?? preview.matchQuality}
                 </span>
                 {showMetrics && (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-ink-muted">
                     {formatSpectralModelError(preview.error)}
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-mono text-[10px] text-ink-faint">{preview.predictedHex.toUpperCase()}</p>
+              <p className="mt-1 font-mono text-[11px] text-ink-muted">{preview.predictedHex.toUpperCase()}</p>
             </>
           ) : (
             <p className="text-[11px] leading-4 text-ink-secondary">
@@ -161,10 +161,10 @@ export default function MixPipelinePeek({
         </StepCard>
       </div>
 
-      <p className="mt-3 text-[10px] leading-4 text-ink-faint">{SPECTRAL_RECIPE_DISCLAIMER}</p>
+      <p className="mt-3 text-[11px] leading-4 text-ink-muted">{SPECTRAL_RECIPE_DISCLAIMER}</p>
 
       {showMetrics && (
-        <p className="mt-2 text-[10px] leading-4 text-ink-faint">
+        <p className="mt-2 text-[11px] leading-4 text-ink-muted">
           <span className="font-semibold text-ink-secondary">Lab note:</span> Kubelka–Munk mixing via spectral.js
           predicts how pigments combine in light; model Δ is OKLab distance on screen, not wet-paint ΔE.
         </p>

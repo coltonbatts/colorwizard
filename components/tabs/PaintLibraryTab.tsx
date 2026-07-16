@@ -53,30 +53,32 @@ interface PaintCardProps {
 function PaintCard({ paint, onSelect, isSelected, isInPalette, onTogglePalette }: PaintCardProps) {
     return (
         <button
+            type="button"
             onClick={() => {
                 // Toggle palette selection
                 onTogglePalette()
                 onSelect(paint)
             }}
             className={`
-                group flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left w-full
+                group flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-[background-color,border-color,box-shadow]
                 ${isInPalette
-                    ? 'border-signal bg-subsignal-muted shadow-md ring-1 ring-signal'
+                    ? 'border-ink-muted bg-paper-recessed shadow-sm ring-1 ring-ink'
                     : isSelected
-                        ? 'border-gray-300 bg-paper-recessed'
+                        ? 'border-linen-strong bg-paper-recessed'
                         : 'border-transparent bg-paper-elevated hover:border-ink-hairline hover:shadow-sm'}
             `}
+            aria-pressed={isInPalette}
         >
             {/* Color Swatch */}
             <div className="relative">
                 <div
-                    className={`w-10 h-10 rounded-lg shadow-inner flex-shrink-0 border transition-all ${isInPalette ? 'border-signal ring-2 ring-signal' : 'border-black/10'}`}
+                    className={`h-10 w-10 flex-shrink-0 rounded-md border shadow-inner transition-[border-color,box-shadow] ${isInPalette ? 'border-ink ring-2 ring-ink' : 'border-black/10'}`}
                     style={{ backgroundColor: paint.hex }}
                 />
                 {/* Selection checkmark */}
                 {isInPalette && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-signal rounded-full flex items-center justify-center">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-sm bg-ink">
+                        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
                             <path d="M20 6L9 17l-5-5" />
                         </svg>
                     </div>
@@ -115,7 +117,7 @@ function OpacityIcon({ opacity }: { opacity: Opacity }) {
         'opaque': 'bg-signal-muted text-signal'
     }
     return (
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${colors[opacity]}`}>
+        <span className={`rounded-sm px-1.5 py-0.5 text-[11px] font-semibold ${colors[opacity]}`} title={opacity.replace('-', ' ')}>
             {labels[opacity]}
         </span>
     )
@@ -143,7 +145,7 @@ function PaintDetail({ paint, brands, onClose, onHighlight }: PaintDetailProps) 
     }, [paint.hex])
 
     return (
-        <div className="bg-paper-elevated border border-ink-hairline rounded-lg p-4 shadow-lg animate-in fade-in slide-in-from-bottom-2">
+        <div className="rounded-lg border border-ink-hairline bg-paper-elevated p-4 shadow-md">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -159,10 +161,12 @@ function PaintDetail({ paint, brands, onClose, onHighlight }: PaintDetailProps) 
                     </div>
                 </div>
                 <button
+                    type="button"
                     onClick={onClose}
                     className="p-1.5 rounded-lg hover:bg-paper-recessed transition-colors"
+                    aria-label="Close paint details"
                 >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                 </button>
@@ -171,44 +175,45 @@ function PaintDetail({ paint, brands, onClose, onHighlight }: PaintDetailProps) 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Hex</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Hex</div>
                     <div className="text-sm font-mono text-ink">{paint.hex}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">RGB</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">RGB</div>
                     <div className="text-sm font-mono text-ink">{rgb.r}, {rgb.g}, {rgb.b}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Pigments</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Pigments</div>
                     <div className="text-sm font-mono text-ink">{paint.pigmentCodes.join(', ')}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Series</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Series</div>
                     <div className="text-sm text-ink">Series {paint.series}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Opacity</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Opacity</div>
                     <div className="text-sm text-ink capitalize">{paint.opacity.replace('-', ' ')}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Permanence</div>
+                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Permanence</div>
                     <div className="text-sm text-ink capitalize">{paint.permanence.replace('-', ' ')}</div>
                 </div>
             </div>
 
             {/* Notes */}
             {paint.notes && (
-                <div className="bg-signal-muted border border-signal rounded-lg p-3 mb-4">
-                    <div className="text-[10px] font-bold text-signal uppercase tracking-wider mb-1">Notes</div>
-                    <p className="text-sm text-signal">{paint.notes}</p>
+                <div className="mb-4 rounded-lg border border-subsignal bg-subsignal-muted p-3">
+                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-subsignal">Notes</div>
+                    <p className="text-sm text-ink-secondary">{paint.notes}</p>
                 </div>
             )}
 
             {/* Actions */}
             <div className="flex gap-2">
                 <button
+                    type="button"
                     onClick={() => onHighlight(rgb)}
-                    className="flex-1 py-2 px-4 bg-signal text-white rounded-xl text-sm font-bold hover:bg-signal-hover transition-colors"
+                    className="min-h-11 flex-1 rounded-md border border-subsignal bg-subsignal px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-subsignal-hover"
                 >
                     Highlight on Canvas
                 </button>
@@ -344,7 +349,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <div className="w-8 h-8 border-2 border-signal border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                    <p className="text-sm text-ink-muted">Loading paint library...</p>
+                    <p className="text-sm text-ink-muted">Loading paint library…</p>
                 </div>
             </div>
         )
@@ -368,12 +373,14 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
             {/* View Toggle */}
             <div className="flex border-b border-ink-hairline">
                 <button
+                    type="button"
                     onClick={() => updateFilter('showOnlySelected', false)}
                     className={`flex-1 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${!filters.showOnlySelected ? 'text-signal border-b-2 border-signal' : 'text-ink-muted hover:text-ink-secondary'}`}
                 >
                     All Paints ({paints.length})
                 </button>
                 <button
+                    type="button"
                     onClick={() => updateFilter('showOnlySelected', true)}
                     className={`flex-1 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${filters.showOnlySelected ? 'text-signal border-b-2 border-signal' : 'text-ink-muted hover:text-ink-secondary'}`}
                 >
@@ -395,16 +402,21 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                         <path d="m21 21-4.35-4.35" />
                     </svg>
                     <input
+                        id="paint-library-search"
+                        name="paint-library-search"
                         type="text"
+                        autoComplete="off"
                         value={filters.query}
                         onChange={(e) => updateFilter('query', e.target.value)}
-                        placeholder="Search by name, pigment code, or hex..."
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-ink-hairline bg-paper-elevated text-sm focus:outline-none focus:ring-2 focus:ring-signal focus:border-transparent"
+                        placeholder="Search by name, pigment code, or hex…"
+                        aria-label="Search paint library"
+                        className="w-full rounded-md border border-ink-hairline bg-paper-elevated py-2.5 pl-10 pr-4 text-sm transition-[border-color,box-shadow] focus:border-ink-muted"
                     />
                 </div>
 
                 {/* Filter Toggle */}
                 <button
+                    type="button"
                     onClick={() => setShowFilters(!showFilters)}
                     className={`mt-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors ${showFilters || activeFilterCount > 0 ? 'text-signal' : 'text-ink-muted hover:text-ink-secondary'
                         }`}
@@ -414,6 +426,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                     </svg>
                     Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
                     <svg
+                        aria-hidden="true"
                         width="12"
                         height="12"
                         viewBox="0 0 24 24"
@@ -429,14 +442,16 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
                 {/* Filters Panel */}
                 {showFilters && (
-                    <div className="mt-3 p-3 bg-paper-elevated rounded-xl border border-ink-hairline space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div className="mt-3 space-y-3 rounded-lg border border-ink-hairline bg-paper-elevated p-3">
                         {/* Brand */}
                         <div>
-                            <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider block mb-1">Brand</label>
+                            <label htmlFor="paint-brand-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Brand</label>
                             <select
+                                id="paint-brand-filter"
+                                name="paint-brand-filter"
                                 value={filters.brandId || ''}
                                 onChange={(e) => updateFilter('brandId', e.target.value || null)}
-                                className="w-full px-3 py-2 rounded-lg border border-ink-hairline text-sm bg-paper-elevated"
+                                className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
                             >
                                 <option value="">All Brands</option>
                                 {brands.map(brand => (
@@ -448,11 +463,13 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                         {/* Line (only if brand selected) */}
                         {filters.brandId && availableLines.length > 0 && (
                             <div>
-                                <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider block mb-1">Product Line</label>
+                                <label htmlFor="paint-line-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Product Line</label>
                                 <select
+                                    id="paint-line-filter"
+                                    name="paint-line-filter"
                                     value={filters.lineId || ''}
                                     onChange={(e) => updateFilter('lineId', e.target.value || null)}
-                                    className="w-full px-3 py-2 rounded-lg border border-ink-hairline text-sm bg-paper-elevated"
+                                    className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
                                 >
                                     <option value="">All Lines</option>
                                     {availableLines.map(line => (
@@ -464,11 +481,13 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
                         {/* Opacity */}
                         <div>
-                            <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider block mb-1">Opacity</label>
+                            <label htmlFor="paint-opacity-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Opacity</label>
                             <select
+                                id="paint-opacity-filter"
+                                name="paint-opacity-filter"
                                 value={filters.opacity || ''}
                                 onChange={(e) => updateFilter('opacity', (e.target.value || null) as Opacity | null)}
-                                className="w-full px-3 py-2 rounded-lg border border-ink-hairline text-sm bg-paper-elevated"
+                                className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
                             >
                                 <option value="">Any Opacity</option>
                                 <option value="transparent">Transparent</option>
@@ -480,11 +499,13 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
                         {/* Permanence */}
                         <div>
-                            <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wider block mb-1">Min. Permanence</label>
+                            <label htmlFor="paint-permanence-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Min. Permanence</label>
                             <select
+                                id="paint-permanence-filter"
+                                name="paint-permanence-filter"
                                 value={filters.minPermanence || ''}
                                 onChange={(e) => updateFilter('minPermanence', (e.target.value || null) as Permanence | null)}
-                                className="w-full px-3 py-2 rounded-lg border border-ink-hairline text-sm bg-paper-elevated"
+                                className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
                             >
                                 <option value="">Any Permanence</option>
                                 <option value="moderately-durable">Moderately Durable+</option>
@@ -496,6 +517,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                         {/* Clear Button */}
                         {activeFilterCount > 0 && (
                             <button
+                                type="button"
                                 onClick={clearFilters}
                                 className="w-full py-2 text-xs font-bold text-signal hover:bg-signal-muted rounded-lg transition-colors"
                             >
@@ -517,9 +539,12 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {filteredPaints.length === 0 ? (
                     <div className="text-center py-12">
-                        <div className="text-4xl mb-2">🎨</div>
+                        <div aria-hidden="true" className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md border border-ink-hairline bg-paper-recessed text-ink-muted">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a9 9 0 1 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a1.5 1.5 0 0 1 0-3h2a7 7 0 0 0 0-14h-2Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="9.5" cy="7.5" r="1"/><circle cx="13" cy="6.5" r="1"/></svg>
+                        </div>
                         <p className="text-sm text-ink-muted">No paints match your filters</p>
                         <button
+                            type="button"
                             onClick={clearFilters}
                             className="mt-2 text-sm text-signal hover:underline"
                         >

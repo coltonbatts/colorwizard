@@ -54,10 +54,10 @@ export default function PuddleRecipeDisplay({
 
             {!isCompact && !isBoard && (
                 <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                         Pigments
                     </h4>
-                    <span className="text-[10px] font-semibold text-ink-secondary">
+                    <span className="text-[11px] font-semibold text-ink-secondary">
                         {ingredients.length} {ingredients.length === 1 ? 'paint' : 'paints'}
                     </span>
                 </div>
@@ -66,7 +66,7 @@ export default function PuddleRecipeDisplay({
             {isBoard ? (
                 <div className="mb-5">
                     <div className="mb-3 flex items-center justify-between">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-ink-muted">
                             Mix These Paints
                         </h4>
                         <span className="text-[11px] font-semibold text-ink-secondary">
@@ -92,7 +92,7 @@ export default function PuddleRecipeDisplay({
                                         <div className="truncate text-lg font-bold leading-tight text-ink">
                                             {ingredient.pigment.name}
                                         </div>
-                                        <div className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                        <div className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                                             Paint load
                                         </div>
                                     </div>
@@ -122,10 +122,10 @@ export default function PuddleRecipeDisplay({
             ) : isCompact ? (
                 <div>
                     <div className="mb-2 flex items-center justify-between">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                             Paint Colors
                         </h4>
-                        <span className="text-[10px] font-semibold text-ink-secondary">
+                        <span className="text-[11px] font-semibold text-ink-secondary">
                             {ingredients.length} {ingredients.length === 1 ? 'paint' : 'paints'}
                         </span>
                     </div>
@@ -157,7 +157,7 @@ export default function PuddleRecipeDisplay({
                                     />
                                 </div>
                             </div>
-                            <span className="min-w-[2.5rem] text-right font-mono text-[10px] font-bold text-ink-secondary">
+                            <span className="min-w-[2.5rem] text-right font-mono text-[11px] font-bold text-ink-secondary">
                                 {ingredient.percentage}
                             </span>
                         </motion.div>
@@ -188,7 +188,7 @@ export default function PuddleRecipeDisplay({
                                         <div className="truncate text-sm font-semibold text-ink">
                                             {ingredient.pigment.name}
                                         </div>
-                                        <div className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-ink-faint">
+                                        <div className="mt-1 text-[11px] font-black uppercase tracking-[0.16em] text-ink-muted">
                                             Paint load {ingredient.percentage}
                                         </div>
                                     </div>
@@ -217,7 +217,7 @@ export default function PuddleRecipeDisplay({
 
             <div className={`${isCompact ? 'mt-2.5' : isBoard ? 'mt-4' : 'mt-5'} ${variant === 'dashboard' ? 'space-y-4' : ''}`}>
                 {variant !== 'dashboard' && !isCompact && !isBoard && (
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                    <div className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                         Mix Strand
                     </div>
                 )}
@@ -257,7 +257,7 @@ export default function PuddleRecipeDisplay({
                     </div>
                 ) : isBoard ? (
                     <div className="rounded-[20px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]">
-                        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                        <div className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-ink-muted">
                             Overall Mix
                         </div>
                         <div className="flex h-5 overflow-hidden rounded-full border border-ink-hairline bg-paper-recessed shadow-[inset_0_1px_2px_rgba(33,24,14,0.08)]">
@@ -299,7 +299,7 @@ export default function PuddleRecipeDisplay({
                                 }}
                             >
                                 <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <div className="whitespace-nowrap rounded-full border border-ink-hairline bg-paper-elevated px-2.5 py-1 text-[10px] font-semibold text-ink shadow-[0_10px_20px_rgba(33,24,14,0.12)]">
+                                    <div className="whitespace-nowrap rounded-full border border-ink-hairline bg-paper-elevated px-2.5 py-1 text-[11px] font-semibold text-ink shadow-[0_10px_20px_rgba(33,24,14,0.12)]">
                                         {ingredient.pigment.name}: {ingredient.percentage}
                                     </div>
                                 </div>

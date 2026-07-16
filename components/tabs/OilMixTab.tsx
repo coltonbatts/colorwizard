@@ -71,7 +71,7 @@ export default function OilMixTab({
             <path d="M12 4v8l5 5" />
           </svg>
         </div>
-        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Mix</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Mix</div>
         <p className="mt-2 text-sm font-semibold text-ink">Sample to mix.</p>
       </div>
     )
@@ -87,7 +87,7 @@ export default function OilMixTab({
   }
 
   return (
-    <div className="min-h-0 min-h-full space-y-6 bg-paper-elevated p-4 font-sans text-ink lg:p-6">
+    <div className="mix-lab-stack min-h-full space-y-5 bg-paper-elevated p-4 font-sans text-ink lg:p-5">
       {/* Subtractive mixing leads — this is what ColorWizard is for. */}
       <section>
         <ErrorBoundary
@@ -110,7 +110,7 @@ export default function OilMixTab({
           />
         </ErrorBoundary>
 
-        <div className="mt-4">
+        <div className="mt-3">
           <MixPipelinePeek
             targetHex={hex}
             ingredients={peekRecipe.ingredients}
@@ -133,7 +133,7 @@ export default function OilMixTab({
         />
       </CollapsibleSection>
 
-      <section className="border-t border-ink-hairline pt-4">
+      <section className="border-t border-ink-hairline pt-5">
         <h3 className="mb-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
           Color position
         </h3>
@@ -154,7 +154,7 @@ export default function OilMixTab({
         />
       </section>
 
-      <section className="space-y-8 border-t border-ink-hairline pt-4">
+      <section className="space-y-6 border-t border-ink-hairline pt-5">
         <div>
           <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
             Harmonies

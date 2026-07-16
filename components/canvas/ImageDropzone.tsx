@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState, useId } from 'react';
-import ColorWizardSplashLottie from '@/components/splash/ColorWizardSplashLottie';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 
@@ -14,6 +13,8 @@ const CORE_LOOP_STEPS = [
     'Sample color',
     'Mix / Threads / Pin',
 ];
+
+const BRAND_MARK_COLORS = ['#C45C3E', '#D8B35A', '#6F8B67', '#4E789A', '#6550B9'];
 
 interface ImageDropzoneProps {
     /** Called when an image is successfully loaded */
@@ -347,6 +348,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
         >
             <input
                 id={inputId}
+                name="reference-image"
                 type="file"
                 accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
                 onChange={(e) => {
@@ -356,18 +358,27 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                 className="sr-only"
             />
             <div
-                className="pointer-events-none absolute inset-0 bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] opacity-[0.22] mix-blend-multiply"
-                aria-hidden="true"
-            />
-            <div
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,248,236,0.9),transparent_45%),linear-gradient(180deg,rgba(246,239,229,0.92),rgba(231,220,201,0.96))]"
+                className="pointer-events-none absolute inset-0 bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] opacity-[0.12] mix-blend-multiply"
                 aria-hidden="true"
             />
 
             <div className="relative mx-auto flex min-h-[100dvh] w-full flex-col items-center justify-center px-6 py-10">
-                <ColorWizardSplashLottie className="mx-auto h-[min(58vw,300px)] w-[min(58vw,300px)] max-h-[300px] max-w-[300px]" />
+                <div className="flex h-20 items-center justify-center gap-1.5" aria-hidden="true">
+                    {BRAND_MARK_COLORS.map((color, index) => (
+                        <span
+                            key={color}
+                            className="block rounded-full border border-black/10 shadow-sm"
+                            style={{
+                                width: `${14 + index * 2}px`,
+                                height: `${14 + index * 2}px`,
+                                backgroundColor: color,
+                                transform: `translateY(${Math.abs(2 - index) * 7}px)`,
+                            }}
+                        />
+                    ))}
+                </div>
 
-                <h1 className="mt-8 font-display text-[clamp(2.5rem,7vw,3.75rem)] font-medium leading-none tracking-tight text-ink">
+                <h1 className="mt-5 font-display text-[clamp(2.5rem,7vw,3.5rem)] font-medium leading-none tracking-tight text-ink">
                     ColorWizard
                 </h1>
 
@@ -384,10 +395,10 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                             key={step}
                             className="min-w-0 border-r border-ink-hairline px-3 py-2.5 last:border-r-0"
                         >
-                            <span className="block font-mono text-[10px] font-semibold tabular-nums text-ink-faint">
+                            <span className="block font-mono text-[11px] font-semibold tabular-nums text-ink-muted">
                                 {String(index + 1).padStart(2, '0')}
                             </span>
-                            <span className="mt-1 block text-[10px] font-black uppercase leading-4 tracking-[0.14em] text-ink-muted">
+                            <span className="mt-1 block text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-ink-secondary">
                                 {step}
                             </span>
                         </li>
@@ -403,7 +414,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
 
                 {onTryDemoColor && (
                     <div className="mt-8 w-full max-w-sm">
-                        <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                        <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
                             Try a demo color
                         </p>
                         <div className="flex flex-wrap justify-center gap-2">

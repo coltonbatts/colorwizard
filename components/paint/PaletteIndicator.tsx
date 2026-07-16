@@ -1,10 +1,7 @@
 'use client'
 
 /**
- * Palette Indicator
- * 
- * Compact header showing active paint palette status at top of library.
- * Shows palette name, paint count, and quick actions.
+ * Compact status and actions for the active paint palette.
  */
 
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
@@ -14,12 +11,23 @@ interface PaletteIndicatorProps {
     onSwitchClick: () => void
 }
 
+function PaletteMark() {
+    return (
+        <span aria-hidden="true" className="grid h-8 w-8 shrink-0 grid-cols-2 gap-0.5 rounded-md border border-linen bg-paper-elevated p-1">
+            <span className="rounded-sm bg-[#d77b5c]" />
+            <span className="rounded-sm bg-[#d6ad48]" />
+            <span className="rounded-sm bg-[#5d9486]" />
+            <span className="rounded-sm bg-[#697d9d]" />
+        </span>
+    )
+}
+
 export default function PaletteIndicator({ onSave, onSwitchClick }: PaletteIndicatorProps) {
     const {
         selectedPaintIds,
         getActivePalette,
         clearSelection,
-        isDirty
+        isDirty,
     } = usePaintPaletteStore()
 
     const activePalette = getActivePalette()
@@ -27,70 +35,69 @@ export default function PaletteIndicator({ onSave, onSwitchClick }: PaletteIndic
 
     if (count === 0) {
         return (
-            <div className="p-3 bg-gray-50 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-gray-500">
-                        <span className="text-lg">🎨</span>
-                        <span className="text-sm">No paints selected</span>
+            <section className="border-b border-ink-hairline bg-paper-recessed px-4 py-3" aria-label="Paint palette status">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <PaletteMark />
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-ink">No paints selected</p>
+                            <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">Choose paints below to build a working palette.</p>
+                        </div>
                     </div>
                     <button
+                        type="button"
                         onClick={onSwitchClick}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        className="min-h-9 shrink-0 rounded-md border border-linen-strong bg-paper-elevated px-3 text-[11px] font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
                     >
-                        Load Palette
+                        Load palette
                     </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
-                    Click paints below to build your palette
-                </p>
-            </div>
+            </section>
         )
     }
 
     return (
-        <div className="p-3 bg-blue-50 border-b border-blue-100">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="text-lg">🎨</span>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-gray-900">
-                                {activePalette ? activePalette.name : 'Unsaved Palette'}
-                            </span>
-                            <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
-                                {count} paint{count !== 1 ? 's' : ''}
-                            </span>
-                            {isDirty && activePalette && (
-                                <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
-                                    Modified
-                                </span>
-                            )}
-                        </div>
+        <section className="border-b border-ink-hairline bg-paper-recessed px-4 py-3" aria-label="Paint palette status">
+            <div className="flex items-center gap-3">
+                <PaletteMark />
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="truncate text-sm font-semibold text-ink">
+                            {activePalette ? activePalette.name : 'Unsaved palette'}
+                        </p>
+                        <span className="rounded-sm border border-linen bg-paper-elevated px-1.5 py-0.5 text-[11px] font-medium text-ink-secondary">
+                            {count} paint{count !== 1 ? 's' : ''}
+                        </span>
+                        {isDirty && activePalette && (
+                            <span className="text-[11px] font-semibold text-warning">Modified</span>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 mt-2">
+            <div className="mt-3 flex items-center gap-2">
                 <button
+                    type="button"
                     onClick={onSave}
-                    className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    className="min-h-9 rounded-md bg-ink px-3 text-[11px] font-semibold text-paper-elevated transition-colors hover:bg-graphite"
                 >
-                    {activePalette && !isDirty ? 'Rename' : 'Save'}
+                    {activePalette && !isDirty ? 'Rename' : 'Save palette'}
                 </button>
                 <button
+                    type="button"
                     onClick={onSwitchClick}
-                    className="px-2 py-1 text-xs font-medium bg-white text-gray-700 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                    className="min-h-9 rounded-md border border-linen-strong bg-paper-elevated px-3 text-[11px] font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
                 >
                     Switch
                 </button>
                 <button
+                    type="button"
                     onClick={clearSelection}
-                    className="px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="min-h-9 rounded-md px-3 text-[11px] font-semibold text-danger transition-colors hover:bg-danger/10"
                 >
                     Clear
                 </button>
             </div>
-        </div>
+        </section>
     )
 }

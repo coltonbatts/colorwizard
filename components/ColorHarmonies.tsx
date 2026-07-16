@@ -16,7 +16,7 @@ export default function ColorHarmonies({ rgb, onColorSelect }: ColorHarmoniesPro
 
         return (
             <div className="space-y-2">
-                <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{label}</h4>
+                <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">{label}</h4>
                 <div className="grid grid-cols-2 gap-2">
                     {items.map((segment, i) => {
                         // Convert hex to RGB object for onColorSelect
@@ -28,24 +28,25 @@ export default function ColorHarmonies({ rgb, onColorSelect }: ColorHarmoniesPro
 
                         return (
                             <button
+                                type="button"
                                 key={`${label}-${i}`}
                                 onClick={() => onColorSelect({ r, g, b })}
-                                className="group relative flex flex-col items-center justify-center p-3 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-500/50 hover:bg-gray-800 transition-all text-left"
+                                className="group relative flex flex-col items-center justify-center rounded-lg border border-linen bg-paper-elevated p-2.5 text-left transition-colors hover:border-ink-muted hover:bg-paper"
                             >
                                 <div
-                                    className="w-full h-12 rounded-lg shadow-inner mb-2 flex items-center justify-center border border-white/10"
+                                    className="mb-2 flex h-12 w-full items-center justify-center rounded-md border border-black/10 shadow-inner"
                                     style={{ backgroundColor: hex }}
                                 >
                                     <span
-                                        className="text-[10px] font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="font-mono text-[11px] font-bold opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
                                         style={{ color: contrast }}
                                     >
                                         {hex}
                                     </span>
                                 </div>
                                 <div className="w-full">
-                                    <span className="text-[11px] font-bold text-gray-200 block truncate">{segment.name}</span>
-                                    <span className="text-[9px] text-gray-500 uppercase font-medium">{segment.type}</span>
+                                    <span className="block truncate text-xs font-semibold text-ink">{segment.name}</span>
+                                    <span className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">{segment.type}</span>
                                 </div>
                             </button>
                         )
@@ -56,15 +57,15 @@ export default function ColorHarmonies({ rgb, onColorSelect }: ColorHarmoniesPro
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="flex items-center gap-2 mb-4">
-                <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${harmonies.temperature === 'warm' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
-                        harmonies.temperature === 'cool' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
-                            'bg-gray-500/10 text-gray-500 border border-gray-500/20'
+        <div className="space-y-6">
+            <div className="mb-4 flex items-center gap-2">
+                <div className={`rounded-sm border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${harmonies.temperature === 'warm' ? 'border-[#d77b5c]/30 bg-[#d77b5c]/10 text-[#9f4e35]' :
+                        harmonies.temperature === 'cool' ? 'border-[#697d9d]/30 bg-[#697d9d]/10 text-[#4b5f7f]' :
+                            'border-linen-strong bg-paper-recessed text-ink-muted'
                     }`}>
                     {harmonies.temperature}
                 </div>
-                <span className="text-[10px] text-gray-600 font-medium italic">
+                <span className="text-[11px] font-medium text-ink-muted">
                     Based on 12-segment RYB wheel
                 </span>
             </div>
@@ -76,9 +77,9 @@ export default function ColorHarmonies({ rgb, onColorSelect }: ColorHarmoniesPro
                 <HarmonyItem label="Triadic" segments={harmonies.triadic} />
             </div>
 
-            <div className="pt-4 border-t border-gray-900">
-                <p className="text-[10px] text-gray-600 leading-relaxed">
-                    <span className="text-gray-400 font-bold">Pro-tip:</span> Use these to find colors for shadows, highlights, or focal points that naturally coordinate with your subject.
+            <div className="border-t border-ink-hairline pt-4">
+                <p className="text-[11px] leading-relaxed text-ink-muted">
+                    <span className="font-semibold text-ink-secondary">Studio note:</span> Use these to find colors for shadows, highlights, or focal points that naturally coordinate with your subject.
                 </p>
             </div>
         </div>

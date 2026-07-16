@@ -63,8 +63,8 @@ export default function StitchTab({
       <div className="space-y-6 pb-20 p-4">
         
         {/* Statistics Card */}
-        <div className="rounded-xl border border-ink-hairline bg-paper-recessed p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted mb-2">Pattern Info</h3>
+        <section className="rounded-lg border border-ink-hairline bg-paper-recessed p-4" aria-labelledby="stitch-pattern-info">
+          <h3 id="stitch-pattern-info" className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Pattern Info</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="block text-xs text-ink-faint">Grid Dimensions</span>
@@ -90,24 +90,26 @@ export default function StitchTab({
             <button
               type="button"
               onClick={handleAddAllMissingToShopping}
-              className="mt-4 w-full rounded-lg bg-studio hover:bg-studio-hover text-white text-xs font-medium py-2 px-3 transition-colors shadow-sm"
+              className="mt-4 min-h-10 w-full rounded-md border border-ink bg-ink px-3 py-2 text-xs font-semibold text-paper-elevated shadow-sm transition-colors hover:bg-graphite"
             >
               Add {missingColors.length} Missing to Shopping List
             </button>
           )}
-        </div>
+        </section>
 
         {/* Configurations */}
         <div className="space-y-4 border-t border-ink-hairline pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Grid Configurations</h3>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Grid Configuration</h3>
 
           {/* Fidelity Slider */}
           <div>
-            <div className="flex justify-between text-xs text-ink-secondary mb-1">
-              <span>Grid Size (Stitches Wide/Tall)</span>
-              <span className="font-bold">{fidelity}</span>
+            <div className="mb-1 flex justify-between text-xs text-ink-secondary">
+              <label htmlFor="stitch-grid-size">Grid Size (Stitches Wide/Tall)</label>
+              <output htmlFor="stitch-grid-size" className="font-mono font-semibold tabular-nums">{fidelity}</output>
             </div>
             <input
+              id="stitch-grid-size"
+              name="stitch-grid-size"
               type="range"
               min="16"
               max="120"
@@ -119,11 +121,13 @@ export default function StitchTab({
 
           {/* Max Colors Slider */}
           <div>
-            <div className="flex justify-between text-xs text-ink-secondary mb-1">
-              <span>Max Colors (Threads)</span>
-              <span className="font-bold">{maxColors}</span>
+            <div className="mb-1 flex justify-between text-xs text-ink-secondary">
+              <label htmlFor="stitch-max-colors">Max Colors (Threads)</label>
+              <output htmlFor="stitch-max-colors" className="font-mono font-semibold tabular-nums">{maxColors}</output>
             </div>
             <input
+              id="stitch-max-colors"
+              name="stitch-max-colors"
               type="range"
               min="2"
               max="40"
@@ -135,11 +139,13 @@ export default function StitchTab({
 
           {/* Opacity Slider */}
           <div>
-            <div className="flex justify-between text-xs text-ink-secondary mb-1">
-              <span>Stitch Opacity</span>
-              <span className="font-bold">{Math.round(stitchOpacity * 100)}%</span>
+            <div className="mb-1 flex justify-between text-xs text-ink-secondary">
+              <label htmlFor="stitch-opacity">Stitch Opacity</label>
+              <output htmlFor="stitch-opacity" className="font-mono font-semibold tabular-nums">{Math.round(stitchOpacity * 100)}%</output>
             </div>
             <input
+              id="stitch-opacity"
+              name="stitch-opacity"
               type="range"
               min="0.1"
               max="1.0"
@@ -176,7 +182,7 @@ export default function StitchTab({
         {/* Legend */}
         <div className="border-t border-ink-hairline pt-4 stitch-legend-print-section">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Thread Legend</h3>
+            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Thread Legend</h3>
             <button
               type="button"
               onClick={handlePrint}
@@ -207,15 +213,19 @@ export default function StitchTab({
                       key={item.colorId}
                       onMouseEnter={() => setHighlightedDmcCode(item.dmcCode)}
                       onMouseLeave={() => setHighlightedDmcCode(null)}
-                      onClick={() => onColorSelect?.(item.rgb)}
-                      className={`flex items-center justify-between rounded-lg p-2 transition-all cursor-pointer border ${
+                      className={`flex items-center justify-between rounded-lg border p-2 transition-[background-color,border-color,box-shadow] ${
                         isHighlighted
-                          ? 'bg-studio/10 border-studio/30 shadow-xs'
+                          ? 'border-ink-muted bg-paper-recessed shadow-sm'
                           : 'bg-paper hover:bg-paper-recessed border-transparent'
                       }`}
                     >
                       {/* Symbol & Swatch */}
-                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => onColorSelect?.(item.rgb)}
+                        className="flex min-w-0 flex-1 items-center space-x-3 rounded-md text-left"
+                        aria-label={`Select DMC ${item.dmcCode}, ${item.dmcName}`}
+                      >
                         {/* Swatch color with overlay symbol */}
                         <div
                           className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-black/15 shadow-inner"
@@ -242,20 +252,21 @@ export default function StitchTab({
                             {item.count} stitches ({item.percentage.toFixed(1)}%)
                           </div>
                         </div>
-                      </div>
+                      </button>
 
                       {/* Quick Inventory Actions */}
-                      <div className="flex items-center space-x-1 ml-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="ml-2 flex items-center space-x-1">
                         {/* Owned Status */}
                         <button
                           type="button"
                           onClick={() => toggleStash(item.dmcCode)}
-                          className={`p-1.5 rounded-md border transition-all ${
+                          className={`rounded-md border p-1.5 transition-[background-color,border-color,color] ${
                             isOwned
                               ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
                               : 'bg-paper border-ink-hairline text-ink-faint hover:text-ink hover:bg-paper-recessed'
                           }`}
                           title={isOwned ? "Owned (Remove from stash)" : "Not owned (Add to stash)"}
+                          aria-label={isOwned ? `Remove DMC ${item.dmcCode} from owned threads` : `Mark DMC ${item.dmcCode} as owned`}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={isOwned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
@@ -267,7 +278,7 @@ export default function StitchTab({
                           type="button"
                           onClick={() => toggleShoppingList(item.dmcCode)}
                           disabled={isOwned}
-                          className={`p-1.5 rounded-md border transition-all ${
+                          className={`rounded-md border p-1.5 transition-[background-color,border-color,color] ${
                             isOwned
                               ? 'opacity-40 cursor-not-allowed bg-paper-recessed border-transparent text-ink-faint'
                               : inShopping
@@ -275,6 +286,7 @@ export default function StitchTab({
                               : 'bg-paper border-ink-hairline text-ink-faint hover:text-ink hover:bg-paper-recessed'
                           }`}
                           title={isOwned ? "Owned (Already in stash)" : inShopping ? "In shopping list (Remove)" : "Add to shopping list"}
+                          aria-label={isOwned ? `DMC ${item.dmcCode} is already owned` : inShopping ? `Remove DMC ${item.dmcCode} from shopping list` : `Add DMC ${item.dmcCode} to shopping list`}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="9" cy="21" r="1" />

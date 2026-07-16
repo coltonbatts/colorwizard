@@ -247,7 +247,7 @@ export default function PaintRecipe({
       {!hideHeader && (
         <div className={`flex items-start justify-between gap-3 ${isCompactLayout ? 'mb-3' : isBoardLayout ? 'mb-5' : 'mb-4'}`}>
           <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
               Mix Path
             </div>
             <h3 className={`${isCompactLayout ? 'mt-1 text-base' : isBoardLayout ? 'mt-2 text-[1.7rem]' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
@@ -256,7 +256,7 @@ export default function PaintRecipe({
           </div>
           {!isEmptyCatalog && (
             <span
-              className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+              className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${
                 recipe.source === 'solver'
                   ? 'border border-ink-hairline bg-[rgba(255,252,247,0.82)] text-ink-secondary'
                   : 'border border-subsignal bg-subsignal-muted px-3 py-1 text-subsignal'
@@ -273,7 +273,7 @@ export default function PaintRecipe({
       ) : isEmptyCatalog ? (
         <div className="rounded-[22px] border border-dashed border-ink-hairline bg-[rgba(255,252,247,0.72)] px-4 py-5 text-center">
           <p className="text-sm font-semibold text-ink">No paints</p>
-          <p className="mt-1 text-[11px] text-ink-faint">
+          <p className="mt-1 text-[11px] text-ink-muted">
             Use Library.
           </p>
         </div>
@@ -301,7 +301,7 @@ export default function PaintRecipe({
                   <>
                     <div className={`flex items-center justify-between gap-3 border-b border-ink-hairline ${isBoardLayout ? 'px-5 py-4' : 'px-4 py-3'}`}>
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                           {isBoardLayout ? 'Mix Order' : 'Mixing Steps'}
                         </div>
                         <div className={`mt-1 font-semibold text-ink ${isBoardLayout ? 'text-lg' : 'text-sm'}`}>
@@ -309,7 +309,7 @@ export default function PaintRecipe({
                         </div>
                       </div>
 
-                      <div className={`inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] font-mono font-bold uppercase tracking-[0.16em] text-ink-secondary ${isBoardLayout ? 'px-4 py-2 text-[11px]' : 'px-3 py-1.5 text-[10px]'}`}>
+                      <div className={`inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] font-mono font-bold uppercase tracking-[0.16em] text-ink-secondary ${isBoardLayout ? 'px-4 py-2 text-[11px]' : 'px-3 py-1.5 text-[11px]'}`}>
                         {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
                       </div>
                     </div>
@@ -320,7 +320,7 @@ export default function PaintRecipe({
                           key={i}
                           className={`flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)] ${isBoardLayout ? 'px-4 py-4 text-base leading-6' : 'px-3 py-2.5 text-[11px] leading-4.5'}`}
                         >
-                          <span className={`flex shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono font-bold text-ink-secondary ${isBoardLayout ? 'h-10 w-10 text-sm' : 'h-6 w-6 text-[10px]'}`}>
+                          <span className={`flex shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono font-bold text-ink-secondary ${isBoardLayout ? 'h-10 w-10 text-sm' : 'h-6 w-6 text-[11px]'}`}>
                             {i + 1}
                           </span>
                           <span
@@ -340,7 +340,7 @@ export default function PaintRecipe({
                       className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                     >
                       <div>
-                        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                           Process
                         </div>
                         <div className="mt-1 text-sm font-semibold text-ink">
@@ -348,7 +348,7 @@ export default function PaintRecipe({
                         </div>
                       </div>
 
-                      <div className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
                         {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
                         <svg
                           width="12"
@@ -382,7 +382,7 @@ export default function PaintRecipe({
                                 key={i}
                                 className="flex items-start gap-3 rounded-[18px] border border-ink-hairline bg-[rgba(255,252,247,0.84)] px-3 py-3 text-[12px] leading-5 text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]"
                               >
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[10px] font-bold text-ink-secondary">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[11px] font-bold text-ink-secondary">
                                   {i + 1}
                                 </span>
                                 <span
@@ -407,27 +407,27 @@ export default function PaintRecipe({
       {!hideFooter && (
         <div className={`${isCompactLayout ? 'mt-3 pt-3' : isBoardLayout ? 'mt-5 pt-4' : 'mt-4 pt-4'} border-t border-ink-hairline`}>
           {isEmptyCatalog ? (
-            <p className={`${isCompactLayout ? 'text-[9px]' : isBoardLayout ? 'text-[11px]' : 'text-[10px]'} italic text-ink-faint`}>
+            <p className={`${isCompactLayout ? 'text-[11px]' : isBoardLayout ? 'text-[11px]' : 'text-[11px]'} italic text-ink-muted`}>
               Add paints to build your active palette.
             </p>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                <span className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                   Source
                 </span>
-                <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[10px] font-semibold text-ink-secondary">
+                <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[11px] font-semibold text-ink-secondary">
                   {paletteContextLabel}
                 </span>
                 {(isCompactLayout || isBoardLayout) && (
-                  <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[10px] font-semibold text-ink-secondary">
+                  <span className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1 text-[11px] font-semibold text-ink-secondary">
                     {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
                   </span>
                 )}
               </div>
 
               {isCompactLayout || isBoardLayout ? (
-                <div className="mt-2 space-y-1.5 text-[10px] leading-4 text-ink-secondary">
+                <div className="mt-2 space-y-1.5 text-[11px] leading-4 text-ink-secondary">
                   <p>{paletteRestrictionLabel}</p>
                   <p>{provenanceNote}</p>
                 </div>

@@ -45,13 +45,13 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
     if (!rgb) return null;
 
     return (
-        <section className="space-y-6">
+        <section className="space-y-5" aria-labelledby="ai-suggestions-title">
             <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-black text-studio-dim uppercase tracking-widest">
+                <h3 id="ai-suggestions-title" className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">
                     AI Palette Suggestions
                 </h3>
                 {!isPro && (
-                    <span className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">PRO</span>
+                    <span className="rounded-sm border border-ink-hairline bg-paper-recessed px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-secondary">Pro</span>
                 )}
             </div>
 
@@ -59,27 +59,31 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
                 feature="aiPaletteSuggestions"
                 showPromptOnClick
             >
-                <div className="space-y-6">
+                <div className="space-y-5">
                     {/* Base Analysis */}
                     {analysis && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50"
+                            className="rounded-lg border border-linen bg-paper p-5"
                         >
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-sm shadow-indigo-200 shadow-lg">📈</div>
-                                <h4 className="text-xs font-black text-indigo-900 uppercase tracking-tight">Chromatic Analysis</h4>
+                                <div aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-md border border-subsignal bg-subsignal-muted text-subsignal">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M4 19V9" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" />
+                                    </svg>
+                                </div>
+                                <h4 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-secondary">Chromatic Analysis</h4>
                             </div>
                             <div className="space-y-2">
-                                <p className="text-xs text-indigo-800 font-medium leading-relaxed">
-                                    <span className="font-black">VALUE:</span> {analysis.value}
+                                <p className="text-sm font-medium leading-relaxed text-ink-secondary">
+                                    <span className="font-semibold text-ink">Value:</span> {analysis.value}
                                 </p>
-                                <p className="text-xs text-indigo-800 font-medium leading-relaxed">
-                                    <span className="font-black">CHROMA:</span> {analysis.chroma}
+                                <p className="text-sm font-medium leading-relaxed text-ink-secondary">
+                                    <span className="font-semibold text-ink">Chroma:</span> {analysis.chroma}
                                 </p>
-                                <p className="text-xs text-indigo-900/60 italic font-bold leading-relaxed pt-2 border-t border-indigo-200/50">
-                                    &quot;{analysis.mixingTip}&quot;
+                                <p className="border-t border-ink-hairline pt-3 text-sm italic leading-relaxed text-ink-muted">
+                                    “{analysis.mixingTip}”
                                 </p>
                             </div>
                         </motion.div>
@@ -89,35 +93,36 @@ export default function AISuggestions({ rgb }: AISuggestionsProps) {
                     <div className="space-y-4">
                         {suggestions.map((s, i) => (
                                 <motion.div
-                                    key={i}
+                                    key={`${s.type}-${s.title}`}
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.1 }}
-                                    className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group"
+                                    className="group rounded-lg border border-ink-hairline bg-paper-elevated p-5 shadow-sm transition-[border-color,box-shadow] hover:border-linen-strong hover:shadow-md"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
-                                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">{s.type}</p>
-                                            <h4 className="text-lg font-black text-gray-900 tracking-tight">{s.title}</h4>
+                                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-subsignal">{s.type}</p>
+                                            <h4 className="font-display text-xl font-medium tracking-tight text-ink">{s.title}</h4>
                                         </div>
                                         <div className="flex gap-1.5">
                                             {s.colors.map((c, ci) => (
                                                 <div
                                                     key={ci}
-                                                    className="w-8 h-8 rounded-lg shadow-inner border border-black/5"
+                                                    className="h-8 w-8 rounded-md border border-ink-hairline shadow-inner"
                                                     style={{ backgroundColor: c }}
+                                                    title={c}
                                                 />
                                             ))}
                                         </div>
                                     </div>
 
-                                    <p className="text-sm text-gray-600 leading-relaxed font-medium mb-4" dangerouslySetInnerHTML={{ __html: s.description }} />
+                                    <p className="mb-4 text-sm font-medium leading-relaxed text-ink-secondary">{s.description.replace(/\*\*/g, '')}</p>
 
                                     {s.pigments && (
-                                        <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50">
-                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest w-full mb-1">Suggested Pigments:</span>
+                                        <div className="flex flex-wrap gap-2 border-t border-ink-hairline pt-4">
+                                            <span className="mb-1 w-full text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Suggested Pigments</span>
                                             {s.pigments.map((p, pi) => (
-                                                <span key={pi} className="px-3 py-1 bg-gray-50 text-gray-700 text-[10px] font-bold rounded-full border border-gray-100">
+                                                <span key={`${p}-${pi}`} className="rounded-md border border-linen bg-paper px-3 py-1 text-xs font-semibold text-ink-secondary">
                                                     {p}
                                                 </span>
                                             ))}

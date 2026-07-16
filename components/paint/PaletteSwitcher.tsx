@@ -1,9 +1,7 @@
 'use client'
 
 /**
- * Palette Switcher
- * 
- * Dropdown to switch between saved palettes and create new ones.
+ * Popover for switching between saved paint palettes.
  */
 
 import { useRef, useEffect } from 'react'
@@ -21,21 +19,31 @@ export default function PaletteSwitcher({ isOpen, onClose, onNewPalette }: Palet
         savedPalettes,
         activePaletteId,
         loadPalette,
-        clearSelection
+        clearSelection,
     } = usePaintPaletteStore()
 
-    // Close on click outside
     useEffect(() => {
         if (!isOpen) return
 
-        function handleClickOutside(event: MouseEvent) {
+        function handlePointerDown(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 onClose()
             }
         }
 
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
+        function handleKeyDown(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                event.preventDefault()
+                onClose()
+            }
+        }
+
+        document.addEventListener('mousedown', handlePointerDown)
+        document.addEventListener('keydown', handleKeyDown)
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown)
+            document.removeEventListener('keydown', handleKeyDown)
+        }
     }, [isOpen, onClose])
 
     if (!isOpen) return null
@@ -43,21 +51,20 @@ export default function PaletteSwitcher({ isOpen, onClose, onNewPalette }: Palet
     return (
         <div
             ref={dropdownRef}
-            className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+            className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-linen-strong bg-paper-elevated shadow-[0_18px_44px_rgba(26,26,26,0.14)]"
+            aria-label="Saved paint palettes"
         >
-            {/* Header */}
-            <div className="px-3 py-2 border-b border-gray-100 bg-gray-50">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                    Saved Palettes
+            <div className="border-b border-ink-hairline bg-paper-recessed px-3 py-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                    Saved palettes
                 </span>
             </div>
 
-            {/* Palette List */}
             <div className="max-h-64 overflow-y-auto">
                 {savedPalettes.length === 0 ? (
-                    <div className="px-3 py-4 text-center text-sm text-gray-500">
-                        No palettes saved yet
-                    </div>
+                    <p className="px-3 py-5 text-center text-sm text-ink-muted">
+                        No saved palettes yet.
+                    </p>
                 ) : (
                     savedPalettes.map((palette) => (
                         <PaletteRow
@@ -73,32 +80,33 @@ export default function PaletteSwitcher({ isOpen, onClose, onNewPalette }: Palet
                 )}
             </div>
 
-            {/* Actions */}
-            <div className="border-t border-gray-100 p-2 space-y-1">
+            <div className="space-y-1 border-t border-ink-hairline bg-paper-recessed p-2">
                 <button
+                    type="button"
                     onClick={() => {
                         onNewPalette()
                         onClose()
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-ink transition-colors hover:bg-paper-elevated"
                 >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
-                    Save Current Selection
+                    Save current selection
                 </button>
 
                 <button
+                    type="button"
                     onClick={() => {
                         clearSelection()
                         onClose()
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex min-h-10 w-full items-center gap-2 rounded-md px-3 text-left text-sm font-medium text-ink-secondary transition-colors hover:bg-paper-elevated hover:text-ink"
                 >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M4 4l16 16M4 20L20 4" />
                     </svg>
-                    Use All Paints
+                    Use all paints
                 </button>
             </div>
         </div>
@@ -108,7 +116,7 @@ export default function PaletteSwitcher({ isOpen, onClose, onNewPalette }: Palet
 function PaletteRow({
     palette,
     isActive,
-    onSelect
+    onSelect,
 }: {
     palette: PaintPalette
     isActive: boolean
@@ -116,30 +124,26 @@ function PaletteRow({
 }) {
     return (
         <button
+            type="button"
             onClick={onSelect}
-            className={`
-                w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors
-                ${isActive
-                    ? 'bg-blue-50 border-l-2 border-blue-500'
-                    : 'hover:bg-gray-50 border-l-2 border-transparent'}
-            `}
+            aria-pressed={isActive}
+            className={`flex min-h-12 w-full items-center gap-3 border-l-2 px-3 py-2.5 text-left transition-colors ${
+                isActive
+                    ? 'border-ink bg-paper-recessed'
+                    : 'border-transparent hover:bg-paper'
+            }`}
         >
-            {/* Active indicator */}
-            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-500' : 'bg-gray-300'}`} />
+            <span aria-hidden="true" className={`h-2 w-2 rounded-full ${isActive ? 'bg-ink' : 'bg-linen-strong'}`} />
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
-                    {palette.name}
-                </div>
-                <div className="text-xs text-gray-500">
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-ink">{palette.name}</span>
+                <span className="block text-[11px] text-ink-muted">
                     {palette.paintIds.length} paint{palette.paintIds.length !== 1 ? 's' : ''}
-                </div>
-            </div>
+                </span>
+            </span>
 
-            {/* Check mark for active */}
             {isActive && (
-                <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <svg aria-hidden="true" className="h-4 w-4 text-ink" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
             )}

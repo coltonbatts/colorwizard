@@ -74,7 +74,7 @@ export default function MixedColorPreview({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.08 }}
                 >
-                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ink-faint">
+                    <div className="mb-2 text-[11px] font-black uppercase tracking-[0.2em] text-ink-muted">
                         Target Color
                     </div>
 
@@ -87,7 +87,7 @@ export default function MixedColorPreview({
                         <div className="mt-4 rounded-[22px] border border-ink-hairline bg-[rgba(255,252,247,0.82)] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.62)]">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                    <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                                         Model fit
                                     </div>
                                     <div className="mt-1 flex items-center gap-2">
@@ -98,7 +98,7 @@ export default function MixedColorPreview({
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-mono text-[11px] font-black uppercase tracking-[0.16em] text-ink-faint">
+                                    <div className="font-mono text-[11px] font-black uppercase tracking-[0.16em] text-ink-muted">
                                         OKLab
                                     </div>
                                     <div className="mt-1 font-mono text-xl font-black text-ink">
@@ -113,7 +113,7 @@ export default function MixedColorPreview({
                                     style={{ backgroundColor: preview.predictedHex }}
                                 />
                                 <div className="min-w-0">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">
+                                    <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
                                         Mixed Preview
                                     </div>
                                     <div className="mt-1 font-mono text-sm font-bold text-ink">
@@ -121,13 +121,13 @@ export default function MixedColorPreview({
                                     </div>
                                 </div>
                             </div>
-                            <p className="mt-3 text-[10px] leading-4 text-ink-faint">
+                            <p className="mt-3 text-[11px] leading-4 text-ink-muted">
                                 {SPECTRAL_RECIPE_DISCLAIMER}
                             </p>
                         </div>
                     ) : (
                         <div className="mt-4 rounded-[22px] border border-subsignal/20 bg-subsignal-muted/70 px-4 py-3">
-                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-subsignal">
+                            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-subsignal">
                                 {mixSource === 'heuristic' ? 'Studio Guide' : 'Preview Pending'}
                             </div>
                             <p className="mt-1 text-sm leading-5 text-ink-secondary">
@@ -155,7 +155,7 @@ export default function MixedColorPreview({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.12 }}
                     >
-                        <div className={`${isCompact ? 'mb-1 text-[8px]' : 'mb-1.5 text-[9px]'} font-black uppercase tracking-[0.18em] text-ink-faint`}>
+                        <div className={`${isCompact ? 'mb-1 text-[11px]' : 'mb-1.5 text-[11px]'} font-black uppercase tracking-[0.18em] text-ink-muted`}>
                             {preview ? 'Solver Preview' : 'Reference Color'}
                         </div>
                         <div
@@ -171,7 +171,7 @@ export default function MixedColorPreview({
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.18 }}
                         >
-                            <div className={`${isCompact ? 'mb-1 text-[8px]' : 'mb-1.5 text-[9px]'} font-black uppercase tracking-[0.18em] text-ink-faint`}>
+                            <div className={`${isCompact ? 'mb-1 text-[11px]' : 'mb-1.5 text-[11px]'} font-black uppercase tracking-[0.18em] text-ink-muted`}>
                                 Target
                             </div>
                             <div
@@ -187,7 +187,7 @@ export default function MixedColorPreview({
                     <div className="mt-3 flex items-center justify-between gap-2">
                         <div className={`inline-flex items-center gap-1.5 rounded-full border ${styles.bg} ${styles.border} ${isCompact ? 'px-2 py-1' : 'px-3 py-1.5'}`}>
                             <div className={`h-2 w-2 rounded-full ${styles.dot}`} />
-                            <span className={`${isCompact ? 'text-[10px]' : 'text-sm'} font-semibold ${styles.text}`}>
+                            <span className={`${isCompact ? 'text-[11px]' : 'text-sm'} font-semibold ${styles.text}`}>
                                 {modelFit?.label ?? preview.matchQuality}
                             </span>
                         </div>
@@ -196,16 +196,16 @@ export default function MixedColorPreview({
                             {formatSpectralModelError(preview.error)}
                         </div>
                     </div>
-                    <p className="mt-2 px-1 text-[10px] leading-4 text-ink-faint">
+                    <p className="mt-2 px-1 text-[11px] leading-4 text-ink-muted">
                         {SPECTRAL_RECIPE_DISCLAIMER}
                     </p>
                     </>
                 ) : (
                     <div className="mt-3 rounded-[18px] border border-subsignal/20 bg-subsignal-muted/70 px-3 py-2.5">
-                        <div className="text-[9px] font-black uppercase tracking-[0.18em] text-subsignal">
+                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-subsignal">
                             {mixSource === 'heuristic' ? 'Heuristic guide' : 'Preview unavailable'}
                         </div>
-                        <p className={`mt-1 text-ink-secondary ${isCompact ? 'text-[10px] leading-4' : 'text-[11px] leading-5'}`}>
+                        <p className={`mt-1 text-ink-secondary ${isCompact ? 'text-[11px] leading-4' : 'text-[11px] leading-5'}`}>
                             {isCompact
                                 ? 'Using the reference swatch until a solver fit is available.'
                                 : 'Built from hue and value heuristics. No predicted mix swatch or model error is shown until the solver returns.'}

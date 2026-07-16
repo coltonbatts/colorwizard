@@ -49,15 +49,15 @@ export default function FeatureGate({
   // If showPromptOnClick, wrap children with click handler
   return (
     <>
-      <div className="relative">
+      <div className="group relative rounded-lg">
         {children}
         <button
           type="button"
           onClick={() => setShowUpgradePrompt(true)}
-          className="absolute inset-0 z-10 flex items-center justify-center rounded bg-black/5 opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+          className="absolute inset-0 z-10 flex items-end justify-center rounded-lg bg-transparent p-3 transition-[background-color] hover:bg-paper-shell/45 focus-visible:bg-paper-shell/45"
           aria-label={`Open feature info for ${featureConfig.label}`}
         >
-          <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
+          <span className="rounded-md border border-ink bg-ink px-3 py-1.5 text-xs font-semibold text-paper-elevated opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             Requires License
           </span>
         </button>

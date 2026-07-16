@@ -1,13 +1,12 @@
 'use client'
 
 /**
- * Save Palette Modal
- * 
  * Dialog to name and save the current paint selection as a palette.
  */
 
-import { useState, useRef, useEffect } from 'react'
+import { useId, useState, useRef, useEffect } from 'react'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
+import OverlaySurface from '@/components/ui/Overlay'
 
 interface SavePaletteModalProps {
     isOpen: boolean
@@ -18,141 +17,133 @@ export default function SavePaletteModal({ isOpen, onClose }: SavePaletteModalPr
     const [name, setName] = useState('')
     const [error, setError] = useState('')
     const inputRef = useRef<HTMLInputElement>(null)
+    const titleId = useId()
+    const inputId = useId()
+    const errorId = useId()
 
     const { selectedPaintIds, savePalette, getActivePalette, updatePalette, isDirty } = usePaintPaletteStore()
     const activePalette = getActivePalette()
 
-    // Focus input when modal opens
     useEffect(() => {
-        if (isOpen) {
-            // Pre-fill with existing palette name if editing
-            if (activePalette && !isDirty) {
-                setName(activePalette.name)
-            } else {
-                setName('')
-            }
-            setError('')
-            setTimeout(() => inputRef.current?.focus(), 100)
-        }
-    }, [isOpen, activePalette, isDirty])
+        if (!isOpen) return
 
-    if (!isOpen) return null
+        setName(activePalette && !isDirty ? activePalette.name : '')
+        setError('')
+    }, [isOpen, activePalette, isDirty])
 
     const handleSave = () => {
         const trimmed = name.trim()
 
         if (!trimmed) {
-            setError('Please enter a palette name')
+            setError('Enter a palette name.')
             return
         }
 
         if (activePalette && !isDirty) {
-            // Rename existing (no changes to paints, just renaming)
-            // For now, we just close - rename would need additional store method
             onClose()
             return
         }
 
         if (activePalette && isDirty) {
-            // Update existing palette with current selection
             updatePalette(activePalette.id)
         } else {
-            // Save as new palette
             savePalette(trimmed)
         }
 
         onClose()
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleSave()
-        } else if (e.key === 'Escape') {
-            onClose()
-        }
-    }
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-                onClick={onClose}
-            />
-
-            {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 fade-in duration-200">
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900">
-                        {activePalette && isDirty ? 'Update Palette' : 'Save Palette'}
+        <OverlaySurface
+            isOpen={isOpen}
+            onClose={onClose}
+            preset="dialog"
+            ariaLabelledBy={titleId}
+            initialFocusRef={inputRef}
+            rootClassName="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+            backdropClassName="absolute inset-0 bg-black/35"
+            panelClassName="relative w-full max-w-md overflow-hidden rounded-xl border border-ink-hairline bg-paper-elevated shadow-[0_20px_80px_rgba(26,26,26,0.18)]"
+        >
+            <header className="flex items-start justify-between gap-5 border-b border-ink-hairline bg-paper-recessed px-5 py-4">
+                <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Paint library</p>
+                    <h2 id={titleId} className="mt-1 font-display text-2xl font-medium tracking-tight text-ink">
+                        {activePalette && isDirty ? 'Update palette' : 'Save palette'}
                     </h2>
-                    <button
-                        onClick={onClose}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-paper hover:text-ink"
+                    aria-label="Close palette dialog"
+                >
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </header>
+
+            <div className="space-y-5 p-5">
+                <div className="flex items-center justify-between rounded-lg border border-linen bg-paper px-4 py-3">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Working selection</span>
+                    <span className="text-sm font-semibold text-ink">
+                        {selectedPaintIds.length} paint{selectedPaintIds.length !== 1 ? 's' : ''}
+                    </span>
                 </div>
 
-                {/* Content */}
-                <div className="p-5">
-                    {/* Paint count indicator */}
-                    <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg">
-                        <span className="text-lg">🎨</span>
-                        <span className="text-sm text-blue-800">
-                            {selectedPaintIds.length} paint{selectedPaintIds.length !== 1 ? 's' : ''} selected
-                        </span>
-                    </div>
-
-                    {/* Name input */}
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                            Palette Name
-                        </label>
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={name}
-                            onChange={(e) => {
-                                setName(e.target.value)
-                                setError('')
-                            }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="e.g., Studio Palette, Plein Air Kit..."
-                            className={`
-                                w-full px-4 py-3 rounded-xl border text-sm
-                                ${error
-                                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                                    : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}
-                                focus:outline-none focus:ring-2
-                            `}
-                        />
-                        {error && (
-                            <p className="mt-1 text-xs text-red-500">{error}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-3 px-5 py-4 bg-gray-50 border-t border-gray-100">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={selectedPaintIds.length === 0}
-                        className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {activePalette && isDirty ? 'Update' : 'Save Palette'}
-                    </button>
+                <div>
+                    <label htmlFor={inputId} className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                        Palette name
+                    </label>
+                    <input
+                        ref={inputRef}
+                        id={inputId}
+                        name="paletteName"
+                        type="text"
+                        autoComplete="off"
+                        value={name}
+                        onChange={(event) => {
+                            setName(event.target.value)
+                            setError('')
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                event.preventDefault()
+                                handleSave()
+                            }
+                        }}
+                        placeholder="Studio palette, plein air kit…"
+                        aria-invalid={Boolean(error)}
+                        aria-describedby={error ? errorId : undefined}
+                        className={`min-h-11 w-full rounded-md border bg-paper-elevated px-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-faint ${
+                            error
+                                ? 'border-danger focus:border-danger'
+                                : 'border-linen-strong focus:border-ink'
+                        }`}
+                    />
+                    {error && (
+                        <p id={errorId} role="alert" className="mt-2 text-[11px] font-medium text-danger">{error}</p>
+                    )}
                 </div>
             </div>
-        </div>
+
+            <footer className="flex items-center justify-end gap-2 border-t border-ink-hairline bg-paper-recessed px-5 py-4">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="min-h-10 rounded-md px-4 text-sm font-medium text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={selectedPaintIds.length === 0}
+                    className="min-h-10 rounded-md bg-ink px-4 text-sm font-semibold text-paper-elevated transition-colors hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                    {activePalette && isDirty ? 'Update' : 'Save palette'}
+                </button>
+            </footer>
+        </OverlaySurface>
     )
 }

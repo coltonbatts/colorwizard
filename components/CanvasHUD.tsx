@@ -58,7 +58,7 @@ export default function CanvasHUD({
                     <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary">
                         {formattedModeLabel}
                     </div>
-                    <div className="font-mono text-[10px] text-ink-muted" title="Zoom level">
+                    <div className="font-mono text-[11px] text-ink-muted" title="Zoom level">
                         zoom {Math.round(zoomLevel * 100)}%
                     </div>
                     {activeModes.map((mode) => (

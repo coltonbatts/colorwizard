@@ -52,12 +52,12 @@ export default function ProcreateExportButton({
 
     // Button styles based on variant
     const variantStyles = {
-        primary: 'bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg hover:shadow-xl',
-        secondary: 'bg-gray-900 hover:bg-gray-800 text-white font-bold',
-        minimal: 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold border border-gray-300',
+        primary: 'border border-ink bg-ink text-paper-elevated font-semibold hover:bg-graphite',
+        secondary: 'border border-linen-strong bg-paper-recessed text-ink font-semibold hover:border-ink-muted hover:bg-paper',
+        minimal: 'border border-ink-hairline bg-transparent text-ink-secondary font-semibold hover:bg-paper-recessed hover:text-ink',
     };
 
-    const baseStyles = 'flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition-colors disabled:cursor-not-allowed disabled:opacity-50';
+    const baseStyles = 'flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm transition-[background-color,border-color,color] disabled:cursor-not-allowed disabled:opacity-50';
 
     return (
         <>
@@ -70,7 +70,7 @@ export default function ProcreateExportButton({
             >
                 {isExporting ? (
                     <>
-                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span aria-hidden="true" className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                         <span>Exporting…</span>
                     </>
                 ) : (

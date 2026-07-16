@@ -100,10 +100,10 @@ export default function MobileNavigation({
             <div className="mobile-nav-header safe-area-top">
                 <Link
                     href="/"
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    className="font-display text-2xl font-medium tracking-tight text-ink transition-colors hover:text-signal-hover"
                     onClick={() => setIsOpen(false)}
                 >
-                    <h2 className="text-xl font-bold text-studio">Color Wizard</h2>
+                    ColorWizard
                 </Link>
                 <button
                     type="button"
@@ -120,9 +120,9 @@ export default function MobileNavigation({
 
             {/* Navigation Items */}
             <nav className="mobile-nav-items">
-                {/* Main Tabs - Thin Core: Pick Color & Match DMC */}
+                {/* Mobile-supported workflows */}
                 <div className="mobile-nav-section">
-                    <span className="mobile-nav-section-label">Pick a Color</span>
+                    <span className="mobile-nav-section-label">Workspace</span>
                     <button
                         type="button"
                         onClick={() => handleTabSelect('sample')}
@@ -132,15 +132,11 @@ export default function MobileNavigation({
                         <span className="mobile-nav-icon">
                             <SampleWorkbenchIcon />
                         </span>
-                        <span className="mobile-nav-label">Sample Color</span>
+                        <span className="mobile-nav-label">Sample & Mix</span>
                         {activeTab === 'sample' && (
                             <span className="mobile-nav-active-indicator" />
                         )}
                     </button>
-                </div>
-
-                <div className="mobile-nav-section">
-                    <span className="mobile-nav-section-label">Match Your DMC Color</span>
                     <button
                         type="button"
                         onClick={() => handleTabSelect('matches')}
@@ -150,15 +146,11 @@ export default function MobileNavigation({
                         <span className="mobile-nav-icon">
                             <ThreadsWorkbenchIcon />
                         </span>
-                        <span className="mobile-nav-label">DMC Threads</span>
+                        <span className="mobile-nav-label">Threads</span>
                         {activeTab === 'matches' && (
                             <span className="mobile-nav-active-indicator" />
                         )}
                     </button>
-                </div>
-
-                <div className="mobile-nav-section">
-                    <span className="mobile-nav-section-label">Embroidery Canvas</span>
                     <button
                         type="button"
                         onClick={() => handleTabSelect('stitch')}
@@ -168,7 +160,7 @@ export default function MobileNavigation({
                         <span className="mobile-nav-icon">
                             <StitchWorkbenchIcon />
                         </span>
-                        <span className="mobile-nav-label">Embroidery Planner</span>
+                        <span className="mobile-nav-label">Stitch Planner</span>
                         {activeTab === 'stitch' && (
                             <span className="mobile-nav-active-indicator" />
                         )}
@@ -176,7 +168,7 @@ export default function MobileNavigation({
                 </div>
 
                 <div className="mobile-nav-section">
-                    <span className="mobile-nav-section-label">Organize Saved Cards</span>
+                    <span className="mobile-nav-section-label">Saved Work</span>
                     <button
                         type="button"
                         onClick={() => handleTabSelect('deck')}

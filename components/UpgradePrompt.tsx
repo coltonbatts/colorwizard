@@ -34,51 +34,43 @@ export default function UpgradePrompt({
       preset="dialog"
       ariaLabelledBy={titleId}
       rootClassName="fixed inset-0 z-50 flex items-center justify-center p-4"
-      backdropClassName="absolute inset-0 bg-black/30"
-      panelClassName="w-[90vw] max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl outline-none sm:w-full"
+      backdropClassName="absolute inset-0 bg-black/35"
+      panelClassName="w-[90vw] max-w-md overflow-hidden rounded-xl border border-ink-hairline bg-paper-elevated shadow-[0_20px_80px_rgba(26,26,26,0.18)] sm:w-full"
     >
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-6 sm:px-8 sm:py-8">
-        <h2 id={titleId} className="mb-2 text-xl font-bold text-white sm:text-2xl">
+      <div className="border-b border-ink-hairline bg-paper-recessed px-5 py-5 sm:px-7">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Licensed Desktop Feature</p>
+        <h2 id={titleId} className="font-display text-2xl font-medium tracking-tight text-ink sm:text-[28px]">
           {featureName}
         </h2>
-        <p className="text-blue-100">Requires a licensed desktop build</p>
+        <p className="mt-2 text-sm text-ink-secondary">Available in an activated desktop build.</p>
       </div>
 
-      <div className="space-y-6 px-4 py-6 sm:px-8 sm:py-8">
-        {featureDescription && <p className="text-sm leading-relaxed text-gray-600">{featureDescription}</p>}
+      <div className="space-y-5 px-5 py-6 sm:px-7">
+        {featureDescription && <p className="text-sm leading-relaxed text-ink-secondary">{featureDescription}</p>}
 
-        <div className="rounded-lg border-2 border-blue-200 bg-blue-50/50 p-6 text-center">
-          <div className="mb-1 text-2xl font-bold text-blue-600">{APP_MODE_LABEL}</div>
-          <div className="text-sm text-gray-600">{APP_MODE_DESCRIPTION}</div>
-          <p className="mt-2 text-xs text-gray-500">Desktop activation is local. Core workflows stay offline once unlocked.</p>
+        <div className="rounded-lg border border-linen bg-paper p-5">
+          <div className="font-display text-xl font-medium text-ink">{APP_MODE_LABEL}</div>
+          <div className="mt-1 text-sm text-ink-secondary">{APP_MODE_DESCRIPTION}</div>
+          <p className="mt-3 border-t border-ink-hairline pt-3 text-xs leading-relaxed text-ink-muted">Desktop activation is local. Core workflows stay offline once unlocked.</p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-900">Included now:</h3>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">⭐</span>
-              <span>AI palette suggestions</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">⭐</span>
-              <span>Unlimited exports and advanced workflows</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="font-bold text-blue-600">⭐</span>
-              <span>Local-first desktop project storage</span>
-            </li>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">Included</h3>
+          <ul className="space-y-2 text-sm text-ink-secondary">
+            <li className="border-l-2 border-subsignal pl-3">AI palette suggestions</li>
+            <li className="border-l-2 border-subsignal pl-3">Unlimited exports and advanced workflows</li>
+            <li className="border-l-2 border-subsignal pl-3">Local-first desktop project storage</li>
           </ul>
-          <p className="mt-3 text-xs italic text-gray-600">This preview keeps the paid standalone desktop model intact instead of faking an upgrade flow.</p>
+          <p className="mt-3 text-xs leading-relaxed text-ink-muted">This preview keeps the paid standalone desktop model intact instead of faking an upgrade flow.</p>
         </div>
       </div>
 
-      <div className="border-t border-gray-100 bg-gray-50 px-4 py-4 sm:px-8 sm:py-6">
+      <div className="border-t border-ink-hairline bg-paper px-5 py-4 sm:px-7">
         <button
           type="button"
           onClick={onUpgradeClick}
           disabled={isLoading}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-11 w-full rounded-md border border-ink bg-ink px-4 py-2 text-sm font-semibold text-paper-elevated transition-colors hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-50"
         >
           Close
         </button>
