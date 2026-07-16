@@ -642,10 +642,10 @@ export default function Home() {
   const desktopCanvasInsetClass = !image
     ? 'p-0'
     : desktopLayoutMode === 'wide'
-      ? 'px-7 pb-7 pt-24 lg:pl-[7.5rem]'
+      ? 'px-5 pb-5 pt-[6.75rem]'
       : desktopLayoutMode === 'medium'
-        ? 'px-5 pb-5 pt-20 pl-[5.75rem] pr-5'
-        : 'px-4 pb-4 pt-[4.75rem] pl-[5.25rem] pr-4'
+        ? 'px-4 pb-4 pt-[6.25rem]'
+        : 'px-3 pb-3 pt-[5.75rem]'
   const desktopToolbarMaxClass =
     desktopLayoutMode === 'wide'
       ? 'max-w-[min(76rem,calc(100%-13rem))]'
@@ -692,20 +692,25 @@ export default function Home() {
           className={`workbench-desktop-shell relative flex flex-1 min-h-0 min-w-0 overflow-hidden ${desktopShellClass}`}
           data-layout={desktopLayoutMode}
         >
+          {image && (
+            <aside className="workbench-brand-spine" aria-label="ColorWizard instrument spine">
+              <div className="workbench-spine-brand" aria-label="ColorWizard">
+                <span className="workbench-spine-aperture" aria-hidden="true" />
+                <span className="workbench-spine-monogram">CW</span>
+              </div>
+
+              <WorkbenchModeRail
+                activeMode={desktopCanvasMode}
+                onModeChange={handleDesktopModeChange}
+                onOpenDeck={() => setActiveTab('deck')}
+              />
+            </aside>
+          )}
+
           <div className="workbench-desktop-stage relative flex min-h-0 min-w-0 flex-col">
             {image && (
               <>
-                <div className="pointer-events-none absolute inset-y-6 left-6 z-40 flex">
-                  <div className="pointer-events-auto">
-                    <WorkbenchModeRail
-                      activeMode={desktopCanvasMode}
-                      onModeChange={handleDesktopModeChange}
-                      onOpenDeck={() => setActiveTab('deck')}
-                    />
-                  </div>
-                </div>
-
-                <div className={`pointer-events-none absolute left-1/2 top-6 z-40 w-full -translate-x-1/2 px-4 ${desktopToolbarMaxClass}`}>
+                <div className={`workbench-command-gantry pointer-events-none absolute left-1/2 top-5 z-40 w-full -translate-x-1/2 px-4 ${desktopToolbarMaxClass}`}>
                   <div className="pointer-events-auto">
                     <CompactToolbar
                       calibration={calibration}
@@ -748,6 +753,14 @@ export default function Home() {
 
             <div className={`workbench-desktop-canvas-inset flex flex-1 min-h-0 min-w-0 flex-col ${desktopCanvasInsetClass}`}>
               <div className="relative flex-1 min-h-0" ref={canvasContainerRef}>
+                {image && (
+                  <div className="workbench-stage-reticle" aria-hidden="true">
+                    <span className="reticle-nw" />
+                    <span className="reticle-ne" />
+                    <span className="reticle-sw" />
+                    <span className="reticle-se" />
+                  </div>
+                )}
                 <ErrorBoundary
                   fallback={({ resetError }) => (
                     <CanvasErrorFallback

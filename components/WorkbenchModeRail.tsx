@@ -105,6 +105,7 @@ export default function WorkbenchModeRail({
               <span className="workbench-mode-icon" aria-hidden="true">
                 {mode.icon}
               </span>
+              <span className="workbench-mode-name">{mode.label}</span>
             </button>
           )
         })}
@@ -128,6 +129,7 @@ export default function WorkbenchModeRail({
               <span className="workbench-mode-icon" aria-hidden="true">
                 {mode.icon}
               </span>
+              <span className="workbench-mode-name">{mode.label}</span>
             </button>
           )
         })}
@@ -146,6 +148,7 @@ export default function WorkbenchModeRail({
           <span className="workbench-mode-icon" aria-hidden="true">
             <DeckWorkbenchIcon />
           </span>
+          <span className="workbench-mode-name">Deck</span>
         </button>
       </div>
     </aside>

@@ -13,15 +13,14 @@ interface FloatingInspectorPanelProps {
 }
 
 const panelMotion = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1 },
-  exit: { opacity: 0 },
-  transition: { duration: 0.15, ease: 'easeOut' },
+  initial: { opacity: 0, x: 28, clipPath: 'inset(0 0 0 100%)' },
+  animate: { opacity: 1, x: 0, clipPath: 'inset(0 0 0 0%)' },
+  exit: { opacity: 0, x: 18, clipPath: 'inset(0 0 0 100%)' },
+  transition: { duration: 0.42, ease: [0.16, 1, 0.3, 1] },
 } as const
 
 export default function FloatingInspectorPanel({
   title,
-  subtitle,
   sampledColorHex,
   onClose,
   layoutMode = 'wide',
@@ -33,12 +32,9 @@ export default function FloatingInspectorPanel({
       className="workbench-floating-panel flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden"
       data-layout={layoutMode}
     >
-      <div className="flex items-center justify-between gap-4 border-b border-ink-hairline px-5 py-4">
+      <div className="workbench-inspector-heading flex items-center justify-between gap-4 border-b border-ink-hairline px-5 py-4">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold leading-tight text-ink">{title}</h2>
-          <span className="mt-1 block text-sm leading-relaxed text-ink-muted" title={subtitle}>
-            {subtitle}
-          </span>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">

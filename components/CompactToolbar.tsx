@@ -144,7 +144,7 @@ function CommandButton({
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${
+      className={`compact-command-button inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${
         active
           ? activeClasses
           : 'border-ink-hairline bg-paper text-ink-secondary hover:bg-paper-recessed hover:text-ink'

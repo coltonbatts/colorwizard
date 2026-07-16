@@ -24,14 +24,15 @@
     "validate:paints": "node scripts/validate-paints.mjs"
   },
   "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.2.10",
     "@fontsource/eb-garamond": "^5.2.7",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@stripe/stripe-js": "^8.7.0",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.97.0",
     "@tauri-apps/plugin-dialog": "2.6.0",
     "comlink": "^4.4.2",
     "culori": "^4.0.2",
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.97.0",
     "framer-motion": "^12.29.2",
     "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",

@@ -1,20 +1,12 @@
 'use client';
 
-import { useCallback, useState, useId } from 'react';
+import { useCallback, useState, useId, type CSSProperties } from 'react';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 
-/**
- * Web workbench empty state: Lottie splash, title, and file picker (drag/drop supported).
- */
+/** First-load experience for the chromatic instrument workbench. */
 
-const CORE_LOOP_STEPS = [
-    'Upload reference',
-    'Sample color',
-    'Mix / Threads / Pin',
-];
-
-const BRAND_MARK_COLORS = ['#C45C3E', '#D8B35A', '#6F8B67', '#4E789A', '#6550B9'];
+const BRAND_MARK_COLORS = ['#FF5A36', '#F8D54A', '#A9FF68', '#42E8FF', '#8B6CFF', '#FF4DB8'];
 
 interface ImageDropzoneProps {
     /** Called when an image is successfully loaded */
@@ -342,7 +334,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`workspace-reference-dropzone relative flex-1 overflow-y-auto transition-colors duration-300 ${isDragging ? 'bg-[rgba(200,35,25,0.08)]' : 'bg-paper-shell'}`}
+            className={`workspace-reference-dropzone ${isDragging ? 'is-dragging' : ''}`}
             role="region"
             aria-label="Load reference image"
         >
@@ -357,87 +349,65 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                 }}
                 className="sr-only"
             />
-            <div
-                className="pointer-events-none absolute inset-0 bg-[url('/textures/paper-grain.svg')] bg-[length:220px_220px] opacity-[0.12] mix-blend-multiply"
-                aria-hidden="true"
-            />
+            <div className="empty-grid-field" aria-hidden="true" />
+            <div className="empty-orbit empty-orbit--one" aria-hidden="true" />
+            <div className="empty-orbit empty-orbit--two" aria-hidden="true" />
 
-            <div className="relative mx-auto flex min-h-[100dvh] w-full flex-col items-center justify-center px-6 py-10">
-                <div className="flex h-20 items-center justify-center gap-1.5" aria-hidden="true">
-                    {BRAND_MARK_COLORS.map((color, index) => (
-                        <span
-                            key={color}
-                            className="block rounded-full border border-black/10 shadow-sm"
-                            style={{
-                                width: `${14 + index * 2}px`,
-                                height: `${14 + index * 2}px`,
-                                backgroundColor: color,
-                                transform: `translateY(${Math.abs(2 - index) * 7}px)`,
-                            }}
-                        />
-                    ))}
+            <header className="empty-instrument-header">
+                <div className="empty-brand-lockup">
+                    <span className="empty-brand-mark" aria-hidden="true" />
+                    <span>ColorWizard</span>
+                </div>
+                <span className="empty-edition" aria-hidden="true">27</span>
+            </header>
+
+            <section className="empty-visual-stage" aria-label="Begin a ColorWizard study">
+                <h1 className="sr-only">ColorWizard color workbench</h1>
+                <div className="empty-spectral-blade" aria-hidden="true" />
+                <div className="empty-lens-frame" aria-hidden="true">
+                    <div className="chromatic-aperture" aria-hidden="true">
+                        <div className="chromatic-aperture__beam" />
+                        <div className="chromatic-aperture__core" />
+                        <div className="chromatic-aperture__axis chromatic-aperture__axis--x" />
+                        <div className="chromatic-aperture__axis chromatic-aperture__axis--y" />
+                        {BRAND_MARK_COLORS.map((color, index) => (
+                            <i key={color} style={{ '--aperture-color': color, '--aperture-index': index } as CSSProperties} />
+                        ))}
+                    </div>
+                    <div className="empty-pigment-orbit">
+                        {BRAND_MARK_COLORS.map((color, index) => (
+                            <span key={color} style={{ '--pigment': color, '--pigment-index': index } as CSSProperties} />
+                        ))}
+                    </div>
                 </div>
 
-                <h1 className="mt-5 font-display text-[clamp(2.5rem,7vw,3.5rem)] font-medium leading-none tracking-tight text-ink">
-                    ColorWizard
-                </h1>
+                <div className="empty-spectrum-meter" aria-hidden="true">
+                    {BRAND_MARK_COLORS.map((color) => <span key={color} style={{ backgroundColor: color }} />)}
+                </div>
 
-                <p className="mt-4 max-w-sm text-center text-sm leading-relaxed text-ink-secondary">
-                    Sample a color. Get a limited-palette mix grounded in how light combines in paint.
-                </p>
-
-                <ol
-                    aria-label="ColorWizard workflow"
-                    className="mt-6 grid w-full max-w-sm grid-cols-3 border-y border-ink-hairline text-left"
-                >
-                    {CORE_LOOP_STEPS.map((step, index) => (
-                        <li
-                            key={step}
-                            className="min-w-0 border-r border-ink-hairline px-3 py-2.5 last:border-r-0"
-                        >
-                            <span className="block font-mono text-[11px] font-semibold tabular-nums text-ink-muted">
-                                {String(index + 1).padStart(2, '0')}
-                            </span>
-                            <span className="mt-1 block text-[11px] font-semibold uppercase leading-4 tracking-[0.12em] text-ink-secondary">
-                                {step}
-                            </span>
-                        </li>
-                    ))}
-                </ol>
-
-                <label
-                    htmlFor={inputId}
-                    className={`studio-action mt-8 cursor-pointer px-8 py-3.5 transition-transform duration-200 ${isDragging ? 'scale-[1.02]' : ''}`}
-                >
-                    {isConverting ? 'Converting…' : 'Choose file'}
-                </label>
-
-                {onTryDemoColor && (
-                    <div className="mt-8 w-full max-w-sm">
-                        <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
-                            Try a demo color
-                        </p>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            {DEMO_COLOR_SWATCHES.map((swatch) => (
-                                <button
-                                    key={swatch.hex}
-                                    type="button"
-                                    onClick={() => onTryDemoColor(swatch.hex)}
-                                    aria-label={`Try demo color ${swatch.label}`}
-                                    className="inline-flex items-center gap-2 rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.88)] px-3 py-2 text-[11px] font-semibold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                                >
-                                    <span
-                                        className="h-5 w-5 shrink-0 rounded-full border border-black/10"
+                <div className="empty-action-dock">
+                    <label htmlFor={inputId} className="empty-drop-trigger">
+                        <span>{isConverting ? 'Converting…' : isDragging ? 'Release' : 'Open image'}</span>
+                        <b aria-hidden="true">+</b>
+                    </label>
+                    {onTryDemoColor && (
+                        <div className="empty-demo-strip">
+                            <div>
+                                {DEMO_COLOR_SWATCHES.map((swatch) => (
+                                    <button
+                                        key={swatch.hex}
+                                        type="button"
+                                        onClick={() => onTryDemoColor(swatch.hex)}
+                                        aria-label={`Try demo color ${swatch.label}`}
+                                        title={swatch.label}
                                         style={{ backgroundColor: swatch.hex }}
-                                        aria-hidden="true"
                                     />
-                                    {swatch.label}
-                                </button>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            </section>
         </div>
     );
 }

@@ -1,15 +1,6 @@
 import type { Config } from 'tailwindcss'
 
-/**
- * ColorWizard — Editorial Modernism for Tools
- * Tailwind Configuration
- *
- * Color System:
- * - paper: Warm, print-like backgrounds
- * - ink: Typography and lines
- * - signal: Primary actions (red, used sparingly)
- * - subsignal: Utility/informational (blue-gray)
- */
+/** ColorWizard 2027 — chromatic instrument tokens. */
 
 const config: Config = {
   content: [
@@ -21,55 +12,51 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paper tones — Warm, print-like backgrounds
         paper: {
-          shell: '#F5F0E8',
-          DEFAULT: '#F2F0E9',
-          elevated: '#FAFAF7',
-          recessed: '#E8E6DF',
+          shell: 'var(--paper-shell)',
+          DEFAULT: 'var(--paper)',
+          elevated: 'var(--paper-elevated)',
+          recessed: 'var(--paper-recessed)',
         },
-        // Ink tones — Typography and rules
         ink: {
-          DEFAULT: '#1A1A1A',
-          secondary: 'rgba(26, 26, 26, 0.7)',
-          muted: 'rgba(26, 26, 26, 0.5)',
-          faint: 'rgba(26, 26, 26, 0.25)',
-          hairline: 'rgba(26, 26, 26, 0.1)',
+          DEFAULT: 'var(--ink)',
+          secondary: 'var(--ink-secondary)',
+          muted: 'var(--ink-muted)',
+          faint: 'var(--ink-faint)',
+          hairline: 'var(--ink-hairline)',
         },
-        // Signal — Primary action color (used sparingly)
         signal: {
-          DEFAULT: '#C82319',
-          hover: '#A81D15',
-          muted: 'rgba(200, 35, 25, 0.15)',
+          DEFAULT: 'var(--signal)',
+          hover: 'var(--signal-hover)',
+          muted: 'var(--signal-muted)',
         },
-        // Subsignal — Utility/informational
         subsignal: {
-          DEFAULT: '#566D7B',
-          hover: '#455A66',
-          muted: 'rgba(86, 109, 123, 0.15)',
+          DEFAULT: 'var(--subsignal)',
+          hover: 'var(--subsignal-hover)',
+          muted: 'var(--subsignal-muted)',
         },
         graphite: {
-          DEFAULT: '#6D5E49',
-          muted: '#8F7F69',
+          DEFAULT: 'var(--graphite)',
+          muted: 'var(--graphite-muted)',
         },
         linen: {
-          DEFAULT: '#DDD1C0',
-          strong: '#C7BAA5',
+          DEFAULT: 'var(--linen)',
+          strong: 'var(--linen-strong)',
         },
-        // Legacy studio colors (mapped to new system for backwards compatibility)
         studio: {
-          DEFAULT: '#1A1A1A',
-          secondary: 'rgba(26, 26, 26, 0.7)',
-          muted: 'rgba(26, 26, 26, 0.5)',
-          dim: 'rgba(26, 26, 26, 0.25)',
-          accent: '#C82319',
+          DEFAULT: 'var(--ink)',
+          secondary: 'var(--ink-secondary)',
+          muted: 'var(--ink-muted)',
+          dim: 'var(--ink-faint)',
+          accent: 'var(--signal)',
         },
       },
       fontFamily: {
-        ui: ['Helvetica Neue', 'Helvetica', '-apple-system', 'Arial', 'sans-serif'],
-        display: ['EB Garamond', 'Georgia', 'Times New Roman', 'serif'],
+        sans: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
+        ui: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
+        display: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
-        wordmark: ['EB Garamond', 'Georgia', 'Times New Roman', 'serif'],
+        wordmark: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
       },
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1.5' }],       // 12px
@@ -81,16 +68,16 @@ const config: Config = {
         '3xl': ['2.75rem', { lineHeight: '1.08' }],     // 44px
       },
       letterSpacing: {
-        tight: '0',
+        tight: '-0.04em',
         normal: '0',
         wide: '0.05em',
         caps: '0.1em',
       },
       borderRadius: {
-        'sm': '4px',
-        'md': '8px',
-        'lg': '12px',
-        'xl': '16px',
+        'sm': '2px',
+        'md': '4px',
+        'lg': '6px',
+        'xl': '8px',
       },
       spacing: {
         '18': '4.5rem',
@@ -100,9 +87,9 @@ const config: Config = {
         '128': '32rem',
       },
       boxShadow: {
-        'sm': '0 1px 3px rgba(26, 26, 26, 0.04)',
-        'md': '0 4px 12px rgba(26, 26, 26, 0.06)',
-        'lg': '0 8px 24px rgba(26, 26, 26, 0.08)',
+        'sm': '0 1px 0 rgba(255, 255, 255, 0.035)',
+        'md': '0 18px 48px rgba(0, 0, 0, 0.32)',
+        'lg': '0 26px 80px rgba(0, 0, 0, 0.48)',
       },
       transitionDuration: {
         'fast': '120ms',

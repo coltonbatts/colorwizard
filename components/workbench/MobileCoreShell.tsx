@@ -34,12 +34,12 @@ export default function MobileCoreShell({
     compactMode ? 'p-0 md:p-2' : 'p-0 md:p-3',
   ].filter(Boolean).join(' ')
 
-  const canvasFrameClassName = isSampleLayout
+  const canvasFrameClassName = isSampleLayout && hasImage
     ? 'mobile-sample-canvas-frame relative z-0 mx-2 mt-2 h-[clamp(14rem,32dvh,20rem)] shrink-0'
     : 'flex-1 min-h-0 relative'
 
   return (
-    <>
+    <div className={`mobile-core-shell ${hasImage ? 'mobile-core-shell--loaded' : 'mobile-core-shell--empty'}`}>
       {header}
 
       <div className={previewClassName}>
@@ -54,6 +54,6 @@ export default function MobileCoreShell({
 
       {controlsPanel}
       {navigation}
-    </>
+    </div>
   )
 }

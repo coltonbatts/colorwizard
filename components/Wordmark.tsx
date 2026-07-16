@@ -1,18 +1,4 @@
-/**
- * ColorWizard Wordmark — Editorial Modernism
- *
- * Typography: Apple Garamond inspired (EB Garamond)
- * Period included for editorial finality
- * Minimal, confident, quiet
- *
- * Optional: Subtle reference to classic Apple color bar
- * (old-school, restrained, flat)
- *
- * The mark should feel like it belongs on:
- * - A printed manual
- * - A reference book
- * - A professional tool
- */
+/** ColorWizard wordmark — chromatic aperture instrument identity. */
 
 'use client'
 
@@ -34,15 +20,8 @@ interface WordmarkProps {
  * 6 colors from the original Apple logo, restrained and flat
  * Used sparingly as a structural marker
  */
-const AppleColorBar = ({ className = '' }: { className?: string }) => (
-  <div className={`flex ${className}`} aria-hidden="true">
-    <div className="h-[3px] flex-1 bg-[#61BB46]" /> {/* Green */}
-    <div className="h-[3px] flex-1 bg-[#FDB827]" /> {/* Yellow */}
-    <div className="h-[3px] flex-1 bg-[#F5821F]" /> {/* Orange */}
-    <div className="h-[3px] flex-1 bg-[#E03A3E]" /> {/* Red */}
-    <div className="h-[3px] flex-1 bg-[#963D97]" /> {/* Purple */}
-    <div className="h-[3px] flex-1 bg-[#009DDC]" /> {/* Blue */}
-  </div>
+const ChromaticAperture = ({ className = '' }: { className?: string }) => (
+  <span className={`wordmark-aperture ${className}`} aria-hidden="true" />
 )
 
 const sizeClasses = {
@@ -69,14 +48,15 @@ export default function Wordmark({
         ${className}
       `}
     >
-      ColorWizard<span className="text-ink-muted">.</span>
+      <ChromaticAperture />
+      <span>ColorWizard</span>
     </span>
   )
 
   const content = showColorBar ? (
     <div className="inline-flex flex-col gap-1">
       {wordmarkContent}
-      <AppleColorBar className="w-full max-w-[120px]" />
+      <ChromaticAperture className="wordmark-aperture--bar" />
     </div>
   ) : (
     wordmarkContent
@@ -112,11 +92,12 @@ export function WordmarkHero({
   return (
     <div className={`flex flex-col items-center text-center ${className}`}>
       <span className="font-wordmark-hero text-ink tracking-tight select-none">
-        ColorWizard<span className="text-ink-muted">.</span>
+        <ChromaticAperture />
+        <span>ColorWizard</span>
       </span>
 
       {showColorBar && (
-        <AppleColorBar className="w-full max-w-[200px] mt-3" />
+        <ChromaticAperture className="wordmark-aperture--bar mt-3" />
       )}
 
       {tagline && (
@@ -147,7 +128,8 @@ export function WordmarkCompact({ className = '' }: { className?: string }) {
         ${className}
       `}
     >
-      ColorWizard<span className="text-ink-muted">.</span>
+      <ChromaticAperture />
+      <span>ColorWizard</span>
     </Link>
   )
 }

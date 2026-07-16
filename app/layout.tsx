@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
 import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
 import TauriAppShell from '@/components/desktop/TauriAppShell'
+import '@fontsource-variable/space-grotesk'
 import '@fontsource/eb-garamond/latin-400.css'
 import '@fontsource/eb-garamond/latin-400-italic.css'
 import '@fontsource/eb-garamond/latin-500.css'
@@ -21,11 +22,11 @@ import '@fontsource/jetbrains-mono/latin-ext-600.css'
 import './globals.css'
 
 /**
- * ColorWizard — Editorial Modernism for Tools
+ * ColorWizard — Chromatic Instrument System
  *
  * Typography:
- * - Display/Wordmark: EB Garamond (Apple Garamond inspired)
- * - UI: Helvetica Neue (system fallback)
+ * - Display/UI: Space Grotesk Variable
+ * - Accent: EB Garamond
  * - Technical: JetBrains Mono
  *
  * Fonts are self-hosted (@fontsource, imported here) so first paint works offline.
