@@ -45,7 +45,7 @@ export default function StructureTab() {
                                         key={val}
                                         onClick={() => setRulerGridSpacing(val as 0.25 | 0.5 | 1 | 2)}
                                         className={`
-                      flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all
+                      flex-1 py-1.5 rounded-md text-xs font-bold transition-colors
                       ${rulerGridSpacing === val
                                                 ? 'bg-signal text-white shadow-sm'
                                                 : 'bg-paper-recessed text-ink-faint hover:bg-paper-recessed'}

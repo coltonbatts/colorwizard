@@ -57,7 +57,7 @@ export default function PinnedColorsPanel({
                     <button
                         onClick={onExport}
                         title="Export Palette as JSON"
-                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-all shadow-sm"
+                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-colors shadow-sm"
                         aria-label="Export Palette as JSON"
                     >
                         💾
@@ -65,7 +65,7 @@ export default function PinnedColorsPanel({
                     <button
                         onClick={onClearAll}
                         title="Clear All"
-                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-all shadow-sm"
+                        className="p-2 text-ink-secondary hover:text-signal bg-paper-recessed border border-ink-hairline rounded-xl transition-colors shadow-sm"
                         aria-label="Clear All Pinned Colors"
                     >
                         🗑️
@@ -82,7 +82,7 @@ export default function PinnedColorsPanel({
                     return (
                         <div
                             key={color.id}
-                            className={`group rounded-lg border transition-all duration-500 overflow-hidden ${expandedId === color.id
+                            className={`group rounded-lg border transition-[border-color,box-shadow] duration-500 overflow-hidden ${expandedId === color.id
                                 ? 'bg-paper-recessed border-ink-hairline shadow-lg scale-[1.02]'
                                 : 'bg-paper-elevated border-ink-hairline hover:border-signal hover:shadow-md'
                                 }`}
@@ -130,7 +130,7 @@ export default function PinnedColorsPanel({
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => onSelect(color.rgb)}
-                                        className={`p-2 rounded-lg transition-all ${isActive(color.rgb)
+                                        className={`p-2 rounded-lg transition-colors ${isActive(color.rgb)
                                             ? 'bg-signal text-white'
                                             : 'text-ink-muted hover:text-signal hover:bg-ink'
                                             }`}
@@ -141,7 +141,7 @@ export default function PinnedColorsPanel({
                                     </button>
                                     <button
                                         onClick={() => onUnpin(color.id)}
-                                        className="p-2 text-ink-faint hover:text-signal hover:bg-signal-muted rounded-xl transition-all"
+                                        className="p-2 text-ink-faint hover:text-signal hover:bg-signal-muted rounded-xl transition-colors"
                                         title="Remove"
                                         aria-label={`Remove ${color.label} from pinned colors`}
                                     >
@@ -200,7 +200,7 @@ export default function PinnedColorsPanel({
                                     <div className="pt-2">
                                         <button
                                             onClick={() => setExpandedId(null)}
-                                            className="w-full py-1.5 text-[10px] uppercase font-bold text-white/50 hover:text-white/80 bg-gray-800/30 rounded border border-gray-700/50 transition-all"
+                                            className="w-full py-1.5 text-xs uppercase font-bold text-white/50 hover:text-white/80 bg-gray-800/30 rounded border border-gray-700/50 transition-colors"
                                         >
                                             Close Details
                                         </button>

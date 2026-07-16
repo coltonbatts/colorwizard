@@ -85,7 +85,7 @@ export default function ReferenceTab() {
 
                             <button
                                 onClick={() => setReferenceLocked(!referenceLocked)}
-                                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${referenceLocked
+                                className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors ${referenceLocked
                                         ? 'bg-signal text-white shadow-lg border border-signal'
                                         : 'bg-paper-elevated text-ink hover:bg-paper-recessed border border-ink-hairline shadow-sm'
                                     }`}
@@ -168,7 +168,7 @@ export default function ReferenceTab() {
                     </div>
                 ) : (
                     <label
-                        className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-ink-hairline p-6 text-center transition-all hover:border-signal hover:bg-subsignal-muted"
+                        className="group flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-ink-hairline p-6 text-center transition-[color,background-color,border-color] hover:border-signal hover:bg-subsignal-muted"
                     >
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-paper-recessed transition-transform group-hover:scale-110">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink-faint group-hover:text-signal">

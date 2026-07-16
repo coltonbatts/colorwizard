@@ -106,23 +106,23 @@ function DesktopProjectFrame({
     : 'Just now'
 
   return (
-    <div className="tauri-project-shell fixed inset-0 flex flex-col bg-[#f5f0e8] text-[#1a1a1a]">
-      <header className="border-b border-[#ddd1c0] bg-[#f5f0e8]/95 px-5 py-4 backdrop-blur">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
-            <div className="mt-1 flex items-center gap-3">
-              <h1 className="truncate font-serif text-2xl">{project?.name ?? 'Opening project...'}</h1>
-              <span className="hidden text-xs text-[#8f7f69] md:inline">Last updated {modifiedAt}</span>
+    <div className="tauri-project-shell fixed inset-0 flex flex-col bg-paper-shell text-ink">
+      <header className="flex min-h-16 items-center border-b border-ink-hairline bg-paper px-5">
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-5">
+            <span className="font-wordmark text-lg">CW</span>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold">{project?.name ?? 'Opening project…'}</h1>
+              <span className="hidden text-xs text-ink-muted md:block">Updated {modifiedAt}</span>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onBackToProjects}
-            className="rounded-full border border-[#c7baa5] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6d5e49] transition-colors hover:border-[#1a1a1a] hover:text-[#1a1a1a]"
+            className="min-h-11 border border-ink-hairline bg-paper-elevated px-4 text-sm font-semibold text-ink transition-colors hover:border-ink"
           >
-            Studio
+            Projects
           </button>
         </div>
       </header>
@@ -130,11 +130,11 @@ function DesktopProjectFrame({
       <main className="relative min-h-0 flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <div className="rounded-2xl border border-[#ddd1c0] bg-white px-8 py-6 text-center shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#8f7f69]">Loading</p>
-              <p className="mt-2 font-serif text-2xl text-[#1a1a1a]">{project?.name ?? 'Project workspace'}</p>
+            <div className="w-full max-w-sm border-t border-ink pt-4">
+              <p className="text-section">Loading project</p>
+              <p className="mt-2 text-xl font-semibold">{project?.name ?? 'Project workspace'}</p>
               {status ? (
-                <p className="mt-3 text-xs leading-relaxed text-[#7a6a59]">{status}</p>
+                <p className="mt-2 text-sm text-ink-secondary">{status}</p>
               ) : null}
             </div>
           </div>
@@ -159,33 +159,32 @@ function DesktopDatabaseErrorScreen({
   onContinueOffline: () => void
 }) {
   return (
-    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
-      <div className="w-full max-w-xl rounded-[30px] border border-[#c9a882] bg-white/90 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.1)] backdrop-blur-xl">
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f5a3c]">ColorWizard Pro</p>
-        <h1 className="mt-3 font-serif text-[clamp(1.8rem,4vw,2.6rem)] leading-tight tracking-[-0.03em] text-[#1a1a1a]">
+    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-paper-shell p-6 text-ink">
+      <div className="w-full max-w-xl border-t border-ink pt-5">
+        <p className="text-section">ColorWizard Pro</p>
+        <h1 className="mt-3 text-[clamp(1.8rem,4vw,2.6rem)] font-semibold leading-tight tracking-[-0.03em]">
           Local database unavailable
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[#6a5a48]">
-          Your studio needs the on-disk project library to save palettes, pins, and workspace state. You can try again or
-          continue in memory — work will be lost when you quit.
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-secondary">
+          Retry the local project library, or continue without saving. Work in memory is discarded when the app closes.
         </p>
         {message ? (
-          <p className="mt-5 rounded-2xl border border-[#e8d4c4] bg-[#fff8f3] px-4 py-3 font-mono text-xs leading-relaxed text-[#5c4030]">
+          <p className="mt-5 border-l-2 border-danger pl-3 font-mono text-xs leading-relaxed text-ink-secondary">
             {message}
           </p>
         ) : null}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             onClick={onContinueOffline}
-            className="rounded-full border border-[#c7baa5] bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#6d5e49] transition-colors hover:border-[#8f5a3c] hover:text-[#1a1a1a]"
+            className="min-h-11 border border-ink-hairline bg-paper-elevated px-5 text-sm font-semibold transition-colors hover:border-ink"
           >
             Continue without saving
           </button>
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-full border border-[#1a1a1a] bg-[#1a1a1a] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#f5f0e8] transition-colors hover:bg-[#2a2a2a]"
+            className="min-h-11 border border-ink bg-ink px-5 text-sm font-semibold text-paper-elevated transition-colors hover:bg-graphite"
           >
             Retry
           </button>
@@ -199,11 +198,10 @@ function DesktopLocalDataOfflineBanner() {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed left-0 right-0 top-0 z-[100] border-b border-amber-200/80 bg-amber-50/95 px-4 py-2.5 text-center text-xs leading-snug text-amber-950 shadow-sm backdrop-blur-sm"
+      className="pointer-events-none fixed left-0 right-0 top-0 z-[100] border-b border-warning bg-paper-elevated px-4 py-2.5 text-center text-xs leading-snug text-ink"
     >
       <span className="font-semibold">Local data is off.</span> Projects and workspace are not being saved to disk. Quitting
-      the app will discard unsaved work. Free disk space, check permissions on the app data folder, or restart — then use
-      Retry from the startup screen after relaunch.
+      the app will discard unsaved work.
     </div>
   )
 }
@@ -225,22 +223,21 @@ function DesktopLaunchScreen({
   }, [])
 
   return (
-    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-[#efe7dc] p-6 text-[#1a1a1a]">
-      <div className="w-full max-w-xl rounded-[30px] border border-[#d7cab8] bg-white/84 px-8 py-8 shadow-[0_24px_60px_rgba(26,26,26,0.08)] backdrop-blur-xl">
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#8f7f69]">ColorWizard Pro</p>
-        <h1 className="mt-3 font-serif text-[clamp(2.2rem,5vw,3.4rem)] leading-[0.95] tracking-[-0.04em] text-[#1a1a1a]">
+    <div className="tauri-state-screen fixed inset-0 flex items-center justify-center bg-paper-shell p-6 text-ink">
+      <div className="w-full max-w-xl border-t border-ink pt-5">
+        <p className="text-section">ColorWizard Pro</p>
+        <h1 className="mt-3 text-[clamp(2.2rem,5vw,3.4rem)] font-semibold leading-[0.95] tracking-[-0.04em]">
           {title}
         </h1>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed text-[#6a5a48]">{detail}</p>
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-ink-secondary">{detail}</p>
         {status ? (
-          <p className="mt-5 rounded-2xl border border-[#e5dbcf] bg-[#faf7f2] px-4 py-3 text-xs leading-relaxed text-[#7a6a59]">
-            Current step: {status}
+          <p className="mt-5 border-l-2 border-[var(--subsignal)] pl-3 text-xs leading-relaxed text-ink-muted">
+            {status}
           </p>
         ) : null}
         {isSlow ? (
-          <p className="mt-5 rounded-2xl border border-[#e5dbcf] bg-[#faf7f2] px-4 py-3 text-xs leading-relaxed text-[#7a6a59]">
-            Startup is taking longer than expected. Check the console for [Tauri][Startup] logs if this
-            does not move.
+          <p className="mt-5 text-xs leading-relaxed text-ink-muted">
+            Startup is taking longer than expected.
           </p>
         ) : null}
       </div>

@@ -122,17 +122,17 @@ export default function MixLab({
     <div className="rounded-lg border border-ink-hairline bg-paper-elevated p-4">
       <div className="mb-4 flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+          <h3 className="text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
             Subtractive mixing
           </h3>
-          <p className="mt-1 text-[11px] text-ink-secondary">
+          <p className="mt-1 text-sm text-ink-secondary">
             Pigments mix as paint, not as light — Kubelka–Munk, computed spectrally
           </p>
         </div>
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-md border border-ink-hairline bg-paper px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
+          className="min-h-11 rounded-md border border-ink-hairline bg-paper px-3 text-xs font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
         >
           Reset
         </button>
@@ -140,7 +140,7 @@ export default function MixLab({
 
       <div className="mb-6 flex flex-wrap items-center justify-center gap-6 rounded-md border border-ink-hairline bg-paper px-4 py-6">
         <div className="flex flex-col items-center">
-          <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+          <div className="mb-2 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
             Mixed
           </div>
           <div
@@ -155,16 +155,16 @@ export default function MixLab({
             }`}
             style={{ backgroundColor: mixedHex }}
           />
-          <div className="mt-2 font-mono text-[11px] text-ink-secondary">
+          <div className="mt-2 font-mono text-xs text-ink-secondary">
             {isCalculating ? 'Mixing…' : mixedHex.toUpperCase()}
           </div>
           {targetHex && mixError !== null && (
             <div className="mt-2 text-center">
-              <span className="text-[11px] font-semibold text-ink">
+              <span className="text-xs font-semibold text-ink">
                 {modelFit?.label}
               </span>
               {showMetrics && (
-                <div className="mt-0.5 font-mono text-[11px] text-ink-muted">
+                <div className="mt-0.5 font-mono text-xs text-ink-muted">
                   {formatSpectralModelError(mixError)}
                 </div>
               )}
@@ -174,7 +174,7 @@ export default function MixLab({
 
         {targetHex && (
           <div className="flex flex-col items-center">
-            <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+            <div className="mb-2 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
               Target
             </div>
             <div
@@ -188,13 +188,13 @@ export default function MixLab({
               }`}
               style={{ backgroundColor: targetHex }}
             />
-            <div className="mt-2 font-mono text-[11px] text-ink-muted">{targetHex.toUpperCase()}</div>
+            <div className="mt-2 font-mono text-xs text-ink-muted">{targetHex.toUpperCase()}</div>
           </div>
         )}
       </div>
 
       <div className="mb-6">
-        <h4 className="mb-3 text-center text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+        <h4 className="mb-3 text-center text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
           Drag pigments into the mix
         </h4>
         <div className="flex flex-wrap justify-center gap-3">
@@ -220,7 +220,7 @@ export default function MixLab({
                 className="h-10 w-10 rounded-full border border-ink-hairline"
                 style={{ backgroundColor: pigment.hex }}
               />
-              <span className="w-14 text-center text-[11px] font-medium leading-tight text-ink-muted">
+              <span className="w-14 text-center text-xs font-medium leading-tight text-ink-muted">
                 {pigment.name.split(' ')[0]}
               </span>
             </button>
@@ -229,7 +229,7 @@ export default function MixLab({
       </div>
 
       <div className="space-y-3 border-t border-ink-hairline pt-4">
-        <h4 className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-muted">
+        <h4 className="text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
           Fine tune
         </h4>
         {PALETTE.map((pigment) => {
@@ -239,13 +239,13 @@ export default function MixLab({
             <div key={pigment.id} className="flex items-center gap-3">
               <button
                 type="button"
-                className="h-5 w-5 shrink-0 rounded border border-ink-hairline"
+                className="h-11 w-11 shrink-0 rounded border border-ink-hairline"
                 style={{ backgroundColor: pigment.hex }}
                 onClick={() => handleSliderChange(pigment.id, value === 0 ? 50 : 0)}
                 aria-label={`Toggle ${pigment.name}`}
               />
               <div className="min-w-0 flex-1">
-                <div className="flex justify-between text-[11px] text-ink-secondary">
+                <div className="flex justify-between text-xs text-ink-secondary">
                   <span className="truncate">{pigment.name}</span>
                   <span className={`font-mono tabular-nums ${percentage > 0 ? 'text-ink' : ''}`}>{percentage}%</span>
                 </div>
@@ -257,14 +257,14 @@ export default function MixLab({
                   max={100}
                   value={value}
                   onChange={(e) => handleSliderChange(pigment.id, parseInt(e.target.value, 10))}
-                  className="mt-1 h-1 w-full cursor-pointer appearance-none rounded-lg bg-paper-recessed accent-ink"
+                  className="h-11 w-full cursor-pointer accent-ink"
                 />
               </div>
             </div>
           )
         })}
         {totalWeight === 0 && (
-          <p className="py-2 text-center text-[11px] italic text-ink-muted">
+          <p className="py-2 text-center text-sm italic text-ink-muted">
             Drag pigments above or apply the solver recipe below.
           </p>
         )}
@@ -274,7 +274,7 @@ export default function MixLab({
         <button
           type="button"
           onClick={applySolverRecipe}
-          className="studio-action mt-4 w-full py-3 text-[11px] font-medium uppercase tracking-[0.08em]"
+          className="studio-action mt-4 w-full py-3 text-xs font-medium uppercase tracking-[0.08em]"
         >
           Apply solver recipe to well
         </button>
@@ -285,7 +285,7 @@ export default function MixLab({
           type="button"
           onClick={() => onUseRecipe(mixInputs)}
           disabled={mixInputs.length === 0}
-          className="mt-2 w-full rounded-md border border-ink-hairline bg-paper-recessed py-3 text-[11px] font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink disabled:opacity-40"
+          className="mt-2 min-h-11 w-full rounded-md border border-ink-hairline bg-paper-recessed py-3 text-xs font-medium uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper hover:text-ink disabled:opacity-40"
         >
           Set as base recipe
         </button>

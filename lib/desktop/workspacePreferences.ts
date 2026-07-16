@@ -21,7 +21,7 @@ const PREFERENCE_KEYS = {
 export const DEFAULT_DESKTOP_WORKSPACE_PREFERENCES: DesktopWorkspacePreferences = {
   accent: 'umber',
   density: 'comfortable',
-  showUtilityPanel: true,
+  showUtilityPanel: false,
   startupBehavior: 'home',
 }
 

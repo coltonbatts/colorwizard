@@ -79,7 +79,7 @@ export default function ValueChromaGraph({ color }: ValueChromaGraphProps) {
                         fill={color}
                         stroke="white"
                         strokeWidth="2"
-                        className="transition-all duration-300 ease-out"
+                        className="transition-[opacity,transform] duration-300 ease-out"
                     />
                 </svg>
             </div>

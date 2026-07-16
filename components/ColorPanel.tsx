@@ -465,7 +465,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                     <span className="text-xs font-medium text-gray-600">Value Overlay</span>
                     <button
                       onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-[color,background-color,box-shadow] ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                     >
                       {valueScaleSettings?.enabled ? 'ON' : 'OFF'}
                     </button>

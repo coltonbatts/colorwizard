@@ -1,50 +1,35 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
 import { generatePaintRecipe, HEURISTIC_WEIGHT_MAP } from '@/lib/colorMixer'
 import { getSolverWorker } from '@/lib/workers'
-import { solveRecipe, SolveOptions } from '@/lib/paint/solveRecipe'
-import { SpectralRecipe } from '@/lib/spectral/types'
-import { Palette } from '@/lib/types/palette'
+import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
+import type { SpectralRecipe } from '@/lib/spectral/types'
+import type { Palette } from '@/lib/types/palette'
 import { SkeletonPaintRecipe } from '@/components/ui/SkeletonLoader'
 import { useDebouncedLoading } from '@/hooks/useDebounce'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
-import PuddleRecipeDisplay from './paint/PuddleRecipeDisplay'
-import MixColorPushMap from './paint/MixColorPushMap'
+import MixedColorPreview from './paint/MixedColorPreview'
 import ProcreateExportButton from './ProcreateExportButton'
+import { SPECTRAL_RECIPE_DISCLAIMER } from '@/lib/colorSemantics'
 import type { ProcreateColor } from '@/lib/types/procreate'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
   targetHex: string
   activePalette?: Palette
-  /**
-   * Use the new paint catalog instead of legacy palette.
-   * When true, brandId and lineId are used for filtering.
-   */
   useCatalog?: boolean
-  /** Brand ID when using catalog */
   brandId?: string
-  /** Line ID when using catalog */
   lineId?: string
-  /** Specific paint IDs to use (overrides brandId/lineId filter) */
   paintIds?: string[]
-  /** Display variant */
   variant?: 'standard' | 'dashboard' | 'compact' | 'board'
-  /** Whether to show the Procreate export button */
   showExportButton?: boolean
-  /** Hide the recipe title block */
   hideHeader?: boolean
-  /** Hide compact footer metadata */
   hideFooter?: boolean
-  /** Show only the immediate mix preview, leaving deeper process details to Mix Lab */
   previewOnly?: boolean
-  /** Fired when display recipe is ready (for pipeline peek, Mix Lab, etc.) */
   onRecipeResolved?: (recipe: DisplayRecipe) => void
 }
 
-const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string, id: string }> = {
+const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string; id: string }> = {
   'Titanium White': { hex: '#FDFDFD', id: 'titanium-white' },
   'Ivory Black': { hex: '#0B0B0B', id: 'ivory-black' },
   'Yellow Ochre': { hex: '#CC8E35', id: 'yellow-ochre' },
@@ -57,11 +42,7 @@ export type DisplayRecipe = {
   source: 'solver' | 'heuristic'
   ingredients: SpectralRecipe['ingredients']
   steps: string[]
-  preview: {
-    predictedHex: string
-    matchQuality: SpectralRecipe['matchQuality']
-    error: number
-  } | null
+  preview: { predictedHex: string; matchQuality: SpectralRecipe['matchQuality']; error: number } | null
 }
 
 export default function PaintRecipe({
@@ -81,390 +62,152 @@ export default function PaintRecipe({
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showSteps, setShowSteps] = useState(variant !== 'compact')
-  const isShortViewport = useMediaQuery('(max-height: 900px)')
-  const isNarrowViewport = useMediaQuery('(max-width: 480px)')
-
-  // Debounce loading state to prevent flicker on fast operations
   const showLoading = useDebouncedLoading(isLoading, 100)
-
-  // Fallback recipe from HSL heuristics
-  const { h, s, l } = hsl
-  const heuristicRecipe = useMemo(
-    () => generatePaintRecipe({ h, s, l }),
-    [h, s, l],
-  )
+  const heuristicRecipe = useMemo(() => generatePaintRecipe(hsl), [hsl])
+  const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
 
   useEffect(() => {
     let cancelled = false
-
     async function solve() {
-      // If we're using catalog but no paints are selected, don't even try to solve
-      if (useCatalog && (!paintIds || paintIds.length === 0)) {
-        setIsLoading(false)
+      if (isEmptyCatalog) {
         setSpectralRecipe(null)
+        setIsLoading(false)
         return
       }
-
       setIsLoading(true)
-
-      // Build options based on mode
       let options: SolveOptions | undefined
-
-      if (useCatalog) {
-        // Use new catalog system
-        options = {
-          useCatalog: true,
-          brandId,
-          lineId,
-          paintIds,
-        }
-      } else if (activePalette && !activePalette.isDefault) {
-        // Legacy palette filter
-        options = { paletteColorIds: activePalette.colors.map(c => c.id) }
-      }
+      if (useCatalog) options = { useCatalog: true, brandId, lineId, paintIds }
+      else if (activePalette && !activePalette.isDefault) options = { paletteColorIds: activePalette.colors.map((color) => color.id) }
 
       try {
-        // Use the type-safe worker wrapper with a 5-second timeout
-        const worker = getSolverWorker()
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Solver worker timed out')), 5000)
-        )
-        const recipe = await Promise.race([worker.solveRecipe(targetHex, options), timeout])
-
+        const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000))
+        const result = await Promise.race([getSolverWorker().solveRecipe(targetHex, options), timeout])
+        if (!cancelled) setSpectralRecipe(result)
+      } catch (error) {
+        console.error('Spectral recipe worker failed:', error)
         if (!cancelled) {
-          setSpectralRecipe(recipe)
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error('Spectral recipe worker failed:', err)
-
-        // Fallback to direct call or heuristic if worker fails
-        if (!cancelled) {
-          try {
-            const recipe = await solveRecipe(targetHex, options)
-            setSpectralRecipe(recipe)
-          } catch (fallbackErr) {
-            console.error('Direct solveRecipe also failed:', fallbackErr)
+          try { setSpectralRecipe(await solveRecipe(targetHex, options)) }
+          catch (fallbackError) {
+            console.error('Direct solveRecipe also failed:', fallbackError)
             setSpectralRecipe(null)
           }
-          setIsLoading(false)
         }
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
+    void solve()
+    return () => { cancelled = true }
+  }, [activePalette, brandId, isEmptyCatalog, lineId, paintIds, targetHex, useCatalog])
 
-    solve()
-
-    return () => {
-      cancelled = true
-    }
-  }, [targetHex, activePalette, useCatalog, brandId, lineId, paintIds])
-
-  const mappedHeuristicIngredients = useMemo<SpectralRecipe['ingredients']>(() => {
-    const rawIngredients = heuristicRecipe.colors.map(c => {
-      const pigmentInfo = HEURISTIC_PIGMENT_MAP[c.name] || { hex: '#888888', id: 'unknown' }
-      const weight = HEURISTIC_WEIGHT_MAP[c.amount] || 0.1
+  const fallbackIngredients = useMemo<SpectralRecipe['ingredients']>(() => {
+    const raw = heuristicRecipe.colors.map((color) => {
+      const pigment = HEURISTIC_PIGMENT_MAP[color.name] ?? { hex: '#888888', id: 'unknown' }
       return {
-        pigment: {
-          id: pigmentInfo.id,
-          name: c.name,
-          hex: pigmentInfo.hex,
-          tintingStrength: 1.0,
-        },
-        weight,
-        percentage: c.amount,
+        pigment: { id: pigment.id, name: color.name, hex: pigment.hex, tintingStrength: 1 },
+        weight: HEURISTIC_WEIGHT_MAP[color.amount] || 0.1,
+        percentage: color.amount === 'none' ? '0%' : color.amount,
       }
-    })
-
-    const totalWeight = rawIngredients.reduce((sum, ing) => sum + ing.weight, 0)
-
-    return rawIngredients.map(ing => ({
-        ...ing,
-        weight: totalWeight > 0 ? ing.weight / totalWeight : 0,
-        percentage: ing.percentage === 'none' ? '0%' : ing.percentage,
-      })).filter(ing => ing.weight > 0)
+    }).filter((ingredient) => ingredient.weight > 0)
+    const total = raw.reduce((sum, ingredient) => sum + ingredient.weight, 0)
+    return raw.map((ingredient) => ({ ...ingredient, weight: total ? ingredient.weight / total : 0 }))
   }, [heuristicRecipe.colors])
 
-  // Determine which recipe to show
-  const recipe: DisplayRecipe = useMemo(() => (
-    spectralRecipe
-      ? {
-        source: 'solver',
-        ingredients: spectralRecipe.ingredients,
-        steps: spectralRecipe.steps,
-        preview: {
-          predictedHex: spectralRecipe.predictedHex,
-          matchQuality: spectralRecipe.matchQuality,
-          error: spectralRecipe.error,
-        },
-      }
-      : {
-        source: 'heuristic',
-        ingredients: mappedHeuristicIngredients,
-        steps: heuristicRecipe.steps,
-        preview: null,
-      }
-  ), [heuristicRecipe.steps, mappedHeuristicIngredients, spectralRecipe])
-  const effectiveVariant =
-    variant === 'compact' || variant === 'dashboard' || variant === 'board'
-      ? variant
-      : (isShortViewport || isNarrowViewport ? 'compact' : 'standard')
+  const recipe = useMemo<DisplayRecipe>(() => spectralRecipe ? {
+    source: 'solver',
+    ingredients: spectralRecipe.ingredients,
+    steps: spectralRecipe.steps,
+    preview: { predictedHex: spectralRecipe.predictedHex, matchQuality: spectralRecipe.matchQuality, error: spectralRecipe.error },
+  } : {
+    source: 'heuristic', ingredients: fallbackIngredients, steps: heuristicRecipe.steps, preview: null,
+  }, [fallbackIngredients, heuristicRecipe.steps, spectralRecipe])
 
-  // Handle empty catalog state separately
-  const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
-  const paletteContextLabel = useCatalog && paintIds && paintIds.length > 0
-    ? `${paintIds.length} library paint${paintIds.length === 1 ? '' : 's'}`
-    : activePalette && !activePalette.isDefault
-      ? activePalette.name
-      : 'Core six-color mix'
-  const paletteRestrictionLabel = useCatalog && paintIds && paintIds.length > 0
-    ? 'Starting mix uses only paints from your library selection.'
-    : activePalette && !activePalette.isDefault
-      ? `Starting mix is limited to ${activePalette.colors.length} paints from ${activePalette.name}.`
-      : 'Built from the core six-color palette.'
-  const provenanceLabel = recipe.source === 'solver' ? 'Starting Mix' : 'Studio Guide'
-  const provenanceNote = recipe.source === 'solver'
-    ? 'Spectral mix is a model prediction for on-screen guidance—not a guarantee of wet paint. Adjust by eye for your surface and light.'
-    : 'Use this value-first studio guide as a practical first pass. Adjust by eye for your paint, surface, and light.'
-  const isCompactLayout = effectiveVariant === 'compact'
-  const isBoardLayout = effectiveVariant === 'board'
-  const shouldShowInlineSteps = isCompactLayout || isBoardLayout
-  const renderedStepCount = recipe.steps.length
+  const sortedIngredients = useMemo(() => [...recipe.ingredients].sort((a, b) => b.weight - a.weight), [recipe.ingredients])
+  const paletteLabel = useCatalog && paintIds?.length
+    ? `${paintIds.length} library paints`
+    : activePalette && !activePalette.isDefault ? activePalette.name : 'Core six-color mix'
 
   useEffect(() => {
-    if (isLoading || isEmptyCatalog) return
-    onRecipeResolved?.(recipe)
-  }, [isLoading, isEmptyCatalog, onRecipeResolved, recipe, targetHex])
+    if (!isLoading && !isEmptyCatalog) onRecipeResolved?.(recipe)
+  }, [isEmptyCatalog, isLoading, onRecipeResolved, recipe])
 
-  useEffect(() => {
-    setShowSteps(!shouldShowInlineSteps)
-  }, [shouldShowInlineSteps, targetHex])
+  if (showLoading) return <div className="paint-recipe-loading"><SkeletonPaintRecipe /></div>
+  if (isEmptyCatalog) return <div className="paint-recipe-empty"><strong>No paints selected.</strong><span>Choose paints in Library.</span></div>
+
+  if (previewOnly) {
+    return (
+      <div className="recipe-inline" aria-label="Practical mix preview">
+        <div className="recipe-inline-names">
+          {sortedIngredients.slice(0, 3).map((ingredient) => (
+            <span key={ingredient.pigment.id}>
+              <i style={{ backgroundColor: ingredient.pigment.hex }} aria-hidden="true" />
+              {ingredient.pigment.name} <b>{ingredient.percentage}</b>
+            </span>
+          ))}
+        </div>
+        <div className="recipe-strand" aria-label={sortedIngredients.map((ingredient) => `${ingredient.pigment.name} ${ingredient.percentage}`).join(', ')}>
+          {sortedIngredients.map((ingredient) => (
+            <i key={ingredient.pigment.id} style={{ width: `${ingredient.weight * 100}%`, backgroundColor: ingredient.pigment.hex }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const firstPigment = sortedIngredients[0]?.pigment.name ?? 'the base paint'
 
   return (
-    <div
-      className={`w-full min-w-0 rounded-md border border-ink-hairline bg-paper shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${isCompactLayout ? 'p-3' : isBoardLayout ? 'p-5' : 'p-4'}`}
-    >
+    <section className={`paint-recipe paint-recipe--${variant}`} aria-label="Paint recipe">
       {!hideHeader && (
-        <div className={`flex items-start justify-between gap-3 ${isCompactLayout ? 'mb-3' : isBoardLayout ? 'mb-5' : 'mb-4'}`}>
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
-              Mix Path
-            </div>
-            <h3 className={`${isCompactLayout ? 'mt-1 text-base' : isBoardLayout ? 'mt-2 text-[1.7rem]' : 'mt-2 text-xl'} font-display leading-none tracking-[-0.03em] text-ink`}>
-              Starting Paint Mix
-            </h3>
+        <header className="paint-recipe-header">
+          <div><span>Paint mix</span><h3>Target & predicted result</h3></div>
+          <small>{paletteLabel}</small>
+        </header>
+      )}
+
+      <MixedColorPreview targetHex={targetHex} preview={recipe.preview} mixSource={recipe.source} variant={variant} />
+
+      <div className="paint-ingredients" aria-label="Pigments and ratios">
+        {sortedIngredients.map((ingredient) => (
+          <div key={ingredient.pigment.id}>
+            <i style={{ backgroundColor: ingredient.pigment.hex }} aria-hidden="true" />
+            <span>{ingredient.pigment.name}</span>
+            <strong>{ingredient.percentage}</strong>
           </div>
-          {!isEmptyCatalog && (
-            <span
-              className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${
-                recipe.source === 'solver'
-                  ? 'border border-ink-hairline bg-paper-recessed text-ink-secondary'
-                  : 'border border-subsignal bg-subsignal-muted px-3 py-1 text-subsignal'
-              }`}
-            >
-              {provenanceLabel}
-            </span>
-          )}
-        </div>
-      )}
+        ))}
+      </div>
 
-      {showLoading ? (
-        <SkeletonPaintRecipe />
-      ) : isEmptyCatalog ? (
-        <div className="rounded-md border border-dashed border-ink-hairline bg-paper-recessed px-4 py-5 text-center">
-          <p className="text-sm font-semibold text-ink">No paints</p>
-          <p className="mt-1 text-[11px] text-ink-muted">
-            Use Library.
-          </p>
-        </div>
-      ) : (
-        <>
-          <PuddleRecipeDisplay
-            ingredients={recipe.ingredients}
-            targetHex={targetHex}
-            preview={recipe.preview}
-            mixSource={recipe.source}
-            variant={effectiveVariant}
-          />
+      <div className="recipe-strand recipe-strand--large" aria-label="Proportional mix strand">
+        {sortedIngredients.map((ingredient) => (
+          <i key={ingredient.pigment.id} style={{ width: `${ingredient.weight * 100}%`, backgroundColor: ingredient.pigment.hex }} />
+        ))}
+      </div>
 
-          {!previewOnly && (
-            <>
-              <MixColorPushMap
-                targetHex={targetHex}
-                ingredients={recipe.ingredients}
-                mixSource={recipe.source}
-                variant={effectiveVariant}
-              />
+      <p className="paint-next-action"><span>Next</span> Start with {firstPigment}, then add the smaller amounts gradually.</p>
 
-              <div className={`${isCompactLayout ? 'mt-3' : isBoardLayout ? 'mt-5' : 'mt-5'} rounded-md border border-ink-hairline bg-paper-recessed shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]`}>
-                {shouldShowInlineSteps ? (
-                  <>
-                    <div className={`flex items-center justify-between gap-3 border-b border-ink-hairline ${isBoardLayout ? 'px-5 py-4' : 'px-4 py-3'}`}>
-                      <div>
-                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
-                          {isBoardLayout ? 'Mix Order' : 'Mixing Steps'}
-                        </div>
-                        <div className={`mt-1 font-semibold text-ink ${isBoardLayout ? 'text-lg' : 'text-sm'}`}>
-                          {isBoardLayout ? 'What to put down first' : 'Short path to the match'}
-                        </div>
-                      </div>
-
-                      <div className={`inline-flex items-center gap-2 rounded-sm border border-ink-hairline bg-paper font-mono font-bold uppercase tracking-[0.16em] text-ink-secondary ${isBoardLayout ? 'px-4 py-2 text-[11px]' : 'px-3 py-1.5 text-[11px]'}`}>
-                        {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
-                      </div>
-                    </div>
-
-                    <ol className={`${isBoardLayout ? 'space-y-3 px-4 pb-4 pt-4' : 'space-y-2 px-3 pb-3 pt-3'}`}>
-                      {recipe.steps.map((step, i) => (
-                        <li
-                          key={i}
-                          className={`flex items-start gap-3 rounded-sm border border-ink-hairline bg-paper text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${isBoardLayout ? 'px-4 py-4 text-base leading-6' : 'px-3 py-2.5 text-[11px] leading-4.5'}`}
-                        >
-                          <span className={`flex shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono font-bold text-ink-secondary ${isBoardLayout ? 'h-10 w-10 text-sm' : 'h-6 w-6 text-[11px]'}`}>
-                            {i + 1}
-                          </span>
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ol>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowSteps((value) => !value)}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-                    >
-                      <div>
-                        <div className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
-                          Process
-                        </div>
-                        <div className="mt-1 text-sm font-semibold text-ink">
-                          {showSteps ? 'Hide mixing steps' : 'Reveal mixing steps'}
-                        </div>
-                      </div>
-
-                      <div className="inline-flex items-center gap-2 rounded-sm border border-ink-hairline bg-paper px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
-                        {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          style={{ transform: showSteps ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                          aria-hidden="true"
-                        >
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </div>
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                      {showSteps && (
-                        <motion.div
-                          initial={{ opacity: 0, maxHeight: 0 }}
-                          animate={{ opacity: 1, maxHeight: 3200 }}
-                          exit={{ opacity: 0, maxHeight: 0 }}
-                          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                          className="overflow-hidden"
-                        >
-                          <ol className="space-y-2 border-t border-ink-hairline px-4 pb-4 pt-3">
-                            {recipe.steps.map((step, i) => (
-                              <li
-                                key={i}
-                                className="flex items-start gap-3 rounded-sm border border-ink-hairline bg-paper px-3 py-3 text-[12px] leading-5 text-ink-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                              >
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-paper-recessed font-mono text-[11px] font-bold text-ink-secondary">
-                                  {i + 1}
-                                </span>
-                                <span
-                                  dangerouslySetInnerHTML={{
-                                    __html: step.replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>'),
-                                  }}
-                                />
-                              </li>
-                            ))}
-                          </ol>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </div>
-            </>
-          )}
-        </>
-      )}
+      <details className="paint-instructions">
+        <summary>Mixing instructions <span>{recipe.steps.length} steps</span></summary>
+        <ol>
+          {recipe.steps.map((step, index) => <li key={`${index}-${step}`}><b>{index + 1}</b><span>{step.replace(/\*\*/g, '')}</span></li>)}
+        </ol>
+      </details>
 
       {!hideFooter && (
-        <div className={`${isCompactLayout ? 'mt-3 pt-3' : isBoardLayout ? 'mt-5 pt-4' : 'mt-4 pt-4'} border-t border-ink-hairline`}>
-          {isEmptyCatalog ? (
-            <p className={`${isCompactLayout ? 'text-[11px]' : isBoardLayout ? 'text-[11px]' : 'text-[11px]'} italic text-ink-muted`}>
-              Add paints to build your active palette.
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-black uppercase tracking-[0.18em] text-ink-muted">
-                  Source
-                </span>
-                <span className="rounded-sm border border-ink-hairline bg-paper px-3 py-1 text-[11px] font-semibold text-ink-secondary">
-                  {paletteContextLabel}
-                </span>
-                {(isCompactLayout || isBoardLayout) && (
-                  <span className="rounded-sm border border-ink-hairline bg-paper px-3 py-1 text-[11px] font-semibold text-ink-secondary">
-                    {renderedStepCount} step{renderedStepCount === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
-
-              {isCompactLayout || isBoardLayout ? (
-                <div className="mt-2 space-y-1.5 text-[11px] leading-4 text-ink-secondary">
-                  <p>{paletteRestrictionLabel}</p>
-                  <p>{provenanceNote}</p>
-                </div>
-              ) : (
-                <>
-                  <p className="mt-3 text-xs text-ink-secondary">
-                    {paletteRestrictionLabel}
-                  </p>
-                  <p className="mt-2 text-[11px] leading-5 text-ink-secondary">
-                    {provenanceNote}
-                  </p>
-                </>
-              )}
-
-              {showExportButton && (
-                <div className="mt-3">
-                  <ProcreateExportButton
-                    colors={recipe.ingredients.map((ing): ProcreateColor => ({
-                      hex: ing.pigment.hex,
-                      name: ing.pigment.name,
-                    }))}
-                    paletteName={`${targetHex.replace('#', '')} Recipe`}
-                    variant="secondary"
-                    className="w-full"
-                    onExportSuccess={() => {
-                      console.log('Recipe exported to Procreate successfully!')
-                    }}
-                    onExportError={(error) => {
-                      console.error('Export failed:', error)
-                    }}
-                  />
-                </div>
-              )}
-            </>
+        <footer className="paint-recipe-footer">
+          <details>
+            <summary>About this prediction</summary>
+            <p>{recipe.source === 'solver' ? SPECTRAL_RECIPE_DISCLAIMER : 'This hue-and-value guide is a practical starting point. Adjust by eye for paint, surface, and light.'}</p>
+          </details>
+          {showExportButton && (
+            <ProcreateExportButton
+              colors={recipe.ingredients.map((ingredient): ProcreateColor => ({ hex: ingredient.pigment.hex, name: ingredient.pigment.name }))}
+              paletteName={`${targetHex.replace('#', '')} Recipe`}
+              variant="secondary"
+              className="paint-export"
+            />
           )}
-        </div>
+        </footer>
       )}
-    </div>
+    </section>
   )
 }

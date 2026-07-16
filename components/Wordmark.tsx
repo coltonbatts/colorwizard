@@ -66,7 +66,7 @@ export default function Wordmark({
     return (
       <Link
         href="/"
-        className="inline-block hover:opacity-80 transition-opacity duration-fast"
+        className="inline-flex min-h-11 items-center transition-opacity duration-fast hover:opacity-80"
       >
         {content}
       </Link>
@@ -118,6 +118,9 @@ export function WordmarkCompact({ className = '' }: { className?: string }) {
     <Link
       href="/"
       className={`
+        inline-flex
+        min-h-11
+        items-center
         font-wordmark
         text-lg
         text-ink

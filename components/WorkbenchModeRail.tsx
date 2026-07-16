@@ -13,144 +13,84 @@ import {
   StitchWorkbenchIcon,
 } from './workbenchIcons'
 
-interface ModeRailItem {
-  id: Exclude<TabType, 'deck'>
-  label: string
-  hint: string
-  icon: JSX.Element
-}
-
 interface WorkbenchModeRailProps {
   activeMode: Exclude<TabType, 'deck'>
   onModeChange: (mode: Exclude<TabType, 'deck'>) => void
   onOpenDeck: () => void
 }
 
-const coreModes: ModeRailItem[] = [
-  {
-    id: 'sample',
-    label: 'Sample',
-    hint: 'Inspect sampled color',
-    icon: <SampleWorkbenchIcon />,
-  },
-  {
-    id: 'mix',
-    label: 'Mix',
-    hint: 'Explore harmonies and mixing',
-    icon: <MixWorkbenchIcon />,
-  },
-  {
-    id: 'matches',
-    label: 'Threads',
-    hint: 'Compare DMC matches',
-    icon: <ThreadsWorkbenchIcon />,
-  },
-  {
-    id: 'stitch',
-    label: 'Stitch',
-    hint: 'DMC embroidery planner',
-    icon: <StitchWorkbenchIcon />,
-  },
-]
+const primaryModes = [
+  { id: 'sample', label: 'Sample', icon: <SampleWorkbenchIcon /> },
+  { id: 'mix', label: 'Mix', icon: <MixWorkbenchIcon /> },
+  { id: 'matches', label: 'Threads', icon: <ThreadsWorkbenchIcon /> },
+  { id: 'stitch', label: 'Stitch', icon: <StitchWorkbenchIcon /> },
+] as const
 
-const studioModes: ModeRailItem[] = [
-  {
-    id: 'library',
-    label: 'Library',
-    hint: 'Browse paint catalog',
-    icon: <LibraryWorkbenchIcon />,
-  },
-  {
-    id: 'reference',
-    label: 'Reference',
-    hint: 'Overlay reference image',
-    icon: <ReferenceWorkbenchIcon />,
-  },
-  {
-    id: 'structure',
-    label: 'Structure',
-    hint: 'Guides and grid',
-    icon: <StructureWorkbenchIcon />,
-  },
-  {
-    id: 'surface',
-    label: 'Surface',
-    hint: 'Manage painting surface',
-    icon: <SurfaceWorkbenchIcon />,
-  },
-]
+const toolModes = [
+  { id: 'library', label: 'Library', icon: <LibraryWorkbenchIcon /> },
+  { id: 'reference', label: 'Reference', icon: <ReferenceWorkbenchIcon /> },
+  { id: 'structure', label: 'Structure', icon: <StructureWorkbenchIcon /> },
+  { id: 'surface', label: 'Surface', icon: <SurfaceWorkbenchIcon /> },
+] as const
 
 export default function WorkbenchModeRail({
   activeMode,
   onModeChange,
   onOpenDeck,
 }: WorkbenchModeRailProps) {
+  const toolActive = toolModes.some((mode) => mode.id === activeMode)
+
   return (
-    <aside className="workbench-mode-rail hidden md:flex" aria-label="Workspace modes">
-      <div className="workbench-mode-section">
-        <span className="workbench-mode-label">Core</span>
-        {coreModes.map((mode) => {
+    <nav className="workbench-mode-rail hidden md:flex" aria-label="Workbench">
+      <div className="workbench-mode-primary">
+        {primaryModes.map((mode) => {
           const active = activeMode === mode.id
           return (
             <button
               key={mode.id}
               type="button"
               onClick={() => onModeChange(mode.id)}
-              className={`workbench-mode-btn tooltip-wrapper ${active ? 'active' : ''}`}
-              aria-pressed={active}
-              aria-label={`${mode.label}: ${mode.hint}`}
-              data-tooltip={`${mode.label} · ${mode.hint}`}
-              title={`${mode.label} · ${mode.hint}`}
+              className={`workbench-mode-btn ${active ? 'active' : ''}`}
+              aria-current={active ? 'page' : undefined}
             >
-              <span className="workbench-mode-icon" aria-hidden="true">
-                {mode.icon}
-              </span>
+              <span className="workbench-mode-icon" aria-hidden="true">{mode.icon}</span>
               <span className="workbench-mode-name">{mode.label}</span>
             </button>
           )
         })}
       </div>
 
-      <div className="workbench-mode-section workbench-mode-section-tools">
-        <span className="workbench-mode-label">Tools</span>
-        {studioModes.map((mode) => {
-          const active = activeMode === mode.id
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => onModeChange(mode.id)}
-              className={`workbench-mode-btn tooltip-wrapper ${active ? 'active' : ''}`}
-              aria-pressed={active}
-              aria-label={`${mode.label}: ${mode.hint}`}
-              data-tooltip={`${mode.label} · ${mode.hint}`}
-              title={`${mode.label} · ${mode.hint}`}
-            >
-              <span className="workbench-mode-icon" aria-hidden="true">
-                {mode.icon}
-              </span>
-              <span className="workbench-mode-name">{mode.label}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="workbench-mode-section workbench-mode-section-bottom">
-        <span className="workbench-mode-label">Save</span>
-        <button
-          type="button"
-          onClick={onOpenDeck}
-          className="workbench-mode-btn utility tooltip-wrapper"
-          aria-label="Deck: Saved card deck"
-          data-tooltip="Deck · Saved card deck"
-          title="Deck · Saved card deck"
-        >
+      <details className="workbench-tools-menu">
+        <summary className={`workbench-mode-btn ${toolActive ? 'active' : ''}`}>
           <span className="workbench-mode-icon" aria-hidden="true">
-            <DeckWorkbenchIcon />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+              <circle cx="8" cy="7" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="11" cy="17" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
           </span>
-          <span className="workbench-mode-name">Deck</span>
-        </button>
-      </div>
-    </aside>
+          <span className="workbench-mode-name">Tools</span>
+        </summary>
+        <div className="workbench-tools-surface" role="group" aria-label="Studio tools">
+          {toolModes.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => onModeChange(mode.id)}
+              className={activeMode === mode.id ? 'active' : ''}
+              aria-current={activeMode === mode.id ? 'page' : undefined}
+            >
+              <span aria-hidden="true">{mode.icon}</span>
+              {mode.label}
+            </button>
+          ))}
+          <button type="button" onClick={onOpenDeck}>
+            <span aria-hidden="true"><DeckWorkbenchIcon /></span>
+            Saved deck
+          </button>
+        </div>
+      </details>
+    </nav>
   )
 }

@@ -182,7 +182,7 @@ function TransformHandles({
                             onPointerCancel={handleCornerPointerUp}
                         >
                             <div
-                                className={`absolute rounded-full transition-all duration-150 ${isActive
+                                className={`absolute rounded-full transition-[background-color,border-color,transform] duration-150 ${isActive
                                     ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
                                     : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
                                     }`}

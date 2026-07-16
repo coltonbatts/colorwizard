@@ -39,7 +39,7 @@ export default function ProgressBar({
                     />
                 ) : (
                     <div
-                        className={`${heightClass} bg-blue-500 rounded-full transition-all duration-300 ease-out`}
+                        className={`${heightClass} bg-blue-500 rounded-full transition-[width] duration-300 ease-out`}
                         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
                     />
                 )}

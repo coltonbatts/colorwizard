@@ -1,18 +1,11 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { Palette } from '@/lib/types/palette'
 import { CalibrationData } from '@/lib/calibration'
 import { CanvasSettings } from '@/lib/types/canvas'
 import { TabType } from './CollapsibleSidebar'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import { WordmarkCompact } from './Wordmark'
 import ArtistLabToggle from './workbench/ArtistLabToggle'
-import {
-  DeckWorkbenchIcon,
-  SampleWorkbenchIcon,
-  ThreadsWorkbenchIcon,
-} from './workbenchIcons'
 
 interface CompactToolbarProps {
   calibration: CalibrationData | null
@@ -41,119 +34,17 @@ interface CompactToolbarProps {
   onArtistModeChange?: (artist: boolean) => void
 }
 
-const GridIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="M3 9h18" />
-    <path d="M9 3v18" />
+const FitIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
   </svg>
 )
 
 const ValueIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 2v20" />
-    <path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" fillOpacity="0.22" />
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" /><path d="M12 3v18" /><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" fillOpacity=".2" />
   </svg>
 )
-
-const MeasureIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 2v4" />
-    <path d="M12 18v4" />
-    <path d="M2 12h4" />
-    <path d="M18 12h4" />
-  </svg>
-)
-
-const FitIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 3h6v6" />
-    <path d="M9 21H3v-6" />
-    <path d="M21 3l-7 7" />
-    <path d="M3 21l7-7" />
-  </svg>
-)
-
-const HomeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 11.5 12 4l9 7.5" />
-    <path d="M5 10.5V20h14v-9.5" />
-    <path d="M9 20v-6h6v6" />
-  </svg>
-)
-
-const SlidersIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 21v-7" />
-    <path d="M4 10V3" />
-    <path d="M12 21v-9" />
-    <path d="M12 8V3" />
-    <path d="M20 21v-5" />
-    <path d="M20 12V3" />
-    <path d="M2 14h4" />
-    <path d="M10 10h4" />
-    <path d="M18 14h4" />
-  </svg>
-)
-
-const BeakerIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 2v7.31" />
-    <path d="M14 9.3V2" />
-    <path d="M8.5 2h7" />
-    <path d="M14 9.3 19.74 19a2 2 0 0 1-1.72 3H5.98a2 2 0 0 1-1.72-3L10 9.3" />
-  </svg>
-)
-
-const PaletteIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22a1 1 0 0 1 0-20a10 9 0 0 1 10 9a5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
-    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
-    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
-    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
-    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
-  </svg>
-)
-
-function CommandButton({
-  label,
-  icon,
-  active = false,
-  tone = 'signal',
-  disabled = false,
-  onClick,
-}: {
-  label: string
-  icon: ReactNode
-  active?: boolean
-  tone?: 'signal' | 'subsignal'
-  disabled?: boolean
-  onClick?: () => void
-}) {
-  const activeClasses =
-    tone === 'subsignal'
-      ? 'border-subsignal bg-subsignal-muted text-subsignal'
-      : 'border-signal bg-signal-muted text-signal'
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      aria-label={label}
-      className={`compact-command-button inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${
-        active
-          ? activeClasses
-          : 'border-ink-hairline bg-paper text-ink-secondary hover:bg-paper-recessed hover:text-ink'
-      } ${disabled ? 'cursor-not-allowed opacity-35 hover:bg-paper hover:text-ink-secondary' : ''}`}
-    >
-      <span className="inline-flex items-center justify-center">{icon}</span>
-    </button>
-  )
-}
 
 export default function CompactToolbar({
   calibration,
@@ -170,8 +61,6 @@ export default function CompactToolbar({
   onOpenPaletteManager,
   onOpenCanvasSettings,
   hasImage,
-  activeTab,
-  onTabChange,
   onResetView,
   valueModeEnabled,
   onToggleValueMode,
@@ -179,210 +68,72 @@ export default function CompactToolbar({
   onArtistModeChange,
 }: CompactToolbarProps) {
   const isMobile = useIsMobile()
-  const mobileTabAction =
-    activeTab === 'sample'
-      ? { nextTab: 'matches' as const, label: 'Threads', icon: <ThreadsWorkbenchIcon /> }
-      : activeTab === 'matches'
-        ? { nextTab: 'deck' as const, label: 'Deck', icon: <DeckWorkbenchIcon /> }
-        : { nextTab: 'sample' as const, label: 'Sample', icon: <SampleWorkbenchIcon /> }
+
+  if (!hasImage) return null
 
   if (isMobile) {
-    if (!hasImage) return null
-
     return (
-      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] safe-area-bottom" data-testid="mobile-bottom-toolbar">
-        <div className="pointer-events-auto mx-auto mb-2 flex w-fit items-center gap-0.5 rounded-lg border border-ink-hairline bg-paper-elevated p-1 shadow-sm">
-          <button
-            type="button"
-            onClick={onGoHome}
-            title="Home"
-            aria-label="Return home and choose another image"
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-ink"
-          >
-            <HomeIcon />
-          </button>
-
-          <button
-            type="button"
-            onClick={onResetView}
-            title="Fit"
-            aria-label="Snap to fit"
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-signal"
-          >
-            <FitIcon />
-          </button>
-
-          <button
-            type="button"
-            onClick={onToggleValueMode}
-            title="Value"
-            aria-label="Toggle value mode"
-            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
-              valueModeEnabled ? 'text-signal' : 'text-ink-secondary'
-            }`}
-          >
-            <ValueIcon />
-          </button>
-
-          <button
-            type="button"
-            onClick={onToggleRulerGrid}
-            disabled={!calibration}
-            title="Grid"
-            aria-label="Toggle grid"
-            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
-              rulerGridEnabled ? 'text-subsignal' : 'text-ink-secondary'
-            } ${!calibration ? 'opacity-30' : ''}`}
-          >
-            <GridIcon />
-          </button>
-
-          <button
-            type="button"
-            onClick={onToggleMeasure}
-            disabled={!calibration}
-            title="Measure"
-            aria-label="Toggle measure"
-            className={`flex h-11 w-11 items-center justify-center rounded-lg transition-colors ${
-              measureMode ? 'text-signal' : 'text-ink-secondary'
-            } ${!calibration ? 'opacity-30' : ''}`}
-          >
-            <MeasureIcon />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              onTabChange?.(mobileTabAction.nextTab)
-            }}
-            title={mobileTabAction.label}
-            aria-label={`Open ${mobileTabAction.label.toLowerCase()}`}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-paper hover:text-subsignal"
-          >
-            {mobileTabAction.icon}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!hasImage) {
-    return (
-      <div className="paper-panel-raised flex items-center justify-center px-5 py-4">
-        <WordmarkCompact className="text-xl" />
+      <div className="mobile-stage-controls" aria-label="Canvas view controls">
+        <button type="button" onClick={onResetView} aria-label="Fit image to canvas" title="Fit image">
+          <FitIcon />
+        </button>
+        <button
+          type="button"
+          onClick={onToggleValueMode}
+          className={valueModeEnabled ? 'active' : ''}
+          aria-pressed={valueModeEnabled}
+          aria-label="Toggle value view"
+          title="Value view"
+        >
+          <ValueIcon />
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="compact-toolbar paper-panel-raised flex flex-wrap items-center gap-2.5 overflow-visible px-3.5 py-2.5">
-      <div className="workbench-toolbar-group shrink-0">
-        <button
-          type="button"
-          onClick={onGoHome}
-          title="Home"
-          aria-label="Return home and choose another image"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md px-3.5 text-xs font-semibold uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
-        >
-          <HomeIcon />
-          <span>Home</span>
-        </button>
-        <CommandButton label="Fit" icon={<FitIcon />} onClick={onResetView} />
-        <CommandButton label="Value mode" icon={<ValueIcon />} active={valueModeEnabled} onClick={onToggleValueMode} />
-      </div>
+    <div className="compact-toolbar" aria-label="Canvas command bar">
+      <button type="button" onClick={onGoHome} className="command-text">Open</button>
+      <span className="command-rule" aria-hidden="true" />
+      <button type="button" onClick={onResetView} className="command-text">
+        <FitIcon /> Fit
+      </button>
+      <button
+        type="button"
+        onClick={onToggleValueMode}
+        className={`command-text ${valueModeEnabled ? 'active' : ''}`}
+        aria-pressed={valueModeEnabled}
+      >
+        <ValueIcon /> Value
+      </button>
 
-      <details className="group relative shrink-0">
-        <summary
-          className="inline-flex h-10 cursor-pointer list-none items-center gap-2 rounded-md px-3.5 text-xs font-semibold uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink [&::-webkit-details-marker]:hidden"
-          aria-label="Studio tools"
-          title="Studio tools"
-        >
-          <SlidersIcon />
-          Tools
-        </summary>
-
-        <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-64 rounded-lg border border-ink-hairline bg-paper-elevated p-2 shadow-md">
-          <div className="px-2 pb-2 pt-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted">
-            Studio tools
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <CommandButton
-              label="Grid"
-              icon={<GridIcon />}
-              active={Boolean(calibration && rulerGridEnabled)}
-              tone="subsignal"
-              disabled={!calibration}
-              onClick={onToggleRulerGrid}
-            />
-            <CommandButton
-              label="Measure"
-              icon={<MeasureIcon />}
-              active={Boolean(calibration && measureMode)}
-              disabled={!calibration}
-              onClick={onToggleMeasure}
-            />
-            <CommandButton
-              label={calibration ? 'Calibration' : 'Calibrate'}
-              icon={<BeakerIcon />}
-              active={Boolean(calibration)}
-              tone="subsignal"
-              onClick={onOpenCalibration}
-            />
-          </div>
-
-          <div className="mt-2 grid gap-2">
-            {calibration && (
-              <button
-                type="button"
-                onClick={onResetCalibration}
-                title="Reset calibration"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-ink-hairline bg-paper px-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
-              >
-                Reset calibration
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onOpenCanvasSettings}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-ink-hairline bg-paper px-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
-            >
-              <SlidersIcon />
-              Canvas settings
-            </button>
-          </div>
+      <details className="command-menu">
+        <summary>View & settings</summary>
+        <div className="command-menu-surface">
+          <button type="button" onClick={onToggleRulerGrid} disabled={!calibration} aria-pressed={rulerGridEnabled}>
+            Grid {rulerGridEnabled ? 'on' : 'off'}
+          </button>
+          <button type="button" onClick={onToggleMeasure} disabled={!calibration} aria-pressed={measureMode}>
+            Measure {measureMode ? 'on' : 'off'}
+          </button>
+          <button type="button" onClick={onOpenCalibration}>
+            {calibration ? 'Edit calibration' : 'Calibrate canvas'}
+          </button>
+          {calibration && <button type="button" onClick={onResetCalibration}>Reset calibration</button>}
+          <button type="button" onClick={onOpenCanvasSettings}>Canvas settings</button>
+          <label htmlFor="command-palette">Palette</label>
+          <select id="command-palette" value={activePalette.id} onChange={(event) => onSelectPalette(event.target.value)}>
+            {palettes.map((palette) => <option key={palette.id} value={palette.id}>{palette.name}</option>)}
+          </select>
+          <button type="button" onClick={onOpenPaletteManager}>Manage palettes</button>
+          {onArtistModeChange && (
+            <div className="command-mode-row">
+              <span>Interface</span>
+              <ArtistLabToggle artistMode={artistMode} onArtistModeChange={onArtistModeChange} />
+            </div>
+          )}
         </div>
       </details>
-
-      <div className="workbench-toolbar-group ml-auto shrink-0 flex flex-wrap items-center gap-2">
-        {onArtistModeChange && (
-          <ArtistLabToggle
-            artistMode={artistMode}
-            onArtistModeChange={onArtistModeChange}
-          />
-        )}
-        <select
-          value={activePalette.id}
-          onChange={(e) => onSelectPalette(e.target.value)}
-          className="h-10 min-w-[12rem] rounded-md border border-ink-hairline bg-paper px-3 text-sm text-ink outline-none transition-colors focus:border-ink-muted"
-          aria-label="Select active palette"
-        >
-          {palettes.map((palette) => (
-            <option key={palette.id} value={palette.id}>
-              {palette.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={onOpenPaletteManager}
-          title="Manage palettes"
-          aria-label="Manage palettes"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-ink-hairline bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink"
-        >
-          <PaletteIcon />
-        </button>
-      </div>
     </div>
   )
 }

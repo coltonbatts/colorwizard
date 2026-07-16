@@ -1,16 +1,30 @@
 # ColorWizard
 
-ColorWizard is a local-first color assistant for artists. Upload a reference image, sample a color, and get a practical paint starting mix plus close DMC thread matches.
+ColorWizard is a local-first color instrument for artists. Open a reference, sample a color, understand its character, then act with a practical paint mix, DMC thread match, or saved color.
 
-The core loop is intentionally small:
+![ColorWizard sample workbench](artifacts/ui-redesign/after/sample-1440x900.png)
 
-1. Upload a reference image.
-2. Tap or click the image to sample a color.
-3. Use the starting paint mix as a bench mix, then adjust by eye.
-4. Check DMC thread matches for embroidery and cross-stitch work.
-5. Pin or save useful colors locally.
+The core journey is intentionally small:
+
+1. **Open** a reference image.
+2. **Sample** a color directly from the canvas.
+3. **Understand** its value, temperature, and chroma.
+4. **Act** by mixing paint, matching threads, or saving the color.
 
 Images stay on your device. The core workflow does not require an account or cloud upload.
+
+## Instrument Workbench Milestone
+
+The current workbench is a major product simplification. The canvas and sampled color are now the visual center of the application, with technical depth available progressively instead of rendered as a dashboard by default.
+
+- One canonical sample inspector replaces duplicate readouts and tutorial cards.
+- Mix Lab leads with target, predicted result, fit, pigment ratios, and one proportional mix strand.
+- Sample, Mix, Threads, and Stitch remain primary; secondary studio capabilities live under Tools.
+- Mobile uses a canvas-first result sheet with collapsed, medium, and expanded states.
+- The desktop project gallery is organized around New, Recent, Pinned, Palettes, and Settings.
+- Browser and Tauri states share one warm-paper, black-stage, sample-driven visual system.
+
+![ColorWizard Mix Lab](artifacts/ui-redesign/after/mix-1440x900.png)
 
 ## What It Does
 
@@ -20,13 +34,15 @@ Images stay on your device. The core workflow does not require an account or clo
 - Finds close DMC embroidery floss matches.
 - Supports value mode for grayscale/value-first painting decisions.
 - Saves pinned/session colors locally.
+- Provides Stitch planning and supporting studio tools through progressive disclosure.
+- Includes a project gallery, local persistence, export, and licensing workflows in the desktop app.
 - Runs in the browser and as a Tauri desktop app.
 
 ## Product Direction
 
-ColorWizard is not a full creative suite. It is a focused bridge between reference images and physical making.
+ColorWizard is not a full creative suite. It is a focused bridge between reference images and physical making: **Open → Sample → Understand → Act**.
 
-The desktop rail keeps the core flow first: Sample and Threads. Studio tools such as mix exploration, library, reference, structure, and surface controls are available, but they should not compete with upload -> sample -> mix/matches.
+The workbench keeps Sample, Mix, Threads, and Stitch close at hand. Library, Reference, Structure, Surface, saved work, calibration, and infrequent settings remain available without competing with the canvas.
 
 Paint mixes are starting points, not exact physical simulations. Paint brand, pigment load, surface, lighting, and technique still matter.
 
@@ -65,6 +81,8 @@ If port 3000 is already in use, Next.js will choose another local port.
 npm run lint
 npx tsc --noEmit
 npm test -- --run
+npm run validate:paints
+npm run build
 ```
 
 Core browser smoke check:
@@ -93,7 +111,7 @@ The desktop app uses a static Next.js export for packaging. Code signing and not
 
 ## Current Scope
 
-In scope for the thin core:
+In scope for the core instrument:
 
 - Image upload
 - Canvas sampling
@@ -101,8 +119,11 @@ In scope for the thin core:
 - DMC thread matches
 - Value mode
 - Local pinned/session colors
+- Stitch planning
+- Paint library and palette management
+- Desktop projects, persistence, and export
 
-Out of scope for the thin core:
+Out of scope for the core instrument:
 
 - Cloud-first project storage
 - Social sharing
@@ -110,14 +131,19 @@ Out of scope for the thin core:
 - A full Photoshop/Procreate/Figma replacement
 - Exact paint simulation claims
 
+## Verification
+
+The redesign is exercised at 1440×900, 1366×768, 768×1024, and 390×844. The automated suite covers the desktop and mobile Open → Sample → Mix → Value → Threads flow, alongside the color-science and persistence unit tests.
+
+Before/after and responsive captures are stored in [`artifacts/ui-redesign`](artifacts/ui-redesign).
+
 ## Roadmap
 
-- Tighten automated browser coverage for the thin-core workflow.
-- Continue simplifying mobile couch/easel/iPad sampling.
-- Add clearer saved-card and export flows.
-- Improve paint-library ergonomics without crowding the core loop.
-- Expand medium-specific palettes after the core flow stays reliable.
+- Deepen saved-color and export workflows without crowding the core journey.
+- Continue refining iPad, easel, and couch use.
+- Expand paint libraries and medium-specific palettes.
+- Grow browser coverage around desktop persistence and advanced studio tools.
 
 ## Contributing
 
-Keep changes sympathetic to the product shape: local-first, artist-facing, and focused. Avoid adding broad suite-style features unless they support the core sample -> mix/matches workflow.
+Keep changes sympathetic to the product shape: local-first, artist-facing, visual, and focused. Avoid adding broad suite-style features unless they strengthen Open → Sample → Understand → Act.

@@ -64,7 +64,7 @@ export default function StitchTab({
         
         {/* Statistics Card */}
         <section className="rounded-lg border border-ink-hairline bg-paper-recessed p-4" aria-labelledby="stitch-pattern-info">
-          <h3 id="stitch-pattern-info" className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Pattern Info</h3>
+          <h3 id="stitch-pattern-info" className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Pattern info</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="block text-xs text-ink-faint">Grid Dimensions</span>
@@ -99,7 +99,7 @@ export default function StitchTab({
 
         {/* Configurations */}
         <div className="space-y-4 border-t border-ink-hairline pt-4">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Grid Configuration</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Grid configuration</h3>
 
           {/* Fidelity Slider */}
           <div>
@@ -182,7 +182,7 @@ export default function StitchTab({
         {/* Legend */}
         <div className="border-t border-ink-hairline pt-4 stitch-legend-print-section">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Thread Legend</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">Thread legend</h3>
             <button
               type="button"
               onClick={handlePrint}

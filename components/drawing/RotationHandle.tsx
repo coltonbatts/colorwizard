@@ -156,7 +156,7 @@ function RotationHandle({
             >
                 {/* Visual handle */}
                 <div
-                    className={`absolute rounded-full transition-all duration-150 flex items-center justify-center ${isActive
+                    className={`absolute rounded-full transition-[color,background-color,border-color,transform] duration-150 flex items-center justify-center ${isActive
                         ? 'bg-blue-500 shadow-lg shadow-blue-500/50 scale-125'
                         : 'bg-white border-2 border-blue-500 hover:bg-blue-100'
                         }`}

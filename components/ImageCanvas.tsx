@@ -1235,7 +1235,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             )}
 
             {isAnalyzing && (
-              <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-ink-hairline bg-paper-elevated/92 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-secondary shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md">
+              <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-ink-hairline bg-paper-elevated/92 px-2.5 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-ink-secondary shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md">
                 <div className="w-3 h-3 border border-ink-muted border-t-transparent rounded-full animate-spin" />
                 Working
               </div>
@@ -1269,7 +1269,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               <button
                 onClick={() => setShowImageFullScreen(true)}
                 className={`${mobileSampleLayout
-                  ? 'flex h-10 w-10 items-center justify-center rounded-lg border border-ink-hairline bg-paper-elevated/90 text-ink-secondary shadow-[0_8px_20px_rgba(26,26,26,0.12)] backdrop-blur-md transition-colors hover:text-ink'
+                  ? 'flex h-11 w-11 items-center justify-center rounded-lg border border-ink-hairline bg-paper-elevated/90 text-ink-secondary shadow-[0_8px_20px_rgba(26,26,26,0.12)] backdrop-blur-md transition-colors hover:text-ink'
                   : 'flex h-9 w-9 items-center justify-center rounded-[14px] bg-paper text-ink-secondary transition-colors hover:bg-paper-recessed hover:text-ink'
                 }`}
                 title="Full screen"

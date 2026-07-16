@@ -117,7 +117,7 @@ function OpacityIcon({ opacity }: { opacity: Opacity }) {
         'opaque': 'bg-signal-muted text-signal'
     }
     return (
-        <span className={`rounded-sm px-1.5 py-0.5 text-[11px] font-semibold ${colors[opacity]}`} title={opacity.replace('-', ' ')}>
+        <span className={`rounded-sm px-1.5 py-0.5 text-xs font-semibold ${colors[opacity]}`} title={opacity.replace('-', ' ')}>
             {labels[opacity]}
         </span>
     )
@@ -175,27 +175,27 @@ function PaintDetail({ paint, brands, onClose, onHighlight }: PaintDetailProps) 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Hex</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Hex</div>
                     <div className="text-sm font-mono text-ink">{paint.hex}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">RGB</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">RGB</div>
                     <div className="text-sm font-mono text-ink">{rgb.r}, {rgb.g}, {rgb.b}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Pigments</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Pigments</div>
                     <div className="text-sm font-mono text-ink">{paint.pigmentCodes.join(', ')}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Series</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Series</div>
                     <div className="text-sm text-ink">Series {paint.series}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Opacity</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Opacity</div>
                     <div className="text-sm text-ink capitalize">{paint.opacity.replace('-', ' ')}</div>
                 </div>
                 <div className="bg-paper-recessed rounded-lg p-2">
-                    <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wider">Permanence</div>
+                    <div className="text-xs font-semibold text-ink-muted uppercase tracking-wider">Permanence</div>
                     <div className="text-sm text-ink capitalize">{paint.permanence.replace('-', ' ')}</div>
                 </div>
             </div>
@@ -203,7 +203,7 @@ function PaintDetail({ paint, brands, onClose, onHighlight }: PaintDetailProps) 
             {/* Notes */}
             {paint.notes && (
                 <div className="mb-4 rounded-lg border border-subsignal bg-subsignal-muted p-3">
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-subsignal">Notes</div>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-subsignal">Notes</div>
                     <p className="text-sm text-ink-secondary">{paint.notes}</p>
                 </div>
             )}
@@ -445,7 +445,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                     <div className="mt-3 space-y-3 rounded-lg border border-ink-hairline bg-paper-elevated p-3">
                         {/* Brand */}
                         <div>
-                            <label htmlFor="paint-brand-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Brand</label>
+                            <label htmlFor="paint-brand-filter" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Brand</label>
                             <select
                                 id="paint-brand-filter"
                                 name="paint-brand-filter"
@@ -463,7 +463,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                         {/* Line (only if brand selected) */}
                         {filters.brandId && availableLines.length > 0 && (
                             <div>
-                                <label htmlFor="paint-line-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Product Line</label>
+                                <label htmlFor="paint-line-filter" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Product line</label>
                                 <select
                                     id="paint-line-filter"
                                     name="paint-line-filter"
@@ -481,7 +481,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
                         {/* Opacity */}
                         <div>
-                            <label htmlFor="paint-opacity-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Opacity</label>
+                            <label htmlFor="paint-opacity-filter" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Opacity</label>
                             <select
                                 id="paint-opacity-filter"
                                 name="paint-opacity-filter"
@@ -499,7 +499,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
 
                         {/* Permanence */}
                         <div>
-                            <label htmlFor="paint-permanence-filter" className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Min. Permanence</label>
+                            <label htmlFor="paint-permanence-filter" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-muted">Min. permanence</label>
                             <select
                                 id="paint-permanence-filter"
                                 name="paint-permanence-filter"

@@ -302,15 +302,15 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
             <div className="color-wheel-channels">
                 <label>
                     <span>Hue <output>{Math.round(hsvState.h)}°</output></span>
-                    <input name="color-hue" type="range" min="0" max="359" value={Math.round(hsvState.h)} onChange={(event) => updateChannel('h', Number(event.target.value))} />
+                    <input name="color-hue" aria-label="Hue" type="range" min="0" max="359" value={Math.round(hsvState.h)} onChange={(event) => updateChannel('h', Number(event.target.value))} />
                 </label>
                 <label>
                     <span>Saturation <output>{Math.round(hsvState.s)}%</output></span>
-                    <input name="color-saturation" type="range" min="0" max="100" value={Math.round(hsvState.s)} onChange={(event) => updateChannel('s', Number(event.target.value))} />
+                    <input name="color-saturation" aria-label="Saturation" type="range" min="0" max="100" value={Math.round(hsvState.s)} onChange={(event) => updateChannel('s', Number(event.target.value))} />
                 </label>
                 <label>
                     <span>Brightness <output>{Math.round(hsvState.v)}%</output></span>
-                    <input name="color-brightness" type="range" min="0" max="100" value={Math.round(hsvState.v)} onChange={(event) => updateChannel('v', Number(event.target.value))} />
+                    <input name="color-brightness" aria-label="Brightness" type="range" min="0" max="100" value={Math.round(hsvState.v)} onChange={(event) => updateChannel('v', Number(event.target.value))} />
                 </label>
             </div>
         </div>

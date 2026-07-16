@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useId, useRef } from 'react'
 import { isDesktopApp } from '@/lib/desktop/detect'
 import { validateLicenseKey, setLicenseKey, getLicenseKey } from '@/lib/desktop/tauriClient'
 
@@ -19,6 +19,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   const [isValidating, setIsValidating] = useState(false)
   const [hasChecked, setHasChecked] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputId = useId()
 
   useEffect(() => {
     if (!isDesktopApp()) {
@@ -114,25 +115,25 @@ export default function LicenseActivation({ onActivated, demo = false }: License
   }
 
   return (
-    <div className="license-activation fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="license-activation-panel bg-[#f5f0e8] rounded-2xl shadow-2xl max-w-md w-full p-8 border border-[#e5e0d8]">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#1a1a1a] mb-4">
-            <span className="text-2xl font-serif text-[#f5f0e8] font-bold">C</span>
-          </div>
-          <h2 className="text-xl font-bold text-[#1a1a1a] mb-1">
+    <div className="license-activation fixed inset-0 z-[100] flex items-center justify-center bg-paper-shell p-6">
+      <div className="license-activation-panel w-full max-w-md border-t border-ink pt-5 text-ink">
+        <div className="mb-8">
+          <p className="text-section">Desktop activation</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight">
             ColorWizard Pro
           </h2>
-          <p className="text-sm text-[#666]">
-            Enter your license key to unlock this copy on this Mac.
+          <p className="mt-2 text-sm text-ink-secondary">
+            Enter the license key for this Mac.
           </p>
         </div>
 
         <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-[0.15em] text-[#999] mb-2">
-            License Key
+          <label htmlFor={inputId} className="mb-2 block text-sm font-semibold">
+            License key
           </label>
           <input
+            id={inputId}
+            name="license-key"
             ref={inputRef}
             type="text"
             value={key}
@@ -141,27 +142,30 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             onKeyDown={handleKeyDown}
             placeholder="CW-XXXX-XXXX-XXXX"
             maxLength={15}
-            className={`w-full bg-white border-2 rounded-xl px-4 py-3 text-lg font-mono text-center tracking-widest text-[#1a1a1a] placeholder:text-[#ccc] focus:outline-none transition-colors ${
-              error ? 'border-red-400' : 'border-[#ddd] focus:border-[#1a1a1a]'
+            aria-describedby={error ? `${inputId}-error` : undefined}
+            aria-invalid={Boolean(error)}
+            className={`min-h-12 w-full border bg-paper-elevated px-4 py-3 text-center font-mono text-lg tracking-widest text-ink placeholder:text-ink-faint transition-colors ${
+              error ? 'border-danger' : 'border-ink-hairline focus:border-ink'
             }`}
             disabled={isValidating}
             autoFocus
           />
           {error && (
-            <p className="mt-2 text-xs text-red-500 text-center">{error}</p>
+            <p id={`${inputId}-error`} className="mt-2 text-sm text-danger">{error}</p>
           )}
         </div>
 
         <button
+          type="button"
           onClick={handleValidate}
           disabled={!key.trim() || isValidating}
-          className="w-full bg-[#1a1a1a] text-white py-3 rounded-xl font-medium hover:bg-[#333] disabled:opacity-40 disabled:cursor-not-allowed transition-colors mb-6"
+          className="mb-6 min-h-12 w-full border border-ink bg-ink px-5 font-semibold text-paper-elevated transition-colors hover:bg-graphite disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isValidating ? 'Validating...' : 'Unlock'}
         </button>
 
-        <div className="text-center pt-4 border-t border-[#e5e0d8]">
-          <p className="text-xs text-[#999]">
+        <div className="border-t border-ink-hairline pt-4">
+          <p className="text-xs text-ink-muted">
             Activation is stored locally on this Mac.
           </p>
         </div>

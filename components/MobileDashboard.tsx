@@ -1,354 +1,148 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import PaintRecipe from './PaintRecipe'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { Palette, DEFAULT_PALETTE } from '@/lib/types/palette'
-import { PinnedColor } from '@/lib/types/pinnedColor'
+import type { Palette } from '@/lib/types/palette'
+import type { PinnedColor } from '@/lib/types/pinnedColor'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import { createPinnedColor } from '@/lib/colorArtifacts'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useSampleReadout } from '@/lib/hooks/useSampleReadout'
 
 interface MobileDashboardProps {
-    sampledColor: {
-        hex: string
-        rgb: { r: number; g: number; b: number }
-        hsl: { h: number; s: number; l: number }
-        label?: string
-        valueMetadata?: {
-            y: number
-            step: number
-            range: [number, number]
-            percentile: number
-        }
-    } | null
-    activePalette?: Palette
-    onPin?: (newPin: PinnedColor) => void
-    isPinned?: boolean
-    onSwitchToMatches?: () => void
-    layout?: 'sheet' | 'inline'
+  sampledColor: {
+    hex: string
+    rgb: { r: number; g: number; b: number }
+    hsl: { h: number; s: number; l: number }
+    label?: string
+    valueMetadata?: { y: number; step: number; range: [number, number]; percentile: number }
+  } | null
+  activePalette?: Palette
+  onPin?: (newPin: PinnedColor) => void
+  isPinned?: boolean
+  onSwitchToMatches?: () => void
+  onSwitchToMix?: () => void
+  layout?: 'sheet' | 'inline'
 }
 
+type SheetState = 'collapsed' | 'medium' | 'expanded'
+const NEXT_STATE: Record<SheetState, SheetState> = { collapsed: 'medium', medium: 'expanded', expanded: 'collapsed' }
+
 export default function MobileDashboard({
-    sampledColor,
-    activePalette,
-    onPin,
-    isPinned = false,
-    onSwitchToMatches,
-    layout = 'sheet',
+  sampledColor,
+  activePalette,
+  onPin,
+  isPinned = false,
+  onSwitchToMatches,
+  onSwitchToMix,
 }: MobileDashboardProps) {
-    const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
-    const selectedPaintIds = getSelectedPaintIds()
-    const hasPaintPalette = isUsingPaintPalette()
+  const [sheetState, setSheetState] = useState<SheetState>('collapsed')
+  const [isPinning, setIsPinning] = useState(false)
+  const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
+  const selectedPaintIds = getSelectedPaintIds()
+  const hasPaintPalette = isUsingPaintPalette()
+  const valueScaleSettings = useCanvasStore((state) => state.valueScaleSettings)
+  const valueModeSteps = ([5, 7, 9, 11] as const).find((step) => step === valueScaleSettings.steps) ?? 7
+  const readout = useSampleReadout({
+    sampledColor,
+    valueModeEnabled: valueScaleSettings.enabled,
+    valueModeSteps,
+    preferredName: sampledColor?.label,
+  })
 
-    const valueScaleSettings = useCanvasStore((s) => s.valueScaleSettings)
-    const activeValueBandIndex = useCanvasStore((s) => s.activeValueBandIndex)
-    const setActiveValueBandIndex = useCanvasStore((s) => s.setActiveValueBandIndex)
-    const referenceBandSteps = valueScaleSettings.steps
-    const sampleBandIndex0 =
-        sampledColor?.valueMetadata != null ? sampledColor.valueMetadata.step - 1 : null
-    const bandMatchesTarget =
-        sampleBandIndex0 !== null && sampleBandIndex0 === activeValueBandIndex
-    const isShortViewport = useMediaQuery('(max-height: 860px)')
-    const isInline = layout === 'inline'
+  const solveOptions = useMemo(() => {
+    if (hasPaintPalette && selectedPaintIds.length) return { useCatalog: true as const, paintIds: selectedPaintIds }
+    if (!activePalette || activePalette.isDefault) return undefined
+    return { paletteColorIds: activePalette.colors.map((color) => color.id) }
+  }, [activePalette, hasPaintPalette, selectedPaintIds])
 
-    const [isPinning, setIsPinning] = useState(false)
-    const sampledLabel = sampledColor?.label
-    const valueModeSteps = (valueScaleSettings.steps === 5 ||
-        valueScaleSettings.steps === 7 ||
-        valueScaleSettings.steps === 9 ||
-        valueScaleSettings.steps === 11
-    ) ? valueScaleSettings.steps : 7
-    const {
-        colorName,
-        displayName,
-        isLoadingName,
-        grayscaleHex,
-    } = useSampleReadout({
-        sampledColor,
-        valueModeEnabled: valueScaleSettings.enabled,
-        valueModeSteps,
-        preferredName: sampledLabel,
-    })
-
-    const solveOptions = useMemo(() => {
-        if (hasPaintPalette && selectedPaintIds.length > 0) {
-            return {
-                useCatalog: true as const,
-                paintIds: selectedPaintIds,
-            }
-        }
-
-        if (!activePalette || activePalette.isDefault) return undefined
-        return {
-            paletteColorIds: activePalette.colors.map(color => color.id),
-        }
-    }, [activePalette, hasPaintPalette, selectedPaintIds])
-
-    const paletteLabel = hasPaintPalette
-        ? `Paint library (${selectedPaintIds.length})`
-        : activePalette?.isDefault
-            ? 'Core six-color mix'
-            : activePalette?.name || 'Active palette'
-    const paletteLabelCompact = hasPaintPalette
-        ? `Library ${selectedPaintIds.length}`
-        : activePalette?.isDefault
-            ? 'Core 6'
-            : activePalette?.name || 'Palette'
-    const recipeVariant = 'compact'
-    const shellPadding = isInline
-        ? 'px-3 py-3'
-        : isShortViewport
-            ? 'px-3 py-3'
-            : 'px-4 py-4'
-    const swatchSize = isInline ? 'h-12 w-12' : isShortViewport ? 'h-14 w-14' : 'h-16 w-16'
-    const titleSize = isInline ? 'text-base' : isShortViewport ? 'text-base' : 'text-lg'
-    const inlineSubtitle = sampledColor && colorName && colorName.toUpperCase() !== sampledColor.hex.toUpperCase()
-        ? colorName
-        : null
-
-    const handlePin = async () => {
-        if (!onPin || isPinned || !sampledColor) return
-        setIsPinning(true)
-        try {
-            const color = sampledColor
-            const pinnedColor = await createPinnedColor(
-                color,
-                {
-                    label: color.label?.trim() || colorName || `Color ${color.hex}`,
-                    solveOptions,
-                }
-            )
-
-            onPin(pinnedColor)
-        } finally {
-            setIsPinning(false)
-        }
+  const handlePin = async () => {
+    if (!sampledColor || !onPin || isPinned) return
+    setIsPinning(true)
+    try {
+      onPin(await createPinnedColor(sampledColor, {
+        label: sampledColor.label?.trim() || readout.colorName || `Color ${sampledColor.hex}`,
+        solveOptions,
+      }))
+    } finally {
+      setIsPinning(false)
     }
+  }
 
-    return (
-        <div className={`${isInline
-            ? 'rounded-lg border border-ink-hairline bg-paper-elevated shadow-sm'
-            : 'h-full min-h-0 flex flex-col overflow-hidden rounded-t-lg border-t border-ink-hairline bg-paper-elevated dashboard-mode'
-            }`}
-            data-testid={isInline ? 'mobile-inline-dashboard' : 'mobile-dashboard-sheet'}
-        >
-            {sampledColor ? (
-                <>
-                    <section className={`${shellPadding} shrink-0 ${isInline ? '' : 'border-b border-ink-hairline bg-paper-elevated'}`}>
-                        {isInline ? (
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="min-w-0 flex flex-1 items-center gap-2.5">
-                                    <div
-                                        className={`${swatchSize} shrink-0 rounded-lg border border-ink-hairline`}
-                                        style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
-                                    />
+  return (
+    <section className="mobile-result-sheet" data-sheet-state={sheetState} data-testid="mobile-result-sheet" aria-label="Sample result">
+      <button
+        type="button"
+        className="mobile-sheet-handle"
+        onClick={() => setSheetState(NEXT_STATE[sheetState])}
+        aria-label={`${sheetState === 'expanded' ? 'Collapse' : 'Expand'} sample result`}
+        aria-expanded={sheetState !== 'collapsed'}
+      >
+        <span aria-hidden="true" />
+      </button>
 
-                                    <div className="min-w-0 flex-1">
-                                        <div className="font-mono text-base tracking-[0.02em] text-ink">
-                                            {sampledColor.hex.toUpperCase()}
-                                        </div>
-                                        <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                            {isLoadingName ? '…' : inlineSubtitle || paletteLabelCompact}
-                                        </div>
-                                    </div>
-                                </div>
+      {sampledColor ? (
+        <>
+          <div className="mobile-sample-summary">
+            <i style={{ backgroundColor: valueScaleSettings.enabled ? readout.grayscaleHex : sampledColor.hex }} aria-hidden="true" />
+            <div>
+              <strong>{readout.isLoadingName ? 'Reading color…' : readout.displayName}</strong>
+              <code>{sampledColor.hex.toUpperCase()}</code>
+            </div>
+            <button type="button" onClick={() => setSheetState(NEXT_STATE[sheetState])}>
+              {sheetState === 'collapsed' ? 'Result' : sheetState === 'medium' ? 'Details' : 'Close'}
+            </button>
+          </div>
 
-                                <div className="flex shrink-0 items-center gap-1.5">
-                                    {onSwitchToMatches && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onSwitchToMatches()}
-                                            aria-label="Threads"
-                                            title="Threads"
-                                            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-hairline bg-paper text-ink-secondary transition-colors active:bg-paper-recessed"
-                                        >
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                <path d="M18.5 5.5 7 17" />
-                                                <circle cx="19.5" cy="4.5" r="1.5" />
-                                                <path d="M19.5 4.5c1.2-1 2.3.9.7 2.6-2.7 2.8-5.5 2.2-7.3 4.9-1.6 2.5-.8 5.2-3.3 7-1.8 1.3-4 .8-5.1-.8" />
-                                            </svg>
-                                        </button>
-                                    )}
+          {sheetState !== 'collapsed' && readout.chroma && (
+            <div className="mobile-result-body">
+              <div className="mobile-character" aria-label="Color character">
+                <span><small>Value</small><strong>{readout.displayedValue}%</strong></span>
+                <span><small>Temperature</small><strong>{readout.temperatureLabel}</strong></span>
+                <span><small>Chroma</small><strong>{readout.chroma.label}</strong></span>
+              </div>
 
-                                    {onPin && (
-                                        <button
-                                            type="button"
-                                            onClick={handlePin}
-                                            disabled={isPinning || isPinned}
-                                            aria-label={isPinned ? 'Pinned color' : 'Pin color'}
-                                            title={isPinned ? 'Pinned' : 'Pin'}
-                                            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition-[background-color,border-color,color,transform] ${
-                                                isPinned
-                                                    ? 'border-subsignal bg-subsignal-muted text-subsignal'
-                                                    : 'border-ink-hairline bg-paper text-ink-secondary active:scale-95'
-                                            }`}
-                                        >
-                                            {isPinning ? (
-                                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                            ) : isPinned ? (
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                    <path d="m5 12 4 4L19 6" />
-                                                </svg>
-                                            ) : (
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                                    <path d="M12 17v4" />
-                                                    <path d="m5 10 7-7 7 7" />
-                                                    <path d="M8 13v-2.5a4 4 0 0 1 8 0V13" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex flex-1 items-start gap-3">
-                                    <div
-                                        className={`${swatchSize} shrink-0 rounded-lg border border-ink-hairline`}
-                                        style={{ backgroundColor: valueScaleSettings.enabled ? grayscaleHex : sampledColor.hex }}
-                                    />
+              <div className="mobile-mix-preview">
+                <h3>Practical mix</h3>
+                <PaintRecipe
+                  hsl={sampledColor.hsl}
+                  targetHex={sampledColor.hex}
+                  activePalette={activePalette}
+                  useCatalog={hasPaintPalette}
+                  paintIds={hasPaintPalette ? selectedPaintIds : undefined}
+                  variant="compact"
+                  showExportButton={false}
+                  hideHeader
+                  hideFooter
+                  previewOnly
+                />
+              </div>
 
-                                    <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                            Sampled color
-                                        </div>
-                                        <div className="mt-2 min-w-0">
-                                            <div className={`${titleSize} font-medium leading-tight text-ink`}>
-                                                {isLoadingName ? (
-                                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-ink-muted border-t-transparent align-middle" />
-                                                ) : (
-                                                    displayName
-                                                )}
-                                            </div>
-                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                                                <span className="font-mono tracking-wide text-ink-secondary">
-                                                    {sampledColor.hex.toUpperCase()}
-                                                </span>
-                                                <span className="uppercase tracking-[0.08em] text-ink-muted">
-                                                    {paletteLabel}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex shrink-0 flex-col items-end gap-2">
-                                    <div className="inline-flex rounded-md border border-ink-hairline bg-paper p-0.5">
-                                        <button
-                                            type="button"
-                                            aria-pressed={true}
-                                            className="flex h-8 items-center justify-center rounded-[4px] bg-ink px-3 text-xs font-medium text-paper"
-                                        >
-                                            Paint
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => onSwitchToMatches?.()}
-                                            disabled={!onSwitchToMatches}
-                                            aria-pressed={false}
-                                            className={`flex h-8 items-center justify-center rounded-[4px] px-3 text-xs font-medium transition-colors ${
-                                                onSwitchToMatches
-                                                    ? 'text-ink-secondary active:bg-paper-recessed'
-                                                    : 'cursor-default text-ink-faint'
-                                            }`}
-                                        >
-                                            Threads
-                                        </button>
-                                    </div>
-
-                                    {onPin && (
-                                        <button
-                                            type="button"
-                                            onClick={handlePin}
-                                            disabled={isPinning || isPinned}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium uppercase tracking-[0.08em] transition-colors ${
-                                                isPinned
-                                                    ? 'border-ink-hairline bg-paper-recessed text-ink-muted'
-                                                    : 'border-ink-hairline bg-paper text-ink-secondary active:bg-paper-recessed'
-                                            }`}
-                                        >
-                                            {isPinning ? 'Pinning…' : isPinned ? 'Pinned' : 'Pin'}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-3 border-t border-ink-hairline/50 pt-3">
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                    Target value band
-                                </div>
-                                {sampleBandIndex0 !== null && (
-                                    <span
-                                        className={`rounded-sm px-2 py-1 text-xs font-medium uppercase tracking-[0.08em] ${
-                                            bandMatchesTarget
-                                                ? 'bg-paper-recessed text-ink'
-                                                : 'bg-paper text-ink-secondary'
-                                        }`}
-                                    >
-                                        {bandMatchesTarget ? 'Match' : 'Off'}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="mt-2 flex items-center gap-2">
-                                <span className="text-xs font-semibold text-ink-faint">Sh</span>
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={Math.max(0, referenceBandSteps - 1)}
-                                    value={activeValueBandIndex}
-                                    onChange={(e) => setActiveValueBandIndex(Number(e.target.value))}
-                                    aria-label="Target value band"
-                                    className="h-1.5 min-w-0 flex-1 cursor-pointer accent-ink"
-                                />
-                                <span className="text-xs font-semibold text-ink-faint">Lt</span>
-                            </div>
-                            <div className="mt-2 font-mono text-xs text-ink-secondary">
-                                Band {activeValueBandIndex + 1} / {referenceBandSteps}
-                            </div>
-                        </div>
-                    </section>
-
-                    <div className={`${isInline ? '' : 'flex-1 min-h-0 overflow-y-auto overscroll-contain'}`}>
-                        <div className={`${shellPadding} ${isInline ? 'pt-1.5' : 'space-y-3 pb-20'}`}>
-                            {!isInline && (
-                                <div className="flex items-end justify-between gap-3 px-1">
-                                    <div className="min-w-0">
-                                        <div className="text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">
-                                            Paint recipe
-                                        </div>
-                                        <div className="mt-1 text-xs uppercase tracking-[0.08em] text-ink-faint">
-                                            {paletteLabel}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <PaintRecipe
-                                hsl={sampledColor.hsl}
-                                targetHex={sampledColor.hex}
-                                activePalette={activePalette || DEFAULT_PALETTE}
-                                useCatalog={hasPaintPalette}
-                                paintIds={hasPaintPalette ? selectedPaintIds : undefined}
-                                variant={recipeVariant}
-                                showExportButton={false}
-                                hideHeader={isInline}
-                                hideFooter={isInline}
-                            />
-                        </div>
-                    </div>
-                </>
-            ) : (
-                <div className={`flex min-h-0 flex-col items-center justify-center px-4 py-5 text-ink-faint ${isInline ? '' : 'h-full'}`}>
-                    <div className="mb-2 text-xs font-medium uppercase tracking-[0.08em] text-ink-muted">Sample</div>
-                    <p className="max-w-[16rem] text-center text-base text-ink">
-                        Tap or click the image to sample.
-                    </p>
+              {sheetState === 'expanded' && (
+                <div className="mobile-technical-details">
+                  <div><span>RGB</span><code>{sampledColor.rgb.r} {sampledColor.rgb.g} {sampledColor.rgb.b}</code></div>
+                  <div><span>HSL</span><code>{sampledColor.hsl.h}° {sampledColor.hsl.s}% {sampledColor.hsl.l}%</code></div>
+                  <div><span>Source</span><strong>{hasPaintPalette ? `${selectedPaintIds.length} library paints` : activePalette?.isDefault ? 'Core six-color mix' : activePalette?.name}</strong></div>
                 </div>
-            )}
+              )}
+            </div>
+          )}
+
+          {sheetState !== 'collapsed' && (
+            <div className="mobile-result-actions" aria-label="Sample actions">
+              <button type="button" className="primary" onClick={onSwitchToMix}>Mix</button>
+              <button type="button" onClick={onSwitchToMatches}>Threads</button>
+              <button type="button" onClick={handlePin} disabled={isPinning || isPinned}>
+                {isPinning ? 'Saving…' : isPinned ? 'Saved' : 'Save'}
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="mobile-sample-summary mobile-sample-summary--empty">
+          <div><strong>Tap the image to sample.</strong><span>Results appear here.</span></div>
         </div>
-    )
+      )}
+    </section>
+  )
 }

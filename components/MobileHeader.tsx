@@ -15,7 +15,7 @@ export default function MobileHeader({
 }: MobileHeaderProps) {
   return (
     <header
-      className="mobile-header md:hidden z-50"
+      className="mobile-header z-50"
       style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}

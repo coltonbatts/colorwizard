@@ -41,13 +41,13 @@ export default function PaletteIndicator({ onSave, onSwitchClick }: PaletteIndic
                         <PaletteMark />
                         <div className="min-w-0">
                             <p className="text-sm font-semibold text-ink">No paints selected</p>
-                            <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">Choose paints below to build a working palette.</p>
+                            <p className="mt-0.5 text-sm leading-snug text-ink-muted">Choose paints below to build a working palette.</p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={onSwitchClick}
-                        className="min-h-9 shrink-0 rounded-md border border-linen-strong bg-paper-elevated px-3 text-[11px] font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
+                        className="min-h-11 shrink-0 rounded-md border border-linen-strong bg-paper-elevated px-3 text-xs font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
                     >
                         Load palette
                     </button>
@@ -65,11 +65,11 @@ export default function PaletteIndicator({ onSave, onSwitchClick }: PaletteIndic
                         <p className="truncate text-sm font-semibold text-ink">
                             {activePalette ? activePalette.name : 'Unsaved palette'}
                         </p>
-                        <span className="rounded-sm border border-linen bg-paper-elevated px-1.5 py-0.5 text-[11px] font-medium text-ink-secondary">
+                        <span className="rounded-sm border border-linen bg-paper-elevated px-1.5 py-0.5 text-xs font-medium text-ink-secondary">
                             {count} paint{count !== 1 ? 's' : ''}
                         </span>
                         {isDirty && activePalette && (
-                            <span className="text-[11px] font-semibold text-warning">Modified</span>
+                            <span className="text-xs font-semibold text-warning">Modified</span>
                         )}
                     </div>
                 </div>
@@ -79,21 +79,21 @@ export default function PaletteIndicator({ onSave, onSwitchClick }: PaletteIndic
                 <button
                     type="button"
                     onClick={onSave}
-                    className="min-h-9 rounded-md bg-ink px-3 text-[11px] font-semibold text-paper-elevated transition-colors hover:bg-graphite"
+                    className="min-h-11 rounded-md bg-ink px-3 text-xs font-semibold text-paper-elevated transition-colors hover:bg-graphite"
                 >
                     {activePalette && !isDirty ? 'Rename' : 'Save palette'}
                 </button>
                 <button
                     type="button"
                     onClick={onSwitchClick}
-                    className="min-h-9 rounded-md border border-linen-strong bg-paper-elevated px-3 text-[11px] font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
+                    className="min-h-11 rounded-md border border-linen-strong bg-paper-elevated px-3 text-xs font-semibold text-ink transition-colors hover:border-ink-muted hover:bg-paper"
                 >
                     Switch
                 </button>
                 <button
                     type="button"
                     onClick={clearSelection}
-                    className="min-h-9 rounded-md px-3 text-[11px] font-semibold text-danger transition-colors hover:bg-danger/10"
+                    className="min-h-11 rounded-md px-3 text-xs font-semibold text-danger transition-colors hover:bg-danger/10"
                 >
                     Clear
                 </button>

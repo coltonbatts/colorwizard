@@ -53,7 +53,7 @@ export default function DMCSkein({
   return (
     <div
       onClick={onClick}
-      className={`relative flex flex-col border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-950 transition-all duration-200 cursor-pointer shadow-sm ${
+      className={`relative flex flex-col border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-950 transition-[transform,box-shadow,border-color] duration-200 cursor-pointer shadow-sm ${
         dims.container
       } ${
         selected

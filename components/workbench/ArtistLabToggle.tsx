@@ -16,7 +16,7 @@ export default function ArtistLabToggle({
 }: ArtistLabToggleProps) {
   return (
     <div
-      className={`inline-flex h-9 items-center rounded-lg border border-ink-hairline bg-paper p-0.5 ${className}`}
+      className={`inline-flex min-h-11 items-center rounded-lg border border-ink-hairline bg-paper p-0.5 ${className}`}
       role="group"
       aria-label="Artist or Lab view"
     >
@@ -24,7 +24,7 @@ export default function ArtistLabToggle({
         type="button"
         onClick={() => onArtistModeChange(true)}
         aria-pressed={artistMode}
-        className={`rounded-md px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors ${
+        className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] transition-colors ${
           artistMode
             ? 'bg-ink text-paper'
             : 'text-ink-secondary hover:text-ink'
@@ -36,7 +36,7 @@ export default function ArtistLabToggle({
         type="button"
         onClick={() => onArtistModeChange(false)}
         aria-pressed={!artistMode}
-        className={`rounded-md px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.08em] transition-colors ${
+        className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-[0.08em] transition-colors ${
           !artistMode
             ? 'bg-ink text-paper'
             : 'text-ink-secondary hover:text-ink'

@@ -38,7 +38,7 @@ export default function ZoomControlsBar({
             >
                 −
             </button>
-            <div className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-secondary">
+            <div className="rounded-full border border-ink-hairline bg-[rgba(255,252,247,0.82)] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-ink-secondary">
                 {Math.round(zoomLevel * 100)}%
             </div>
             <button

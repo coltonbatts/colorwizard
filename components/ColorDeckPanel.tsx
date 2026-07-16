@@ -662,7 +662,7 @@ export default function ColorDeckPanel({
                                         return (
                                             <article
                                                 key={card.id}
-                                                className={`group overflow-hidden rounded-3xl border bg-paper-elevated shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${hasSampleMatch(card) ? 'border-signal ring-2 ring-signal/20' : 'border-ink-hairline'}`}
+                                                className={`group overflow-hidden rounded-3xl border bg-paper-elevated shadow-sm transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:shadow-lg ${hasSampleMatch(card) ? 'border-signal ring-2 ring-signal/20' : 'border-ink-hairline'}`}
                                             >
                                                 <button
                                                     type="button"

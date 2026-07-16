@@ -60,33 +60,42 @@ async function findUsableCanvas(page) {
   throw new Error('No usable canvas found after demo load')
 }
 
-async function assertNoMobileOverlap(page, name) {
+async function assertMobileComposition(page, name) {
   const layout = await page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="image-canvas-viewport"]')?.getBoundingClientRect()
-    const dashboard = document.querySelector('[data-testid="mobile-sample-dashboard-region"]')?.getBoundingClientRect()
-    const toolbar = document.querySelector('[data-testid="mobile-bottom-toolbar"]')?.getBoundingClientRect()
+    const canvas = document.querySelector('[data-testid="mobile-canvas-stage"]')?.getBoundingClientRect()
+    const sheet = document.querySelector('[data-testid="mobile-result-sheet"]')?.getBoundingClientRect()
 
     return {
       hasCanvas: Boolean(canvas),
-      hasDashboard: Boolean(dashboard),
-      hasToolbar: Boolean(toolbar),
+      hasSheet: Boolean(sheet),
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      canvasHeight: canvas?.height ?? null,
       canvasBottom: canvas?.bottom ?? null,
-      dashboardTop: dashboard?.top ?? null,
-      dashboardBottom: dashboard?.bottom ?? null,
-      toolbarTop: toolbar?.top ?? null,
+      sheetTop: sheet?.top ?? null,
+      sheetBottom: sheet?.bottom ?? null,
+      sheetHeight: sheet?.height ?? null,
     }
   })
 
   assert(layout.hasCanvas, `${name}: mobile canvas viewport not found`)
-  assert(layout.hasDashboard, `${name}: mobile sample dashboard not found`)
-  assert(layout.hasToolbar, `${name}: mobile bottom toolbar not found`)
+  assert(layout.hasSheet, `${name}: mobile result sheet not found`)
   assert(
-    layout.canvasBottom <= layout.dashboardTop + 1,
-    `${name}: mobile canvas overlaps sample dashboard (${JSON.stringify(layout)})`,
+    layout.documentWidth <= layout.viewportWidth,
+    `${name}: horizontal overflow found (${JSON.stringify(layout)})`,
   )
   assert(
-    layout.dashboardBottom <= layout.toolbarTop + 1,
-    `${name}: mobile dashboard overlaps bottom toolbar (${JSON.stringify(layout)})`,
+    layout.canvasHeight >= layout.viewportHeight * 0.45,
+    `${name}: canvas is not visually dominant (${JSON.stringify(layout)})`,
+  )
+  assert(
+    layout.sheetBottom <= layout.viewportHeight + 1 && layout.sheetTop >= 0,
+    `${name}: result sheet is outside the viewport (${JSON.stringify(layout)})`,
+  )
+  assert(
+    layout.sheetHeight <= 124,
+    `${name}: collapsed result sheet exceeds its summary height (${JSON.stringify(layout)})`,
   )
 }
 
@@ -117,20 +126,23 @@ async function runViewport(browser, name, contextOptions) {
 
   await page.waitForFunction(() => /#[0-9A-Fa-f]{6}/.test(document.body.innerText), null, { timeout: 15000 })
   if (contextOptions.isMobile) {
-    await assertNoMobileOverlap(page, name)
+    await assertMobileComposition(page, name)
+    await page.getByRole('button', { name: /expand sample result/i }).first().click()
   }
 
   const sampleText = await page.locator('body').innerText()
-  assert(/starting mix|starting paint mix|mixing steps|paint colors/i.test(sampleText), `${name}: paint mix panel not found`)
+  assert(/practical mix|target.*predicted result|mixing instructions/i.test(sampleText), `${name}: mix result not found`)
 
-  const valueButton = page.locator('button[aria-label="Toggle value mode"]')
+  const valueButton = page.locator('button[aria-label="Toggle value mode"], button[aria-label="Toggle value view"]')
   if (await valueButton.count()) {
     await valueButton.click()
   }
   await page.waitForTimeout(800)
   assert(/band|value/i.test(await page.locator('body').innerText()), `${name}: value mode readout not found`)
 
-  const threadsButton = page.getByRole('button', { name: /threads/i }).first()
+  const threadsButton = contextOptions.isMobile
+    ? page.getByRole('button', { name: /^threads$/i }).last()
+    : page.getByRole('button', { name: /^threads$/i }).first()
   if (await threadsButton.count()) {
     await threadsButton.click()
   }

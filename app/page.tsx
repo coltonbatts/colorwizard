@@ -53,7 +53,7 @@ import HighlightControls from '@/components/HighlightControls'
 import { CanvasErrorFallback } from '@/components/errors/CanvasErrorFallback'
 import { SidebarErrorFallback } from '@/components/errors/SidebarErrorFallback'
 
-const MOBILE_TABS: readonly TabType[] = ['sample', 'matches', 'deck']
+const MOBILE_TABS: readonly TabType[] = ['sample', 'mix', 'matches', 'stitch', 'library', 'reference', 'structure', 'surface', 'deck']
 
 const EMPTY_IMAGE_ANALYSIS: ImageAnalysisSnapshot = {
   valueScaleResult: null,
@@ -397,7 +397,7 @@ export default function Home() {
         const img = await createSolidColorDemoImage(hex)
         handleImageLoad(img)
         applySampleColor(hexToSampleColor(hex))
-        setActiveTab('mix')
+        setActiveTab('sample')
       } catch (err) {
         console.error('[demo] Failed to load demo swatch:', err)
       }
@@ -536,6 +536,7 @@ export default function Home() {
               lastSampleTime={lastSampleTime}
               onAddToSession={handleAddToSession}
               onSwitchToMatches={isMobile ? () => setActiveTab('matches') : undefined}
+              onSwitchToMix={isMobile ? () => setActiveTab('mix') : undefined}
               dismissPreviewSignal={dismissPreviewSignal}
               suppressPreviewOverlay={showPaletteManager}
           />
@@ -801,7 +802,7 @@ export default function Home() {
                     canvasSettings={canvasSettings}
                     sampledColorHex={sampledColor?.hex ?? null}
                     workspaceModeLabel={desktopCanvasMode}
-                    showHud={!!image}
+                    showHud={false}
                     onStitchLegendChange={setStitchLegend}
                   />
                 </ErrorBoundary>
@@ -823,6 +824,8 @@ export default function Home() {
                     valueModeSteps={valueModeSteps}
                     layoutMode={desktopLayoutMode}
                     onAddToSession={handleAddToSession}
+                    onOpenMix={() => setActiveTab('mix')}
+                    onOpenThreads={() => setActiveTab('matches')}
                   />
                 ) : (
                   <AnimatePresence mode="wait">
@@ -933,26 +936,22 @@ export default function Home() {
                 canvasSettings={canvasSettings}
                 sampledColorHex={isMobileSampleLayout ? null : sampledColor?.hex ?? null}
                 workspaceModeLabel={desktopCanvasMode}
-                showHud={!isMobileSampleLayout}
+                showHud={false}
                 mobileLayout={isMobileSampleLayout ? 'sample' : 'default'}
                 onStitchLegendChange={setStitchLegend}
               />
             </ErrorBoundary>
           )}
           sampleDashboard={image && isMobileSampleLayout ? (
-              <div
-                className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.25rem)] pt-2"
-                data-testid="mobile-sample-dashboard-region"
-              >
-                <MobileDashboard
-                  sampledColor={sampledColor}
-                  activePalette={activePalette}
-                  onPin={pinColor}
-                  isPinned={isPinnedSample}
-                  onSwitchToMatches={() => setActiveTab('matches')}
-                  layout="inline"
-                />
-              </div>
+            <MobileDashboard
+              sampledColor={sampledColor}
+              activePalette={activePalette}
+              onPin={pinColor}
+              isPinned={isPinnedSample}
+              onSwitchToMatches={() => setActiveTab('matches')}
+              onSwitchToMix={() => setActiveTab('mix')}
+              layout="sheet"
+            />
           ) : null}
           controlsPanel={image && !isMobileSampleLayout ? (
             <div className="mobile-controls-area z-[60] flex min-h-0 flex-none flex-col items-stretch px-3 pt-3 pb-[env(safe-area-inset-bottom,0px)]">
@@ -967,37 +966,15 @@ export default function Home() {
                 )}
                 key={activeTab}
               >
-                <div className={`w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden rounded-t-lg border border-ink-hairline border-b-0 bg-paper-elevated shadow-[0_-8px_30px_rgba(26,26,26,0.10)]`}>
-                  {activeTab === 'sample' ? (
-                    <MobileDashboard
-                      sampledColor={sampledColor}
-                      activePalette={activePalette}
-                      onPin={pinColor}
-                      isPinned={isPinnedSample}
-                      onSwitchToMatches={() => setActiveTab('matches')}
-                    />
-                  ) : activeTab === 'deck' ? (
+                <div className={`mobile-tool-sheet w-full max-w-3xl self-center ${mobileSheetHeightClass} overflow-hidden`}>
+                  {activeTab === 'deck' ? (
                     <ColorDeckPanel
                       sampledColor={sampledColor}
                       activePaletteName={activePalette.name}
                       onGoToSample={() => setActiveTab('sample')}
                     />
                   ) : (
-                    <MatchesTab
-                      sampledColor={sampledColor}
-                      imageValue={threadImageValue}
-                      valueBuffer={analyzerValueBuffer}
-                      valueScaleClip={valueScaleSettings.clip ?? 0}
-                      onColorSelect={(rgb) => {
-                        applySampleColor({
-                          rgb,
-                          hex: rgbToHex(rgb.r, rgb.g, rgb.b),
-                          hsl: rgbToHsl(rgb.r, rgb.g, rgb.b),
-                        })
-                        setActiveHighlightColor(rgb)
-                        setActiveTab('sample')
-                      }}
-                    />
+                    renderTabContent()
                   )}
                 </div>
               </ErrorBoundary>

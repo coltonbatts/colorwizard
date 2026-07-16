@@ -194,7 +194,7 @@ function DrawingControlPanel({
                     <button
                         onClick={() => onSelectImage('reference')}
                         disabled={!hasReferenceImage || isLocked}
-                        className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'reference'
+                        className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-colors ${selectedImage === 'reference'
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
@@ -204,7 +204,7 @@ function DrawingControlPanel({
                     <button
                         onClick={() => onSelectImage('wip')}
                         disabled={!hasWipImage || isLocked}
-                        className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-all ${selectedImage === 'wip'
+                        className={`flex-1 py-2 px-3 text-xs font-medium rounded-md transition-colors ${selectedImage === 'wip'
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}

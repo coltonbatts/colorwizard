@@ -48,6 +48,8 @@ export default function CanvasSettingsModal({
 }: CanvasSettingsModalProps) {
   const [settings, setSettings] = useState<CanvasSettings>(initialSettings)
   const titleId = useId()
+  const widthId = useId()
+  const heightId = useId()
 
   useEffect(() => {
     if (isOpen) {
@@ -69,9 +71,9 @@ export default function CanvasSettingsModal({
     >
       <Modal.Header>
         <div>
-          <p className="text-section">Canvas Setup</p>
+          <p className="text-section">Canvas setup</p>
           <h2 id={titleId} className="mt-1 font-display text-2xl tracking-tight text-ink">
-            Canvas Settings
+            Canvas settings
           </h2>
         </div>
         <Modal.Close />
@@ -81,7 +83,7 @@ export default function CanvasSettingsModal({
         <section className="paper-panel-raised p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="pr-2">
-              <p className="text-sm font-semibold text-ink">Enable Real-World Canvas</p>
+              <p className="text-sm font-semibold text-ink">Enable real-world canvas</p>
               <p className="mt-1 text-sm leading-relaxed text-ink-secondary">
                 Scale measurements and the ruler grid to the physical canvas instead of the display.
               </p>
@@ -92,7 +94,7 @@ export default function CanvasSettingsModal({
               onClick={() => setSettings((current) => ({ ...current, enabled: !current.enabled }))}
               aria-pressed={settings.enabled}
               aria-label={settings.enabled ? 'Disable real-world canvas' : 'Enable real-world canvas'}
-              className="relative inline-flex h-8 w-14 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow]"
+              className="relative inline-flex h-11 w-16 shrink-0 rounded-full border transition-[background-color,border-color,box-shadow]"
               style={{
                 ...CONTROL_TRANSITION_STYLE,
                 backgroundColor: settings.enabled ? 'var(--subsignal-muted)' : 'var(--paper-shell)',
@@ -101,13 +103,13 @@ export default function CanvasSettingsModal({
               }}
             >
               <span
-                className="absolute left-1 top-1 block h-6 w-6 rounded-full border transition-[background-color,border-color,transform]"
+                className="absolute left-[5px] top-[5px] block h-8 w-8 rounded-full border transition-[background-color,border-color,transform]"
                 style={{
                   ...CONTROL_TRANSITION_STYLE,
                   backgroundColor: settings.enabled ? 'var(--subsignal)' : 'var(--paper-elevated)',
                   borderColor: settings.enabled ? 'var(--subsignal)' : 'var(--linen)',
                   boxShadow: 'var(--shadow-sm)',
-                  transform: settings.enabled ? 'translateX(24px)' : 'translateX(0)',
+                  transform: settings.enabled ? 'translateX(20px)' : 'translateX(0)',
                 }}
               />
             </button>
@@ -116,8 +118,10 @@ export default function CanvasSettingsModal({
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-section">Width</label>
+            <label htmlFor={widthId} className="mb-2 block text-section">Width</label>
             <input
+              id={widthId}
+              name="canvas-width"
               type="number"
               step="0.1"
               value={settings.width}
@@ -136,8 +140,10 @@ export default function CanvasSettingsModal({
           </div>
 
           <div>
-            <label className="mb-2 block text-section">Height</label>
+            <label htmlFor={heightId} className="mb-2 block text-section">Height</label>
             <input
+              id={heightId}
+              name="canvas-height"
               type="number"
               step="0.1"
               value={settings.height}
@@ -181,7 +187,7 @@ export default function CanvasSettingsModal({
         </section>
 
         <section className="paper-well p-4">
-          <p className="text-section">Workbench Note</p>
+          <p className="text-section">Workbench note</p>
           <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
             {settings.enabled
               ? `Measurements will now map to a ${settings.width} × ${settings.height} ${
@@ -218,7 +224,7 @@ export default function CanvasSettingsModal({
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          Save Settings
+          Save settings
         </button>
       </Modal.Footer>
     </Modal>
