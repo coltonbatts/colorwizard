@@ -52,9 +52,8 @@ export default function DMCFlossMatch({ rgb, imageValue, valueBuffer, valueScale
   return (
     <div className="threads-result">
       <div className="threads-comparison" aria-label="Sample and closest DMC thread">
-        <div><span>Sample</span><i style={{ backgroundColor: sampleHex }} /><code>{sampleHex}</code></div>
-        <svg viewBox="0 0 28 12" width="28" height="12" aria-hidden="true"><path d="M1 6h24M20 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-        <div><span>Closest thread</span><i style={{ backgroundColor: primary.hex }} /><code>DMC {primary.number}</code></div>
+        <div className="threads-comparison-sample"><span>Sample</span><i style={{ backgroundColor: sampleHex }} /><code>{sampleHex}</code></div>
+        <div className="threads-comparison-match"><span>Closest thread</span><i style={{ backgroundColor: primary.hex }} /><code>DMC {primary.number}</code></div>
       </div>
 
       <header className="threads-identity">
