@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 import SwissWaveGraphic from '@/components/splash/SwissWaveGraphic';
+import Wordmark, { WordmarkHero } from '@/components/Wordmark';
 
 /** First-load experience for the chromatic instrument workbench. */
 
@@ -239,18 +240,10 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                                 constructor: (err as { constructor?: { name?: string } })?.constructor?.name
                             };
                         }
-                    } else {
-                        errorMessage = String(err) || 'Unknown error type';
-                        errorDetails = {
-                            error: String(err),
-                            type: typeof err
-                        };
                     }
 
                     console.error('[ImageDropzone] HEIC conversion failed - errorDetails:', errorDetails);
                     console.error('[ImageDropzone] HEIC conversion failed - errorMessage:', errorMessage);
-                    console.error('[ImageDropzone] Full error object (direct):', err);
-                    console.error('[ImageDropzone] Full error object (JSON):', JSON.stringify(err, null, 2));
 
                     alert(`Failed to convert HEIC image.\n\nError: ${errorMessage}\n\nPlease try:\n1. Converting the image to JPEG using your device's Photos app\n2. Using a different image format\n3. Trying a smaller HEIC file (under 50MB)`);
                     setIsConverting(false);
@@ -351,8 +344,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             />
             <header className="splash-grid-header">
                 <div className="splash-grid-brand">
-                    <span className="splash-grid-mark" aria-hidden="true" />
-                    <span>ColorWizard</span>
+                    <Wordmark size="md" showColorBar asLink={false} />
                 </div>
                 <label htmlFor={inputId} className="splash-open-link">
                     <span>{isConverting ? 'Wait' : isDragging ? 'Release' : 'Open'}</span>
@@ -362,8 +354,39 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
 
             <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
                 <h1 className="sr-only">ColorWizard color workbench</h1>
-                <label htmlFor={inputId} className="splash-wave-panel" aria-label="Open a reference image">
+                <label htmlFor={inputId} className="splash-wave-panel group cursor-pointer" aria-label="Open a reference image">
                     <SwissWaveGraphic />
+
+                    {/* Dynamic Hero Motion & Wordmark Badge Overlay */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/35 backdrop-blur-[2px] transition-all duration-300 group-hover:bg-black/20">
+                        <motion.div
+                            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex flex-col items-center text-center max-w-md mx-auto rounded-3xl border border-white/20 bg-paper-shell/95 p-8 shadow-2xl backdrop-blur-md"
+                        >
+                            <motion.div
+                                animate={{ y: [0, -6, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                className="flex flex-col items-center"
+                            >
+                                <WordmarkHero tagline="Chromatic Instrument & Color Matching Studio" />
+                            </motion.div>
+
+                            <motion.div
+                                whileHover={{ scale: 1.04 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="mt-6 inline-flex items-center gap-3 rounded-xl border border-ink bg-ink px-6 py-3 text-xs font-bold uppercase tracking-widest text-paper-elevated shadow-md transition-all hover:border-signal hover:bg-signal hover:shadow-lg"
+                            >
+                                <span>{isConverting ? 'Converting Image…' : isDragging ? 'Release to Open' : 'Open Reference Image'}</span>
+                                <span className="text-base leading-none" aria-hidden="true">+</span>
+                            </motion.div>
+
+                            <p className="mt-3 text-[11px] font-mono text-ink-muted tracking-tight">
+                                Drag & drop image or click anywhere to select
+                            </p>
+                        </motion.div>
+                    </div>
                 </label>
 
                 {onTryDemoColor && (
