@@ -732,6 +732,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const mouseLastPointRef = useRef({ x: 0, y: 0 })
 
+  const [hoverBadge, setHoverBadge] = useState<{ x: number; y: number; colorHex: string } | null>(null)
+
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!image) return
 
@@ -784,7 +786,23 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     }
 
     pan.handleMouseMove(e)
-  }, [image, onMeasurePointsChange, zoomLevel, panOffset, imageDrawInfo, pan])
+
+    if (!pan.isPanning && canvasRef.current && imageDrawInfo) {
+      const canvasCoords = clientToCanvas(e.clientX, e.clientY, canvasRef.current)
+      const color = sampleColor(canvasCoords.cssX, canvasCoords.cssY, canvasRef.current, {
+        imageDrawInfo,
+        zoomLevel,
+        panOffset,
+        sourceCanvas: sourceBufferRef.current,
+        valueScaleResult,
+        sortedLuminances,
+        canvasCoords,
+      })
+      if (color) {
+        setHoverBadge({ x: canvasCoords.cssX, y: canvasCoords.cssY, colorHex: color.hex })
+      }
+    }
+  }, [image, onMeasurePointsChange, zoomLevel, panOffset, imageDrawInfo, pan, valueScaleResult, sortedLuminances])
 
   const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isMeasuringRef.current) {
@@ -820,6 +838,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
   const handleMouseLeave = useCallback(() => {
     pan.handleMouseLeave()
+    setHoverBadge(null)
   }, [pan])
 
   const touchStateRef = useRef({
@@ -1282,8 +1301,30 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                 zoomLevel={zoomLevel}
                 liveColorHex={sampledColorHex}
                 workspaceModeLabel={workspaceModeLabel}
+                isGesturing={pan.isPanning}
               />
             )}
+
+            <AnimatePresence>
+              {hoverBadge && !pan.isPanning && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.85 }}
+                  transition={{ duration: 0.15 }}
+                  style={{ left: hoverBadge.x + 16, top: hoverBadge.y - 48 }}
+                  className="pointer-events-none absolute z-30 flex items-center gap-2 rounded-xl border border-ink-hairline bg-paper-elevated/95 p-1.5 shadow-md backdrop-blur-sm"
+                >
+                  <div
+                    className="h-5 w-5 rounded-full border border-ink-hairline shadow-sm"
+                    style={{ backgroundColor: hoverBadge.colorHex }}
+                  />
+                  <span className="pr-1 font-mono text-xs font-bold text-ink tabular-nums">
+                    {hoverBadge.colorHex.toUpperCase()}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {valueModeEnabled && valueScaleSettings && (
               <div className="pointer-events-none absolute left-1/2 top-4 z-30 w-[min(28rem,calc(100%-7.5rem))] -translate-x-1/2">

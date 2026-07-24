@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import ColorCardPreview from './ColorCardPreview'
 import ColorCardModal from './ColorCardModal'
 import CardMetadataFields from './CardMetadataFields'
@@ -660,9 +661,14 @@ export default function ColorDeckPanel({
                                         const priorityLabel = CARD_PRIORITY_OPTIONS.find((option) => option.value === priority)?.label ?? 'Medium'
 
                                         return (
-                                            <article
+                                            <motion.article
                                                 key={card.id}
-                                                className={`group overflow-hidden rounded-3xl border bg-paper-elevated shadow-sm transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:shadow-lg ${hasSampleMatch(card) ? 'border-signal ring-2 ring-signal/20' : 'border-ink-hairline'}`}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.96 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.96 }}
+                                                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                                                className={`group overflow-hidden rounded-3xl border bg-paper-elevated shadow-sm transition-[box-shadow,border-color] hover:shadow-lg ${hasSampleMatch(card) ? 'border-signal ring-2 ring-signal/20' : 'border-ink-hairline'}`}
                                             >
                                                 <button
                                                     type="button"
@@ -698,38 +704,17 @@ export default function ColorDeckPanel({
                                                         </div>
 
                                                         <div className="flex flex-wrap gap-2">
-                                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${CARD_STATUS_STYLES[status]}`}>
+                                                            <span className={`rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${CARD_STATUS_STYLES[status]}`}>
                                                                 {statusLabel}
                                                             </span>
-                                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${CARD_PRIORITY_STYLES[priority]}`}>
+                                                            <span className={`rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${CARD_PRIORITY_STYLES[priority]}`}>
                                                                 {priorityLabel}
                                                             </span>
-                                                            <span className="rounded-full border border-ink-hairline bg-paper-recessed px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
-                                                                {card.matches.dmc.length} DMC
-                                                            </span>
-                                                            <span className="rounded-full border border-ink-hairline bg-paper-recessed px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
-                                                                {card.matches.paints.length} paint matches
-                                                            </span>
                                                             {tags.slice(0, 2).map((tag) => (
-                                                                <span
-                                                                    key={tag}
-                                                                    className="rounded-full border border-ink-hairline bg-paper-recessed px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted"
-                                                                >
+                                                                <span key={tag} className="rounded-md border border-ink-hairline bg-paper-recessed px-2 py-0.5 font-mono text-[9px] text-ink-secondary">
                                                                     #{tag}
                                                                 </span>
                                                             ))}
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between gap-3 border-t border-ink-hairline pt-3">
-                                                            <div className="min-w-0">
-                                                                <div className="truncate font-mono text-xs font-bold text-ink">{card.color.hex}</div>
-                                                                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-faint">
-                                                                    Saved {formatDate(card.updatedAt || card.createdAt)}
-                                                                </div>
-                                                            </div>
-                                                            <div className="rounded-xl bg-ink px-3 py-2 text-xs font-bold text-white transition-colors group-hover:bg-signal">
-                                                                Open card
-                                                            </div>
                                                         </div>
                                                     </div>
                                                 </button>
@@ -751,12 +736,12 @@ export default function ColorDeckPanel({
                                                             event.stopPropagation()
                                                             handleDelete(card.id)
                                                         }}
-                                                        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-red-600 transition-colors hover:bg-red-100"
+                                                        className="rounded-lg border border-signal-muted bg-signal-muted px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-signal transition-colors hover:bg-signal hover:text-white"
                                                     >
                                                         Remove
                                                     </button>
                                                 </div>
-                                            </article>
+                                            </motion.article>
                                         )
                                     })}
                                 </div>

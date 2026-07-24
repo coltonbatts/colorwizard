@@ -9,6 +9,7 @@ import FullScreenOverlay from './FullScreenOverlay'
 import PhotoshopColorWheel from './PhotoshopColorWheel'
 import ColorHarmonies from './ColorHarmonies'
 import ValueHistogram from './ValueHistogram'
+import ValueChromaGraph from './ValueChromaGraph'
 import ColorCardModal from './ColorCardModal'
 import CollapsibleSection from './ui/CollapsibleSection'
 import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
@@ -129,18 +130,18 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
   return (
-    <div className="bg-white text-studio font-sans min-h-full">
+    <div className="min-h-full bg-paper-shell font-sans text-ink">
 
-      {/* HERO SWATCH AREA - Always Visible */}
-      <div className="p-4 lg:p-6 border-b border-gray-100 bg-[#fbfbfd]">
-        <div className="flex flex-col lg:gap-4 gap-2">
+      {/* BENTO HERO SWATCH & NAMING AREA */}
+      <div className="border-b border-ink-hairline bg-paper-elevated p-4 lg:p-6 shadow-sm">
+        <div className="flex flex-col gap-4">
 
           {/* Giant Hero Swatch */}
-          <div className="w-full aspect-[2/1] lg:aspect-video rounded-3xl shadow-xl border border-gray-100 relative overflow-hidden group transition-[box-shadow,transform] duration-500"
+          <div className="group relative aspect-[2/1] w-full overflow-hidden rounded-2xl border border-ink-hairline shadow-md transition-shadow lg:aspect-video"
             style={{ backgroundColor: hex }}
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/5 to-transparent pointer-events-none"></div>
-            <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10" />
             {/* Expand button */}
             <button
               type="button"
@@ -148,7 +149,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 setShowCardModal(false)
                 setShowColorFullScreen(true)
               }}
-              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/20 text-white/70 opacity-0 backdrop-blur-sm transition-[background-color,opacity,color] duration-200 hover:bg-black/40 hover:text-white group-hover:opacity-100"
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-xl bg-black/25 text-white/80 opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-black/50 hover:text-white group-hover:opacity-100"
               title="Open full-screen preview"
               aria-label="View color swatch full screen"
             >
@@ -161,122 +162,125 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             <ColorNamingDisplay hex={hex} key={lastSampleTime} />
           </div>
 
-          {/* Hero Info - Now below the swatch for max width */}
-          <div className="flex flex-col items-center justify-center pt-1 lg:pt-2">
-            <div className="flex items-center gap-4 mb-2">
-              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter font-mono text-studio tabular-nums">{hex}</h2>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (isPinned) return
-                  setIsPinning(true)
-                  try {
-                    const spectral = await solveRecipe(hex)
-                    const fallback = generatePaintRecipe(hsl)
-                    const dmc = await findClosestDMCColors(rgb, 5)
-
-                    onPin({
-                      id: crypto.randomUUID(),
-                      hex,
-                      rgb,
-                      hsl,
-                      label: label.trim() || `Color ${hex}`,
-                      timestamp: Date.now(),
-                      spectralRecipe: spectral,
-                      fallbackRecipe: fallback,
-                      dmcMatches: dmc
-                    })
-                    setLabel('')
-                  } catch (e) {
-                    console.error('Failed to pin color', e)
-                  } finally {
-                    setIsPinning(false)
-                  }
-                }}
-                disabled={isPinning || isPinned}
-                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-[background-color,color,border-color,box-shadow,transform] ${isPinned
-                  ? 'bg-green-600/20 text-green-400 border border-green-500/30'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg'
-                  }`}
-                aria-label={isPinned ? 'Color pinned' : 'Pin color'}
-              >
-                {isPinning ? (
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Pinning…
-                  </span>
-                ) : isPinned ? (
-                  <><span>✓</span> Pinned</>
-                ) : (
-                  <><span>📌</span> Pin Color</>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setIsCreatingCard(true)
-                  try {
-                    const dmc = await findClosestDMCColors(rgb, 5)
-                    const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
-
-                    // Fetch descriptive name
-                    let descriptiveName = ''
+          {/* Hero Actions & Values */}
+          <div className="flex flex-col items-center justify-center pt-1">
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-3">
+              <h2 className="font-mono text-3xl font-bold tracking-tight text-ink tabular-nums lg:text-4xl">{hex.toUpperCase()}</h2>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (isPinned) return
+                    setIsPinning(true)
                     try {
-                      const nameMatch = await getColorName(hex)
-                      descriptiveName = nameMatch.name
+                      const spectral = await solveRecipe(hex)
+                      const fallback = generatePaintRecipe(hsl)
+                      const dmc = await findClosestDMCColors(rgb, 5)
+
+                      onPin({
+                        id: crypto.randomUUID(),
+                        hex,
+                        rgb,
+                        hsl,
+                        label: label.trim() || `Color ${hex}`,
+                        timestamp: Date.now(),
+                        spectralRecipe: spectral,
+                        fallbackRecipe: fallback,
+                        dmcMatches: dmc
+                      })
+                      setLabel('')
                     } catch (e) {
-                      console.error('Failed to get color name for card', e)
+                      console.error('Failed to pin color', e)
+                    } finally {
+                      setIsPinning(false)
                     }
+                  }}
+                  disabled={isPinning || isPinned}
+                  className={`flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold uppercase tracking-[0.08em] transition-all active:scale-95 ${
+                    isPinned
+                      ? 'border-subsignal/30 bg-subsignal-muted text-subsignal'
+                      : 'border-ink-hairline bg-paper text-ink shadow-sm hover:bg-paper-recessed'
+                  }`}
+                  aria-label={isPinned ? 'Color pinned' : 'Pin color'}
+                >
+                  {isPinning ? (
+                    <span className="flex items-center gap-1">
+                      <span className="h-2 w-2 animate-spin rounded-full border-2 border-ink-muted border-t-ink" />
+                      Pinning…
+                    </span>
+                  ) : isPinned ? (
+                    <><span>✓</span> Pinned</>
+                  ) : (
+                    <><span>📌</span> Pin</>
+                  )}
+                </button>
 
-                    const newCard = await createColorCard(
-                      { hex, rgb, hsl },
-                      {
-                        name: label.trim() || descriptiveName || `Color ${hex}`,
-                        colorName: descriptiveName || undefined,
-                        valueStep: sampledColor.valueMetadata?.step,
-                        recipeLabel: activePalette?.isDefault ? 'Core six-color mix' : activePalette?.name || 'Active palette',
-                        solveOptions: activePalette && !activePalette.isDefault ? { paletteColorIds: activePalette.colors.map(color => color.id) } : undefined,
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsCreatingCard(true)
+                    try {
+                      const dmc = await findClosestDMCColors(rgb, 5)
+                      const luminance = getLuminance(rgb.r, rgb.g, rgb.b) / 100
+
+                      let descriptiveName = ''
+                      try {
+                        const nameMatch = await getColorName(hex)
+                        descriptiveName = nameMatch.name
+                      } catch (e) {
+                        console.error('Failed to get color name for card', e)
                       }
-                    )
 
-                    // Preserve the cached luminance from this panel's local analysis.
-                    setPendingCard({
-                      ...newCard,
-                      color: {
-                        ...newCard.color,
-                        luminance,
-                      },
-                      matches: {
-                        ...newCard.matches,
-                        dmc,
-                      },
-                    })
-                    setShowColorFullScreen(false)
-                    setShowCardModal(true)
-                  } catch (e) {
-                    console.error('Failed to create color card', e)
-                  } finally {
-                    setIsCreatingCard(false)
-                  }
-                }}
-                disabled={isCreatingCard}
-                className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg transition-[background-color,color,box-shadow,transform] hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-70"
-                aria-label="Create color card"
-              >
-                {isCreatingCard ? (
-                  <>
-                    <span className="w-2 h-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    <span>🎴</span> Make Card
-                  </>
-                )}
-              </button>
+                      const newCard = await createColorCard(
+                        { hex, rgb, hsl },
+                        {
+                          name: label.trim() || descriptiveName || `Color ${hex}`,
+                          colorName: descriptiveName || undefined,
+                          valueStep: sampledColor.valueMetadata?.step,
+                          recipeLabel: activePalette?.isDefault ? 'Core six-color mix' : activePalette?.name || 'Active palette',
+                          solveOptions: activePalette && !activePalette.isDefault ? { paletteColorIds: activePalette.colors.map(color => color.id) } : undefined,
+                        }
+                      )
+
+                      setPendingCard({
+                        ...newCard,
+                        color: {
+                          ...newCard.color,
+                          luminance,
+                        },
+                        matches: {
+                          ...newCard.matches,
+                          dmc,
+                        },
+                      })
+                      setShowColorFullScreen(false)
+                      setShowCardModal(true)
+                    } catch (e) {
+                      console.error('Failed to create color card', e)
+                    } finally {
+                      setIsCreatingCard(false)
+                    }
+                  }}
+                  disabled={isCreatingCard}
+                  className="flex min-h-10 items-center gap-1.5 rounded-xl border border-ink-hairline bg-paper px-3 text-xs font-semibold uppercase tracking-[0.08em] text-ink shadow-sm transition-all hover:bg-paper-recessed active:scale-95 disabled:opacity-50"
+                  aria-label="Create color card"
+                >
+                  {isCreatingCard ? (
+                    <>
+                      <span className="h-2 w-2 animate-spin rounded-full border-2 border-ink-muted border-t-ink" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <span>🎴</span> Make Card
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="w-full max-w-xs mb-4">
+            <div className="mb-3 w-full max-w-xs">
               <label htmlFor={noteInputId} className="sr-only">
                 Color note
               </label>
@@ -284,90 +288,85 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 id={noteInputId}
                 name="color-note"
                 type="text"
-                placeholder="Add a label/note…"
+                placeholder="Add swatch note…"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-xl border border-gray-100 bg-white px-3 py-2 text-xs text-studio shadow-sm transition-[border-color,box-shadow] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-xl border border-ink-hairline bg-paper px-3 py-2 text-xs text-ink placeholder:text-ink-muted focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
               />
             </div>
 
-            {/* Value First Readout */}
-            <div className="w-full grid grid-cols-2 gap-4 lg:gap-6 items-center justify-center px-2 lg:px-4 mt-2">
-              <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                <span className="text-blue-600 text-[10px] lg:text-[11px] uppercase font-black tracking-widest mb-1">Value</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-4xl lg:text-5xl text-studio font-black tabular-nums">{sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : valuePercent}%</span>
-                </div>
-                {sampledColor.valueMetadata ? (
-                  <div className="flex flex-col items-center gap-1 mt-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-sm border border-gray-100 shadow-inner" style={{ backgroundColor: grayscaleHex }}></div>
-                      <span className="text-yellow-600 font-mono text-sm font-bold">Step {sampledColor.valueMetadata.step} / {valueScaleSettings?.steps || 7}</span>
-                    </div>
-                    <span className="text-[9px] text-studio-muted font-mono uppercase">Range: {sampledColor.valueMetadata.range[0].toFixed(2)}-{sampledColor.valueMetadata.range[1].toFixed(2)}</span>
-                    <span className="text-[9px] text-blue-500 font-mono font-bold uppercase">Rank: {(sampledColor.valueMetadata.percentile * 100).toFixed(1)}%</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-studio-muted font-mono text-sm">Value Step: —</span>
-                  </div>
-                )}
-                {!sampledColor.valueMetadata && <span className="text-[10px] text-studio-muted font-bold uppercase tracking-tight mt-1">{valueBand}</span>}
+            {/* Quick Readout Pills */}
+            <div className="grid w-full grid-cols-2 gap-3 pt-1">
+              <div className="flex flex-col items-center rounded-xl border border-ink-hairline bg-paper p-2.5">
+                <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">Value %</span>
+                <span className="font-mono text-xl font-bold tabular-nums text-ink">
+                  {sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : Math.round(valuePercent)}%
+                </span>
+                <span className="text-[10px] text-ink-secondary">{valueBand}</span>
               </div>
-
-              <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                <span className="text-studio-dim text-[10px] lg:text-[11px] uppercase font-bold tracking-widest mb-1">Chroma</span>
-                <span className="font-mono text-2xl lg:text-3xl text-studio font-black">{chroma.label}</span>
-                <div className="w-px h-2 bg-gray-100 my-1"></div>
-                <span className="text-[10px] text-studio-muted font-mono uppercase tracking-tight">{hex}</span>
+              <div className="flex flex-col items-center rounded-xl border border-ink-hairline bg-paper p-2.5">
+                <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">Chroma</span>
+                <span className="font-mono text-xl font-bold uppercase text-ink">{chroma.label}</span>
+                <span className="font-mono text-[10px] text-ink-secondary">{chroma.value.toFixed(2)}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* TABS */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
+      {/* WORKBENCH TAB BAR */}
+      <div className="flex border-b border-ink-hairline bg-paper-recessed p-1">
         <button
           onClick={() => setActiveTab('painter')}
-          className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'painter'
-            ? 'text-studio border-b-2 border-blue-600 bg-white'
-            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-            }`}
+          className={`flex-1 rounded-lg py-2.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all ${
+            activeTab === 'painter'
+              ? 'bg-paper-elevated text-ink shadow-sm ring-1 ring-ink-hairline'
+              : 'text-ink-muted hover:text-ink'
+          }`}
         >
           Painter
         </button>
         <button
           onClick={() => setActiveTab('thread')}
-          className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'thread'
-            ? 'text-studio border-b-2 border-black dark:border-white bg-white'
-            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-            }`}
+          className={`flex-1 rounded-lg py-2.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all ${
+            activeTab === 'thread'
+              ? 'bg-paper-elevated text-ink shadow-sm ring-1 ring-ink-hairline'
+              : 'text-ink-muted hover:text-ink'
+          }`}
         >
           Threads
         </button>
         <button
           onClick={() => setActiveTab('deck')}
-          className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${activeTab === 'deck'
-            ? 'text-studio border-b-2 border-emerald-600 bg-white'
-            : 'text-studio-dim hover:text-studio-secondary hover:bg-gray-50'
-            }`}
+          className={`flex-1 rounded-lg py-2.5 text-xs font-semibold uppercase tracking-[0.08em] transition-all ${
+            activeTab === 'deck'
+              ? 'bg-paper-elevated text-ink shadow-sm ring-1 ring-ink-hairline'
+              : 'text-ink-muted hover:text-ink'
+          }`}
         >
           Deck
         </button>
       </div>
 
-
       {/* CONTENT AREA */}
       <div className="p-4 lg:p-6">
 
         {activeTab === 'painter' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="space-y-4">
 
-            {/* Visualizer - always visible in painter tab */}
-            <section className="min-h-0">
+            {/* Perceptual Value & Chroma Graph Bento Card */}
+            <ValueChromaGraph color={hex} />
+
+            {/* Visualizer Color Wheel */}
+            <section className="rounded-2xl border border-ink-hairline bg-paper-elevated p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-muted">
+                  Interactive Hue Wheel
+                </span>
+                <span className="font-mono text-[10px] text-ink-secondary">HSL {hsl.h}°</span>
+              </div>
               <PhotoshopColorWheel
                 color={hex}
                 onChange={(newHex) => {
@@ -384,19 +383,19 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             </section>
 
             {/* Expand/Collapse All Control */}
-            <div className="flex items-center justify-between py-2 px-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mix Tools</span>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between py-1 px-1">
+              <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-ink-muted">Inspector Sections</span>
+              <div className="flex items-center gap-2 text-[10px]">
                 <button
                   onClick={expandAll}
-                  className="text-[10px] text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                  className="font-medium uppercase tracking-wider text-ink-secondary hover:text-ink"
                 >
                   Expand all
                 </button>
-                <span className="text-gray-300">|</span>
+                <span className="text-ink-hairline">|</span>
                 <button
                   onClick={collapseAll}
-                  className="text-[10px] text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                  className="font-medium uppercase tracking-wider text-ink-secondary hover:text-ink"
                 >
                   Collapse all
                 </button>
@@ -451,7 +450,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   {/* Value Distribution Histogram */}
                   {histogramBins && (
                     <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wide">Distribution</h4>
+                      <h4 className="font-serif text-xs font-semibold text-ink">Value Distribution</h4>
                       <ValueHistogram
                         bins={histogramBins}
                         thresholds={valueScaleResult?.thresholds}
@@ -461,11 +460,15 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   )}
 
                   {/* Overlay Toggle */}
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                    <span className="text-xs font-medium text-gray-600">Value Overlay</span>
+                  <div className="flex items-center justify-between py-2 border-t border-ink-hairline">
+                    <span className="text-xs font-medium text-ink-secondary">Value Overlay</span>
                     <button
                       onClick={() => onValueScaleChange?.({ ...valueScaleSettings!, enabled: !valueScaleSettings?.enabled })}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-[color,background-color,box-shadow] ${valueScaleSettings?.enabled ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                        valueScaleSettings?.enabled
+                          ? 'border border-ink bg-ink text-paper'
+                          : 'border border-ink-hairline bg-paper text-ink-secondary hover:bg-paper-recessed'
+                      }`}
                     >
                       {valueScaleSettings?.enabled ? 'ON' : 'OFF'}
                     </button>
@@ -474,11 +477,11 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                   {/* Settings Grid */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Steps</span>
+                      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">Steps</span>
                       <select
                         value={valueScaleSettings?.steps}
                         onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, steps: parseInt(e.target.value) })}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-xl border border-ink-hairline bg-paper px-2.5 py-1.5 text-xs font-mono text-ink focus:outline-none focus:ring-1 focus:ring-ink"
                       >
                         <option value="5">5 Steps</option>
                         <option value="7">7 Steps</option>
@@ -487,42 +490,15 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                       </select>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Mode</span>
+                      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.08em] text-ink-muted">Mode</span>
                       <select
                         value={valueScaleSettings?.mode}
                         onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, mode: e.target.value as 'Even' | 'Percentile' })}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-xl border border-ink-hairline bg-paper px-2.5 py-1.5 text-xs font-mono text-ink focus:outline-none focus:ring-1 focus:ring-ink"
                       >
                         <option value="Even">Even</option>
                         <option value="Percentile">Percentile</option>
                       </select>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Clip</span>
-                      <select
-                        value={valueScaleSettings?.clip}
-                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, clip: parseFloat(e.target.value) as 0 | 0.005 | 0.01 | 0.02 })}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        <option value="0">None (0%)</option>
-                        <option value="0.005">0.5%</option>
-                        <option value="0.01">1%</option>
-                        <option value="0.02">2%</option>
-                      </select>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[10px] text-gray-500 font-bold uppercase mb-1">
-                        <span>Opacity</span>
-                        <span>{Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={Math.round((valueScaleSettings?.opacity ?? 0.45) * 100)}
-                        onChange={(e) => onValueScaleChange?.({ ...valueScaleSettings!, opacity: parseInt(e.target.value) / 100 })}
-                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      />
                     </div>
                   </div>
 
@@ -550,7 +526,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                           URL.revokeObjectURL(url);
                         }, 'image/png');
                       }}
-                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 transition-colors"
+                      className="flex-1 rounded-xl border border-ink-hairline bg-paper py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink transition-colors hover:bg-paper-recessed"
                     >
                       Download PNG
                     </button>
@@ -560,48 +536,27 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                         navigator.clipboard.writeText(data);
                         alert('Value Scale settings copied to clipboard!');
                       }}
-                      className="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-600 transition-colors"
+                      className="flex-1 rounded-xl border border-ink-hairline bg-paper py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink transition-colors hover:bg-paper-recessed"
                     >
                       Copy JSON
                     </button>
-                  </div>
-
-                  {/* Value Scale Legend */}
-                  <div className="pt-3 border-t border-gray-100">
-                    <h4 className="text-[10px] font-bold text-gray-500 mb-3 uppercase tracking-wider">Step Legend</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: valueScaleSettings?.steps || 0 }).map((_, i) => {
-                        const stepVal = (i / ((valueScaleSettings?.steps || 1) - 1));
-                        const grayVal = Math.round(stepVal * 255);
-                        const color = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
-                        return (
-                          <div key={i} className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 rounded border border-gray-200 flex-shrink-0" style={{ backgroundColor: color }}></div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-[10px] font-bold text-gray-700 block">Step {i + 1}</span>
-                              <span className="text-[8px] text-gray-400 font-mono">{(stepVal * 100).toFixed(0)}%</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
                   </div>
                 </div>
               </CollapsibleSection>
 
             </div>
 
-            {/* Tech Specs */}
-            <section className="p-3 lg:p-4 bg-gray-50 rounded-2xl border border-gray-100 mt-4">
-              <h3 className="text-[10px] lg:text-xs font-bold text-studio-dim mb-2 lg:mb-3 uppercase tracking-widest">Technical Data</h3>
-              <div className="grid grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm font-mono">
-                <div>
-                  <span className="text-studio-muted block text-[9px] lg:text-xs">RGB</span>
-                  <span className="text-studio">{rgb.r}, {rgb.g}, {rgb.b}</span>
+            {/* Technical Readout Card */}
+            <section className="rounded-2xl border border-ink-hairline bg-paper-elevated p-4 shadow-sm">
+              <h3 className="mb-3 font-serif text-xs font-semibold text-ink">Technical Color Data</h3>
+              <div className="grid grid-cols-2 gap-3 font-mono text-xs tabular-nums text-ink">
+                <div className="rounded-xl border border-ink-hairline bg-paper p-2.5">
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">RGB</span>
+                  <span>{rgb.r}, {rgb.g}, {rgb.b}</span>
                 </div>
-                <div>
-                  <span className="text-studio-muted block text-[9px] lg:text-xs">HSL</span>
-                  <span className="text-studio">{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
+                <div className="rounded-xl border border-ink-hairline bg-paper p-2.5">
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">HSL</span>
+                  <span>{hsl.h}°, {hsl.s}%, {hsl.l}%</span>
                 </div>
               </div>
             </section>
@@ -609,13 +564,13 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
         )}
 
         {activeTab === 'thread' && (
-          <div className="animate-in fade-in duration-300">
+          <div>
             <DMCFlossMatch rgb={rgb} onColorSelect={onColorSelect} />
           </div>
         )}
 
         {activeTab === 'deck' && (
-          <div className="animate-in fade-in duration-300">
+          <div>
             <ColorDeckPanel
               sampledColor={sampledColor}
               activePaletteName={activePalette?.name}

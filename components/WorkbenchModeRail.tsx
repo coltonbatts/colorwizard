@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { type TabType } from '@/components/CollapsibleSidebar'
 import {
   DeckWorkbenchIcon,
@@ -17,6 +18,8 @@ interface WorkbenchModeRailProps {
   activeMode: Exclude<TabType, 'deck'>
   onModeChange: (mode: Exclude<TabType, 'deck'>) => void
   onOpenDeck: () => void
+  /** Whether fine gesture (pan/zoom) is currently active on canvas */
+  isGesturing?: boolean
 }
 
 const primaryModes = [
@@ -37,11 +40,21 @@ export default function WorkbenchModeRail({
   activeMode,
   onModeChange,
   onOpenDeck,
+  isGesturing = false,
 }: WorkbenchModeRailProps) {
   const toolActive = toolModes.some((mode) => mode.id === activeMode)
 
   return (
-    <nav className="workbench-mode-rail hidden md:flex" aria-label="Workbench">
+    <motion.nav
+      initial={{ opacity: 1, scale: 1 }}
+      animate={{
+        opacity: isGesturing ? 0.35 : 1,
+        scale: isGesturing ? 0.96 : 1,
+      }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="workbench-mode-rail hidden md:flex transition-shadow hover:shadow-xl"
+      aria-label="Workbench"
+    >
       <div className="workbench-mode-primary">
         {primaryModes.map((mode) => {
           const active = activeMode === mode.id
@@ -91,6 +104,7 @@ export default function WorkbenchModeRail({
           </button>
         </div>
       </details>
-    </nav>
+    </motion.nav>
   )
 }
+
