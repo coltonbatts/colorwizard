@@ -127,7 +127,6 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   // Value First Data
   const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
   const valueBand = getValueBand(valuePercent)
-  const grayscaleHex = `#${Math.round(valuePercent * 2.55).toString(16).padStart(2, '0').repeat(3)}`
 
   return (
     <div className="min-h-full bg-paper-shell font-sans text-ink">

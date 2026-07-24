@@ -30,7 +30,7 @@ function getTemperature(colorHex: string): { label: string; score: number } {
 }
 
 export default function ValueChromaGraph({ color }: ValueChromaGraphProps) {
-  const { value, chroma, chromaObj, temp, x, y } = useMemo(() => {
+  const { value, chromaObj, temp, x, y } = useMemo(() => {
     const val = getPainterValue(color) // 0-10
     const chrObj = getPainterChroma(color)
     const chr = chrObj.value // 0-~0.4

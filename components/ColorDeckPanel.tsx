@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import ColorCardPreview from './ColorCardPreview'
 import ColorCardModal from './ColorCardModal'
 import CardMetadataFields from './CardMetadataFields'
@@ -43,10 +43,6 @@ interface ColorDeckPanelProps {
 }
 
 type SortMode = 'recent' | 'priority' | 'name'
-
-function formatDate(timestamp: number) {
-    return new Date(timestamp).toLocaleDateString()
-}
 
 function normalizeStatus(value?: CardStatus): CardStatus {
     return value ?? 'idea'

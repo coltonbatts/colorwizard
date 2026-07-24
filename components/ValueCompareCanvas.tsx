@@ -44,7 +44,7 @@ export default function ValueCompareCanvas({
 }: ValueCompareCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
-    fileInputRef = useRef<HTMLInputElement>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Transform state
     const [zoom, setZoom] = useState(1)
@@ -282,8 +282,6 @@ export default function ValueCompareCanvas({
             handleFileSelect(file)
         }
     }, [handleFileSelect])
-
-    var fileInputRef = useRef<HTMLInputElement>(null)
 
     return (
         <div className="flex h-full flex-col bg-paper-shell text-ink">
