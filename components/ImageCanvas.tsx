@@ -1515,7 +1515,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               />
               
               <p className="font-mono text-xs uppercase tracking-widest text-ink-muted mb-4 animate-pulse">
-                Analyzing chromatic details...
+                Analyzing chromatic details…
               </p>
               
               {/* Horizontal color scanline */}

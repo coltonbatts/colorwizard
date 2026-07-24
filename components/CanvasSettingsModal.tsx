@@ -20,7 +20,7 @@ const SEGMENT_BASE_CLASS =
   'flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-[background-color,border-color,color,box-shadow]'
 
 const INPUT_CLASS =
-  'w-full rounded-xl border bg-[var(--paper-elevated)] px-4 py-3 text-sm text-ink transition-[background-color,border-color,box-shadow] focus:bg-[var(--paper)] focus:border-[var(--graphite-muted)] focus:outline-none'
+  'w-full rounded-xl border bg-[var(--paper-elevated)] px-4 py-3 text-sm text-ink transition-[background-color,border-color,box-shadow] focus:bg-[var(--paper)] focus:border-[var(--graphite-muted)] focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none'
 
 const FOOTER_BUTTON_BASE_CLASS =
   'inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition-[background-color,border-color,color,box-shadow,transform] hover:translate-y-[-1px] active:translate-y-0'

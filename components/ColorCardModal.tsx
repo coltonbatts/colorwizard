@@ -151,14 +151,14 @@ export default function ColorCardModal({
             initialFocusRef={nameInputRef}
             rootClassName="fixed inset-0 z-[9999] flex items-center justify-center p-4"
             backdropClassName="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            panelClassName="flex max-h-[90dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl outline-none lg:flex-row"
+            panelClassName="flex max-h-[90dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-[var(--paper-elevated)] border border-[var(--ink-hairline)] shadow-2xl outline-none lg:flex-row"
         >
-            <div className="flex items-center justify-between border-b border-gray-100 p-4 lg:absolute lg:left-0 lg:right-0 lg:top-0 lg:z-10 lg:bg-white/95 lg:backdrop-blur-sm">
+            <div className="flex items-center justify-between border-b border-[var(--ink-hairline)] p-4 lg:absolute lg:left-0 lg:right-0 lg:top-0 lg:z-10 lg:bg-[var(--paper-elevated)]/95 lg:backdrop-blur-sm">
                 <div>
-                    <h2 id={titleId} className="text-lg font-bold text-gray-900">
+                    <h2 id={titleId} className="text-lg font-bold text-[var(--ink)]">
                         {isNewCard ? 'Save to Deck' : 'Card Detail'}
                     </h2>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--ink-muted)]">
                         Local deck record
                     </p>
                 </div>
@@ -166,7 +166,7 @@ export default function ColorCardModal({
                     type="button"
                     onClick={onClose}
                     aria-label="Close color card modal"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ink-muted)] transition-colors hover:bg-[var(--paper-shell)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
                 >
                     ✕
                 </button>
@@ -174,9 +174,9 @@ export default function ColorCardModal({
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-0 lg:pt-16">
                 <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(320px,420px)_minmax(0,1fr)]">
-                    <aside className="flex min-h-0 flex-col border-b border-gray-100 bg-gray-50/80 lg:border-b-0 lg:border-r lg:border-gray-100">
-                        <div className="border-b border-gray-100 px-4 py-3">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">
+                    <aside className="flex min-h-0 flex-col border-b border-[var(--ink-hairline)] bg-[var(--paper-shell)]/60 lg:border-b-0 lg:border-r lg:border-[var(--ink-hairline)]">
+                        <div className="border-b border-[var(--ink-hairline)] px-4 py-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--ink-muted)]">
                                 Card Preview
                             </p>
                         </div>
@@ -187,11 +187,11 @@ export default function ColorCardModal({
                         </div>
                     </aside>
 
-                    <section className="flex min-h-0 flex-col bg-white">
+                    <section className="flex min-h-0 flex-col bg-[var(--paper-elevated)]">
                         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
                             <div className="space-y-4">
                                 <div>
-                                    <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                    <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
                                         Deck Name
                                     </label>
                                     <input
@@ -203,7 +203,7 @@ export default function ColorCardModal({
                                         onChange={(e) => setCardName(e.target.value)}
                                         autoComplete="off"
                                         placeholder="Enter card name…"
-                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 transition-colors focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full rounded-xl border border-[var(--ink-hairline)] bg-[var(--paper)] px-4 py-3 text-sm font-medium text-[var(--ink)] placeholder:text-[var(--ink-faint)] transition-[background-color,border-color,box-shadow] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--subsignal)]"
                                     />
                                 </div>
 

@@ -151,30 +151,36 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                                                 onChange={(e) => setEditLabel(e.target.value)}
                                                 onBlur={() => renameColor(color.id, editLabel)}
                                                 onKeyDown={(e) => e.key === 'Enter' && renameColor(color.id, editLabel)}
-                                                className="w-full rounded-lg border border-white/10 bg-white/10 px-2 py-1.5 text-xs text-white outline-none"
+                                                className="w-full rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
                                                 autoFocus
                                             />
                                         ) : (
                                             <div className="text-sm font-medium text-white">{color.label}</div>
                                         )}
-                                        <div className="mt-1 font-mono text-[11px] text-white/70">{color.hex}</div>
+                                        <div className="mt-1 font-mono tabular-nums text-[11px] text-white/70">{color.hex}</div>
 
                                         <div className="mt-3 flex gap-1">
                                             <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); setEditingId(color.id); setEditLabel(color.label) }}
-                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
+                                                aria-label={`Edit label for ${color.label}`}
                                             >
                                                 Edit
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); copyHex(color.hex, color.id) }}
-                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
+                                                aria-label={`Copy hex code ${color.hex}`}
                                             >
                                                 {copied === color.id ? 'Copied' : 'Copy'}
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={(e) => { e.stopPropagation(); removeColor(color.id) }}
-                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-signal"
+                                                className="flex-1 rounded-md bg-white/10 px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.08em] text-white transition-colors hover:bg-signal focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
+                                                aria-label={`Remove color ${color.label}`}
                                             >
                                                 Drop
                                             </button>

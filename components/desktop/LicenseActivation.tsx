@@ -144,7 +144,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             maxLength={15}
             aria-describedby={error ? `${inputId}-error` : undefined}
             aria-invalid={Boolean(error)}
-            className={`min-h-12 w-full border bg-paper-elevated px-4 py-3 text-center font-mono text-lg tracking-widest text-ink placeholder:text-ink-faint transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-subsignal/40 focus:border-subsignal ${
+            className={`min-h-12 w-full border bg-paper-elevated px-4 py-3 text-center font-mono text-lg tracking-widest text-ink placeholder:text-ink-faint transition-[background-color,border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-subsignal/40 focus:border-subsignal ${
               error ? 'border-danger focus:border-danger focus:ring-danger/40' : 'border-stone-300'
             }`}
             disabled={isValidating}
@@ -159,13 +159,13 @@ export default function LicenseActivation({ onActivated, demo = false }: License
           type="button"
           onClick={handleValidate}
           disabled={!key.trim() || isValidating}
-          className={`mb-6 min-h-12 w-full border text-xs uppercase tracking-widest font-black transition-all duration-300 active:scale-[0.985] ${
+          className={`mb-6 min-h-12 w-full border text-xs uppercase tracking-widest font-black transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.985] ${
             !key.trim() || isValidating
               ? 'border-ink-hairline bg-paper-recessed text-ink-muted cursor-not-allowed opacity-60'
               : 'border-ink bg-ink text-paper-elevated hover:bg-transparent hover:text-ink hover:border-ink'
           }`}
         >
-          {isValidating ? 'Validating...' : 'Unlock'}
+          {isValidating ? 'Validating…' : 'Unlock'}
         </button>
 
         <div className="border-t border-ink-hairline pt-4">

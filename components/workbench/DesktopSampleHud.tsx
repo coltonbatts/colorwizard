@@ -131,10 +131,10 @@ export default function DesktopSampleHud({
 
           <header className="sample-identity">
             <h2>{readout.displayName}</h2>
-            <span className="sample-hex">{hex.toUpperCase()}</span>
+            <span className="sample-hex font-mono tabular-nums">{hex.toUpperCase()}</span>
           </header>
 
-          <section className="sample-character" aria-label="Color character">
+          <section className="sample-character font-mono tabular-nums" aria-label="Color character">
             <div>
               <span>Value</span>
               <strong>{readout.displayedValue}%</strong>
@@ -191,7 +191,7 @@ export default function DesktopSampleHud({
                 Details
               </span>
             </summary>
-            <div className="sample-detail-values">
+            <div className="sample-detail-values font-mono tabular-nums">
               <button type="button" onClick={() => copy(hex, 'hex')}>
                 <span>HEX</span><strong>{copied === 'hex' ? 'Copied' : hex.toUpperCase()}</strong>
               </button>

@@ -284,7 +284,7 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
                 id={noteInputId}
                 name="color-note"
                 type="text"
-                placeholder="Add a label/note..."
+                placeholder="Add a label/note…"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 autoComplete="off"

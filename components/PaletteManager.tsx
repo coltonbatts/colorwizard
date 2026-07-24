@@ -128,10 +128,10 @@ export default function PaletteManager({
             ariaLabelledBy={titleId}
             rootClassName="fixed inset-0 z-50 flex items-center justify-center p-4"
             backdropClassName="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-700 bg-gray-900 shadow-2xl outline-none"
+            panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--ink-hairline)] bg-[var(--paper-elevated)] shadow-2xl outline-none"
         >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-700 p-4">
+            <div className="flex items-center justify-between border-b border-[var(--ink-hairline)] p-4">
                 <div className="flex items-center gap-3">
                     {mode !== 'list' && (
                         <button
@@ -141,7 +141,7 @@ export default function PaletteManager({
                                 setEditingPalette(null)
                                 setError('')
                             }}
-                            className="rounded p-1 transition-colors hover:bg-gray-700"
+                            className="rounded p-1 text-[var(--ink-muted)] transition-colors hover:bg-[var(--paper-shell)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
                             aria-label="Back to palette list"
                         >
                             <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@ export default function PaletteManager({
                             </svg>
                         </button>
                     )}
-                    <h2 id={titleId} className="text-lg font-bold text-gray-100">
+                    <h2 id={titleId} className="text-lg font-bold text-[var(--ink)]">
                         {mode === 'list' && 'Manage Palettes'}
                         {mode === 'create' && 'Create Palette'}
                         {mode === 'edit' && 'Edit Palette'}
@@ -158,7 +158,7 @@ export default function PaletteManager({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 transition-colors hover:bg-gray-700"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--paper-shell)] text-[var(--ink-secondary)] transition-colors hover:bg-[var(--paper-recessed)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--subsignal)] focus-visible:outline-none"
                     aria-label="Close modal"
                 >
                     <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +254,7 @@ export default function PaletteManager({
                 ) : (
                     <div className="space-y-6">
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-300">
+                            <label className="mb-2 block text-sm font-medium text-[var(--ink-secondary)]">
                                 Palette Name
                             </label>
                             <input
@@ -265,7 +265,7 @@ export default function PaletteManager({
                                     setError('')
                                 }}
                                 placeholder="e.g., Zorn Palette"
-                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                                className="w-full rounded-xl border border-[var(--ink-hairline)] bg-[var(--paper-elevated)] px-4 py-3 text-sm text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--subsignal)]"
                                 autoFocus
                             />
                         </div>

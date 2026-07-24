@@ -79,7 +79,7 @@ export default function CurrentColorBadge({
                     {/* Inner ring for depth */}
                     <div className="current-color-badge-swatch-ring" />
                 </motion.div>
-                <span className="current-color-badge-hex">{hex}</span>
+                <span className="current-color-badge-hex font-mono tabular-nums">{hex}</span>
                 <svg
                     className={`current-color-badge-chevron ${isExpanded ? 'rotated' : ''}`}
                     width="16"
@@ -110,7 +110,7 @@ export default function CurrentColorBadge({
                         )}
 
                         {/* RGB Values */}
-                        <div className="current-color-badge-values">
+                        <div className="current-color-badge-values font-mono tabular-nums">
                             <span>R: {rgb.r}</span>
                             <span>G: {rgb.g}</span>
                             <span>B: {rgb.b}</span>
