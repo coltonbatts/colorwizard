@@ -2,13 +2,13 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getOptionalSupabaseBrowserClient } from '@/lib/supabase/client'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getOptionalSupabaseBrowserClient()
     if (!supabase) {
       router.replace('/')
       return

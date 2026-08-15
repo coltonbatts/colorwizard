@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import {
+  getOptionalSupabaseBrowserClient,
+  getSupabaseBrowserClient,
+} from '@/lib/supabase/client'
 import { AuthContext } from './authContext'
 import { toAuthUser } from './types'
 
@@ -10,7 +13,7 @@ export default function SupabaseAuthProvider({ children }: { children: ReactNode
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getOptionalSupabaseBrowserClient()
     if (!supabase) {
       setLoading(false)
       return
@@ -26,9 +29,6 @@ export default function SupabaseAuthProvider({ children }: { children: ReactNode
 
   const signInWithGoogle = useCallback(async () => {
     const supabase = getSupabaseBrowserClient()
-    if (!supabase) {
-      throw new Error('Supabase is not configured')
-    }
 
     const redirectTo = `${window.location.origin}/auth/callback`
     const { error } = await supabase.auth.signInWithOAuth({
@@ -39,7 +39,7 @@ export default function SupabaseAuthProvider({ children }: { children: ReactNode
   }, [])
 
   const signOut = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient()
+    const supabase = getOptionalSupabaseBrowserClient()
     if (!supabase) return
     await supabase.auth.signOut()
   }, [])
