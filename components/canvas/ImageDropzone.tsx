@@ -3,6 +3,7 @@
 import { useCallback, useState, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
+import { encodePersistableImage } from '@/lib/image/persistableImage';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 import SwissWaveGraphic from '@/components/splash/SwissWaveGraphic';
 import Wordmark, { WordmarkHero } from '@/components/Wordmark';
@@ -11,7 +12,7 @@ import Wordmark, { WordmarkHero } from '@/components/Wordmark';
 
 interface ImageDropzoneProps {
     /** Called when an image is successfully loaded */
-    onImageLoad: (img: HTMLImageElement) => void;
+    onImageLoad: (img: HTMLImageElement, persistSrc?: string | null) => void;
     /** Optional demo swatch — loads workbench with preset color */
     onTryDemoColor?: (hex: string) => void;
 }
@@ -256,12 +257,15 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             try {
                 const oriented = await decodeImageFile(processedFile);
                 const buffer = await createSourceBuffer(oriented);
+                // Sample from the lossless copy; persist a bounded one. A full-resolution PNG
+                // data URL overruns the storage quota and takes the canvas bucket with it.
                 const dataUrl = buffer.toDataURL('image/png');
+                const persistable = encodePersistableImage(buffer, buffer.width, buffer.height);
                 const finalImg = await decodeImage(dataUrl);
 
                 if (finalImg.width > 0 && finalImg.height > 0) {
                     console.log('[ImageDropzone] Image loaded successfully:', finalImg.width, 'x', finalImg.height);
-                    onImageLoad(finalImg);
+                    onImageLoad(finalImg, persistable?.dataUrl ?? null);
                 } else {
                     console.warn('[ImageDropzone] Skipping onImageLoad for 0x0 image');
                     alert(`Failed to load image "${file.name}". The file decoded to an empty image.`);

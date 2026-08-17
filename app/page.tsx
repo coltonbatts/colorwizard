@@ -242,8 +242,8 @@ export default function Home() {
   }, [normalizeValueWorkflow, valueModeEnabled])
 
   // Wrapper for setImage that always resets value mode
-  const handleImageLoad = useCallback((img: HTMLImageElement) => {
-    setImage(img)
+  const handleImageLoad = useCallback((img: HTMLImageElement, persistSrc?: string | null) => {
+    setImage(img, persistSrc)
     setReferenceOpacity(1)
     resetReferenceTransform()
     normalizeValueWorkflow(false)

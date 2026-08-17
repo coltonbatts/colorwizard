@@ -6,7 +6,7 @@ import { CanvasSettings, DEFAULT_CANVAS_SETTINGS } from '../types/canvas'
 import { TransformState } from '../calibration'
 import { ValueScaleResult } from '../valueScale'
 import { ValueScaleSettings, DEFAULT_VALUE_SCALE_SETTINGS } from '../types/valueScale'
-import { canvasPersistStorage } from './storage'
+import { canvasPersistStorage, reportReferencePersistence } from './storage'
 import { isDesktopApp, sanitizeDesktopProjectImageSrc } from '../tauri'
 
 /** Mid step index for the current N-step value scale (0..steps-1). */
@@ -37,7 +37,11 @@ interface CanvasState {
     transformState: TransformState
     canvasSettings: CanvasSettings
 
-    setImage: (image: HTMLImageElement | null) => void
+    /**
+     * `persistSrc` is the bounded copy to keep in storage. The live `image` stays at full
+     * sampling fidelity; only the restored-session copy is compressed to fit the quota.
+     */
+    setImage: (image: HTMLImageElement | null, persistSrc?: string | null) => void
     setSurfaceImage: (image: string | null) => void
     setSurfaceBounds: (bounds: CanvasState['surfaceBounds']) => void
     setReferenceImage: (image: string | null) => void
@@ -77,17 +81,26 @@ export const useCanvasStore = create<CanvasState>()(
             transformState: DEFAULT_TRANSFORM_STATE,
             canvasSettings: DEFAULT_CANVAS_SETTINGS,
 
-            setImage: (image) => {
+            setImage: (image, persistSrc) => {
                 const currentImage = get().image
                 if (image === currentImage) return
 
                 const prevRef = get().referenceImage
-                let nextRef = sanitizeDesktopProjectImageSrc(image?.src ?? null)
+                // Prefer an explicitly supplied bounded copy; `image.src` may be a
+                // full-fidelity data URL far too large for localStorage.
+                let nextRef = sanitizeDesktopProjectImageSrc(
+                    persistSrc !== undefined && image ? persistSrc : image?.src ?? null,
+                )
 
                 // Desktop: <img>.src after load is convertFileSrc → http(s), which sanitize strips
                 // (we must not persist those ephemeral URLs). Keep the path or data URL we already have.
                 if (isDesktopApp() && image && !nextRef && prevRef) {
                     nextRef = sanitizeDesktopProjectImageSrc(prevRef) ?? prevRef
+                }
+
+                // Desktop persists images through SQLite, so a null web reference is expected there.
+                if (image && !isDesktopApp()) {
+                    reportReferencePersistence(nextRef !== null)
                 }
 
                 const steps = get().valueScaleSettings.steps
@@ -129,6 +142,17 @@ export const useCanvasStore = create<CanvasState>()(
         {
             name: 'colorwizard-canvas',
             storage: canvasPersistStorage,
+            // v1: value steps are spaced perceptually rather than by luminance, so a stored
+            // band index points at a different tonal range than it did when it was saved.
+            // The old index cannot be mapped faithfully (thresholds were image-dependent),
+            // so reset the painting target to the middle band.
+            version: 1,
+            migrate: (persisted, fromVersion) => {
+                const state = persisted as Partial<CanvasState> | undefined
+                if (!state || fromVersion >= 1) return state
+                const steps = state.valueScaleSettings?.steps ?? DEFAULT_VALUE_SCALE_SETTINGS.steps
+                return { ...state, activeValueBandIndex: defaultActiveValueBandIndex(steps) }
+            },
             partialize: (state) => ({
                 surfaceImage: state.surfaceImage,
                 surfaceBounds: state.surfaceBounds,

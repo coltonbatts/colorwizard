@@ -27,7 +27,8 @@ import type { ValueScaleResult } from '@/lib/valueScale'
 import type { BreakdownStep } from '@/components/ProcessSlider'
 import FullScreenOverlay from '@/components/FullScreenOverlay'
 import CanvasHUD from '@/components/CanvasHUD'
-import { createSourceBuffer } from '@/lib/imagePipeline'
+import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline'
+import { encodePersistableImage } from '@/lib/image/persistableImage'
 import { DebugOverlay } from '@/components/DebugOverlay'
 import { calculateFit } from '@/lib/canvasRendering'
 import { CanvasSettings as AppCanvasSettings } from '@/lib/types/canvas'
@@ -59,7 +60,7 @@ import type { ColorData, RGB, ImageDrawInfo, PointerCoord } from '@/components/I
 
 interface ImageCanvasProps {
   image: HTMLImageElement | null
-  onImageLoad: (img: HTMLImageElement) => void
+  onImageLoad: (img: HTMLImageElement, persistSrc?: string | null) => void
   /** Splash demo swatches — loads solid-color canvas + sample */
   onTryDemoColor?: (hex: string) => void
   onColorSample: (color: ColorData) => void
@@ -1147,45 +1148,32 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       }
     }
 
-    const objectUrl = URL.createObjectURL(processedFile)
-    const img = new Image()
-    const cleanup = () => URL.revokeObjectURL(objectUrl)
+    try {
+      // Same pipeline as the splash dropzone: orient, cap to the sampling resolution, then
+      // encode within the storage budget so the persisted reference survives a reload.
+      const oriented = await decodeImageFile(processedFile)
+      const buffer = await createSourceBuffer(oriented)
+      const dataUrl = buffer.toDataURL('image/png')
+      const persistable = encodePersistableImage(buffer, buffer.width, buffer.height)
+      const finalImg = await decodeImage(dataUrl)
 
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.drawImage(img, 0, 0)
-        try {
-          img.src = canvas.toDataURL('image/png')
-        } catch {
-          // Keep blob URL alive if conversion fails.
-        }
+      if (finalImg.width > 0 && finalImg.height > 0) {
+        onImageLoad(finalImg, persistable?.dataUrl ?? null)
+      } else {
+        console.warn('[ImageCanvas] Decoded image had zero dimensions:', file.name)
+        alert(`Failed to open "${file.name}". The file decoded to an empty image.`)
       }
-
-      setTimeout(() => {
-        setIsProcessing(false)
-        onImageLoad(img)
-        if (img.src.startsWith('data:')) {
-          cleanup()
-        }
-      }, 1500)
-    }
-
-    img.onerror = () => {
-      console.error('[ImageCanvas] Direct image load error:', {
+    } catch (error) {
+      console.error('[ImageCanvas] Image load failed:', {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
+        error,
       })
       alert(`Failed to open "${file.name}". The file was selected, but the image could not be decoded.`)
-      cleanup()
+    } finally {
       setIsProcessing(false)
     }
-
-    img.src = objectUrl
   }, [onImageLoad])
 
   const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
+import CanvasPersistenceNotice from '@/components/CanvasPersistenceNotice'
 import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
 import TauriAppShell from '@/components/desktop/TauriAppShell'
 import '@fontsource-variable/space-grotesk'
@@ -119,6 +120,7 @@ export default function RootLayout({
             Skip to main content
           </a>
           <StoreBootstrap />
+          <CanvasPersistenceNotice />
           <TauriAppShell>
             <AuthProvider>{children}</AuthProvider>
           </TauriAppShell>

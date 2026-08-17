@@ -39,6 +39,10 @@ const config: Config = {
           DEFAULT: 'var(--graphite)',
           muted: 'var(--graphite-muted)',
         },
+        warning: {
+          DEFAULT: 'var(--warning)',
+          muted: 'var(--warning-muted)',
+        },
         linen: {
           DEFAULT: 'var(--linen)',
           strong: 'var(--linen-strong)',
