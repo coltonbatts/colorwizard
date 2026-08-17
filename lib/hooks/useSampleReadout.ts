@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getColorHarmonies } from '@/lib/colorTheory'
 import { getColorName } from '@/lib/colorNaming'
-import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
-import { getValueModeMetadataFromRgb, luminanceToGrayHex } from '@/lib/valueMode'
+import { getPainterChroma, getLuminance, getPainterValuePercent, getValueBand } from '@/lib/paintingMath'
+import { getValueModeMetadataFromRgb, valueToGrayHex } from '@/lib/valueMode'
+import { luminanceToValue01 } from '@/lib/valueScale'
 import type { Palette } from '@/lib/types/palette'
 
 export type SampleReadoutColor = {
@@ -97,7 +98,8 @@ export function useSampleReadout({
         valueBand: '',
         valueModeMeta: null,
         grayscaleHex: '#000000',
-        displayedValue: 0,
+        perceptualValue01: 0,
+        painterValue: 0,
       }
     }
 
@@ -110,17 +112,20 @@ export function useSampleReadout({
           ? 'Cool'
           : 'Neutral'
     const chroma = getPainterChroma(hex)
+    /** Photometric luminance (0-100). Kept for exports and contrast work, not shown as value. */
     const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
-    const valueBand = getValueBand(valuePercent)
+
+    // Value mode snaps to the active step so the readout agrees with the posterized canvas;
+    // otherwise report the color's own perceptual value.
     const valueModeMeta = valueModeEnabled ? getValueModeMetadataFromRgb(rgb, valueModeSteps) : null
-    const displayedValue = valueModeMeta
-      ? Math.round(valueModeMeta.y * 100)
-      : sampledColor.valueMetadata
-        ? Math.round(sampledColor.valueMetadata.y * 100)
-        : valuePercent
-    const grayscaleHex = valueModeMeta
-      ? luminanceToGrayHex(valueModeMeta.y)
-      : luminanceToGrayHex(displayedValue / 100)
+    const perceptualValue01 = valueModeMeta
+      ? luminanceToValue01(valueModeMeta.y)
+      : getPainterValuePercent(rgb.r, rgb.g, rgb.b) / 100
+
+    /** Munsell-style 0-10, one decimal. Middle gray reads 5.4, not 2. */
+    const painterValue = Math.round(perceptualValue01 * 100) / 10
+    const valueBand = getValueBand(perceptualValue01 * 100)
+    const grayscaleHex = valueToGrayHex(perceptualValue01)
 
     return {
       colorName,
@@ -133,7 +138,8 @@ export function useSampleReadout({
       valueBand,
       valueModeMeta,
       grayscaleHex,
-      displayedValue,
+      perceptualValue01,
+      painterValue,
     }
   }, [colorName, isLoadingName, sampledColor, valueModeEnabled, valueModeSteps])
 }

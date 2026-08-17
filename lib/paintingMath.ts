@@ -5,6 +5,7 @@ import {
     Color,
     wcagContrast
 } from 'culori';
+import { getRelativeLuminance, luminanceToLstar } from './valueScale';
 
 // Converters
 const toOklch = converter('oklch');
@@ -39,7 +40,17 @@ export function getLuminance(r: number, g: number, b: number): number {
 }
 
 /**
- * Get Value Band label from ValuePercent (0-100)
+ * Perceptual value (0-100) from RGB - what a painter means by "value".
+ * Distinct from getLuminance, which is the photometric quantity.
+ */
+export function getPainterValuePercent(r: number, g: number, b: number): number {
+    return luminanceToLstar(getRelativeLuminance(r, g, b));
+}
+
+/**
+ * Get Value Band label from a *perceptual* value (0-100).
+ * These names describe an evenly spaced value scale, so they only line up when fed
+ * perceptual value: pass relative luminance and middle gray comes back as "Shadow".
  */
 export function getValueBand(value: number): string {
     if (value <= 10) return 'Near black';
@@ -55,8 +66,8 @@ export function getValueBand(value: number): string {
 }
 
 /**
- * Get Painter's Value (0-10 scale)
- * Derived from Relative Luminance Y.
+ * Get Painter's Value (0-10 scale), the Munsell-style scale artists work in.
+ * Derived from perceptual lightness, not luminance: middle gray is 5, not 2.
  */
 export function getPainterValue(color: string | Color): number {
     const c = toRgb(color);
@@ -66,8 +77,8 @@ export function getPainterValue(color: string | Color): number {
     const g = Math.round((c.g ?? 0) * 255);
     const b = Math.round((c.b ?? 0) * 255);
 
-    const y = getLuminance(r, g, b); // 0-100
-    return Math.min(10, Math.max(0, Math.round(y / 10)));
+    const value = getPainterValuePercent(r, g, b); // 0-100 perceptual
+    return Math.min(10, Math.max(0, Math.round(value / 10)));
 }
 
 /**

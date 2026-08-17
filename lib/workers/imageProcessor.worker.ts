@@ -5,6 +5,9 @@
  */
 import { expose } from 'comlink';
 import { rgbToOklabL } from '../color/oklab';
+// Shared with the main thread so the worker's value map cannot drift from the sampler's
+// step boundaries. Both must agree on how a step index becomes a gray.
+import { stepToGray } from '../valueScale';
 
 /**
  * Convert RGB to CIE Lab color space.
@@ -73,13 +76,6 @@ function getStepIndex(y: number, thresholds: number[]): number {
         }
     }
     return thresholds.length - 2;
-}
-
-/**
- * Convert step index to grayscale value.
- */
-function stepToGray(stepIdx: number, numSteps: number): number {
-    return Math.round(255 * (stepIdx / (numSteps - 1)));
 }
 
 export interface ImageBufferResult {

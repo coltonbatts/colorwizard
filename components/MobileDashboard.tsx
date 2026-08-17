@@ -97,7 +97,7 @@ export default function MobileDashboard({
           {sheetState !== 'collapsed' && readout.chroma && (
             <div className="mobile-result-body">
               <div className="mobile-character" aria-label="Color character">
-                <span><small>Value</small><strong>{readout.displayedValue}%</strong></span>
+                <span><small>Value</small><strong aria-label={`Value ${readout.painterValue.toFixed(1)} of 10, ${readout.valueBand}`}>{readout.painterValue.toFixed(1)}<em>/10</em></strong></span>
                 <span><small>Temperature</small><strong>{readout.temperatureLabel}</strong></span>
                 <span><small>Chroma</small><strong>{readout.chroma.label}</strong></span>
               </div>

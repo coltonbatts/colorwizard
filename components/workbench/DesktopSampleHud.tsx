@@ -137,7 +137,10 @@ export default function DesktopSampleHud({
           <section className="sample-character font-mono tabular-nums" aria-label="Color character">
             <div>
               <span>Value</span>
-              <strong>{readout.displayedValue}%</strong>
+              <strong title={readout.valueBand} aria-label={`Value ${readout.painterValue.toFixed(1)} of 10, ${readout.valueBand}`}>
+                {readout.painterValue.toFixed(1)}
+                <em>/10</em>
+              </strong>
               <i style={{ backgroundColor: readout.grayscaleHex }} aria-hidden="true" />
             </div>
             <div>

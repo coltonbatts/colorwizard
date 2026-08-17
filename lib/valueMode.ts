@@ -1,4 +1,10 @@
-import { getRelativeLuminance } from './valueScale'
+import {
+  getRelativeLuminance,
+  linearToSRGB,
+  luminanceToValue01,
+  value01ToGrayByte,
+  value01ToLuminance,
+} from './valueScale'
 
 export type ValueStepCount = 5 | 7 | 9 | 11
 export const DEFAULT_VALUE_STEP_COUNT: ValueStepCount = 7
@@ -43,12 +49,39 @@ export function quantizeValueLuminanceEven(y: number, steps: number): { yQuant: 
   return { yQuant, step: idx + 1, range: [min, max] }
 }
 
+/**
+ * Quantize into N evenly spaced *value* steps, matching a painter's value scale.
+ * Input and output stay in luminance so callers are unaffected; only the spacing changes.
+ * Quantizing evenly in luminance instead puts everything below L*45 in the bottom step.
+ */
+export function quantizeValuePerceptualEven(
+  y: number,
+  steps: number
+): { yQuant: number; step: number; range: [number, number] } {
+  if (steps < 2) {
+    return { yQuant: clamp01(y), step: 1, range: [0, 1] }
+  }
+
+  const denom = steps - 1
+  const value = clamp01(luminanceToValue01(clamp01(y)))
+  const idx = Math.round(value * denom)
+
+  const minValue = idx === 0 ? 0 : (idx - 0.5) / denom
+  const maxValue = idx === denom ? 1 : (idx + 0.5) / denom
+
+  return {
+    yQuant: value01ToLuminance(idx / denom),
+    step: idx + 1,
+    range: [value01ToLuminance(minValue), value01ToLuminance(maxValue)],
+  }
+}
+
 export function getValueModeMetadataFromRgb(
   rgb: { r: number; g: number; b: number },
   steps: ValueStepCount | number
 ): ValueModeMetadata {
   const yRaw = getRelativeLuminance(rgb.r, rgb.g, rgb.b)
-  const { yQuant, step, range } = quantizeValueLuminanceEven(yRaw, steps)
+  const { yQuant, step, range } = quantizeValuePerceptualEven(yRaw, steps)
 
   return {
     y: yQuant,
@@ -58,8 +91,19 @@ export function getValueModeMetadataFromRgb(
   }
 }
 
+/**
+ * Gray swatch for a luminance. The luminance must be gamma-encoded on the way out - writing
+ * linear light straight into an sRGB byte renders middle gray as #373737.
+ */
 export function luminanceToGrayHex(y01: number): string {
-  const v = Math.round(clamp01(y01) * 255)
+  const v = Math.round(linearToSRGB(clamp01(y01)) * 255)
+  const hex = v.toString(16).padStart(2, '0')
+  return `#${hex}${hex}${hex}`
+}
+
+/** Gray swatch for a perceptual value (0..1). */
+export function valueToGrayHex(value01: number): string {
+  const v = value01ToGrayByte(clamp01(value01))
   const hex = v.toString(16).padStart(2, '0')
   return `#${hex}${hex}${hex}`
 }

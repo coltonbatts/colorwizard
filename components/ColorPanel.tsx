@@ -12,7 +12,7 @@ import ValueHistogram from './ValueHistogram'
 import ValueChromaGraph from './ValueChromaGraph'
 import ColorCardModal from './ColorCardModal'
 import CollapsibleSection from './ui/CollapsibleSection'
-import { getPainterChroma, getLuminance, getValueBand } from '@/lib/paintingMath'
+import { getPainterChroma, getLuminance, getPainterValuePercent, getValueBand } from '@/lib/paintingMath'
 import { PinnedColor } from '@/lib/types/pinnedColor'
 import { ColorCard } from '@/lib/types/colorCard'
 import { ValueScaleSettings } from '@/lib/types/valueScale'
@@ -124,9 +124,11 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
   const chroma = getPainterChroma(hex)
   const recipeVariant = isShortViewport ? 'compact' : 'standard'
 
-  // Value First Data
-  const valuePercent = getLuminance(rgb.r, rgb.g, rgb.b)
-  const valueBand = getValueBand(valuePercent)
+  // Value is perceptual. Luminance is still read directly where it is compared against the
+  // image's luminance buffer (the histogram below).
+  const painterValuePercent = getPainterValuePercent(rgb.r, rgb.g, rgb.b)
+  const painterValue = Math.round(painterValuePercent) / 10
+  const valueBand = getValueBand(painterValuePercent)
 
   return (
     <div className="min-h-full bg-paper-shell font-sans text-ink">
@@ -299,9 +301,9 @@ export default function ColorPanel({ sampledColor, onColorSelect, onPin, isPinne
             {/* Quick Readout Pills */}
             <div className="grid w-full grid-cols-2 gap-3 pt-1">
               <div className="flex flex-col items-center rounded-xl border border-ink-hairline bg-paper p-2.5">
-                <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">Value %</span>
+                <span className="text-[9px] font-medium uppercase tracking-[0.08em] text-ink-muted">Value</span>
                 <span className="font-mono text-xl font-bold tabular-nums text-ink">
-                  {sampledColor.valueMetadata ? Math.round(sampledColor.valueMetadata.y * 100) : Math.round(valuePercent)}%
+                  {painterValue.toFixed(1)}<span className="text-xs font-medium text-ink-muted">/10</span>
                 </span>
                 <span className="text-[10px] text-ink-secondary">{valueBand}</span>
               </div>

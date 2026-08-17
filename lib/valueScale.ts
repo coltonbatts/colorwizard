@@ -20,6 +20,56 @@ export function getRelativeLuminance(r: number, g: number, b: number): number {
     return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
 }
 
+/**
+ * Inverse of sRGBToLinear. Linear-light channel (0..1) -> sRGB (0..1).
+ * Needed whenever a luminance is written back out as a displayable gray: writing linear
+ * light straight into an sRGB byte renders roughly two value steps too dark.
+ */
+export function linearToSRGB(c: number): number {
+    const v = Math.min(1, Math.max(0, c));
+    return v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+}
+
+const LSTAR_EPSILON = 216 / 24389;
+const LSTAR_KAPPA = 24389 / 27;
+
+/**
+ * Relative luminance is a photometric quantity: it answers "how much light".
+ * A painter's *value* is perceptual lightness - "how light does this look" - and the two
+ * diverge sharply. Middle gray (#808080) has luminance 0.22 but value 5.4 of 10.
+ * CIE L* is the standard perceptual scale, and Munsell value is approximately one tenth of it.
+ */
+export function luminanceToLstar(y: number): number {
+    const yc = Math.min(1, Math.max(0, y));
+    return yc > LSTAR_EPSILON ? 116 * Math.cbrt(yc) - 16 : yc * LSTAR_KAPPA;
+}
+
+/** CIE L* (0..100) -> relative luminance (0..1). */
+export function lstarToLuminance(lStar: number): number {
+    const l = Math.min(100, Math.max(0, lStar));
+    return l > 8 ? Math.pow((l + 16) / 116, 3) : l / LSTAR_KAPPA;
+}
+
+/** Perceptual value in 0..1 - the basis for the painter's 0-10 scale and for value steps. */
+export function luminanceToValue01(y: number): number {
+    return luminanceToLstar(y) / 100;
+}
+
+/** Perceptual value (0..1) -> relative luminance (0..1). */
+export function value01ToLuminance(value01: number): number {
+    return lstarToLuminance(value01 * 100);
+}
+
+/** Perceptual value (0..1) of an sRGB color. */
+export function getPerceptualValue(r: number, g: number, b: number): number {
+    return luminanceToValue01(getRelativeLuminance(r, g, b));
+}
+
+/** The neutral gray of a given perceptual value, as an sRGB byte (0..255). */
+export function value01ToGrayByte(value01: number): number {
+    return Math.round(linearToSRGB(value01ToLuminance(value01)) * 255);
+}
+
 export interface ValueStep {
     index: number; // 0..N-1
     min: number;   // luminance min
@@ -65,10 +115,16 @@ export function computeValueScale(
     const steps: ValueStep[] = [];
 
     if (mode === 'Even') {
-        const range = whitePoint - blackPoint;
-        const stepSize = range / numSteps;
+        // "Even" means evenly spaced *value* steps, the way a painter's value scale is built.
+        // Spacing evenly in luminance instead collapses the whole shadow family into step 1
+        // (with 7 steps that first band spans L* 0-45) while giving the highlights three
+        // steps. Thresholds are converted back to luminance so every consumer - the sampler,
+        // the overlay, the worker's value map - keeps comparing against the luminance buffer.
+        const valueLow = luminanceToValue01(blackPoint);
+        const valueHigh = luminanceToValue01(whitePoint);
+        const stepSize = (valueHigh - valueLow) / numSteps;
         for (let i = 0; i <= numSteps; i++) {
-            thresholds.push(blackPoint + i * stepSize);
+            thresholds.push(value01ToLuminance(valueLow + i * stepSize));
         }
     } else {
         // Percentile mode: bins with equal pixel counts
@@ -130,13 +186,13 @@ export function getStepIndex(y: number, thresholds: number[]): number {
 }
 
 /**
- * Converts a step index (0..N-1) to a grayscale value (0..255).
- * Uses linear interpolation across the step range.
+ * Converts a step index (0..N-1) to the gray that step should be painted.
+ * Steps are spaced evenly in perceptual value, so the rendered tone is the neutral gray of
+ * that value - the tone a painter would actually mix for the band.
  */
 export function stepToGray(step: number, totalSteps: number): number {
     if (totalSteps <= 1) return 128;
-    const t = step / (totalSteps - 1);
-    return Math.round(t * 255);
+    return value01ToGrayByte(step / (totalSteps - 1));
 }
 
 /**
