@@ -3,6 +3,15 @@
 /**
  * PaintPuddle - A single paint puddle with organic shape
  * Size represents the proportion of this ingredient in the mix
+ *
+ * NOT WIRED UP. No route renders this — `npm run unreachable` lists it, and it is in
+ * scripts/unreachable-baseline.json. Its only consumer was PuddleRecipeDisplay, which
+ * is itself unreachable.
+ *
+ * Kept deliberately alongside PuddleRecipeDisplay, not because it is scheduled.
+ * Before redesigning it: it renders nothing today, so changes here are unverifiable
+ * in the running app. Either wire it into a tab first, or edit the live component
+ * instead.
  */
 
 import { motion } from 'framer-motion'

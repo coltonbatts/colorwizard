@@ -2,6 +2,16 @@
 
 /**
  * Compact 3-step view of how a spectral mix was derived (artist-first, lab-optional).
+ *
+ * NOT WIRED UP. No route renders this — `npm run unreachable` lists it, and it is in
+ * scripts/unreachable-baseline.json. Added in aecd09e2 ("Surface spectral mixing
+ * pipeline with Artist/Lab modes"), then explicitly unimported from tabs/OilMixTab
+ * in 2b24d439. The surviving Artist/Lab control is workbench/ArtistLabToggle.
+ *
+ * Kept deliberately as a reference for the pipeline explainer, not because it is
+ * scheduled. Before redesigning it: it renders nothing today, so changes here are
+ * unverifiable in the running app. Either wire it into a tab first, or edit the
+ * live component instead.
  */
 
 import { motion } from 'framer-motion'

@@ -3,6 +3,16 @@
 /**
  * PuddleRecipeDisplay - tactile ingredient view for paint recipes.
  * Uses paint-sample cards and a blended ratio bar instead of a dashboard list.
+ *
+ * NOT WIRED UP. No route renders this — `npm run unreachable` lists it, and it is
+ * in scripts/unreachable-baseline.json. Its last consumer was tabs/OilMixTab, which
+ * dropped the import in 2b24d439 ("Ship instrument workbench milestone"); the live
+ * recipe UI is now paint/MixedColorPreview + PaintRecipe.
+ *
+ * Kept deliberately as a reference for the puddle presentation, not because it is
+ * scheduled. Before redesigning it: it renders nothing today, so changes here are
+ * unverifiable in the running app. Either wire it into a tab first, or edit the
+ * live component instead.
  */
 
 import { motion } from 'framer-motion'
