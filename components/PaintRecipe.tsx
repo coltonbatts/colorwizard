@@ -12,6 +12,7 @@ import MixedColorPreview from './paint/MixedColorPreview'
 import ProcreateExportButton from './ProcreateExportButton'
 import { SPECTRAL_RECIPE_DISCLAIMER } from '@/lib/colorSemantics'
 import type { ProcreateColor } from '@/lib/types/procreate'
+import { getPaletteSetupState, getRecipeTrustState } from '@/lib/paint/recipeGuard'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
@@ -27,6 +28,7 @@ interface PaintRecipeProps {
   hideFooter?: boolean
   previewOnly?: boolean
   onRecipeResolved?: (recipe: DisplayRecipe) => void
+  onChoosePaints?: () => void
 }
 
 const HEURISTIC_PIGMENT_MAP: Record<string, { hex: string; id: string }> = {
@@ -59,30 +61,46 @@ export default function PaintRecipe({
   hideFooter = false,
   previewOnly = false,
   onRecipeResolved,
+  onChoosePaints,
 }: PaintRecipeProps) {
   const [spectralRecipe, setSpectralRecipe] = useState<SpectralRecipe | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [solverFailed, setSolverFailed] = useState(false)
   const showLoading = useDebouncedLoading(isLoading, 100)
   const heuristicRecipe = useMemo(() => generatePaintRecipe(hsl), [hsl])
-  const isEmptyCatalog = useCatalog && (!paintIds || paintIds.length === 0)
+  const paletteColorIds = useMemo(
+    () => activePalette && !activePalette.isDefault
+      ? activePalette.colors.map((color) => color.id)
+      : undefined,
+    [activePalette],
+  )
+  const paletteSetupState = useMemo(
+    () => getPaletteSetupState({ useCatalog, paintIds, paletteColorIds }),
+    [paintIds, paletteColorIds, useCatalog],
+  )
 
   useEffect(() => {
     let cancelled = false
     async function solve() {
-      if (isEmptyCatalog) {
+      if (paletteSetupState) {
         setSpectralRecipe(null)
+        setSolverFailed(false)
         setIsLoading(false)
         return
       }
       setIsLoading(true)
+      setSolverFailed(false)
       let options: SolveOptions | undefined
       if (useCatalog) options = { useCatalog: true, brandId, lineId, paintIds }
-      else if (activePalette && !activePalette.isDefault) options = { paletteColorIds: activePalette.colors.map((color) => color.id) }
+      else if (paletteColorIds) options = { paletteColorIds }
 
       try {
         const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000))
         const result = await Promise.race([getSolverWorker().solveRecipe(targetHex, options), timeout])
-        if (!cancelled) setSpectralRecipe(result)
+        if (!cancelled) {
+          setSpectralRecipe(result)
+          setSolverFailed(false)
+        }
       } catch (error) {
         console.error('Spectral recipe worker failed:', error)
         if (!cancelled) {
@@ -90,6 +108,7 @@ export default function PaintRecipe({
           catch (fallbackError) {
             console.error('Direct solveRecipe also failed:', fallbackError)
             setSpectralRecipe(null)
+            setSolverFailed(true)
           }
         }
       } finally {
@@ -98,7 +117,7 @@ export default function PaintRecipe({
     }
     void solve()
     return () => { cancelled = true }
-  }, [activePalette, brandId, isEmptyCatalog, lineId, paintIds, targetHex, useCatalog])
+  }, [brandId, paintIds, paletteColorIds, paletteSetupState, lineId, targetHex, useCatalog])
 
   const fallbackIngredients = useMemo<SpectralRecipe['ingredients']>(() => {
     const raw = heuristicRecipe.colors.map((color) => {
@@ -126,13 +145,22 @@ export default function PaintRecipe({
   const paletteLabel = useCatalog && paintIds?.length
     ? `${paintIds.length} library paints`
     : activePalette && !activePalette.isDefault ? activePalette.name : 'Core six-color mix'
+  const trustSetupState = paletteSetupState ?? getRecipeTrustState(spectralRecipe, solverFailed)
 
   useEffect(() => {
-    if (!isLoading && !isEmptyCatalog) onRecipeResolved?.(recipe)
-  }, [isEmptyCatalog, isLoading, onRecipeResolved, recipe])
+    if (!isLoading && !trustSetupState && spectralRecipe) onRecipeResolved?.(recipe)
+  }, [isLoading, onRecipeResolved, recipe, spectralRecipe, trustSetupState])
 
-  if (showLoading) return <div className="paint-recipe-loading"><SkeletonPaintRecipe /></div>
-  if (isEmptyCatalog) return <div className="paint-recipe-empty"><strong>No paints selected.</strong><span>Choose paints in Library.</span></div>
+  if (showLoading) return <div className="paint-recipe-loading" aria-live="polite" aria-busy="true"><SkeletonPaintRecipe /></div>
+  if (trustSetupState) {
+    return (
+      <div className="paint-recipe-empty" role="status" aria-live="polite" data-recipe-state={trustSetupState.reason}>
+        <strong>{trustSetupState.title}</strong>
+        <span>{trustSetupState.description}</span>
+        {onChoosePaints && <button type="button" onClick={onChoosePaints}>Choose Paints</button>}
+      </div>
+    )
+  }
 
   if (previewOnly) {
     return (

@@ -203,7 +203,7 @@ const ColorCardPreview = forwardRef<HTMLDivElement, ColorCardPreviewProps>(
 
                     {/* DMC Matches */}
                     <div>
-                        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">DMC Floss Matches</h3>
+                        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Threads</h3>
                         {dmc.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                                 {dmc.slice(0, 5).map((match) => (

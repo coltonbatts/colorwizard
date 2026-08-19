@@ -37,6 +37,7 @@ export default function GridControlsPanel({
             <label className="flex items-center gap-2 cursor-pointer">
                 <input
                     name="grid-overlay"
+                    autoComplete="off"
                     type="checkbox"
                     checked={gridEnabled}
                     onChange={(e) => onToggleGrid(e.target.checked)}
@@ -51,6 +52,7 @@ export default function GridControlsPanel({
                 <input
                     id="grid-canvas-width"
                     name="grid-canvas-width"
+                    autoComplete="off"
                     type="number"
                     value={physicalWidth}
                     onChange={(e) => onDimensionsChange(Number(e.target.value), physicalHeight)}
@@ -63,6 +65,7 @@ export default function GridControlsPanel({
                 <input
                     id="grid-canvas-height"
                     name="grid-canvas-height"
+                    autoComplete="off"
                     type="number"
                     value={physicalHeight}
                     onChange={(e) => onDimensionsChange(physicalWidth, Number(e.target.value))}
@@ -78,6 +81,7 @@ export default function GridControlsPanel({
                 <select
                     id="grid-square-size"
                     name="grid-square-size"
+                    autoComplete="off"
                     value={squareSize}
                     onChange={(e) => onSquareSizeChange(Number(e.target.value))}
                     className="canvas-grid-select"

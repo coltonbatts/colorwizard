@@ -105,7 +105,7 @@ export function SkeletonPaintRecipe() {
                 <SkeletonRecipeRow />
             </div>
 
-            <span className="sr-only">Loading paint recipe...</span>
+            <span className="sr-only">Loading paint recipe…</span>
         </div>
     )
 }
@@ -146,7 +146,7 @@ export function SkeletonDMCMatches({ count = 5 }: { count?: number }) {
             {Array.from({ length: count }).map((_, i) => (
                 <SkeletonDMCMatch key={i} />
             ))}
-            <span className="sr-only">Loading DMC matches...</span>
+            <span className="sr-only">Loading thread matches…</span>
         </div>
     )
 }

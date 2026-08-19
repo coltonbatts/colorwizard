@@ -347,14 +347,14 @@ export default function ColorDeckPanel({
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-ink-faint">
-                            Saved Deck
+                            Saved Colors
                         </p>
-                        <h2 className="mt-1 text-lg font-black text-ink">Card Deck</h2>
+                        <h2 className="mt-1 text-lg font-black text-ink">Saved Colors</h2>
                         <p className="mt-1 text-xs text-ink-muted">
                             Local records of sampled colors, recipes, and project metadata.
                         </p>
                     </div>
-                    <div className="rounded-2xl border border-ink-hairline bg-paper-recessed px-3 py-2 text-right">
+                    <div className="rounded-2xl border border-ink-hairline bg-paper-recessed px-3 py-2 text-right" aria-live="polite">
                         <div className="text-lg font-black text-ink">{cards.length}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
                             saved
@@ -422,10 +422,12 @@ export default function ColorDeckPanel({
                             Search
                         </span>
                         <input
+                            name="saved-colors-search"
+                            autoComplete="off"
                             type="search"
                             value={searchQuery}
                             onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder="Name, hex, tag, note"
+                            placeholder="Name, hex, tag, or note…"
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
                         />
                     </label>
@@ -435,6 +437,8 @@ export default function ColorDeckPanel({
                             Project
                         </span>
                         <select
+                            name="saved-colors-project"
+                            autoComplete="off"
                             value={projectFilter}
                             onChange={(event) => setProjectFilter(event.target.value)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -453,6 +457,8 @@ export default function ColorDeckPanel({
                             Status
                         </span>
                         <select
+                            name="saved-colors-status"
+                            autoComplete="off"
                             value={statusFilter}
                             onChange={(event) => setStatusFilter(event.target.value as 'all' | CardStatus)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -471,6 +477,8 @@ export default function ColorDeckPanel({
                             Sort
                         </span>
                         <select
+                            name="saved-colors-sort"
+                            autoComplete="off"
                             value={sortMode}
                             onChange={(event) => setSortMode(event.target.value as SortMode)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -488,6 +496,8 @@ export default function ColorDeckPanel({
                             Priority
                         </span>
                         <select
+                            name="saved-colors-priority"
+                            autoComplete="off"
                             value={priorityFilter}
                             onChange={(event) => setPriorityFilter(event.target.value as 'all' | CardPriority)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -545,9 +555,11 @@ export default function ColorDeckPanel({
                         <div className="space-y-4 rounded-3xl border border-ink-hairline bg-paper-elevated p-4 shadow-sm">
                             <div>
                                 <label className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-ink-faint">
-                                    Deck Name
+                                    Collection Name
                                 </label>
                                 <input
+                                    name="saved-color-name"
+                                    autoComplete="off"
                                     type="text"
                                     value={draftName}
                                     onChange={(event) => setDraftName(event.target.value)}

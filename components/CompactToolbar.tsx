@@ -11,7 +11,7 @@ interface CompactToolbarProps {
   calibration: CalibrationData | null
   onOpenCalibration: () => void
   onResetCalibration: () => void
-  onGoHome: () => void
+  onReplacePhoto: () => void
   rulerGridEnabled: boolean
   onToggleRulerGrid: () => void
   canvasSettings: CanvasSettings
@@ -50,7 +50,7 @@ export default function CompactToolbar({
   calibration,
   onOpenCalibration,
   onResetCalibration,
-  onGoHome,
+  onReplacePhoto,
   rulerGridEnabled,
   onToggleRulerGrid,
   measureMode,
@@ -93,19 +93,8 @@ export default function CompactToolbar({
 
   return (
     <div className="compact-toolbar" aria-label="Canvas command bar">
-      <button type="button" onClick={onGoHome} className="command-text">Open</button>
+      <button type="button" onClick={onReplacePhoto} className="command-text">Replace Photo</button>
       <span className="command-rule" aria-hidden="true" />
-      <button type="button" onClick={onResetView} className="command-text">
-        <FitIcon /> Fit
-      </button>
-      <button
-        type="button"
-        onClick={onToggleValueMode}
-        className={`command-text ${valueModeEnabled ? 'active' : ''}`}
-        aria-pressed={valueModeEnabled}
-      >
-        <ValueIcon /> Value
-      </button>
 
       <details className="command-menu">
         <summary>View & settings</summary>
@@ -122,7 +111,7 @@ export default function CompactToolbar({
           {calibration && <button type="button" onClick={onResetCalibration}>Reset calibration</button>}
           <button type="button" onClick={onOpenCanvasSettings}>Canvas settings</button>
           <label htmlFor="command-palette">Palette</label>
-          <select id="command-palette" value={activePalette.id} onChange={(event) => onSelectPalette(event.target.value)}>
+          <select id="command-palette" name="command-palette" autoComplete="off" value={activePalette.id} onChange={(event) => onSelectPalette(event.target.value)}>
             {palettes.map((palette) => <option key={palette.id} value={palette.id}>{palette.name}</option>)}
           </select>
           <button type="button" onClick={onOpenPaletteManager}>Manage palettes</button>

@@ -3,6 +3,16 @@ import { describe, it, expect } from 'vitest';
 import { solveRecipe } from './solveRecipe';
 
 describe('solveRecipe pigment accuracy', () => {
+    it('uses a chromatic Core 6 recipe for the Terracotta demo', async () => {
+        const recipe = await solveRecipe('#C45C3E');
+
+        expect(recipe.matchQuality).not.toBe('Poor');
+        expect(recipe.ingredients).not.toEqual([
+            expect.objectContaining({ pigment: expect.objectContaining({ id: 'titanium-white' }), percentage: '100%' }),
+        ]);
+        expect(recipe.ingredients.some((ingredient) => ['cadmium-red', 'yellow-ochre'].includes(ingredient.pigment.id))).toBe(true);
+    });
+
     it('should use a white-led pile for a light blue color', async () => {
         // Sky Blue hex
         const targetHex = '#87CEEB';

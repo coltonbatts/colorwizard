@@ -136,6 +136,7 @@ export default function LicenseActivation({ onActivated, demo = false }: License
             name="license-key"
             ref={inputRef}
             type="text"
+            autoComplete="off"
             value={key}
             onChange={handleChange}
             onPaste={handlePaste}

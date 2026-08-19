@@ -104,11 +104,11 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
   }
 
   return (
-    <div className="fixed bottom-[4.5rem] left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:bottom-4 md:w-[min(calc(100vw-10rem),92rem)] md:px-0">
+    <div className="session-palette-strip fixed left-1/2 z-40 w-[min(calc(100vw-1rem),84rem)] -translate-x-1/2 px-2 md:w-[min(calc(100vw-10rem),92rem)] md:px-0">
       <div className="rounded-2xl border border-ink-hairline bg-paper-elevated/95 px-3 py-2.5 shadow-lg backdrop-blur-md md:px-4">
         <div className="flex items-center gap-3 overflow-x-auto">
           <div className="shrink-0 font-serif text-xs font-semibold text-ink">
-            Saved Palette <span className="font-mono text-[11px] font-normal text-ink-muted">({colors.length})</span>
+            Saved Colors <span className="font-mono text-[11px] font-normal text-ink-muted">({colors.length})</span>
           </div>
 
           <Reorder.Group
@@ -152,6 +152,9 @@ export default function SessionPaletteStrip({ onColorSelect }: SessionPaletteStr
                   <div className="rounded-xl border border-ink-hairline bg-paper-elevated p-3 shadow-xl ring-1 ring-black/5">
                     {editingId === color.id ? (
                       <input
+                        name="saved-color-label"
+                        autoComplete="off"
+                        aria-label="Saved color label"
                         type="text"
                         value={editLabel}
                         onChange={(e) => setEditLabel(e.target.value)}

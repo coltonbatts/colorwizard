@@ -258,13 +258,15 @@ export default function PaletteManager({
                                 Palette Name
                             </label>
                             <input
+                                name="palette-name"
+                                autoComplete="off"
                                 type="text"
                                 value={name}
                                 onChange={(e) => {
                                     setName(e.target.value)
                                     setError('')
                                 }}
-                                placeholder="e.g., Zorn Palette"
+                                placeholder="e.g., Zorn palette…"
                                 className="w-full rounded-xl border border-[var(--ink-hairline)] bg-[var(--paper-elevated)] px-4 py-3 text-sm text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--subsignal)]"
                                 autoFocus
                             />

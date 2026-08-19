@@ -156,7 +156,7 @@ export default function ColorCardModal({
             <div className="flex items-center justify-between border-b border-[var(--ink-hairline)] p-4 lg:absolute lg:left-0 lg:right-0 lg:top-0 lg:z-10 lg:bg-[var(--paper-elevated)]/95 lg:backdrop-blur-sm">
                 <div>
                     <h2 id={titleId} className="text-lg font-bold text-[var(--ink)]">
-                        {isNewCard ? 'Save to Deck' : 'Card Detail'}
+                        {isNewCard ? 'Save to Saved Colors' : 'Color Detail'}
                     </h2>
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--ink-muted)]">
                         Local deck record
@@ -192,7 +192,7 @@ export default function ColorCardModal({
                             <div className="space-y-4">
                                 <div>
                                     <label htmlFor={inputId} className="mb-2 block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
-                                        Deck Name
+                                        Collection Name
                                     </label>
                                     <input
                                         ref={nameInputRef}
@@ -222,14 +222,14 @@ export default function ColorCardModal({
                             </div>
                         </div>
 
-                        <div className="flex shrink-0 gap-3 border-t border-gray-100 bg-gray-50 p-4">
+                        <div className="flex shrink-0 gap-3 border-t border-gray-100 bg-gray-50 p-4" aria-live="polite">
                             <button
                                 onClick={handleSave}
                                 type="button"
                                 disabled={isSaving}
                                 className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {isSaving ? 'Saving…' : isNewCard ? 'Save to Deck' : 'Update Card'}
+                                {isSaving ? 'Saving…' : isNewCard ? 'Save Color' : 'Update Color'}
                             </button>
                             {!isNewCard && (
                                 <button

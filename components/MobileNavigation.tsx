@@ -28,7 +28,7 @@ const primary = [
   { id: 'mix', label: 'Mix', icon: <MixWorkbenchIcon /> },
   { id: 'matches', label: 'Threads', icon: <ThreadsWorkbenchIcon /> },
   { id: 'stitch', label: 'Stitch', icon: <StitchWorkbenchIcon /> },
-  { id: 'deck', label: 'Saved', icon: <DeckWorkbenchIcon /> },
+  { id: 'deck', label: 'Saved Colors', icon: <DeckWorkbenchIcon /> },
 ] as const
 
 const tools = [

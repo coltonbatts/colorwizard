@@ -122,6 +122,7 @@ export default function CanvasSettingsModal({
             <input
               id={widthId}
               name="canvas-width"
+              autoComplete="off"
               type="number"
               step="0.1"
               value={settings.width}
@@ -144,6 +145,7 @@ export default function CanvasSettingsModal({
             <input
               id={heightId}
               name="canvas-height"
+              autoComplete="off"
               type="number"
               step="0.1"
               value={settings.height}

@@ -449,6 +449,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                             <select
                                 id="paint-brand-filter"
                                 name="paint-brand-filter"
+                                autoComplete="off"
                                 value={filters.brandId || ''}
                                 onChange={(e) => updateFilter('brandId', e.target.value || null)}
                                 className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
@@ -467,6 +468,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                                 <select
                                     id="paint-line-filter"
                                     name="paint-line-filter"
+                                    autoComplete="off"
                                     value={filters.lineId || ''}
                                     onChange={(e) => updateFilter('lineId', e.target.value || null)}
                                     className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
@@ -485,6 +487,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                             <select
                                 id="paint-opacity-filter"
                                 name="paint-opacity-filter"
+                                autoComplete="off"
                                 value={filters.opacity || ''}
                                 onChange={(e) => updateFilter('opacity', (e.target.value || null) as Opacity | null)}
                                 className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"
@@ -503,6 +506,7 @@ export default function PaintLibraryTab({ onColorSelect }: PaintLibraryTabProps)
                             <select
                                 id="paint-permanence-filter"
                                 name="paint-permanence-filter"
+                                autoComplete="off"
                                 value={filters.minPermanence || ''}
                                 onChange={(e) => updateFilter('minPermanence', (e.target.value || null) as Permanence | null)}
                                 className="w-full rounded-md border border-ink-hairline bg-paper-elevated px-3 py-2 text-sm"

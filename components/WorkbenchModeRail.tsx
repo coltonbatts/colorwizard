@@ -100,11 +100,10 @@ export default function WorkbenchModeRail({
           ))}
           <button type="button" onClick={onOpenDeck}>
             <span aria-hidden="true"><DeckWorkbenchIcon /></span>
-            Saved deck
+            Saved Colors
           </button>
         </div>
       </details>
     </motion.nav>
   )
 }
-

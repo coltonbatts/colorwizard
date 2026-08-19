@@ -262,6 +262,9 @@ export default function CalibrationModal({
             </button>
 
             <input
+              name="calibration-pixel-length"
+              autoComplete="off"
+              aria-label="Calibration pixel length"
               type="range"
               min={50}
               max={method === 'credit_card' ? 800 : 600}

@@ -38,10 +38,12 @@ export default function CardMetadataFields({
                         Project / Collection
                     </span>
                     <input
+                        name="color-project"
+                        autoComplete="off"
                         type="text"
                         value={project}
                         onChange={(event) => onProjectChange(event.target.value)}
-                        placeholder="Inbox, Website refresh, Spring launch"
+                        placeholder="Inbox, website refresh, spring launch…"
                         className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
                     />
                     <p className="mt-1 text-[10px] text-ink-faint">
@@ -55,6 +57,8 @@ export default function CardMetadataFields({
                             Status
                         </span>
                         <select
+                            name="color-status"
+                            autoComplete="off"
                             value={status}
                             onChange={(event) => onStatusChange(event.target.value as CardStatus)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -72,6 +76,8 @@ export default function CardMetadataFields({
                             Priority
                         </span>
                         <select
+                            name="color-priority"
+                            autoComplete="off"
                             value={priority}
                             onChange={(event) => onPriorityChange(event.target.value as CardPriority)}
                             className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
@@ -91,10 +97,12 @@ export default function CardMetadataFields({
                     Tags
                 </span>
                 <input
+                    name="color-tags"
+                    autoComplete="off"
                     type="text"
                     value={tagsText}
                     onChange={(event) => onTagsTextChange(event.target.value)}
-                    placeholder="UI, launch, revisit"
+                    placeholder="UI, launch, revisit…"
                     className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
                 />
                 <p className="mt-1 text-[10px] text-ink-faint">
@@ -107,9 +115,11 @@ export default function CardMetadataFields({
                     Notes
                 </span>
                 <textarea
+                    name="color-notes"
+                    autoComplete="off"
                     value={notes}
                     onChange={(event) => onNotesChange(event.target.value)}
-                    placeholder="Task context, decisions, next steps, or reminders."
+                    placeholder="Task context, decisions, or next steps…"
                     rows={4}
                     className="w-full rounded-xl border border-ink-hairline bg-paper px-4 py-3 text-sm font-medium text-ink focus:border-transparent focus:outline-none focus:ring-2 focus:ring-signal"
                 />

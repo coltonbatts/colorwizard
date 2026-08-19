@@ -110,6 +110,7 @@ export default function StitchTab({
             <input
               id="stitch-grid-size"
               name="stitch-grid-size"
+              autoComplete="off"
               type="range"
               min="16"
               max="120"
@@ -128,6 +129,7 @@ export default function StitchTab({
             <input
               id="stitch-max-colors"
               name="stitch-max-colors"
+              autoComplete="off"
               type="range"
               min="2"
               max="40"
@@ -146,6 +148,7 @@ export default function StitchTab({
             <input
               id="stitch-opacity"
               name="stitch-opacity"
+              autoComplete="off"
               type="range"
               min="0.1"
               max="1.0"
@@ -160,6 +163,8 @@ export default function StitchTab({
           <div className="grid grid-cols-2 gap-4 pt-2">
             <label className="flex items-center text-xs text-ink-secondary font-medium cursor-pointer">
               <input
+                name="stitch-symbols"
+                autoComplete="off"
                 type="checkbox"
                 checked={symbolsEnabled}
                 onChange={(e) => setSymbolsEnabled(e.target.checked)}
@@ -169,6 +174,8 @@ export default function StitchTab({
             </label>
             <label className="flex items-center text-xs text-ink-secondary font-medium cursor-pointer">
               <input
+                name="stitch-gridlines"
+                autoComplete="off"
                 type="checkbox"
                 checked={gridlinesEnabled}
                 onChange={(e) => setGridlinesEnabled(e.target.checked)}

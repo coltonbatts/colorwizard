@@ -14,7 +14,7 @@ import CompactToolbar from '@/components/CompactToolbar'
 import PaletteManager from '@/components/PaletteManager'
 import CalibrationModal from '@/components/CalibrationModal'
 import CanvasSettingsModal from '@/components/CanvasSettingsModal'
-import SessionPaletteStrip, { SessionColor, useSessionPalette, useHasSessionColors } from '@/components/SessionPaletteStrip'
+import SessionPaletteStrip, { SessionColor, useSessionPalette } from '@/components/SessionPaletteStrip'
 import MobileDashboard from '@/components/MobileDashboard'
 import MobileNavigation from '@/components/MobileNavigation'
 import MobileHeader from '@/components/MobileHeader'
@@ -22,6 +22,7 @@ import WorkbenchModeRail from '@/components/WorkbenchModeRail'
 import DesktopSampleHud from '@/components/workbench/DesktopSampleHud'
 import FloatingInspectorPanel from '@/components/workbench/FloatingInspectorPanel'
 import MobileCoreShell from '@/components/workbench/MobileCoreShell'
+import WorkspaceChangeDialog from '@/components/workbench/WorkspaceChangeDialog'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 import { getRelativeLuminance, getStepIndex } from '@/lib/valueScale'
@@ -30,6 +31,7 @@ import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useDebugStore } from '@/lib/store/useDebugStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
+import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import { useSessionStore } from '@/lib/store/useSessionStore'
 import { getWorkbenchLayoutMode } from '@/lib/layout/workbenchLayout'
 import { useElementSize } from '@/hooks/useElementSize'
@@ -37,6 +39,7 @@ import { isTauri, resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode'
 import { buildImageValueContext } from '@/lib/dmcFloss'
 import { createSolidColorDemoImage, hexToSampleColor } from '@/lib/demoColor'
+import { DEFAULT_PALETTE } from '@/lib/types/palette'
 
 // Tab content components - Thin Core only
 import SampleTab from '@/components/tabs/SampleTab'
@@ -60,6 +63,11 @@ const EMPTY_IMAGE_ANALYSIS: ImageAnalysisSnapshot = {
   histogramBins: [],
   sortedOklabL: null,
   valueBuffer: null,
+}
+
+interface PendingWorkspaceChange {
+  action: 'clear' | 'replace'
+  resolve: (confirmed: boolean) => void
 }
 
 function sameNumberArray(a: number[], b: number[]) {
@@ -103,7 +111,7 @@ const DESKTOP_PANEL_META: Record<Exclude<TabType, 'sample'>, { title: string; su
     subtitle: 'Canvas texture layer',
   },
   deck: {
-    title: 'Deck',
+    title: 'Saved Colors',
     subtitle: 'Saved color studies',
   },
   stitch: {
@@ -131,6 +139,7 @@ export default function Home() {
   const [showPaletteManager, setShowPaletteManager] = useState(false)
   const [showCalibrationModal, setShowCalibrationModal] = useState(false)
   const [showCanvasSettingsModal, setShowCanvasSettingsModal] = useState(false)
+  const [pendingWorkspaceChange, setPendingWorkspaceChange] = useState<PendingWorkspaceChange | null>(null)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [dismissPreviewSignal, setDismissPreviewSignal] = useState(0)
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysisSnapshot>(EMPTY_IMAGE_ANALYSIS)
@@ -152,9 +161,12 @@ export default function Home() {
   const setValueModeSteps = useSessionStore(state => state.setValueModeSteps)
 
   const image = useCanvasStore(state => state.image)
+  const isDemoSession = useCanvasStore(state => state.demoReferenceHex !== null)
+  const setDemoReferenceHex = useCanvasStore(state => state.setDemoReferenceHex)
   const setImage = useCanvasStore(state => state.setImage)
   const referenceImage = useCanvasStore(state => state.referenceImage)
   const setReferenceImage = useCanvasStore(state => state.setReferenceImage)
+  const surfaceImage = useCanvasStore(state => state.surfaceImage)
   const setSurfaceImage = useCanvasStore(state => state.setSurfaceImage)
   const setSurfaceBounds = useCanvasStore(state => state.setSurfaceBounds)
   const setReferenceOpacity = useCanvasStore(state => state.setReferenceOpacity)
@@ -170,6 +182,7 @@ export default function Home() {
   const updatePalette = usePaletteStore(state => state.updatePalette)
   const deletePalette = usePaletteStore(state => state.deletePalette)
   const setActivePalette = usePaletteStore(state => state.setActivePalette)
+  const paintPaletteIsDirty = usePaintPaletteStore(state => state.isDirty)
   const canvasSettings = useCanvasStore(state => state.canvasSettings)
   const setCanvasSettings = useCanvasStore(state => state.setCanvasSettings)
   const valueScaleEnabled = valueScaleSettings.enabled
@@ -249,8 +262,14 @@ export default function Home() {
     normalizeValueWorkflow(false)
   }, [normalizeValueWorkflow, resetReferenceTransform, setImage, setReferenceOpacity])
 
+  const handleUserImageLoad = useCallback((img: HTMLImageElement, persistSrc?: string | null) => {
+    setDemoReferenceHex(null)
+    handleImageLoad(img, persistSrc)
+  }, [handleImageLoad, setDemoReferenceHex])
+
   // Clear image and reset view
-  const handleClearImage = useCallback(() => {
+  const clearWorkspace = useCallback(() => {
+    setDemoReferenceHex(null)
     setImage(null)
     setReferenceImage(null)
     setSurfaceImage(null)
@@ -272,7 +291,36 @@ export default function Home() {
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
     lastProcessedRef.current = null
-  }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setHistogramBins, setImage, setMeasureMode, setMeasurePoints, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
+  }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setDemoReferenceHex, setHistogramBins, setImage, setMeasureMode, setMeasurePoints, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
+
+  const hasMeaningfulWorkspaceState = Boolean(
+    sampledColor ||
+    pinnedColors.length > 0 ||
+    measurePointA ||
+    measurePointB ||
+    surfaceImage ||
+    activeHighlightColor ||
+    valueScaleEnabled ||
+    rulerGridEnabled ||
+    paintPaletteIsDirty
+  )
+
+  const requestWorkspaceChange = useCallback((action: PendingWorkspaceChange['action']) => {
+    if (!hasMeaningfulWorkspaceState) return Promise.resolve(true)
+
+    return new Promise<boolean>((resolve) => {
+      setPendingWorkspaceChange({ action, resolve })
+    })
+  }, [hasMeaningfulWorkspaceState])
+
+  const handleClearImage = useCallback(async () => {
+    if (await requestWorkspaceChange('clear')) clearWorkspace()
+  }, [clearWorkspace, requestWorkspaceChange])
+
+  const resolveWorkspaceChange = useCallback((confirmed: boolean) => {
+    pendingWorkspaceChange?.resolve(confirmed)
+    setPendingWorkspaceChange(null)
+  }, [pendingWorkspaceChange])
 
   const lastProcessedRef = useRef<string | null>(null)
 
@@ -395,6 +443,7 @@ export default function Home() {
     async (hex: string) => {
       try {
         const img = await createSolidColorDemoImage(hex)
+        setDemoReferenceHex(hex)
         handleImageLoad(img)
         applySampleColor(hexToSampleColor(hex))
         setActiveTab('sample')
@@ -402,7 +451,7 @@ export default function Home() {
         console.error('[demo] Failed to load demo swatch:', err)
       }
     },
-    [applySampleColor, handleImageLoad],
+    [applySampleColor, handleImageLoad, setDemoReferenceHex],
   )
 
   // Use the hook's results to update the store
@@ -424,6 +473,18 @@ export default function Home() {
     if (isTauri()) return
     loadCalibrationFromStorage()
   }, [loadCalibrationFromStorage])
+
+  useEffect(() => {
+    if (!image || !hasMeaningfulWorkspaceState) return
+
+    const protectWorkspace = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', protectWorkspace)
+    return () => window.removeEventListener('beforeunload', protectWorkspace)
+  }, [hasMeaningfulWorkspaceState, image])
 
   useEffect(() => {
     if (
@@ -494,6 +555,7 @@ export default function Home() {
   const activePalette = useMemo(() => {
     return palettes.find(p => p.isActive) || palettes[0] || { id: 'default', name: 'Default', colors: [], isActive: true, isDefault: true }
   }, [palettes])
+  const recipePalette = isDemoSession ? DEFAULT_PALETTE : activePalette
 
   // Session palette add handler
   const handleAddToSession = (color: { hex: string; rgb: { r: number; g: number; b: number } }) => {
@@ -527,7 +589,7 @@ export default function Home() {
         return (
             <SampleTab
               sampledColor={sampledColor}
-              activePalette={activePalette}
+              activePalette={recipePalette}
               simpleMode={simpleMode}
               valueModeEnabled={valueModeEnabled}
               valueModeSteps={valueModeSteps}
@@ -539,6 +601,7 @@ export default function Home() {
               onSwitchToMix={isMobile ? () => setActiveTab('mix') : undefined}
               dismissPreviewSignal={dismissPreviewSignal}
               suppressPreviewOverlay={showPaletteManager}
+              onChoosePaints={() => setActiveTab('library')}
           />
         )
       case 'matches':
@@ -562,8 +625,10 @@ export default function Home() {
         return (
           <OilMixTab
             sampledColor={sampledColor}
-            activePalette={activePalette}
+            activePalette={recipePalette}
             artistMode={simpleMode}
+            forceCorePalette={isDemoSession}
+            onChoosePaints={() => setActiveTab('library')}
             onColorSelect={(rgb) => {
               applySampleColor({
                 rgb,
@@ -622,9 +687,6 @@ export default function Home() {
     }
   }
 
-  // Session palette check for layout padding
-  const hasSessionColors = useHasSessionColors()
-  const showSessionPalette = Boolean(image && hasSessionColors)
   const isPinnedSample = !!sampledColor && pinnedColors.some((p) => p.hex === sampledColor.hex)
   const desktopCanvasMode = (activeTab === 'deck' ? 'sample' : activeTab) as Exclude<TabType, 'deck'>
   const activeDesktopPanel =
@@ -685,7 +747,7 @@ export default function Home() {
       id="main-content"
       tabIndex={-1}
       suppressHydrationWarning
-      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''} ${showSessionPalette ? 'pb-14 lg:pb-0' : ''}`}
+      className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''}`}
     >
       {!isMobile ? (
         <div
@@ -717,7 +779,7 @@ export default function Home() {
                       calibration={calibration}
                       onOpenCalibration={() => setShowCalibrationModal(true)}
                       onResetCalibration={resetCalibration}
-                      onGoHome={handleClearImage}
+                      onReplacePhoto={() => imageCanvasRef.current?.openFilePicker()}
                       rulerGridEnabled={rulerGridEnabled}
                       onToggleRulerGrid={toggleRulerGrid}
                       measureMode={measureMode}
@@ -773,7 +835,8 @@ export default function Home() {
                   <ImageCanvas
                     ref={imageCanvasRef}
                     image={image}
-                    onImageLoad={handleImageLoad}
+                    onImageLoad={handleUserImageLoad}
+                    onBeforeImageReplace={() => requestWorkspaceChange('replace')}
                     onTryDemoColor={handleTryDemoColor}
                     onReset={handleClearImage}
                     dismissPreviewSignal={dismissPreviewSignal}
@@ -789,6 +852,7 @@ export default function Home() {
                     highlightMode={highlightMode}
                     valueScaleSettings={valueScaleSettings}
                     onValueScaleChange={setValueScaleSettings}
+                    onToggleValueMode={handleToggleValueMode}
                     onAnalysisChange={handleCanvasAnalysisChange}
                     measureMode={measureMode}
                     onMeasurePointsChange={setMeasurePoints}
@@ -816,7 +880,7 @@ export default function Home() {
                 {activeTab === 'sample' ? (
                   <DesktopSampleHud
                     sampledColor={sampledColor}
-                    activePalette={activePalette}
+                    activePalette={recipePalette}
                     onPin={pinColor}
                     isPinned={isPinnedSample}
                     simpleMode={simpleMode}
@@ -826,6 +890,7 @@ export default function Home() {
                     onAddToSession={handleAddToSession}
                     onOpenMix={() => setActiveTab('mix')}
                     onOpenThreads={() => setActiveTab('matches')}
+                    onChoosePaints={() => setActiveTab('library')}
                   />
                 ) : (
                   <AnimatePresence mode="wait">
@@ -871,7 +936,7 @@ export default function Home() {
                   calibration={calibration}
                   onOpenCalibration={() => setShowCalibrationModal(true)}
                   onResetCalibration={resetCalibration}
-                  onGoHome={handleClearImage}
+                  onReplacePhoto={() => imageCanvasRef.current?.openFilePicker()}
                   rulerGridEnabled={rulerGridEnabled}
                   onToggleRulerGrid={toggleRulerGrid}
                   measureMode={measureMode}
@@ -907,7 +972,8 @@ export default function Home() {
               <ImageCanvas
                 ref={imageCanvasRef}
                 image={image}
-                onImageLoad={handleImageLoad}
+                onImageLoad={handleUserImageLoad}
+                onBeforeImageReplace={() => requestWorkspaceChange('replace')}
                 onTryDemoColor={handleTryDemoColor}
                 onReset={handleClearImage}
                 dismissPreviewSignal={dismissPreviewSignal}
@@ -923,6 +989,7 @@ export default function Home() {
                 highlightMode={highlightMode}
                 valueScaleSettings={valueScaleSettings}
                 onValueScaleChange={setValueScaleSettings}
+                onToggleValueMode={handleToggleValueMode}
                 onAnalysisChange={handleCanvasAnalysisChange}
                 measureMode={measureMode}
                 onMeasurePointsChange={setMeasurePoints}
@@ -945,11 +1012,13 @@ export default function Home() {
           sampleDashboard={image && isMobileSampleLayout ? (
             <MobileDashboard
               sampledColor={sampledColor}
-              activePalette={activePalette}
+              activePalette={recipePalette}
               onPin={pinColor}
               isPinned={isPinnedSample}
               onSwitchToMatches={() => setActiveTab('matches')}
               onSwitchToMix={() => setActiveTab('mix')}
+              onChoosePaints={() => setActiveTab('library')}
+              forceCorePalette={isDemoSession}
               layout="sheet"
             />
           ) : null}
@@ -1018,6 +1087,13 @@ export default function Home() {
         onClose={() => setShowCanvasSettingsModal(false)}
         onSave={setCanvasSettings}
         initialSettings={canvasSettings}
+      />
+
+      <WorkspaceChangeDialog
+        isOpen={pendingWorkspaceChange !== null}
+        action={pendingWorkspaceChange?.action ?? 'clear'}
+        onCancel={() => resolveWorkspaceChange(false)}
+        onConfirm={() => resolveWorkspaceChange(true)}
       />
     </main>
   )

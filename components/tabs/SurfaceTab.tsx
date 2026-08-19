@@ -40,6 +40,9 @@ export default function SurfaceTab() {
                             >
                                 <span>Change</span>
                                 <input
+                                    name="surface-image-replacement"
+                                    autoComplete="off"
+                                    aria-label="Replace surface image"
                                     type="file"
                                     onChange={handleFileChange}
                                     accept="image/*"
@@ -68,6 +71,9 @@ export default function SurfaceTab() {
                         >
                             <span>Load image</span>
                             <input
+                                name="surface-image"
+                                autoComplete="off"
+                                aria-label="Load surface image"
                                 type="file"
                                 onChange={handleFileChange}
                                 accept="image/*"

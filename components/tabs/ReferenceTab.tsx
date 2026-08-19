@@ -48,6 +48,9 @@ export default function ReferenceTab() {
                                         <circle cx="12" cy="13" r="4" />
                                     </svg>
                                     <input
+                                        name="reference-overlay-replacement"
+                                        autoComplete="off"
+                                        aria-label="Replace reference overlay"
                                         type="file"
                                         className="absolute w-1 h-1 opacity-0 pointer-events-none"
                                         accept="image/*"
@@ -76,6 +79,9 @@ export default function ReferenceTab() {
                                     <span className="text-[10px] font-mono text-ink-faint">{Math.round(referenceOpacity * 100)}%</span>
                                 </div>
                                 <input
+                                    name="reference-opacity"
+                                    autoComplete="off"
+                                    aria-label="Reference opacity"
                                     type="range" min="0" max="1" step="0.01"
                                     value={referenceOpacity}
                                     onChange={(e) => setReferenceOpacity(parseFloat(e.target.value))}
@@ -115,6 +121,9 @@ export default function ReferenceTab() {
                                     <span className="text-[10px] font-mono text-ink-faint">{referenceTransform.scale.toFixed(2)}x</span>
                                 </div>
                                 <input
+                                    name="reference-scale"
+                                    autoComplete="off"
+                                    aria-label="Reference scale"
                                     type="range" min="0.1" max="5" step="0.01"
                                     disabled={referenceLocked}
                                     value={referenceTransform.scale}
@@ -129,6 +138,9 @@ export default function ReferenceTab() {
                                     <span className="text-[10px] font-mono text-ink-faint">{Math.round(referenceTransform.rotation)}°</span>
                                 </div>
                                 <input
+                                    name="reference-rotation"
+                                    autoComplete="off"
+                                    aria-label="Reference rotation"
                                     type="range" min="-180" max="180" step="1"
                                     disabled={referenceLocked}
                                     value={referenceTransform.rotation}
@@ -143,6 +155,9 @@ export default function ReferenceTab() {
                                     <span className="text-[10px] font-mono text-ink-faint">{Math.round(referenceTransform.x)}px</span>
                                 </div>
                                 <input
+                                    name="reference-x-offset"
+                                    autoComplete="off"
+                                    aria-label="Reference X offset"
                                     type="range" min="-1000" max="1000" step="1"
                                     disabled={referenceLocked}
                                     value={referenceTransform.x}
@@ -157,6 +172,9 @@ export default function ReferenceTab() {
                                     <span className="text-[10px] font-mono text-ink-faint">{Math.round(referenceTransform.y)}px</span>
                                 </div>
                                 <input
+                                    name="reference-y-offset"
+                                    autoComplete="off"
+                                    aria-label="Reference Y offset"
                                     type="range" min="-1000" max="1000" step="1"
                                     disabled={referenceLocked}
                                     value={referenceTransform.y}
@@ -178,6 +196,9 @@ export default function ReferenceTab() {
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-ink-faint">Reference</p>
                         <p className="mt-2 text-sm font-semibold text-ink">Load image</p>
                         <input
+                            name="reference-overlay"
+                            autoComplete="off"
+                            aria-label="Load reference overlay"
                             type="file"
                             className="absolute w-1 h-1 opacity-0 pointer-events-none"
                             accept="image/*"

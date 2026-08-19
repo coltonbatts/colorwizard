@@ -44,8 +44,8 @@ export default function MobileHeader({
               type="button"
               onClick={onClearImage}
               className="mobile-header-btn text-ink-secondary"
-              aria-label="Back to home"
-              title="Back to home"
+              aria-label="Clear workspace"
+              title="Clear workspace"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 11.5 12 4l9 7.5" />

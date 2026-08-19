@@ -22,6 +22,8 @@ interface MobileDashboardProps {
   isPinned?: boolean
   onSwitchToMatches?: () => void
   onSwitchToMix?: () => void
+  onChoosePaints?: () => void
+  forceCorePalette?: boolean
   layout?: 'sheet' | 'inline'
 }
 
@@ -35,12 +37,14 @@ export default function MobileDashboard({
   isPinned = false,
   onSwitchToMatches,
   onSwitchToMix,
+  onChoosePaints,
+  forceCorePalette = false,
 }: MobileDashboardProps) {
   const [sheetState, setSheetState] = useState<SheetState>('collapsed')
   const [isPinning, setIsPinning] = useState(false)
   const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
   const selectedPaintIds = getSelectedPaintIds()
-  const hasPaintPalette = isUsingPaintPalette()
+  const hasPaintPalette = !forceCorePalette && isUsingPaintPalette()
   const valueScaleSettings = useCanvasStore((state) => state.valueScaleSettings)
   const valueModeSteps = ([5, 7, 9, 11] as const).find((step) => step === valueScaleSettings.steps) ?? 7
   const readout = useSampleReadout({
@@ -75,7 +79,7 @@ export default function MobileDashboard({
         type="button"
         className="mobile-sheet-handle"
         onClick={() => setSheetState(NEXT_STATE[sheetState])}
-        aria-label={`${sheetState === 'expanded' ? 'Collapse' : 'Expand'} sample result`}
+        aria-label={sheetState === 'collapsed' ? 'Show Result' : sheetState === 'medium' ? 'More Details' : 'Collapse'}
         aria-expanded={sheetState !== 'collapsed'}
       >
         <span aria-hidden="true" />
@@ -86,11 +90,11 @@ export default function MobileDashboard({
           <div className="mobile-sample-summary">
             <i style={{ backgroundColor: valueScaleSettings.enabled ? readout.grayscaleHex : sampledColor.hex }} aria-hidden="true" />
             <div>
-              <strong>{readout.isLoadingName ? 'Reading color…' : readout.displayName}</strong>
+              <strong aria-live="polite">{readout.isLoadingName ? 'Reading color…' : readout.displayName}</strong>
               <code>{sampledColor.hex.toUpperCase()}</code>
             </div>
             <button type="button" onClick={() => setSheetState(NEXT_STATE[sheetState])}>
-              {sheetState === 'collapsed' ? 'Result' : sheetState === 'medium' ? 'Details' : 'Close'}
+              {sheetState === 'collapsed' ? 'Show Result' : sheetState === 'medium' ? 'More Details' : 'Collapse'}
             </button>
           </div>
 
@@ -115,6 +119,7 @@ export default function MobileDashboard({
                   hideHeader
                   hideFooter
                   previewOnly
+                  onChoosePaints={onChoosePaints}
                 />
               </div>
 
@@ -129,7 +134,7 @@ export default function MobileDashboard({
           )}
 
           {sheetState !== 'collapsed' && (
-            <div className="mobile-result-actions" aria-label="Sample actions">
+            <div className="mobile-result-actions" aria-label="Sample actions" aria-live="polite">
               <button type="button" className="primary" onClick={onSwitchToMix}>Mix</button>
               <button type="button" onClick={onSwitchToMatches}>Threads</button>
               <button type="button" onClick={handlePin} disabled={isPinning || isPinned}>

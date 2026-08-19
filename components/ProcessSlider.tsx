@@ -57,6 +57,9 @@ const ProcessSlider: React.FC<ProcessSliderProps> = ({ value, onChange, activeSt
                 </div>
 
                 <input
+                    name="process-stage"
+                    autoComplete="off"
+                    aria-label="Process stage"
                     type="range"
                     min="0"
                     max="100"

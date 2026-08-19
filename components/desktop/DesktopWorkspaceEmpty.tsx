@@ -28,6 +28,7 @@ export default function DesktopWorkspaceEmpty() {
   const referenceImage = useCanvasStore((s) => s.referenceImage)
   const runtimeImage = useCanvasStore((s) => s.image)
   const setReferenceImage = useCanvasStore((s) => s.setReferenceImage)
+  const setDemoReferenceHex = useCanvasStore((s) => s.setDemoReferenceHex)
   const setSampledColor = useSessionStore((s) => s.setSampledColor)
   const [busy, setBusy] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -37,11 +38,14 @@ export default function DesktopWorkspaceEmpty() {
     setBusy(true)
     try {
       const path = await pickImagePath()
-      if (path) setReferenceImage(path)
+      if (path) {
+        setDemoReferenceHex(null)
+        setReferenceImage(path)
+      }
     } finally {
       setBusy(false)
     }
-  }, [busy, setReferenceImage])
+  }, [busy, setDemoReferenceHex, setReferenceImage])
 
   const loadDroppedFile = useCallback(
     async (file: File) => {
@@ -65,6 +69,7 @@ export default function DesktopWorkspaceEmpty() {
             r.onerror = () => reject(new Error('read failed'))
             r.readAsDataURL(blob)
           })
+          setDemoReferenceHex(null)
           setReferenceImage(dataUrl)
         } catch {
           window.alert('Could not read that HEIC file. Try Open file… or convert to JPEG first.')
@@ -78,7 +83,10 @@ export default function DesktopWorkspaceEmpty() {
       const reader = new FileReader()
       reader.onload = () => {
         const dataUrl = reader.result as string
-        if (dataUrl) setReferenceImage(dataUrl)
+        if (dataUrl) {
+          setDemoReferenceHex(null)
+          setReferenceImage(dataUrl)
+        }
         setBusy(false)
       }
       reader.onerror = () => {
@@ -87,7 +95,7 @@ export default function DesktopWorkspaceEmpty() {
       }
       reader.readAsDataURL(file)
     },
-    [setReferenceImage],
+    [setDemoReferenceHex, setReferenceImage],
   )
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -147,38 +155,45 @@ export default function DesktopWorkspaceEmpty() {
           <span className="splash-grid-mark" aria-hidden="true" />
           <span>ColorWizard</span>
         </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleOpen()}
-          className="splash-open-link disabled:cursor-wait disabled:opacity-60"
-        >
-          <span>{busy ? 'Wait' : dragOver ? 'Release' : 'Open'}</span>
-          <b aria-hidden="true">+</b>
-        </button>
+        <p className="splash-grid-note">Reference / sample / mix</p>
       </header>
 
       <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
         <h1 className="sr-only">ColorWizard desktop color workbench</h1>
-        <button type="button" onClick={() => void handleOpen()} className="splash-wave-panel" aria-label="Open a reference image">
+        <div className="splash-wave-panel">
           <SwissWaveGraphic />
-        </button>
+          <div className="splash-intro-panel">
+            <p className="splash-intro-kicker">Painter’s reference instrument</p>
+            <h2>Open a reference photo, sample any color, and get a practical paint mix.</h2>
+            <button type="button" disabled={busy} onClick={() => void handleOpen()} className="splash-primary-action">
+              {busy ? 'Choosing Photo…' : dragOver ? 'Release to Open' : 'Open Reference Photo'}
+              <span aria-hidden="true">+</span>
+            </button>
+            <p className="splash-drop-note">Or drag & drop a photo anywhere on this window.</p>
+          </div>
+        </div>
 
         <div className="splash-color-key">
-          {DEMO_COLOR_SWATCHES.map((swatch) => (
-            <button
-              key={swatch.hex}
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
-                setSampledColor(hexToSampleColor(swatch.hex))
-              }}
-              aria-label={`Try demo color ${swatch.label}`}
-              title={swatch.label}
-              style={{ backgroundColor: swatch.hex }}
-            />
-          ))}
+          <p>No photo? Try Terracotta, Slate, or Moss.</p>
+          <div>
+            {DEMO_COLOR_SWATCHES.map((swatch) => (
+              <button
+                key={swatch.hex}
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setDemoReferenceHex(swatch.hex)
+                  setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
+                  setSampledColor(hexToSampleColor(swatch.hex))
+                }}
+                aria-label={`Try demo color ${swatch.label}`}
+                title={swatch.label}
+              >
+                <i style={{ backgroundColor: swatch.hex }} aria-hidden="true" />
+                <span>{swatch.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="splash-grid-corner splash-grid-corner--a" aria-hidden="true" />

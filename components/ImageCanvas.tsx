@@ -61,6 +61,7 @@ import type { ColorData, RGB, ImageDrawInfo, PointerCoord } from '@/components/I
 interface ImageCanvasProps {
   image: HTMLImageElement | null
   onImageLoad: (img: HTMLImageElement, persistSrc?: string | null) => void
+  onBeforeImageReplace?: () => Promise<boolean>
   /** Splash demo swatches — loads solid-color canvas + sample */
   onTryDemoColor?: (hex: string) => void
   onColorSample: (color: ColorData) => void
@@ -70,6 +71,7 @@ interface ImageCanvasProps {
   onReset: () => void
   valueScaleSettings?: ValueScaleSettings
   onValueScaleChange?: (settings: ValueScaleSettings) => void
+  onToggleValueMode?: () => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: import('@/lib/valueScale').ValueScaleResult) => void
   onAnalysisChange?: (analysis: ImageAnalysisSnapshot) => void
@@ -108,6 +110,7 @@ interface ImageCanvasProps {
 
 export interface ImageCanvasHandle {
   resetView: () => void
+  openFilePicker: () => void
 }
 
 export interface ImageAnalysisSnapshot {
@@ -138,9 +141,11 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const {
     image,
     onImageLoad,
+    onBeforeImageReplace,
     onTryDemoColor,
     onColorSample,
     valueScaleSettings,
+    onToggleValueMode,
     onHistogramComputed,
     onValueScaleResult,
     onAnalysisChange,
@@ -226,6 +231,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   const valueMapCanvasRef = useRef<HTMLCanvasElement>(null)
   const breakdownCanvasRef = useRef<HTMLCanvasElement>(null)
   const sourceBufferRef = useRef<HTMLCanvasElement | null>(null)
+  const loadedFileInputRef = useRef<HTMLInputElement>(null)
   const desktopFileInputId = useId()
   const mobileFileInputId = useId()
 
@@ -673,6 +679,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
 
   useImperativeHandle(ref, () => ({
     resetView,
+    openFilePicker: () => loadedFileInputRef.current?.click(),
   }))
 
   const performSampling = useCallback((clientX: number, clientY: number) => {
@@ -1085,6 +1092,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
       return
     }
 
+    if (image && onBeforeImageReplace && !(await onBeforeImageReplace())) {
+      return
+    }
+
     setIsProcessing(true)
 
     let processedFile = file
@@ -1174,7 +1185,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     } finally {
       setIsProcessing(false)
     }
-  }, [onImageLoad])
+  }, [image, onBeforeImageReplace, onImageLoad])
 
   const handleDirectFileInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget
@@ -1230,7 +1241,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           <div className="flex-1 min-h-0 p-4 md:p-6 flex items-center justify-center">
             <label
               htmlFor={desktopFileInputId}
-              className="group relative flex flex-col items-center justify-center w-full h-full border border-dashed border-stone-300 hover:border-ink bg-paper-elevated/60 shadow-sm rounded-[18px] cursor-pointer p-6 text-center transition-all duration-300 hover:bg-paper-elevated"
+              className="group relative flex flex-col items-center justify-center w-full h-full border border-dashed border-stone-300 hover:border-ink bg-paper-elevated/60 shadow-sm rounded-[18px] cursor-pointer p-6 text-center transition-[color,background-color,border-color,box-shadow,transform] duration-300 hover:bg-paper-elevated"
             >
               {/* Subtle grid pattern overlay */}
               <div 
@@ -1256,10 +1267,10 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           <ImageDropzone onImageLoad={onImageLoad} onTryDemoColor={onTryDemoColor} />
         )
       ) : (
-        <div className={`${mobileSampleLayout ? 'flex min-h-0 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
+        <div className={`${mobileSampleLayout ? 'mobile-canvas-stack flex h-full min-h-0 flex-1 flex-col' : 'flex-1 flex min-h-0 flex-col'}`}>
           <div
             ref={canvasContainerRef}
-            className={`canvas-viewport ${mobileSampleLayout ? 'canvas-viewport--sample h-full min-h-[14rem] flex-none rounded-[16px] border border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.94),rgba(236,228,215,0.86))]`}
+            className={`canvas-viewport ${mobileSampleLayout ? 'canvas-viewport--sample h-full min-h-0 flex-1 border-y border-ink-hairline' : 'flex-1 min-h-0 md:rounded-[30px] md:border md:shadow-[0_28px_70px_rgba(33,24,14,0.16)]'} relative overflow-hidden overscroll-contain select-none border-ink-hairline bg-[linear-gradient(180deg,rgba(250,248,244,0.98),rgba(232,226,215,0.96))]`}
             data-testid="image-canvas-viewport"
           >
             {showHud && (
@@ -1286,42 +1297,19 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
             )}
 
             {isAnalyzing && (
-              <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-ink-hairline bg-paper-elevated/92 px-2.5 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-ink-secondary shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md">
+              <div role="status" aria-live="polite" className="absolute bottom-3 right-3 z-20 flex items-center gap-2 rounded-lg border border-ink-hairline bg-paper-elevated/92 px-2.5 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-ink-secondary shadow-[0_12px_28px_rgba(26,26,26,0.14)] backdrop-blur-md">
                 <div className="w-3 h-3 border border-ink-muted border-t-transparent rounded-full animate-spin" />
                 Working
               </div>
             )}
 
-            <div className={`${mobileSampleLayout ? 'absolute right-2 top-2 z-20' : 'absolute right-4 top-4 z-20 flex items-center gap-1.5 rounded-sm border border-ink bg-paper-elevated p-1 shadow-sm'}`}>
-              {!isMobile && (
-                <>
-                  <label
-                    htmlFor={desktopFileInputId}
-                    className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-all duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95"
-                    title="Load image"
-                    aria-label="Load image"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M12 16V7" />
-                      <path d="m8 11 4-4 4 4" />
-                      <path d="M20 17v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1" />
-                    </svg>
-                  </label>
-                  <input
-                    id={desktopFileInputId}
-                    type="file"
-                    accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-                    onChange={handleDirectFileInput}
-                    className="sr-only"
-                  />
-                </>
-              )}
-
+            {isMobile && <div className="absolute right-2 top-2 z-20">
               <button
+                type="button"
                 onClick={() => setShowImageFullScreen(true)}
                 className={`${mobileSampleLayout
-                  ? 'flex h-11 w-11 items-center justify-center rounded-sm border border-ink bg-paper-elevated text-ink-secondary transition-all duration-200 hover:text-ink active:scale-95'
-                  : 'flex h-8 w-8 items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-all duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95'
+                  ? 'flex h-11 w-11 items-center justify-center rounded-sm border border-ink bg-paper-elevated text-ink-secondary transition-[transform,color,background-color,border-color] duration-200 hover:text-ink active:scale-95'
+                  : 'flex h-11 w-11 items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-[transform,color,background-color,border-color] duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95'
                 }`}
                 title="Full screen"
                 aria-label="Full screen"
@@ -1333,7 +1321,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                   <path d="M3 21l7-7" />
                 </svg>
               </button>
-            </div>
+            </div>}
 
             <motion.div
               key={image?.src || surfaceImageElement?.src || 'empty'}
@@ -1417,20 +1405,27 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                   onFit={resetView}
                   minZoom={MIN_ZOOM}
                   maxZoom={MAX_ZOOM}
+                  valueModeEnabled={valueModeEnabled}
+                  onToggleValueMode={onToggleValueMode}
+                  onFullScreen={() => setShowImageFullScreen(true)}
                 />
               </div>
             )}
           </div>
 
-          <input
-            id={mobileFileInputId}
-            type="file"
-            accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-            onChange={handleDirectFileInput}
-            className="sr-only"
-          />
         </div>
       )}
+
+      <input
+        ref={loadedFileInputRef}
+        id={desktopShell ? desktopFileInputId : mobileFileInputId}
+        name="replacement-reference-image"
+        type="file"
+        autoComplete="off"
+        accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+        onChange={handleDirectFileInput}
+        className="sr-only"
+      />
 
       <FullScreenOverlay
         isOpen={showImageFullScreen && !suppressPreviewOverlay}

@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useState, useId } from 'react';
+import { useCallback, useState, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSourceBuffer, decodeImage, decodeImageFile } from '@/lib/imagePipeline';
 import { encodePersistableImage } from '@/lib/image/persistableImage';
 import { DEMO_COLOR_SWATCHES } from '@/lib/demoColor';
 import SwissWaveGraphic from '@/components/splash/SwissWaveGraphic';
-import Wordmark, { WordmarkHero } from '@/components/Wordmark';
+import Wordmark from '@/components/Wordmark';
 
 /** First-load experience for the chromatic instrument workbench. */
 
@@ -21,6 +21,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
     const [isDragging, setIsDragging] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const inputId = useId();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Check if file is an image by extension or MIME type
     const isImageFile = useCallback((file: File): boolean => {
@@ -336,8 +337,10 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             aria-label="Load reference image"
         >
             <input
+                ref={fileInputRef}
                 id={inputId}
                 name="reference-image"
+                autoComplete="off"
                 type="file"
                 accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
                 onChange={(e) => {
@@ -350,51 +353,33 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                 <div className="splash-grid-brand">
                     <Wordmark size="md" showColorBar asLink={false} />
                 </div>
-                <label htmlFor={inputId} className="splash-open-link">
-                    <span>{isConverting ? 'Wait' : isDragging ? 'Release' : 'Open'}</span>
-                    <b aria-hidden="true">+</b>
-                </label>
+                <p className="splash-grid-note">Reference / sample / mix</p>
             </header>
 
             <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
                 <h1 className="sr-only">ColorWizard color workbench</h1>
-                <label htmlFor={inputId} className="splash-wave-panel group cursor-pointer" aria-label="Open a reference image">
+                <div className="splash-wave-panel">
                     <SwissWaveGraphic />
-
-                    {/* Dynamic Hero Motion & Wordmark Badge Overlay */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/35 backdrop-blur-[2px] transition-all duration-300 group-hover:bg-black/20">
-                        <motion.div
-                            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex flex-col items-center text-center max-w-md mx-auto rounded-3xl border border-white/20 bg-paper-shell/95 p-8 shadow-2xl backdrop-blur-md"
+                    <div className="splash-intro-panel">
+                        <p className="splash-intro-kicker">Painter’s reference instrument</p>
+                        <h2>Open a reference photo, sample any color, and get a practical paint mix.</h2>
+                        <button
+                            type="button"
+                            className="splash-primary-action"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isConverting}
                         >
-                            <motion.div
-                                animate={{ y: [0, -6, 0] }}
-                                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                                className="flex flex-col items-center"
-                            >
-                                <WordmarkHero tagline="Chromatic Instrument & Color Matching Studio" />
-                            </motion.div>
-
-                            <motion.div
-                                whileHover={{ scale: 1.04 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="mt-6 inline-flex items-center gap-3 rounded-xl border border-ink bg-ink px-6 py-3 text-xs font-bold uppercase tracking-widest text-paper-elevated shadow-md transition-all hover:border-signal hover:bg-signal hover:shadow-lg"
-                            >
-                                <span>{isConverting ? 'Converting Image…' : isDragging ? 'Release to Open' : 'Open Reference Image'}</span>
-                                <span className="text-base leading-none" aria-hidden="true">+</span>
-                            </motion.div>
-
-                            <p className="mt-3 text-[11px] font-mono text-ink-muted tracking-tight">
-                                Drag & drop image or click anywhere to select
-                            </p>
-                        </motion.div>
+                            {isConverting ? 'Converting Image…' : isDragging ? 'Release to Open' : 'Open Reference Photo'}
+                            <span aria-hidden="true">+</span>
+                        </button>
+                        <p className="splash-drop-note">Or drag & drop a photo anywhere on this page.</p>
                     </div>
-                </label>
+                </div>
 
                 {onTryDemoColor && (
                     <div className="splash-color-key">
+                        <p>No photo? Try Terracotta, Slate, or Moss.</p>
+                        <div>
                         {DEMO_COLOR_SWATCHES.map((swatch) => (
                             <button
                                 key={swatch.hex}
@@ -402,9 +387,12 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                                 onClick={() => onTryDemoColor(swatch.hex)}
                                 aria-label={`Try demo color ${swatch.label}`}
                                 title={swatch.label}
-                                style={{ backgroundColor: swatch.hex }}
-                            />
+                            >
+                                <i style={{ backgroundColor: swatch.hex }} aria-hidden="true" />
+                                <span>{swatch.label}</span>
+                            </button>
                         ))}
+                        </div>
                     </div>
                 )}
 
@@ -429,15 +417,13 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                             className="flex flex-col items-center justify-center w-full h-full border-2 border-subsignal bg-paper-elevated/80 rounded-2xl shadow-lg p-6 relative overflow-hidden"
                         >
                             {/* Soft overlay glow */}
-                            <div className="absolute inset-0 bg-radial-glow opacity-30 animate-pulse pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(35,141,166,0.15) 0%, transparent 70%)' }} />
-                            
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 strokeWidth="1.2"
                                 stroke="currentColor"
-                                className="w-16 h-16 text-subsignal mb-4 animate-bounce"
+                                className="w-16 h-16 text-subsignal mb-4"
                             >
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v12m0 0-3-3m3 3 3-3m-9-6a9 9 0 1 1 18 0" />
                             </svg>

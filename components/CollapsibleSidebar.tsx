@@ -47,7 +47,7 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
     {
         id: 'matches',
         label: 'Threads',
-        tooltip: 'DMC Floss Matches',
+        tooltip: 'Thread Matches',
         icon: <ThreadsWorkbenchIcon />
     },
     {
@@ -88,8 +88,8 @@ const TABS: { id: TabType; label: string; tooltip: string; icon: JSX.Element }[]
     },
     {
         id: 'deck',
-        label: 'Deck',
-        tooltip: 'Saved Card Deck',
+        label: 'Saved Colors',
+        tooltip: 'Saved Colors',
         icon: <DeckWorkbenchIcon />
     },
 ]

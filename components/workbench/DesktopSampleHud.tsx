@@ -32,6 +32,7 @@ interface DesktopSampleHudProps {
   onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
   onOpenMix?: () => void
   onOpenThreads?: () => void
+  onChoosePaints?: () => void
 }
 
 export default function DesktopSampleHud({
@@ -46,6 +47,7 @@ export default function DesktopSampleHud({
   onAddToSession,
   onOpenMix,
   onOpenThreads,
+  onChoosePaints,
 }: DesktopSampleHudProps) {
   const [copied, setCopied] = useState<string | null>(null)
   const [isPinning, setIsPinning] = useState(false)
@@ -130,7 +132,7 @@ export default function DesktopSampleHud({
           />
 
           <header className="sample-identity">
-            <h2>{readout.displayName}</h2>
+            <h2 aria-live="polite">{readout.displayName}</h2>
             <span className="sample-hex font-mono tabular-nums">{hex.toUpperCase()}</span>
           </header>
 
@@ -167,12 +169,13 @@ export default function DesktopSampleHud({
               hideHeader
               hideFooter
               previewOnly
+              onChoosePaints={onChoosePaints}
             />
           </section>
 
-          <div className="sample-actions" aria-label="Color actions">
+          <div className="sample-actions" aria-label="Color actions" aria-live="polite">
             <button type="button" className="primary" onClick={onOpenMix}>Mix color</button>
-            <button type="button" onClick={onOpenThreads}>Match threads</button>
+            <button type="button" onClick={onOpenThreads}>Find Threads</button>
             <button type="button" onClick={handlePin} disabled={isPinning || isPinned}>
               {isPinning ? 'Saving…' : isPinned ? 'Saved' : 'Save'}
             </button>
@@ -217,6 +220,9 @@ export default function DesktopSampleHud({
                 type="range"
                 min={0}
                 max={Math.max(0, valueScaleSettings.steps - 1)}
+                name="canvas-value-band"
+                autoComplete="off"
+                aria-label="Canvas value band"
                 value={activeValueBandIndex}
                 onChange={(event) => setActiveValueBandIndex(Number(event.target.value))}
               />

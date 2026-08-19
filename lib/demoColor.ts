@@ -3,8 +3,8 @@ import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 
 export const DEMO_COLOR_SWATCHES = [
   { hex: '#C45C3E', label: 'Terracotta' },
-  { hex: '#3D6B8C', label: 'Slate blue' },
-  { hex: '#5E7A4F', label: 'Moss green' },
+  { hex: '#3D6B8C', label: 'Slate' },
+  { hex: '#5E7A4F', label: 'Moss' },
 ] as const
 
 /** PNG data URL of a solid swatch (for desktop referenceImage). */

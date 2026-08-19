@@ -21,6 +21,7 @@ interface SampleTabProps {
   onAddToSession?: (color: { hex: string; rgb: { r: number; g: number; b: number } }) => void
   onSwitchToMatches?: () => void
   onSwitchToMix?: () => void
+  onChoosePaints?: () => void
   dismissPreviewSignal?: number
   suppressPreviewOverlay?: boolean
 }
@@ -37,6 +38,7 @@ export default function SampleTab({
   onAddToSession,
   onSwitchToMatches,
   onSwitchToMix,
+  onChoosePaints,
 }: SampleTabProps) {
   return (
     <DesktopSampleHud
@@ -51,6 +53,7 @@ export default function SampleTab({
       onAddToSession={onAddToSession}
       onOpenMix={onSwitchToMix}
       onOpenThreads={onSwitchToMatches}
+      onChoosePaints={onChoosePaints}
     />
   )
 }

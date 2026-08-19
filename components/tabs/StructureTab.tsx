@@ -63,6 +63,9 @@ export default function StructureTab() {
                                 <span className="font-mono">{Math.round(gridOpacity * 100)}%</span>
                             </div>
                             <input
+                                name="structure-opacity"
+                                autoComplete="off"
+                                aria-label="Grid opacity"
                                 type="range"
                                 min="0.1"
                                 max="1.0"

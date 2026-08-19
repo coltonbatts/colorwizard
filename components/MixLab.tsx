@@ -145,7 +145,7 @@ export default function MixLab({
         <button
           type="button"
           onClick={handleReset}
-          className="min-h-10 shrink-0 rounded-xl border border-ink-hairline bg-paper px-3 text-xs font-medium uppercase tracking-[0.08em] text-ink-secondary transition-all hover:bg-paper-recessed hover:text-ink active:scale-95"
+          className="min-h-10 shrink-0 rounded-xl border border-ink-hairline bg-paper px-3 text-xs font-medium uppercase tracking-[0.08em] text-ink-secondary transition-[transform,color,background-color,border-color] hover:bg-paper-recessed hover:text-ink active:scale-95"
         >
           Reset Mix
         </button>
@@ -211,7 +211,7 @@ export default function MixLab({
                     setIsOverTarget(true)
                   }}
                   onDragLeave={() => setIsOverTarget(false)}
-                  className={`h-20 w-20 rounded-full border-2 border-dashed border-ink-hairline shadow-sm transition-all ${
+                  className={`h-20 w-20 rounded-full border-2 border-dashed border-ink-hairline shadow-sm transition-[transform,color,background-color,border-color,box-shadow] ${
                     isOverTarget ? 'border-ink scale-105' : ''
                   }`}
                   style={{ backgroundColor: targetHex }}
@@ -283,7 +283,7 @@ export default function MixLab({
                       e.dataTransfer.effectAllowed = 'copy'
                     }}
                     onClick={() => handleSliderChange(pigment.id, isSelected ? 0 : 50)}
-                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-all ${
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-center transition-[transform,color,background-color,border-color,box-shadow] ${
                       isSelected
                         ? 'border-ink bg-paper shadow-sm ring-1 ring-ink/20'
                         : 'border-ink-hairline bg-paper/50 hover:bg-paper hover:border-linen'
@@ -365,6 +365,7 @@ export default function MixLab({
                   </div>
                   <input
                     name={`mix-${pigment.id}`}
+                    autoComplete="off"
                     aria-label={`Adjust ${pigment.name} amount`}
                     type="range"
                     min={0}
@@ -382,4 +383,3 @@ export default function MixLab({
     </div>
   )
 }
-

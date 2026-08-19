@@ -347,16 +347,16 @@ export default function ProjectGallery({
             <fieldset>
               <legend>Signal color</legend>
               {Object.entries(ACCENTS).map(([key, theme]) => (
-                <label key={key}><input type="radio" name="accent" value={key} checked={accent === key} onChange={() => { setAccent(key as DesktopWorkspaceAccent); savePreference('accent', key as DesktopWorkspaceAccent) }} /><i style={{ backgroundColor: theme.value }} />{theme.label}</label>
+                <label key={key}><input type="radio" name="accent" autoComplete="off" value={key} checked={accent === key} onChange={() => { setAccent(key as DesktopWorkspaceAccent); savePreference('accent', key as DesktopWorkspaceAccent) }} /><i style={{ backgroundColor: theme.value }} />{theme.label}</label>
               ))}
             </fieldset>
             <fieldset>
               <legend>Density</legend>
-              {(['comfortable', 'compact'] as DesktopWorkspaceDensity[]).map((value) => <label key={value}><input type="radio" name="density" value={value} checked={density === value} onChange={() => { setDensity(value); savePreference('density', value) }} />{value === 'comfortable' ? 'Comfortable' : 'Compact'}</label>)}
+              {(['comfortable', 'compact'] as DesktopWorkspaceDensity[]).map((value) => <label key={value}><input type="radio" name="density" autoComplete="off" value={value} checked={density === value} onChange={() => { setDensity(value); savePreference('density', value) }} />{value === 'comfortable' ? 'Comfortable' : 'Compact'}</label>)}
             </fieldset>
             <fieldset>
               <legend>Startup</legend>
-              {(['home', 'resume'] as DesktopWorkspaceStartupBehavior[]).map((value) => <label key={value}><input type="radio" name="startup" value={value} checked={startupBehavior === value} onChange={() => onStartupBehaviorChange?.(value)} />{value === 'home' ? 'Open studio' : 'Resume last study'}</label>)}
+              {(['home', 'resume'] as DesktopWorkspaceStartupBehavior[]).map((value) => <label key={value}><input type="radio" name="startup" autoComplete="off" value={value} checked={startupBehavior === value} onChange={() => onStartupBehaviorChange?.(value)} />{value === 'home' ? 'Open studio' : 'Resume last study'}</label>)}
             </fieldset>
           </aside>
         </div>

@@ -75,6 +75,9 @@ export default function HighlightControls() {
           <span className="font-mono text-sm font-bold text-ink">{highlightTolerance}</span>
         </div>
         <input
+          name="highlight-tolerance"
+          autoComplete="off"
+          aria-label="Highlight tolerance"
           type="range"
           min="1"
           max="60"

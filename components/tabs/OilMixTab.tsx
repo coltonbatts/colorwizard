@@ -18,12 +18,14 @@ interface OilMixTabProps {
   activePalette?: Palette
   onColorSelect?: (rgb: { r: number; g: number; b: number }) => void
   artistMode?: boolean
+  forceCorePalette?: boolean
+  onChoosePaints?: () => void
 }
 
-export default function OilMixTab({ sampledColor, activePalette, onColorSelect, artistMode = true }: OilMixTabProps) {
+export default function OilMixTab({ sampledColor, activePalette, onColorSelect, artistMode = true, forceCorePalette = false, onChoosePaints }: OilMixTabProps) {
   const { getSelectedPaintIds, isUsingPaintPalette } = usePaintPaletteStore()
   const selectedPaintIds = getSelectedPaintIds()
-  const hasPaintPalette = isUsingPaintPalette()
+  const hasPaintPalette = !forceCorePalette && isUsingPaintPalette()
   const [resolvedRecipe, setResolvedRecipe] = useState<DisplayRecipe | null>(null)
   const handleRecipeResolved = useCallback((recipe: DisplayRecipe) => setResolvedRecipe(recipe), [])
 
@@ -44,6 +46,7 @@ export default function OilMixTab({ sampledColor, activePalette, onColorSelect, 
           paintIds={hasPaintPalette ? selectedPaintIds : undefined}
           variant="standard"
           onRecipeResolved={handleRecipeResolved}
+          onChoosePaints={onChoosePaints}
         />
       </ErrorBoundary>
 

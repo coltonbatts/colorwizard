@@ -17,6 +17,7 @@ function defaultActiveValueBandIndex(steps: number): number {
 
 interface CanvasState {
     image: HTMLImageElement | null
+    demoReferenceHex: string | null
     surfaceImage: string | null
     surfaceBounds: { x: number; y: number; width: number; height: number } | null
     referenceImage: string | null
@@ -42,6 +43,7 @@ interface CanvasState {
      * sampling fidelity; only the restored-session copy is compressed to fit the quota.
      */
     setImage: (image: HTMLImageElement | null, persistSrc?: string | null) => void
+    setDemoReferenceHex: (hex: string | null) => void
     setSurfaceImage: (image: string | null) => void
     setSurfaceBounds: (bounds: CanvasState['surfaceBounds']) => void
     setReferenceImage: (image: string | null) => void
@@ -67,6 +69,7 @@ export const useCanvasStore = create<CanvasState>()(
     persist(
         (set, get) => ({
             image: null,
+            demoReferenceHex: null,
             surfaceImage: null,
             surfaceBounds: null,
             referenceImage: null,
@@ -114,6 +117,7 @@ export const useCanvasStore = create<CanvasState>()(
                     activeValueBandIndex: nextBand,
                 })
             },
+            setDemoReferenceHex: (demoReferenceHex) => set({ demoReferenceHex }),
             setSurfaceImage: (surfaceImage) => set({ surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage) }),
             setSurfaceBounds: (surfaceBounds) => set({ surfaceBounds }),
             setReferenceImage: (referenceImage) => set({ referenceImage: sanitizeDesktopProjectImageSrc(referenceImage) }),
