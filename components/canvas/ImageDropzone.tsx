@@ -336,49 +336,45 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
             role="region"
             aria-label="Load reference image"
         >
-            <input
-                ref={fileInputRef}
-                id={inputId}
-                name="reference-image"
-                autoComplete="off"
-                type="file"
-                accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-                onChange={(e) => {
-                    console.log('[ImageDropzone] Input onChange fired');
-                    handleFileInput(e);
-                }}
-                className="sr-only"
-            />
             <header className="splash-grid-header">
                 <div className="splash-grid-brand">
                     <Wordmark size="md" showColorBar asLink={false} />
                 </div>
-                <p className="splash-grid-note">Reference / sample / mix</p>
+                <p className="splash-grid-note">Local-first color instrument</p>
             </header>
 
             <section className="splash-grid-stage" aria-label="Begin a ColorWizard study">
-                <h1 className="sr-only">ColorWizard color workbench</h1>
                 <div className="splash-wave-panel">
                     <SwissWaveGraphic />
                     <div className="splash-intro-panel">
-                        <p className="splash-intro-kicker">Painter’s reference instrument</p>
-                        <h2>Open a reference photo, sample any color, and get a practical paint mix.</h2>
-                        <button
-                            type="button"
+                        <h1>Open a reference photo. Get a practical paint mix.</h1>
+                        <label
+                            htmlFor={inputId}
                             className="splash-primary-action"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isConverting}
                         >
                             {isConverting ? 'Converting Image…' : isDragging ? 'Release to Open' : 'Open Reference Photo'}
                             <span aria-hidden="true">+</span>
-                        </button>
+                            <input
+                                ref={fileInputRef}
+                                id={inputId}
+                                name="reference-image"
+                                autoComplete="off"
+                                aria-label="Open reference photo"
+                                type="file"
+                                disabled={isConverting}
+                                accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+                                onChange={handleFileInput}
+                                className="sr-only"
+                            />
+                        </label>
                         <p className="splash-drop-note">Or drag & drop a photo anywhere on this page.</p>
+                        <p className="splash-privacy-note">Your image stays on this device.</p>
                     </div>
                 </div>
 
                 {onTryDemoColor && (
                     <div className="splash-color-key">
-                        <p>No photo? Try Terracotta, Slate, or Moss.</p>
+                        <p>Explore with a demo color</p>
                         <div>
                         {DEMO_COLOR_SWATCHES.map((swatch) => (
                             <button
@@ -418,6 +414,7 @@ export default function ImageDropzone({ onImageLoad, onTryDemoColor }: ImageDrop
                         >
                             {/* Soft overlay glow */}
                             <svg
+                                aria-hidden="true"
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"

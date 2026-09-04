@@ -2,7 +2,7 @@
 
 import type { Ref, ReactNode } from 'react'
 
-interface MobileCoreShellProps {
+interface MobileWorkbenchProps {
   compactMode: boolean
   hasImage: boolean
   isSampleLayout: boolean
@@ -15,7 +15,7 @@ interface MobileCoreShellProps {
   navigation: ReactNode
 }
 
-export default function MobileCoreShell({
+export default function MobileWorkbench({
   compactMode,
   hasImage,
   isSampleLayout,
@@ -26,7 +26,7 @@ export default function MobileCoreShell({
   sampleDashboard,
   controlsPanel,
   navigation,
-}: MobileCoreShellProps) {
+}: MobileWorkbenchProps) {
   const previewClassName = [
     'relative flex-1 flex flex-col min-h-0 min-w-0 mobile-preview-area',
     hasImage ? 'workbench-stage-column' : '',

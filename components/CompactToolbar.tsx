@@ -1,37 +1,16 @@
 'use client'
 
-import { Palette } from '@/lib/types/palette'
-import { CalibrationData } from '@/lib/calibration'
-import { CanvasSettings } from '@/lib/types/canvas'
-import { TabType } from './CollapsibleSidebar'
+import type { ReactNode } from 'react'
 import { useIsMobile } from '@/hooks/useMediaQuery'
-import ArtistLabToggle from './workbench/ArtistLabToggle'
+import { WordmarkCompact } from '@/components/Wordmark'
 
 interface CompactToolbarProps {
-  calibration: CalibrationData | null
-  onOpenCalibration: () => void
-  onResetCalibration: () => void
-  onReplacePhoto: () => void
-  rulerGridEnabled: boolean
-  onToggleRulerGrid: () => void
-  canvasSettings: CanvasSettings
-  onOpenCanvasSettings: () => void
-  measureMode: boolean
-  onToggleMeasure: () => void
-  palettes: Palette[]
-  activePalette: Palette
-  onSelectPalette: (id: string) => void
-  onOpenPaletteManager: () => void
   hasImage: boolean
-  activeTab?: TabType
-  onTabChange?: (tab: TabType) => void
+  onReplacePhoto: () => void
   onResetView?: () => void
   valueModeEnabled: boolean
-  valueModeSteps: 5 | 7 | 9 | 11
   onToggleValueMode: () => void
-  onValueModeStepsChange: (steps: 5 | 7 | 9 | 11) => void
-  artistMode?: boolean
-  onArtistModeChange?: (artist: boolean) => void
+  studioTools?: ReactNode
 }
 
 const FitIcon = () => (
@@ -47,25 +26,12 @@ const ValueIcon = () => (
 )
 
 export default function CompactToolbar({
-  calibration,
-  onOpenCalibration,
-  onResetCalibration,
-  onReplacePhoto,
-  rulerGridEnabled,
-  onToggleRulerGrid,
-  measureMode,
-  onToggleMeasure,
-  palettes,
-  activePalette,
-  onSelectPalette,
-  onOpenPaletteManager,
-  onOpenCanvasSettings,
   hasImage,
+  onReplacePhoto,
   onResetView,
   valueModeEnabled,
   onToggleValueMode,
-  artistMode = true,
-  onArtistModeChange,
+  studioTools,
 }: CompactToolbarProps) {
   const isMobile = useIsMobile()
 
@@ -92,37 +58,16 @@ export default function CompactToolbar({
   }
 
   return (
-    <div className="compact-toolbar" aria-label="Canvas command bar">
-      <button type="button" onClick={onReplacePhoto} className="command-text">Replace Photo</button>
+    <div className="compact-toolbar compact-toolbar--painter" aria-label="Canvas command bar">
+      <WordmarkCompact className="compact-toolbar-wordmark" />
       <span className="command-rule" aria-hidden="true" />
-
-      <details className="command-menu">
-        <summary>View & settings</summary>
-        <div className="command-menu-surface">
-          <button type="button" onClick={onToggleRulerGrid} disabled={!calibration} aria-pressed={rulerGridEnabled}>
-            Grid {rulerGridEnabled ? 'on' : 'off'}
-          </button>
-          <button type="button" onClick={onToggleMeasure} disabled={!calibration} aria-pressed={measureMode}>
-            Measure {measureMode ? 'on' : 'off'}
-          </button>
-          <button type="button" onClick={onOpenCalibration}>
-            {calibration ? 'Edit calibration' : 'Calibrate canvas'}
-          </button>
-          {calibration && <button type="button" onClick={onResetCalibration}>Reset calibration</button>}
-          <button type="button" onClick={onOpenCanvasSettings}>Canvas settings</button>
-          <label htmlFor="command-palette">Palette</label>
-          <select id="command-palette" name="command-palette" autoComplete="off" value={activePalette.id} onChange={(event) => onSelectPalette(event.target.value)}>
-            {palettes.map((palette) => <option key={palette.id} value={palette.id}>{palette.name}</option>)}
-          </select>
-          <button type="button" onClick={onOpenPaletteManager}>Manage palettes</button>
-          {onArtistModeChange && (
-            <div className="command-mode-row">
-              <span>Interface</span>
-              <ArtistLabToggle artistMode={artistMode} onArtistModeChange={onArtistModeChange} />
-            </div>
-          )}
-        </div>
-      </details>
+      <button type="button" onClick={onReplacePhoto} className="command-text">Replace Photo</button>
+      <button type="button" onClick={onResetView} className="command-icon-text"><FitIcon />Fit</button>
+      <button type="button" onClick={onToggleValueMode} className={`command-icon-text ${valueModeEnabled ? 'active' : ''}`} aria-pressed={valueModeEnabled}>
+        <ValueIcon />Value View
+      </button>
+      <span className="compact-toolbar-spacer" />
+      {studioTools}
     </div>
   )
 }

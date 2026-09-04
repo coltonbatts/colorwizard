@@ -17,7 +17,7 @@ import {
 } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import RulerOverlay from '@/components/RulerOverlay'
-import { ZoomControlsBar, ImageDropzone, NavigatorMinimap } from '@/components/canvas'
+import { ImageDropzone, NavigatorMinimap } from '@/components/canvas'
 import { useIsMobile } from '@/hooks/useMediaQuery'
 import { useDesktopRuntime } from '@/lib/hooks/useDesktopRuntime'
 import { CalibrationData, type TransformState, screenToImage } from '@/lib/calibration'
@@ -44,8 +44,6 @@ import type { DMCThread } from '@/lib/dmc/types'
 import { rgbToHex, rgbToHsl } from '@/lib/color/conversions'
 import { resolveTauriCanvasImageSrc } from '@/lib/tauri'
 import {
-  MAX_ZOOM,
-  MIN_ZOOM,
   drawMainCanvas,
   getClampedPan,
   clientToCanvas,
@@ -71,7 +69,6 @@ interface ImageCanvasProps {
   onReset: () => void
   valueScaleSettings?: ValueScaleSettings
   onValueScaleChange?: (settings: ValueScaleSettings) => void
-  onToggleValueMode?: () => void
   onHistogramComputed?: (bins: number[]) => void
   onValueScaleResult?: (result: import('@/lib/valueScale').ValueScaleResult) => void
   onAnalysisChange?: (analysis: ImageAnalysisSnapshot) => void
@@ -111,6 +108,7 @@ interface ImageCanvasProps {
 export interface ImageCanvasHandle {
   resetView: () => void
   openFilePicker: () => void
+  openReferencePreview: () => void
 }
 
 export interface ImageAnalysisSnapshot {
@@ -145,7 +143,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
     onTryDemoColor,
     onColorSample,
     valueScaleSettings,
-    onToggleValueMode,
     onHistogramComputed,
     onValueScaleResult,
     onAnalysisChange,
@@ -680,6 +677,7 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
   useImperativeHandle(ref, () => ({
     resetView,
     openFilePicker: () => loadedFileInputRef.current?.click(),
+    openReferencePreview: () => setShowImageFullScreen(true),
   }))
 
   const performSampling = useCallback((clientX: number, clientY: number) => {
@@ -1261,6 +1259,17 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               <p className="font-sans text-xs text-ink-muted tracking-wide max-w-xs leading-relaxed">
                 Drag & drop a reference photo here or click to choose from finder
               </p>
+              <input
+                ref={loadedFileInputRef}
+                id={desktopFileInputId}
+                name="reference-image"
+                type="file"
+                autoComplete="off"
+                aria-label="Open reference photo"
+                accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+                onChange={handleDirectFileInput}
+                className="sr-only"
+              />
             </label>
           </div>
         ) : (
@@ -1302,26 +1311,6 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
                 Working
               </div>
             )}
-
-            {isMobile && <div className="absolute right-2 top-2 z-20">
-              <button
-                type="button"
-                onClick={() => setShowImageFullScreen(true)}
-                className={`${mobileSampleLayout
-                  ? 'flex h-11 w-11 items-center justify-center rounded-sm border border-ink bg-paper-elevated text-ink-secondary transition-[transform,color,background-color,border-color] duration-200 hover:text-ink active:scale-95'
-                  : 'flex h-11 w-11 items-center justify-center rounded-sm bg-paper border border-ink-hairline text-ink-secondary transition-[transform,color,background-color,border-color] duration-200 hover:bg-paper-recessed hover:border-ink-muted hover:text-ink active:scale-95'
-                }`}
-                title="Full screen"
-                aria-label="Full screen"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M15 3h6v6" />
-                  <path d="M9 21H3v-6" />
-                  <path d="M21 3l-7 7" />
-                  <path d="M3 21l7-7" />
-                </svg>
-              </button>
-            </div>}
 
             <motion.div
               key={image?.src || surfaceImageElement?.src || 'empty'}
@@ -1396,36 +1385,25 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
               isVisible={minimapVisible}
             />
 
-            {!isMobile && (
-              <div className="absolute bottom-5 left-5 z-20">
-                <ZoomControlsBar
-                  zoomLevel={zoomLevel}
-                  onZoomIn={zoom.zoomIn}
-                  onZoomOut={zoom.zoomOut}
-                  onFit={resetView}
-                  minZoom={MIN_ZOOM}
-                  maxZoom={MAX_ZOOM}
-                  valueModeEnabled={valueModeEnabled}
-                  onToggleValueMode={onToggleValueMode}
-                  onFullScreen={() => setShowImageFullScreen(true)}
-                />
-              </div>
-            )}
           </div>
 
         </div>
       )}
 
-      <input
-        ref={loadedFileInputRef}
-        id={desktopShell ? desktopFileInputId : mobileFileInputId}
-        name="replacement-reference-image"
-        type="file"
-        autoComplete="off"
-        accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
-        onChange={handleDirectFileInput}
-        className="sr-only"
-      />
+      {(image || surfaceImage) && (
+        <input
+          ref={loadedFileInputRef}
+          id={desktopShell ? desktopFileInputId : mobileFileInputId}
+          name="replacement-reference-image"
+          type="file"
+          autoComplete="off"
+          aria-label="Replace reference photo"
+          tabIndex={-1}
+          accept="image/*,.heic,.heif,.webp,.avif,.tiff,.tif,.bmp,.raw,.cr2,.nef,.orf,.sr2"
+          onChange={handleDirectFileInput}
+          className="sr-only"
+        />
+      )}
 
       <FullScreenOverlay
         isOpen={showImageFullScreen && !suppressPreviewOverlay}
@@ -1436,6 +1414,8 @@ const ImageCanvas = forwardRef<ImageCanvasHandle, ImageCanvasProps>((props, ref)
           <img
             src={image.src}
             alt="Full screen reference"
+            width={image.naturalWidth || image.width}
+            height={image.naturalHeight || image.height}
             className="max-w-full max-h-full object-contain pointer-events-none"
           />
         )}

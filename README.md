@@ -15,12 +15,14 @@ Images stay on your device. The core workflow does not require an account or clo
 
 ## Instrument Workbench Milestone
 
-The current workbench is a major product simplification. The canvas and sampled color are now the visual center of the application, with technical depth available progressively instead of rendered as a dashboard by default.
+The current workbench is painter-first. The canvas and one persistent result inspector are the visual center of the application, with technical depth available progressively instead of rendered as a dashboard by default.
 
-- One canonical sample inspector replaces duplicate readouts and tutorial cards.
-- Mix Lab leads with target, predicted result, fit, pigment ratios, and one proportional mix strand.
-- Sample, Mix, Threads, and Stitch remain primary; secondary studio capabilities live under Tools.
+- Sampling is the default canvas behavior; paint mixing is the immediate result, not a separate mode.
+- One canonical inspector combines color character, target versus predicted color, model fit, pigment ratios, a proportional mix strand, and the next mixing instruction.
+- Advanced mixing guidance expands in place. Paint Library, overlays, Structure, Surface, calibration, settings, and saved work live under Studio Tools.
+- Threads and Stitch are preserved inside an intentionally entered Embroidery workflow.
 - Mobile uses a canvas-first result sheet with collapsed, medium, and expanded states.
+- A new mobile sample opens the result sheet to medium automatically.
 - The desktop project gallery is organized around New, Recent, Pinned, Palettes, and Settings.
 - Browser and Tauri states share one warm-paper, black-stage, sample-driven visual system.
 
@@ -42,7 +44,7 @@ The current workbench is a major product simplification. The canvas and sampled 
 
 ColorWizard is not a full creative suite. It is a focused bridge between reference images and physical making: **Open → Sample → Understand → Act**.
 
-The workbench keeps Sample, Mix, Threads, and Stitch close at hand. Library, Reference, Structure, Surface, saved work, calibration, and infrequent settings remain available without competing with the canvas.
+The default workbench exposes only the reference canvas, result inspector, Replace Photo, Fit, Value View, Save Color, Change Paints, and Studio Tools. Secondary painter capabilities and the separate Embroidery workflow remain available without competing with the core loop.
 
 Paint mixes are starting points, not exact physical simulations. Paint brand, pigment load, surface, lighting, and technique still matter.
 

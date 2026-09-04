@@ -72,10 +72,12 @@ async function assertMobileComposition(page, name) {
       viewportWidth: window.innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       canvasHeight: canvas?.height ?? null,
+      canvasTop: canvas?.top ?? null,
       canvasBottom: canvas?.bottom ?? null,
       sheetTop: sheet?.top ?? null,
       sheetBottom: sheet?.bottom ?? null,
       sheetHeight: sheet?.height ?? null,
+      sheetState: document.querySelector('[data-testid="mobile-result-sheet"]')?.getAttribute('data-sheet-state'),
     }
   })
 
@@ -86,16 +88,24 @@ async function assertMobileComposition(page, name) {
     `${name}: horizontal overflow found (${JSON.stringify(layout)})`,
   )
   assert(
-    layout.canvasHeight >= layout.viewportHeight * 0.45,
-    `${name}: canvas is not visually dominant (${JSON.stringify(layout)})`,
+    layout.canvasHeight >= layout.viewportHeight * 0.7,
+    `${name}: canvas stage does not fill the available workspace (${JSON.stringify(layout)})`,
   )
   assert(
     layout.sheetBottom <= layout.viewportHeight + 1 && layout.sheetTop >= 0,
     `${name}: result sheet is outside the viewport (${JSON.stringify(layout)})`,
   )
   assert(
-    layout.sheetHeight <= 124,
-    `${name}: collapsed result sheet exceeds its summary height (${JSON.stringify(layout)})`,
+    layout.sheetState === 'medium',
+    `${name}: sampled result did not open automatically (${JSON.stringify(layout)})`,
+  )
+  assert(
+    layout.sheetHeight >= layout.viewportHeight * 0.35 && layout.sheetHeight <= layout.viewportHeight * 0.65,
+    `${name}: medium result sheet has an unusable height (${JSON.stringify(layout)})`,
+  )
+  assert(
+    layout.sheetTop - (layout.canvasTop ?? 0) >= layout.viewportHeight * 0.3,
+    `${name}: result sheet leaves too little visible canvas (${JSON.stringify(layout)})`,
   )
 }
 
@@ -119,7 +129,11 @@ async function runViewport(browser, name, contextOptions) {
   const box = await findUsableCanvas(page)
 
   if (contextOptions.hasTouch) {
-    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2)
+    const sheetTop = await page.locator('[data-testid="mobile-result-sheet"]').evaluate((sheet) => (
+      sheet.getBoundingClientRect().top
+    ))
+    const visibleCanvasCenterY = box.y + Math.max(44, (sheetTop - box.y) / 2)
+    await page.touchscreen.tap(box.x + box.width / 2, visibleCanvasCenterY)
   } else {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   }
@@ -127,7 +141,8 @@ async function runViewport(browser, name, contextOptions) {
   await page.waitForFunction(() => /#[0-9A-Fa-f]{6}/.test(document.body.innerText), null, { timeout: 15000 })
   if (contextOptions.isMobile) {
     await assertMobileComposition(page, name)
-    await page.getByRole('button', { name: /expand sample result/i }).first().click()
+    await page.getByRole('button', { name: /more guidance/i }).click()
+    assert(/advanced mixing guidance/i.test(await page.locator('body').innerText()), `${name}: expanded mixing guidance not found`)
   }
 
   const sampleText = await page.locator('body').innerText()
@@ -140,9 +155,7 @@ async function runViewport(browser, name, contextOptions) {
   await page.waitForTimeout(800)
   assert(/band|value/i.test(await page.locator('body').innerText()), `${name}: value mode readout not found`)
 
-  const threadsButton = contextOptions.isMobile
-    ? page.getByRole('button', { name: /^threads$/i }).last()
-    : page.getByRole('button', { name: /^threads$/i }).first()
+  const threadsButton = page.getByRole('button', { name: /embroidery match/i }).first()
   if (await threadsButton.count()) {
     await threadsButton.click()
   }
@@ -157,8 +170,14 @@ const { chromium } = await loadPlaywright()
 const browser = await chromium.launch({ headless: true })
 
 try {
-  await runViewport(browser, 'desktop', { viewport: { width: 1440, height: 1000 } })
-  await runViewport(browser, 'mobile', {
+  await runViewport(browser, 'desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await runViewport(browser, 'desktop-1366', { viewport: { width: 1366, height: 768 } })
+  await runViewport(browser, 'tablet-768', {
+    viewport: { width: 768, height: 1024 },
+    isMobile: true,
+    hasTouch: true,
+  })
+  await runViewport(browser, 'mobile-390', {
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,

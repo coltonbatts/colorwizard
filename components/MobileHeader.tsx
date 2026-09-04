@@ -3,14 +3,10 @@
 import { WordmarkCompact } from './Wordmark'
 
 interface MobileHeaderProps {
-  hasImage?: boolean
-  onClearImage?: () => void
   onOpenMenu?: () => void
 }
 
 export default function MobileHeader({
-  hasImage = false,
-  onClearImage,
   onOpenMenu
 }: MobileHeaderProps) {
   return (
@@ -27,7 +23,7 @@ export default function MobileHeader({
           className="mobile-header-btn"
           aria-label="Open navigation menu"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M4 6h16" />
             <path d="M4 12h16" />
             <path d="M4 18h16" />
@@ -38,23 +34,7 @@ export default function MobileHeader({
           <WordmarkCompact className="mobile-header-title" />
         </div>
 
-        <div className="flex w-11 justify-end">
-          {hasImage && onClearImage && (
-            <button
-              type="button"
-              onClick={onClearImage}
-              className="mobile-header-btn text-ink-secondary"
-              aria-label="Clear workspace"
-              title="Clear workspace"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 11.5 12 4l9 7.5" />
-                <path d="M5 10.5V20h14v-9.5" />
-                <path d="M9 20v-6h6v6" />
-              </svg>
-            </button>
-          )}
-        </div>
+        <div className="w-11" aria-hidden="true" />
       </div>
     </header>
   )

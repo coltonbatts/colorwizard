@@ -1,23 +1,14 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 interface FloatingInspectorPanelProps {
   title: string
-  subtitle: string
-  sampledColorHex?: string | null
   onClose: () => void
   layoutMode?: 'wide' | 'medium' | 'narrow'
   children: ReactNode
 }
-
-const panelMotion = {
-  initial: { opacity: 0, x: 16 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 12 },
-  transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] },
-} as const
 
 export default function FloatingInspectorPanel({
   title,
@@ -25,6 +16,14 @@ export default function FloatingInspectorPanel({
   layoutMode = 'wide',
   children,
 }: FloatingInspectorPanelProps) {
+  const reducedMotion = useReducedMotion() ?? false
+  const panelMotion = {
+    initial: reducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 },
+    animate: { opacity: 1, x: 0 },
+    exit: reducedMotion ? { opacity: 0 } : { opacity: 0, x: 12 },
+    transition: { duration: reducedMotion ? 0 : 0.22, ease: [0.16, 1, 0.3, 1] },
+  } as const
+
   return (
     <motion.aside
       {...panelMotion}

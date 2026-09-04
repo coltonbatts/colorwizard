@@ -56,12 +56,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
-        ui: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
+        sans: ['Helvetica Neue', 'Helvetica', '-apple-system', 'Arial', 'sans-serif'],
+        ui: ['Helvetica Neue', 'Helvetica', '-apple-system', 'Arial', 'sans-serif'],
         display: ['EB Garamond', 'Georgia', 'serif'],
         serif: ['EB Garamond', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
-        wordmark: ['Space Grotesk Variable', 'Helvetica Neue', 'sans-serif'],
+        wordmark: ['EB Garamond', 'Georgia', 'serif'],
       },
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1.5' }],       // 12px

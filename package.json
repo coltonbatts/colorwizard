@@ -27,7 +27,6 @@
     "validate:paints": "node scripts/validate-paints.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/space-grotesk": "^5.2.10",
     "@fontsource/eb-garamond": "^5.2.7",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@stripe/stripe-js": "^8.7.0",
