@@ -1,5 +1,5 @@
-import CoreWorkbench from '@/components/workbench/CoreWorkbench'
+import HomeSwitch from '@/components/HomeSwitch'
 
 export default function Home() {
-  return <CoreWorkbench />
+  return <HomeSwitch />
 }

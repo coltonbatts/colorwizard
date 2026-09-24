@@ -38,12 +38,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'ColorWizard | Color Mixing for Oil Painters',
-  description: 'Upload a reference image, sample a color, and get a painter-aware oil paint mixing guide from a limited palette. Offline-first and private.',
-  keywords: ['oil painting', 'color mixing', 'paint mixing', 'limited palette', 'artist tools', 'reference photo', 'dmc thread match'],
+  title: 'ColorWizard',
+  description: 'Open a picture and click any color. See what it is, how to mix it in paint, and which DMC thread matches. Private: your picture never leaves your device.',
+  keywords: ['color picker', 'color mixing', 'paint mixing', 'dmc thread match', 'embroidery', 'oil painting', 'artist tools', 'reference photo'],
   openGraph: {
-    title: 'ColorWizard | Color Mixing for Oil Painters',
-    description: 'Click a color in your reference image and get a practical oil paint mixing guide you can use at the easel.',
+    title: 'ColorWizard',
+    description: 'Open a picture and click any color. See what it is, how to mix it in paint, and which DMC thread matches.',
     url: 'https://colorwizard.app',
     siteName: 'ColorWizard',
     images: [
@@ -58,8 +58,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ColorWizard | Color Mixing for Oil Painters',
-    description: 'Upload a photo, sample a color, and get an oil paint mixing guide from a limited palette.',
+    title: 'ColorWizard',
+    description: 'Open a picture and click any color. See what it is, how to mix it in paint, and which DMC thread matches.',
     creator: '@coltonbatts',
   },
   icons: {

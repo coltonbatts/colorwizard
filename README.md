@@ -1,6 +1,20 @@
 # ColorWizard
 
-ColorWizard is a local-first color instrument for artists. Open a reference, sample a color, understand its character, then act with a practical paint mix, DMC thread match, or saved color.
+ColorWizard is a local-first color instrument for artists. Open a picture, click any color, and see what it is, how to mix it in paint, and which DMC thread matches.
+
+## The simple version (the default on the web)
+
+`/` opens the simple version (`components/simple/`). It is one screen:
+
+- **Open** a picture (button, ⌘O, drag and drop, or paste).
+- **Click or drag** to read a color. A loupe magnifies the pixels under the pointer.
+- **One color, fully described:** name, hex, value, temperature, chroma, then **Paint** (spectral mix from the six-color palette) and **Thread** (closest DMC floss, nearby alternatives, and the family's light-to-dark shades). Every swatch opens as a color of its own.
+- **Value** shows the picture in grayscale (V).
+- **Save** keeps colors in this browser.
+
+The full painter workbench described below is unchanged and lives at `/workbench`. The desktop app still opens on the workbench, because its project gallery, licensing, and saving are wired to it. The pre-simple `main` is preserved on the `workbench-classic` branch.
+
+## The full workbench
 
 ![ColorWizard sample workbench](artifacts/ui-redesign/after/sample-1440x900.png)
 

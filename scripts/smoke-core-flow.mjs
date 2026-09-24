@@ -1,4 +1,4 @@
-const targetUrl = process.env.COLORWIZARD_URL || 'http://localhost:3000'
+const targetUrl = process.env.COLORWIZARD_URL || 'http://localhost:3000/workbench'
 
 async function loadPlaywright() {
   try {
