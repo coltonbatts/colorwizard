@@ -1,0 +1,172 @@
+'use client'
+
+/** The picture. Fits the image to the stage, samples on press or drag, and can show values only. */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { rgbToHex } from '@/lib/color/conversions'
+import { linearToSRGB, getRelativeLuminance } from '@/lib/valueScale'
+import styles from './simple.module.css'
+
+export interface SamplePoint {
+  x: number
+  y: number
+}
+
+export interface PickedColor {
+  hex: string
+  rgb: { r: number; g: number; b: number }
+}
+
+interface SimpleCanvasProps {
+  source: HTMLCanvasElement
+  valueView: boolean
+  point: SamplePoint | null
+  onSample: (point: SamplePoint, color: PickedColor) => void
+}
+
+const STAGE_PADDING = 24
+const STAGE_PADDING_NARROW = 12
+const SAMPLE_RADIUS = 1 // 3x3 average smooths JPEG noise without drifting off the clicked pixel
+
+/** A gray image whose every pixel has the same luminance as the original. */
+function buildValueCanvas(source: HTMLCanvasElement, pixels: ImageData) {
+  const canvas = document.createElement('canvas')
+  canvas.width = source.width
+  canvas.height = source.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
+  const out = ctx.createImageData(source.width, source.height)
+  const { data } = pixels
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = Math.round(linearToSRGB(getRelativeLuminance(data[i], data[i + 1], data[i + 2])) * 255)
+    out.data[i] = gray
+    out.data[i + 1] = gray
+    out.data[i + 2] = gray
+    out.data[i + 3] = 255
+  }
+  ctx.putImageData(out, 0, 0)
+  return canvas
+}
+
+export default function SimpleCanvas({ source, valueView, point, onSample }: SimpleCanvasProps) {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const pressedRef = useRef(false)
+  const [size, setSize] = useState({ width: 0, height: 0 })
+
+  const pixels = useMemo(() => {
+    const ctx = source.getContext('2d', { willReadFrequently: true })
+    return ctx ? ctx.getImageData(0, 0, source.width, source.height) : null
+  }, [source])
+
+  const valueCanvasRef = useRef<{ source: HTMLCanvasElement; canvas: HTMLCanvasElement } | null>(null)
+  const getValueCanvas = useCallback(() => {
+    if (!pixels) return source
+    if (valueCanvasRef.current?.source !== source) {
+      valueCanvasRef.current = { source, canvas: buildValueCanvas(source, pixels) }
+    }
+    return valueCanvasRef.current.canvas
+  }, [pixels, source])
+
+  useEffect(() => {
+    const frame = frameRef.current
+    if (!frame) return
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      setSize({ width: Math.floor(width), height: Math.floor(height) })
+    })
+    observer.observe(frame)
+    return () => observer.disconnect()
+  }, [])
+
+  const fit = useMemo(() => {
+    const padding = size.width < 600 ? STAGE_PADDING_NARROW : STAGE_PADDING
+    const available = {
+      width: Math.max(1, size.width - padding * 2),
+      height: Math.max(1, size.height - padding * 2),
+    }
+    const scale = Math.min(available.width / source.width, available.height / source.height)
+    const width = source.width * scale
+    const height = source.height * scale
+    return {
+      scale,
+      x: (size.width - width) / 2,
+      y: (size.height - height) / 2,
+      width,
+      height,
+    }
+  }, [size, source])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || size.width === 0) return
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = size.width * dpr
+    canvas.height = size.height * dpr
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size.width, size.height)
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(valueView ? getValueCanvas() : source, fit.x, fit.y, fit.width, fit.height)
+
+    if (point) {
+      const cx = fit.x + (point.x + 0.5) * fit.scale
+      const cy = fit.y + (point.y + 0.5) * fit.scale
+      ctx.lineWidth = 3
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'
+      ctx.beginPath()
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.lineWidth = 1.5
+      ctx.strokeStyle = '#ffffff'
+      ctx.stroke()
+    }
+  }, [fit, getValueCanvas, point, size, source, valueView])
+
+  const sampleAt = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current
+    if (!canvas || !pixels) return
+    const bounds = canvas.getBoundingClientRect()
+    const x = Math.floor((clientX - bounds.left - fit.x) / fit.scale)
+    const y = Math.floor((clientY - bounds.top - fit.y) / fit.scale)
+    if (x < 0 || y < 0 || x >= source.width || y >= source.height) return
+
+    let r = 0, g = 0, b = 0, count = 0
+    for (let dy = -SAMPLE_RADIUS; dy <= SAMPLE_RADIUS; dy++) {
+      for (let dx = -SAMPLE_RADIUS; dx <= SAMPLE_RADIUS; dx++) {
+        const sx = x + dx
+        const sy = y + dy
+        if (sx < 0 || sy < 0 || sx >= source.width || sy >= source.height) continue
+        const i = (sy * source.width + sx) * 4
+        r += pixels.data[i]
+        g += pixels.data[i + 1]
+        b += pixels.data[i + 2]
+        count++
+      }
+    }
+    const rgb = { r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) }
+    onSample({ x, y }, { rgb, hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase() })
+  }, [fit, onSample, pixels, source])
+
+  return (
+    <div ref={frameRef} className={styles.stage}>
+      <canvas
+        ref={canvasRef}
+        className={styles.stageCanvas}
+        style={{ width: size.width, height: size.height }}
+        aria-label="Your picture. Click or drag to read a color."
+        onPointerDown={(event) => {
+          pressedRef.current = true
+          event.currentTarget.setPointerCapture(event.pointerId)
+          sampleAt(event.clientX, event.clientY)
+        }}
+        onPointerMove={(event) => {
+          if (pressedRef.current) sampleAt(event.clientX, event.clientY)
+        }}
+        onPointerUp={() => { pressedRef.current = false }}
+        onPointerCancel={() => { pressedRef.current = false }}
+      />
+    </div>
+  )
+}

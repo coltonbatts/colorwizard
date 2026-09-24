@@ -1,0 +1,540 @@
+/*
+ * The only color on screen should be the user's.
+ * Everything else is paper, ink, and a neutral middle-gray stage for judging color honestly.
+ */
+
+.app {
+  --s-paper: #fbfaf7;
+  --s-white: #ffffff;
+  --s-ink: #111111;
+  --s-ink-2: rgba(17, 17, 17, 0.64);
+  --s-ink-3: rgba(17, 17, 17, 0.42);
+  --s-rule: rgba(17, 17, 17, 0.12);
+  --s-stage: #777777; /* L* ≈ 50: middle gray, so the surround doesn't bias the sample */
+  --s-serif: 'EB Garamond', Georgia, serif;
+  --s-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --s-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--s-paper);
+  color: var(--s-ink);
+  font-family: var(--s-sans);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.app button:focus-visible {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 2px;
+}
+
+.dragging::after {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 2px dashed var(--s-ink);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* ---------- Welcome ---------- */
+
+.welcome {
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.welcomeBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--s-serif);
+  font-size: clamp(44px, 8vw, 64px);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1;
+}
+
+.tagline {
+  margin: 14px 0 32px;
+  font-size: 17px;
+  color: var(--s-ink-2);
+}
+
+/* A nod to the classic Mac default button: the ring means "Return does this". */
+.primaryButton {
+  padding: 10px 26px;
+  border: 1.5px solid var(--s-ink);
+  border-radius: 8px;
+  background: var(--s-white);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px var(--s-paper), 0 0 0 5px var(--s-ink);
+  transition: background-color 120ms, color 120ms;
+}
+
+.primaryButton:hover {
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+.hint {
+  margin: 24px 0 0;
+  font-size: 13px;
+  color: var(--s-ink-3);
+}
+
+/* ---------- Workspace ---------- */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--s-stage);
+}
+
+.stageCanvas {
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--s-rule);
+  background: var(--s-paper);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--s-rule);
+  flex-shrink: 0;
+}
+
+.wordmarkSmall {
+  font-family: var(--s-serif);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.toolbarButtons {
+  display: flex;
+  gap: 6px;
+}
+
+.toolbarButtons button {
+  padding: 5px 12px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.toolbarButtons button:hover {
+  border-color: var(--s-ink);
+}
+
+.toolbarButtons button[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white);
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.emptyReadout {
+  margin: 0;
+  padding-top: 8px;
+  font-family: var(--s-serif);
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--s-ink-2);
+}
+
+/* ---------- Readout ---------- */
+
+.readout {
+  display: flex;
+  flex-direction: column;
+}
+
+.swatch {
+  height: 168px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.identity {
+  margin: 16px 0 4px;
+}
+
+.colorName {
+  margin: 0 0 6px;
+  min-height: 1.15em;
+  font-family: var(--s-serif);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--s-mono) !important;
+  font-size: 13px !important;
+  color: var(--s-ink) !important;
+}
+
+.code:hover {
+  text-decoration: underline;
+}
+
+.section {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--s-rule);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sectionHead h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sectionHead span {
+  font-size: 12px;
+  color: var(--s-ink-3);
+}
+
+.stale {
+  opacity: 0.4;
+  transition: opacity 120ms;
+}
+
+.pending {
+  margin: 0;
+  font-size: 13px;
+  color: var(--s-ink-3);
+}
+
+.mixBar {
+  display: flex;
+  gap: 1px;
+  height: 10px;
+  margin-bottom: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mixBar i {
+  display: block;
+  min-width: 2px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rows li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.rows i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.rows code {
+  font-family: var(--s-mono);
+  font-size: 13px;
+}
+
+.threadPrimary {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  text-align: left;
+}
+
+.threadPrimary:hover {
+  border-color: var(--s-ink);
+}
+
+.threadPrimary i {
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.threadPrimary strong {
+  display: block;
+  font-family: var(--s-mono);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.threadPrimary small {
+  display: block;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.threadPrimary em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--s-ink-3);
+}
+
+.rowLabel {
+  display: block;
+  flex-basis: 100%;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--s-ink-3);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 4px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-family: var(--s-mono) !important;
+  font-size: 12px !important;
+}
+
+.chip:hover {
+  border-color: var(--s-ink);
+}
+
+.chip i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.ladderRow {
+  margin-top: 14px;
+}
+
+.ladder {
+  display: flex;
+  gap: 2px;
+}
+
+.ladder button {
+  flex: 1;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+}
+
+.ladder .ladderCurrent {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+}
+
+.saveButton {
+  margin-top: 26px;
+  height: 40px;
+  border: 1.5px solid var(--s-ink);
+  border-radius: 8px;
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.saveButton:disabled {
+  border-color: var(--s-rule);
+  background: transparent;
+  color: var(--s-ink-3) !important;
+  cursor: default;
+}
+
+/* ---------- Saved ---------- */
+
+.saved {
+  flex-shrink: 0;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--s-rule);
+}
+
+.saved ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved li {
+  position: relative;
+}
+
+.savedChip {
+  display: block;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.savedChipActive {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+}
+
+.savedRemove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-size: 11px !important;
+  line-height: 1;
+}
+
+.saved li:hover .savedRemove,
+.savedRemove:focus-visible {
+  display: flex;
+}
+
+/* ---------- Phone ---------- */
+
+@media (max-width: 760px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: 42dvh minmax(0, 1fr);
+  }
+
+  .panel {
+    border-left: 0;
+    border-top: 1px solid var(--s-rule);
+  }
+
+  .toolbar {
+    padding: 0 12px 0 16px;
+  }
+
+  .panelBody {
+    padding: 16px;
+  }
+
+  .swatch {
+    height: 56px;
+  }
+
+  .identity {
+    margin-top: 12px;
+  }
+
+  .colorName {
+    font-size: 24px;
+  }
+
+  .saved {
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Phones can't hover, so removal is always reachable. */
+  .savedRemove {
+    display: flex;
+  }
+}
