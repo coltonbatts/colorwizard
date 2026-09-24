@@ -14,7 +14,7 @@ import { solveRecipe } from '@/lib/paint/solveRecipe'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getPerceptualValue } from '@/lib/valueScale'
 import { getSolverWorker } from '@/lib/workers'
-import { PaintDab, ThreadSkein } from './Materials'
+import FlossImage from './FlossImage'
 import { pour, type PourOrigin } from './pour'
 import type { PickedColor } from './SimpleCanvas'
 import styles from './simple.module.css'
@@ -160,13 +160,12 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
           {recipe && <span>{PAINT_FIT[recipe.matchQuality]}</span>}
         </div>
         {ingredients.length > 0 ? (
-          <div className={`${styles.paintBody} ${isCurrent ? '' : styles.stale}`}>
-            <PaintDab
-              className={styles.dab}
-              hex={recipe?.predictedHex ?? color.hex}
-              paints={ingredients.map(({ pigment, weight }) => ({ id: pigment.id, hex: pigment.hex, weight }))}
-              mixKey={`${settledHex}-${recipe?.predictedHex}`}
-            />
+          <div className={isCurrent ? undefined : styles.stale}>
+            <div className={styles.mixBar} aria-hidden="true">
+              {ingredients.map(({ pigment, weight }) => (
+                <i key={pigment.id} style={{ flexGrow: weight, backgroundColor: pigment.hex }} />
+              ))}
+            </div>
             <ul className={styles.rows}>
               {ingredients.map(({ pigment, weight }) => (
                 <li key={pigment.id}>
@@ -188,46 +187,48 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
           {primary && <span>{threadFit(primary.deltaE00)}</span>}
         </div>
         {primary ? (
-          <div className={isCurrent ? undefined : styles.stale}>
-            <button type="button" className={styles.threadPrimary} onClick={() => void copy(primary.number)} title="Copy DMC number">
-              <ThreadSkein hex={primary.hex} className={styles.skein} />
-              <span>
-                <strong>DMC {primary.number}</strong>
-                <small>{primary.name}</small>
-              </span>
-              <em>{copied === primary.number ? 'Copied' : 'Copy'}</em>
-            </button>
+          <div className={`${styles.threadBody} ${isCurrent ? '' : styles.stale}`}>
+            <FlossImage hex={primary.hex} className={styles.floss} />
+            <div className={styles.threadDetails}>
+              <button type="button" className={styles.threadPrimary} onClick={() => void copy(primary.number)} title="Copy DMC number">
+                <span>
+                  <strong>DMC {primary.number}</strong>
+                  <small>{primary.name}</small>
+                </span>
+                <em>{copied === primary.number ? 'Copied' : 'Copy'}</em>
+              </button>
 
-            {nearby.length > 0 && (
-              <div className={styles.chipRow}>
-                <span className={styles.rowLabel}>Also close</span>
-                {nearby.map((thread) => (
-                  <button key={thread.id} type="button" className={styles.chip} onClick={(event) => onOpenColor(thread.hex, originOf(event))} title={`DMC ${thread.number} · ${thread.name}`}>
-                    <i style={{ backgroundColor: thread.hex }} aria-hidden="true" />
-                    {thread.number}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {ladder.length > 1 && (
-              <div className={styles.ladderRow}>
-                <span className={styles.rowLabel}>Light to dark</span>
-                <div className={styles.ladder}>
-                  {ladder.map((thread) => (
-                    <button
-                      key={thread.id}
-                      type="button"
-                      className={thread.id === primary.id ? styles.ladderCurrent : undefined}
-                      style={{ backgroundColor: thread.hex }}
-                      onClick={(event) => onOpenColor(thread.hex, originOf(event))}
-                      title={`DMC ${thread.number} · ${thread.name}`}
-                      aria-label={`DMC ${thread.number}, ${thread.name}`}
-                    />
+              {nearby.length > 0 && (
+                <div className={styles.chipRow}>
+                  <span className={styles.rowLabel}>Also close</span>
+                  {nearby.map((thread) => (
+                    <button key={thread.id} type="button" className={styles.chip} onClick={(event) => onOpenColor(thread.hex, originOf(event))} title={`DMC ${thread.number} · ${thread.name}`}>
+                      <i style={{ backgroundColor: thread.hex }} aria-hidden="true" />
+                      {thread.number}
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {ladder.length > 1 && (
+                <div className={styles.ladderRow}>
+                  <span className={styles.rowLabel}>Light to dark</span>
+                  <div className={styles.ladder}>
+                    {ladder.map((thread) => (
+                      <button
+                        key={thread.id}
+                        type="button"
+                        className={thread.id === primary.id ? styles.ladderCurrent : undefined}
+                        style={{ backgroundColor: thread.hex }}
+                        onClick={(event) => onOpenColor(thread.hex, originOf(event))}
+                        title={`DMC ${thread.number} · ${thread.name}`}
+                        aria-label={`DMC ${thread.number}, ${thread.name}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <p className={styles.pending}>Matching…</p>

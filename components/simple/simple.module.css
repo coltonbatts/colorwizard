@@ -341,37 +341,18 @@
   color: var(--s-ink-3);
 }
 
-.paintBody {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
+.mixBar {
+  display: flex;
+  gap: 1px;
+  height: 10px;
+  margin-bottom: 10px;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.dab {
+.mixBar i {
   display: block;
-  width: 84px;
-  height: 64px;
-}
-
-/* Each paint swirls into the dab in its proportion, then blends away into the mix. */
-.swirl {
-  transform-origin: 42px 32px;
-  animation: swirl-in 780ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-@keyframes swirl-in {
-  from {
-    transform: rotate(-170deg) scale(1.08);
-    opacity: 1;
-  }
-  60% {
-    opacity: 0.7;
-  }
-  to {
-    transform: rotate(0deg) scale(0.86);
-    opacity: 0;
-  }
+  min-width: 2px;
 }
 
 .rows {
@@ -401,13 +382,33 @@
   font-size: 13px;
 }
 
+.threadBody {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+/* The template is 109×834; keep its proportions. */
+.floss {
+  display: block;
+  width: 56px;
+  height: auto;
+  aspect-ratio: 109 / 834;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18));
+}
+
+.threadDetails {
+  min-width: 0;
+}
+
 .threadPrimary {
   display: grid;
-  grid-template-columns: 72px 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 8px 12px 8px 8px;
+  padding: 9px 12px;
   border: 1px solid var(--s-rule);
   border-radius: 6px;
   background: var(--s-white);
@@ -416,12 +417,6 @@
 
 .threadPrimary:hover {
   border-color: var(--s-ink);
-}
-
-.skein {
-  display: block;
-  width: 72px;
-  height: 36px;
 }
 
 .threadPrimary strong {
@@ -617,15 +612,17 @@
     padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
+  .threadBody {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .floss {
+    width: 40px;
+  }
+
   /* Phones can't hover, so removal is always reachable. */
   .savedRemove {
     display: flex;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .swirl {
-    animation: none;
-    opacity: 0;
   }
 }
