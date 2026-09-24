@@ -120,6 +120,50 @@
   touch-action: none;
 }
 
+.panning {
+  cursor: grabbing;
+}
+
+.zoomControls {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: stretch;
+  border-radius: 8px;
+  background: rgba(17, 17, 17, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+
+.zoomControls button {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: #ffffff !important;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.zoomControls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.zoomControls button:disabled {
+  color: rgba(255, 255, 255, 0.4) !important;
+  cursor: default;
+}
+
+.zoomControls .zoomReadout {
+  min-width: 58px;
+  font-family: var(--s-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
 .loupe {
   position: absolute;
   border-radius: 50%;

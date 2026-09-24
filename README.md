@@ -7,7 +7,9 @@ ColorWizard is a local-first color instrument for artists. Open a picture, click
 `/` opens the simple version (`components/simple/`). It is one screen:
 
 - **Open** a picture (button, ⌘O, drag and drop, or paste).
-- **Click or drag** to read a color. A loupe magnifies the pixels under the pointer.
+- **Click** to read a color. A loupe magnifies the pixels under the pointer.
+- **Move around like a viewfinder:** scroll (Magic Mouse, wheel) or pinch to zoom at the pointer, drag to move, `+` / `−` / `0` to zoom and fit. On touch, tap to sample, and press and hold to pick with the loupe.
+- **Full detail:** photos keep up to 4096 px (a whole 12 MP phone photo; 3072 on iPhone and iPad), and zoom goes to 6400%. Past 400% pixels render crisp and a click reads exactly the pixel under it.
 - **One color, fully described:** name, hex, value, temperature, chroma, then **Paint** (spectral mix from the six-color palette) and **Thread** (closest DMC floss, nearby alternatives, and the family's light-to-dark shades). Every swatch opens as a color of its own.
 - **Value** shows the picture in grayscale (V).
 - **Save** keeps colors in this browser.

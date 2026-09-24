@@ -7,12 +7,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { hexToRgb } from '@/lib/color/conversions'
-import { createSourceBuffer, decodeImageFile } from '@/lib/imagePipeline'
+import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import ColorReadout from './ColorReadout'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
 import styles from './simple.module.css'
 
 const SAVED_KEY = 'colorwizard-simple-saved'
+// Keep detail for zooming in: 4096 holds a whole 12 MP phone photo. iOS canvas memory is tighter, so it gets less.
+const MAX_DIMENSION = 4096
+const MAX_DIMENSION_CONSTRAINED = 3072
 
 function loadSaved(): string[] {
   try {
@@ -39,6 +42,7 @@ function colorFromHex(hex: string): PickedColor | null {
 export default function SimpleApp() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [source, setSource] = useState<HTMLCanvasElement | null>(null)
+  const [pictureId, setPictureId] = useState(0)
   const [point, setPoint] = useState<SamplePoint | null>(null)
   const [color, setColor] = useState<PickedColor | null>(null)
   const [valueView, setValueView] = useState(false)
@@ -56,7 +60,8 @@ export default function SimpleApp() {
     }
     try {
       const image = await decodeImageFile(file)
-      setSource(await createSourceBuffer(image))
+      setSource(await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION))
+      setPictureId((id) => id + 1)
       setPoint(null)
       setColor(null)
       setValueView(false)
@@ -163,7 +168,7 @@ export default function SimpleApp() {
   return (
     <main id="main-content" className={`${styles.app} ${styles.workspace} ${isDragging ? styles.dragging : ''}`}>
       {fileInput}
-      <SimpleCanvas source={source} valueView={valueView} point={point} onSample={handleSample} />
+      <SimpleCanvas key={pictureId} source={source} valueView={valueView} point={point} onSample={handleSample} />
 
       <aside className={styles.panel} aria-label="Color">
         <div className={styles.toolbar}>
