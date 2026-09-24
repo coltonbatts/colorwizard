@@ -1,6 +1,9 @@
 'use client'
 
-/** The picture. Fits the image to the stage, samples on press or drag, and can show values only. */
+/**
+ * The picture. Fits the image to the stage, samples on press or drag, and can show values only.
+ * A loupe follows the pointer so single pixels are easy to hit.
+ */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { rgbToHex } from '@/lib/color/conversions'
@@ -27,6 +30,17 @@ interface SimpleCanvasProps {
 const STAGE_PADDING = 24
 const STAGE_PADDING_NARROW = 12
 const SAMPLE_RADIUS = 1 // 3x3 average smooths JPEG noise without drifting off the clicked pixel
+const LOUPE_SIZE = 136 // css px
+const LOUPE_SPAN = 17 // source pixels across; odd so one pixel sits dead center
+const LOUPE_GAP = 20 // distance from the pointer, so the loupe never hides what it magnifies
+
+interface Hover {
+  x: number
+  y: number
+  localX: number
+  localY: number
+  touch: boolean
+}
 
 /** A gray image whose every pixel has the same luminance as the original. */
 function buildValueCanvas(source: HTMLCanvasElement, pixels: ImageData) {
@@ -51,8 +65,10 @@ function buildValueCanvas(source: HTMLCanvasElement, pixels: ImageData) {
 export default function SimpleCanvas({ source, valueView, point, onSample }: SimpleCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const loupeRef = useRef<HTMLCanvasElement>(null)
   const pressedRef = useRef(false)
   const [size, setSize] = useState({ width: 0, height: 0 })
+  const [hover, setHover] = useState<Hover | null>(null)
 
   const pixels = useMemo(() => {
     const ctx = source.getContext('2d', { willReadFrequently: true })
@@ -124,14 +140,21 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
     }
   }, [fit, getValueCanvas, point, size, source, valueView])
 
-  const sampleAt = useCallback((clientX: number, clientY: number) => {
+  const locate = useCallback((clientX: number, clientY: number, touch: boolean): Hover | null => {
     const canvas = canvasRef.current
-    if (!canvas || !pixels) return
+    if (!canvas) return null
     const bounds = canvas.getBoundingClientRect()
-    const x = Math.floor((clientX - bounds.left - fit.x) / fit.scale)
-    const y = Math.floor((clientY - bounds.top - fit.y) / fit.scale)
-    if (x < 0 || y < 0 || x >= source.width || y >= source.height) return
+    const localX = clientX - bounds.left
+    const localY = clientY - bounds.top
+    const x = Math.floor((localX - fit.x) / fit.scale)
+    const y = Math.floor((localY - fit.y) / fit.scale)
+    if (x < 0 || y < 0 || x >= source.width || y >= source.height) return null
+    return { x, y, localX, localY, touch }
+  }, [fit, source])
 
+  const sampleAt = useCallback((at: Hover) => {
+    if (!pixels) return
+    const { x, y } = at
     let r = 0, g = 0, b = 0, count = 0
     for (let dy = -SAMPLE_RADIUS; dy <= SAMPLE_RADIUS; dy++) {
       for (let dx = -SAMPLE_RADIUS; dx <= SAMPLE_RADIUS; dx++) {
@@ -147,7 +170,62 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
     }
     const rgb = { r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) }
     onSample({ x, y }, { rgb, hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase() })
-  }, [fit, onSample, pixels, source])
+  }, [onSample, pixels, source])
+
+  // Nearest-neighbour magnification: the loupe shows real pixels, never smoothed guesses.
+  useEffect(() => {
+    const loupe = loupeRef.current
+    if (!loupe || !hover) return
+    const dpr = window.devicePixelRatio || 1
+    loupe.width = LOUPE_SIZE * dpr
+    loupe.height = LOUPE_SIZE * dpr
+    const ctx = loupe.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.imageSmoothingEnabled = false
+
+    const cell = LOUPE_SIZE / LOUPE_SPAN
+    const half = (LOUPE_SPAN - 1) / 2
+    const left = hover.x - half
+    const top = hover.y - half
+    // Clip the source rect to the image by hand; browsers disagree on out-of-bounds drawImage.
+    const sx = Math.max(0, left)
+    const sy = Math.max(0, top)
+    const sw = Math.min(source.width, left + LOUPE_SPAN) - sx
+    const sh = Math.min(source.height, top + LOUPE_SPAN) - sy
+
+    ctx.fillStyle = '#777777'
+    ctx.fillRect(0, 0, LOUPE_SIZE, LOUPE_SIZE)
+    ctx.drawImage(valueView ? getValueCanvas() : source, sx, sy, sw, sh, (sx - left) * cell, (sy - top) * cell, sw * cell, sh * cell)
+
+    // Outline exactly the pixels that get averaged into the sample.
+    const edge = (half - SAMPLE_RADIUS) * cell
+    const span = (SAMPLE_RADIUS * 2 + 1) * cell
+    ctx.lineWidth = 3
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)'
+    ctx.strokeRect(edge, edge, span, span)
+    ctx.lineWidth = 1
+    ctx.strokeStyle = '#ffffff'
+    ctx.strokeRect(edge, edge, span, span)
+  }, [getValueCanvas, hover, source, valueView])
+
+  const loupePosition = useMemo(() => {
+    if (!hover) return null
+    if (hover.touch) {
+      // Above the finger, clamped to the stage.
+      return {
+        left: Math.min(Math.max(0, hover.localX - LOUPE_SIZE / 2), size.width - LOUPE_SIZE),
+        top: Math.max(0, hover.localY - LOUPE_SIZE - LOUPE_GAP * 2.5),
+      }
+    }
+    // Up and to the right of the cursor, flipping away from the edges.
+    const right = hover.localX + LOUPE_GAP + LOUPE_SIZE <= size.width
+    const above = hover.localY - LOUPE_GAP - LOUPE_SIZE >= 0
+    return {
+      left: right ? hover.localX + LOUPE_GAP : hover.localX - LOUPE_GAP - LOUPE_SIZE,
+      top: above ? hover.localY - LOUPE_GAP - LOUPE_SIZE : hover.localY + LOUPE_GAP,
+    }
+  }, [hover, size])
 
   return (
     <div ref={frameRef} className={styles.stage}>
@@ -159,14 +237,33 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
         onPointerDown={(event) => {
           pressedRef.current = true
           event.currentTarget.setPointerCapture(event.pointerId)
-          sampleAt(event.clientX, event.clientY)
+          const at = locate(event.clientX, event.clientY, event.pointerType !== 'mouse')
+          setHover(at)
+          if (at) sampleAt(at)
         }}
         onPointerMove={(event) => {
-          if (pressedRef.current) sampleAt(event.clientX, event.clientY)
+          const at = locate(event.clientX, event.clientY, event.pointerType !== 'mouse')
+          setHover(at)
+          if (pressedRef.current && at) sampleAt(at)
         }}
-        onPointerUp={() => { pressedRef.current = false }}
-        onPointerCancel={() => { pressedRef.current = false }}
+        onPointerUp={(event) => {
+          pressedRef.current = false
+          if (event.pointerType !== 'mouse') setHover(null)
+        }}
+        onPointerCancel={() => {
+          pressedRef.current = false
+          setHover(null)
+        }}
+        onPointerLeave={() => { if (!pressedRef.current) setHover(null) }}
       />
+      {loupePosition && (
+        <canvas
+          ref={loupeRef}
+          className={styles.loupe}
+          style={{ width: LOUPE_SIZE, height: LOUPE_SIZE, left: loupePosition.left, top: loupePosition.top }}
+          aria-hidden="true"
+        />
+      )}
     </div>
   )
 }
