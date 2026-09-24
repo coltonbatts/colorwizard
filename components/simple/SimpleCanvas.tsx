@@ -30,7 +30,8 @@ interface SimpleCanvasProps {
   source: HTMLCanvasElement
   valueView: boolean
   point: SamplePoint | null
-  onSample: (point: SamplePoint, color: PickedColor) => void
+  /** `origin` (client px) is set for deliberate clicks and taps, not drags, so the pick can pour in. */
+  onSample: (point: SamplePoint, color: PickedColor, origin?: { x: number; y: number }) => void
 }
 
 /** Image origin in stage css px, and css px per image pixel. */
@@ -222,7 +223,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
     return { x, y, ...local, touch }
   }, [source, toLocal, view])
 
-  const sampleAt = useCallback((at: Hover) => {
+  const sampleAt = useCallback((at: Hover, deliberate = false) => {
     if (!pixels) return
     const { x, y } = at
     const radius = sampleRadius
@@ -240,7 +241,9 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
       }
     }
     const rgb = { r: Math.round(r / count), g: Math.round(g / count), b: Math.round(b / count) }
-    onSample({ x, y, radius }, { rgb, hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase() })
+    const bounds = deliberate ? canvasRef.current?.getBoundingClientRect() : undefined
+    const origin = bounds ? { x: bounds.left + at.localX, y: bounds.top + at.localY } : undefined
+    onSample({ x, y, radius }, { rgb, hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase() }, origin)
   }, [onSample, pixels, sampleRadius, source])
 
   // Scroll wheel, Magic Mouse, and trackpad pinch (which arrives as ctrl+wheel) all zoom.
@@ -404,7 +407,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
 
     if (gesture.kind === 'pending' && event.type === 'pointerup') {
       const at = locate(event.clientX, event.clientY, touch)
-      if (at) sampleAt(at)
+      if (at) sampleAt(at, true)
     }
 
     gestureRef.current = { kind: 'none' }

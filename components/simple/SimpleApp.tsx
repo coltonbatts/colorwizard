@@ -8,7 +8,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
-import ColorReadout from './ColorReadout'
+import ColorReadout, { originOf, type Arrival } from './ColorReadout'
+import type { PourOrigin } from './pour'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
 import styles from './simple.module.css'
 
@@ -45,6 +46,7 @@ export default function SimpleApp() {
   const [pictureId, setPictureId] = useState(0)
   const [point, setPoint] = useState<SamplePoint | null>(null)
   const [color, setColor] = useState<PickedColor | null>(null)
+  const [arrival, setArrival] = useState<Arrival | null>(null)
   const [valueView, setValueView] = useState(false)
   const [saved, setSaved] = useState<string[]>([])
   const [isDragging, setIsDragging] = useState(false)
@@ -73,17 +75,23 @@ export default function SimpleApp() {
 
   const choosePicture = useCallback(() => fileInputRef.current?.click(), [])
 
-  const handleSample = useCallback((nextPoint: SamplePoint, picked: PickedColor) => {
-    setPoint(nextPoint)
-    setColor(picked)
+  const arrive = useCallback((origin: PourOrigin | undefined) => {
+    setArrival(origin ? (current) => ({ id: (current?.id ?? 0) + 1, origin }) : null)
   }, [])
 
-  const openColor = useCallback((hex: string) => {
+  const handleSample = useCallback((nextPoint: SamplePoint, picked: PickedColor, origin?: PourOrigin) => {
+    setPoint(nextPoint)
+    setColor(picked)
+    arrive(origin)
+  }, [arrive])
+
+  const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
     if (!picked) return
     setPoint(null)
     setColor(picked)
-  }, [])
+    arrive(origin)
+  }, [arrive])
 
   const updateSaved = useCallback((update: (current: string[]) => string[]) => {
     setSaved((current) => {
@@ -183,6 +191,7 @@ export default function SimpleApp() {
           {color ? (
             <ColorReadout
               color={color}
+              arrival={arrival}
               isSaved={isSaved}
               onSave={() => updateSaved((current) => (current.includes(color.hex) ? current : [...current, color.hex]))}
               onOpenColor={openColor}
@@ -202,7 +211,7 @@ export default function SimpleApp() {
                     type="button"
                     className={`${styles.savedChip} ${color?.hex === hex ? styles.savedChipActive : ''}`}
                     style={{ backgroundColor: hex }}
-                    onClick={() => openColor(hex)}
+                    onClick={(event) => openColor(hex, originOf(event))}
                     title={hex}
                     aria-label={`Open saved color ${hex}`}
                   />

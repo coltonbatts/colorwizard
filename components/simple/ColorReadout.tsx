@@ -5,7 +5,7 @@
  * Every swatch here is itself a color you can open.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { getColorName } from '@/lib/colorNaming'
 import { getColorTemperature } from '@/lib/colorTheory'
 import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
@@ -14,14 +14,29 @@ import { solveRecipe } from '@/lib/paint/solveRecipe'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getPerceptualValue } from '@/lib/valueScale'
 import { getSolverWorker } from '@/lib/workers'
+import { PaintDab, ThreadSkein } from './Materials'
+import { pour, type PourOrigin } from './pour'
 import type { PickedColor } from './SimpleCanvas'
 import styles from './simple.module.css'
 
+export interface Arrival {
+  id: number
+  origin: PourOrigin
+}
+
 interface ColorReadoutProps {
   color: PickedColor
+  /** Set when a color was picked on purpose (a click, not a drag), so it pours in. */
+  arrival: Arrival | null
   isSaved: boolean
   onSave: () => void
-  onOpenColor: (hex: string) => void
+  onOpenColor: (hex: string, origin?: PourOrigin) => void
+}
+
+/** The center of whatever was clicked, as a place for a pour to start. */
+export function originOf(event: MouseEvent<HTMLElement>): PourOrigin {
+  const rect = event.currentTarget.getBoundingClientRect()
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
 }
 
 const SETTLE_MS = 120 // let a drag come to rest before running the solvers
@@ -72,12 +87,25 @@ function useCopy() {
   return { copied, copy }
 }
 
-export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: ColorReadoutProps) {
+export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
   const [name, setName] = useState('')
   const [recipe, setRecipe] = useState<SpectralRecipe | null>(null)
   const [threads, setThreads] = useState<ThreadMatchResult | null>(null)
   const { copied, copy } = useCopy()
+  const swatchRef = useRef<HTMLDivElement>(null)
+  const fillRef = useRef<HTMLDivElement>(null)
+  const shownHexRef = useRef<string | null>(null)
+  const pouredIdRef = useRef<number | null>(null)
+
+  // Pour on each deliberate pick; plain color changes (dragging, first render) just appear.
+  useLayoutEffect(() => {
+    const previousHex = shownHexRef.current
+    shownHexRef.current = color.hex
+    if (!arrival || arrival.id === pouredIdRef.current) return
+    pouredIdRef.current = arrival.id
+    if (swatchRef.current && fillRef.current) pour(arrival.origin, color.hex, previousHex, swatchRef.current, fillRef.current)
+  }, [arrival, color.hex])
 
   useEffect(() => {
     let cancelled = false
@@ -110,7 +138,9 @@ export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: Co
 
   return (
     <div className={styles.readout}>
-      <div className={styles.swatch} style={{ backgroundColor: color.hex }} />
+      <div ref={swatchRef} className={styles.swatch}>
+        <div ref={fillRef} className={styles.swatchFill} style={{ backgroundColor: color.hex }} />
+      </div>
 
       <header className={styles.identity}>
         <h2 className={styles.colorName}>{isCurrent && name ? name : ' '}</h2>
@@ -130,12 +160,13 @@ export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: Co
           {recipe && <span>{PAINT_FIT[recipe.matchQuality]}</span>}
         </div>
         {ingredients.length > 0 ? (
-          <div className={isCurrent ? undefined : styles.stale}>
-            <div className={styles.mixBar} aria-hidden="true">
-              {ingredients.map(({ pigment, weight }) => (
-                <i key={pigment.id} style={{ flexGrow: weight, backgroundColor: pigment.hex }} />
-              ))}
-            </div>
+          <div className={`${styles.paintBody} ${isCurrent ? '' : styles.stale}`}>
+            <PaintDab
+              className={styles.dab}
+              hex={recipe?.predictedHex ?? color.hex}
+              paints={ingredients.map(({ pigment, weight }) => ({ id: pigment.id, hex: pigment.hex, weight }))}
+              mixKey={`${settledHex}-${recipe?.predictedHex}`}
+            />
             <ul className={styles.rows}>
               {ingredients.map(({ pigment, weight }) => (
                 <li key={pigment.id}>
@@ -159,7 +190,7 @@ export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: Co
         {primary ? (
           <div className={isCurrent ? undefined : styles.stale}>
             <button type="button" className={styles.threadPrimary} onClick={() => void copy(primary.number)} title="Copy DMC number">
-              <i style={{ backgroundColor: primary.hex }} aria-hidden="true" />
+              <ThreadSkein hex={primary.hex} className={styles.skein} />
               <span>
                 <strong>DMC {primary.number}</strong>
                 <small>{primary.name}</small>
@@ -171,7 +202,7 @@ export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: Co
               <div className={styles.chipRow}>
                 <span className={styles.rowLabel}>Also close</span>
                 {nearby.map((thread) => (
-                  <button key={thread.id} type="button" className={styles.chip} onClick={() => onOpenColor(thread.hex)} title={`DMC ${thread.number} · ${thread.name}`}>
+                  <button key={thread.id} type="button" className={styles.chip} onClick={(event) => onOpenColor(thread.hex, originOf(event))} title={`DMC ${thread.number} · ${thread.name}`}>
                     <i style={{ backgroundColor: thread.hex }} aria-hidden="true" />
                     {thread.number}
                   </button>
@@ -189,7 +220,7 @@ export default function ColorReadout({ color, isSaved, onSave, onOpenColor }: Co
                       type="button"
                       className={thread.id === primary.id ? styles.ladderCurrent : undefined}
                       style={{ backgroundColor: thread.hex }}
-                      onClick={() => onOpenColor(thread.hex)}
+                      onClick={(event) => onOpenColor(thread.hex, originOf(event))}
                       title={`DMC ${thread.number} · ${thread.name}`}
                       aria-label={`DMC ${thread.number}, ${thread.name}`}
                     />
