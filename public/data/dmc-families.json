@@ -18,7 +18,7 @@
       "3328",
       "347"
     ],
-    "hueBucket": "red"
+    "hueBucket": "red-orange"
   },
   {
     "id": "peach",
@@ -36,15 +36,15 @@
     "label": "Coral",
     "threadIds": [
       "dmc:352",
+      "dmc:349",
       "dmc:351",
-      "dmc:350",
-      "dmc:349"
+      "dmc:350"
     ],
     "threadNumbers": [
       "352",
+      "349",
       "351",
-      "350",
-      "349"
+      "350"
     ],
     "hueBucket": "red-orange"
   },
@@ -65,14 +65,14 @@
     "threadIds": [
       "dmc:3708",
       "dmc:3706",
-      "dmc:3705",
-      "dmc:3801"
+      "dmc:3801",
+      "dmc:3705"
     ],
     "threadNumbers": [
       "3708",
       "3706",
-      "3705",
-      "3801"
+      "3801",
+      "3705"
     ],
     "hueBucket": "red"
   },
@@ -85,20 +85,20 @@
     "threadNumbers": [
       "666"
     ],
-    "hueBucket": "red"
+    "hueBucket": "red-orange"
   },
   {
     "id": "red",
     "label": "Red",
     "threadIds": [
       "dmc:321",
-      "dmc:304",
-      "dmc:498"
+      "dmc:498",
+      "dmc:304"
     ],
     "threadNumbers": [
       "321",
-      "304",
-      "498"
+      "498",
+      "304"
     ],
     "hueBucket": "red-orange"
   },
@@ -106,30 +106,30 @@
     "id": "garnet",
     "label": "Garnet",
     "threadIds": [
-      "dmc:816",
       "dmc:815",
-      "dmc:814"
+      "dmc:814",
+      "dmc:816"
     ],
     "threadNumbers": [
-      "816",
       "815",
-      "814"
+      "814",
+      "816"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "red"
   },
   {
     "id": "carnation",
     "label": "Carnation",
     "threadIds": [
       "dmc:894",
-      "dmc:893",
       "dmc:892",
+      "dmc:893",
       "dmc:891"
     ],
     "threadNumbers": [
       "894",
-      "893",
       "892",
+      "893",
       "891"
     ],
     "hueBucket": "red"
@@ -167,7 +167,7 @@
     "threadNumbers": [
       "309"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "red"
   },
   {
     "id": "dusty-rose",
@@ -202,7 +202,7 @@
       "962",
       "961"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "red"
   },
   {
     "id": "raspberry",
@@ -236,33 +236,13 @@
     "id": "rose-2",
     "label": "Rose",
     "threadIds": [
-      "dmc:3326"
-    ],
-    "threadNumbers": [
-      "3326"
-    ],
-    "hueBucket": "red"
-  },
-  {
-    "id": "pink",
-    "label": "Pink",
-    "threadIds": [
-      "dmc:776"
-    ],
-    "threadNumbers": [
-      "776"
-    ],
-    "hueBucket": "red"
-  },
-  {
-    "id": "rose-3",
-    "label": "Rose",
-    "threadIds": [
+      "dmc:3326",
       "dmc:899",
       "dmc:335",
       "dmc:326"
     ],
     "threadNumbers": [
+      "3326",
       "899",
       "335",
       "326"
@@ -324,15 +304,15 @@
       "dmc:3689",
       "dmc:3688",
       "dmc:3687",
-      "dmc:3803",
-      "dmc:3685"
+      "dmc:3685",
+      "dmc:3803"
     ],
     "threadNumbers": [
       "3689",
       "3688",
       "3687",
-      "3803",
-      "3685"
+      "3685",
+      "3803"
     ],
     "hueBucket": "red"
   },
@@ -406,12 +386,16 @@
     "id": "shell-pink",
     "label": "Shell Pink",
     "threadIds": [
+      "dmc:224",
       "dmc:225",
-      "dmc:224"
+      "dmc:223",
+      "dmc:152"
     ],
     "threadNumbers": [
+      "224",
       "225",
-      "224"
+      "223",
+      "152"
     ],
     "hueBucket": "red-orange"
   },
@@ -419,37 +403,15 @@
     "id": "shell-pink-med",
     "label": "Shell Pink Med",
     "threadIds": [
-      "dmc:152"
-    ],
-    "threadNumbers": [
-      "152"
-    ],
-    "hueBucket": "red-orange"
-  },
-  {
-    "id": "shell-pink-2",
-    "label": "Shell Pink",
-    "threadIds": [
-      "dmc:223"
-    ],
-    "threadNumbers": [
-      "223"
-    ],
-    "hueBucket": "red-orange"
-  },
-  {
-    "id": "shell-pink-med-2",
-    "label": "Shell Pink Med",
-    "threadIds": [
       "dmc:3722"
     ],
     "threadNumbers": [
       "3722"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "red"
   },
   {
-    "id": "shell-pink-3",
+    "id": "shell-pink-2",
     "label": "Shell Pink",
     "threadIds": [
       "dmc:3721"
@@ -571,7 +533,7 @@
       "3041",
       "3740"
     ],
-    "hueBucket": "red"
+    "hueBucket": "neutral"
   },
   {
     "id": "grape",
@@ -595,14 +557,14 @@
     "label": "Lavender",
     "threadIds": [
       "dmc:211",
-      "dmc:210",
       "dmc:209",
+      "dmc:210",
       "dmc:208"
     ],
     "threadNumbers": [
       "211",
-      "210",
       "209",
+      "210",
       "208"
     ],
     "hueBucket": "magenta"
@@ -622,22 +584,22 @@
     "id": "violet",
     "label": "Violet",
     "threadIds": [
-      "dmc:153",
       "dmc:554",
+      "dmc:153",
       "dmc:553",
       "dmc:552",
       "dmc:327",
       "dmc:550"
     ],
     "threadNumbers": [
-      "153",
       "554",
+      "153",
       "553",
       "552",
       "327",
       "550"
     ],
-    "hueBucket": "red"
+    "hueBucket": "magenta"
   },
   {
     "id": "blue-violet-vy-lt",
@@ -648,40 +610,22 @@
     "threadNumbers": [
       "3747"
     ],
-    "hueBucket": "violet"
+    "hueBucket": "neutral"
   },
   {
     "id": "blue-violet",
     "label": "Blue Violet",
     "threadIds": [
-      "dmc:341"
-    ],
-    "threadNumbers": [
-      "341"
-    ],
-    "hueBucket": "violet"
-  },
-  {
-    "id": "blue-violet-med-lt",
-    "label": "Blue Violet Med Lt",
-    "threadIds": [
+      "dmc:341",
+      "dmc:340",
       "dmc:156"
     ],
     "threadNumbers": [
+      "341",
+      "340",
       "156"
     ],
     "hueBucket": "violet"
-  },
-  {
-    "id": "blue-violet-2",
-    "label": "Blue Violet",
-    "threadIds": [
-      "dmc:340"
-    ],
-    "threadNumbers": [
-      "340"
-    ],
-    "hueBucket": "magenta"
   },
   {
     "id": "blue-violet-med",
@@ -695,7 +639,7 @@
     "hueBucket": "magenta"
   },
   {
-    "id": "blue-violet-3",
+    "id": "blue-violet-2",
     "label": "Blue Violet",
     "threadIds": [
       "dmc:3746",
@@ -705,7 +649,7 @@
       "3746",
       "333"
     ],
-    "hueBucket": "magenta"
+    "hueBucket": "violet"
   },
   {
     "id": "cornflower-blue-vy-lt",
@@ -813,17 +757,17 @@
     "label": "Delft Blue",
     "threadIds": [
       "dmc:800",
-      "dmc:809",
       "dmc:799",
+      "dmc:809",
       "dmc:798"
     ],
     "threadNumbers": [
       "800",
-      "809",
       "799",
+      "809",
       "798"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "blue"
   },
   {
     "id": "royal-blue",
@@ -844,22 +788,22 @@
     "id": "blue",
     "label": "Blue",
     "threadIds": [
-      "dmc:162",
       "dmc:827",
+      "dmc:162",
       "dmc:813",
       "dmc:826",
       "dmc:825",
       "dmc:824"
     ],
     "threadNumbers": [
-      "162",
       "827",
+      "162",
       "813",
       "826",
       "825",
       "824"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "blue"
   },
   {
     "id": "electric-blue",
@@ -874,7 +818,7 @@
       "3843",
       "995"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "violet"
   },
   {
     "id": "turquoise-bright",
@@ -885,7 +829,7 @@
     "threadNumbers": [
       "3846"
     ],
-    "hueBucket": "cyan"
+    "hueBucket": "blue"
   },
   {
     "id": "turquoise-bright-med",
@@ -896,7 +840,7 @@
     "threadNumbers": [
       "3845"
     ],
-    "hueBucket": "cyan"
+    "hueBucket": "blue"
   },
   {
     "id": "turquoise-bright-2",
@@ -922,31 +866,31 @@
       "160",
       "161"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "violet"
   },
   {
     "id": "baby-blue",
     "label": "Baby Blue",
     "threadIds": [
-      "dmc:3756",
       "dmc:775",
-      "dmc:3841",
+      "dmc:3756",
       "dmc:3325",
+      "dmc:3841",
       "dmc:3755",
       "dmc:334",
-      "dmc:322",
       "dmc:312",
+      "dmc:322",
       "dmc:803"
     ],
     "threadNumbers": [
-      "3756",
       "775",
-      "3841",
+      "3756",
       "3325",
+      "3841",
       "3755",
       "334",
-      "322",
       "312",
+      "322",
       "803"
     ],
     "hueBucket": "neutral"
@@ -1012,7 +956,7 @@
     "threadNumbers": [
       "3750"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "violet"
   },
   {
     "id": "sky-blue-vy-lt",
@@ -1023,7 +967,7 @@
     "threadNumbers": [
       "828"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "cyan"
   },
   {
     "id": "sky-blue",
@@ -1069,7 +1013,7 @@
     "threadNumbers": [
       "517"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "violet"
   },
   {
     "id": "wedgewood-vry-dk",
@@ -1091,7 +1035,7 @@
     "threadNumbers": [
       "311"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "violet"
   },
   {
     "id": "peacock-blue-vy-lt",
@@ -1102,7 +1046,7 @@
     "threadNumbers": [
       "747"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "cyan"
   },
   {
     "id": "peacock-blue",
@@ -1145,7 +1089,7 @@
       "597",
       "3810"
     ],
-    "hueBucket": "blue"
+    "hueBucket": "neutral"
   },
   {
     "id": "turquoise-vy",
@@ -1211,7 +1155,7 @@
     "threadNumbers": [
       "3768"
     ],
-    "hueBucket": "cyan"
+    "hueBucket": "neutral"
   },
   {
     "id": "gray-green-vy",
@@ -1222,7 +1166,7 @@
     "threadNumbers": [
       "924"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "blue"
   },
   {
     "id": "teal-green",
@@ -1255,7 +1199,7 @@
     "threadNumbers": [
       "3847"
     ],
-    "hueBucket": "cyan"
+    "hueBucket": "blue"
   },
   {
     "id": "sea-green",
@@ -1332,7 +1276,7 @@
     "threadNumbers": [
       "3850"
     ],
-    "hueBucket": "cyan"
+    "hueBucket": "green"
   },
   {
     "id": "aquamarine-vy-lt",
@@ -1435,7 +1379,7 @@
     "threadNumbers": [
       "3816"
     ],
-    "hueBucket": "green"
+    "hueBucket": "cyan"
   },
   {
     "id": "celadon-green-md",
@@ -1490,7 +1434,7 @@
     "threadNumbers": [
       "3813"
     ],
-    "hueBucket": "green"
+    "hueBucket": "neutral"
   },
   {
     "id": "blue-green-med",
@@ -1501,7 +1445,7 @@
     "threadNumbers": [
       "503"
     ],
-    "hueBucket": "green"
+    "hueBucket": "cyan"
   },
   {
     "id": "blue-green",
@@ -1514,7 +1458,7 @@
       "502",
       "501"
     ],
-    "hueBucket": "green"
+    "hueBucket": "neutral"
   },
   {
     "id": "blue-green-vy-dk",
@@ -1525,18 +1469,18 @@
     "threadNumbers": [
       "500"
     ],
-    "hueBucket": "green"
+    "hueBucket": "neutral"
   },
   {
     "id": "nile-green",
     "label": "Nile Green",
     "threadIds": [
-      "dmc:955",
-      "dmc:954"
+      "dmc:954",
+      "dmc:955"
     ],
     "threadNumbers": [
-      "955",
-      "954"
+      "954",
+      "955"
     ],
     "hueBucket": "green"
   },
@@ -1615,7 +1559,7 @@
     "threadNumbers": [
       "369"
     ],
-    "hueBucket": "green"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "pistachio-green-lt",
@@ -1681,7 +1625,7 @@
     "threadNumbers": [
       "164"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "green"
   },
   {
     "id": "forest-green",
@@ -1692,7 +1636,7 @@
     "threadNumbers": [
       "989"
     ],
-    "hueBucket": "green"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "forest-green-med",
@@ -1758,7 +1702,7 @@
     "threadNumbers": [
       "3347"
     ],
-    "hueBucket": "green"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "hunter-green",
@@ -1769,7 +1713,7 @@
     "threadNumbers": [
       "3346"
     ],
-    "hueBucket": "green"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "hunter-green-dk",
@@ -1978,7 +1922,7 @@
     "threadNumbers": [
       "935"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "neutral"
   },
   {
     "id": "avocado-grn-black",
@@ -1989,7 +1933,7 @@
     "threadNumbers": [
       "934"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "neutral"
   },
   {
     "id": "fern-green-lt",
@@ -2115,23 +2059,14 @@
     "hueBucket": "yellow-green"
   },
   {
-    "id": "moss-green-md-lt",
-    "label": "Moss Green Md Lt",
-    "threadIds": [
-      "dmc:166"
-    ],
-    "threadNumbers": [
-      "166"
-    ],
-    "hueBucket": "yellow-green"
-  },
-  {
     "id": "moss-green",
     "label": "Moss Green",
     "threadIds": [
+      "dmc:166",
       "dmc:581"
     ],
     "threadNumbers": [
+      "166",
       "581"
     ],
     "hueBucket": "yellow-green"
@@ -2244,20 +2179,20 @@
     "threadNumbers": [
       "372"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "mustard",
     "label": "Mustard",
     "threadIds": [
-      "dmc:371",
-      "dmc:370"
+      "dmc:370",
+      "dmc:371"
     ],
     "threadNumbers": [
-      "371",
-      "370"
+      "370",
+      "371"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "golden-olive-vy-lt",
@@ -2334,7 +2269,7 @@
     "threadNumbers": [
       "613"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "drab-brown-lt",
@@ -2345,7 +2280,7 @@
     "threadNumbers": [
       "612"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "drab-brown",
@@ -2356,7 +2291,7 @@
     "threadNumbers": [
       "611"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "drab-brown-dk",
@@ -2367,7 +2302,7 @@
     "threadNumbers": [
       "610"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "yellow-beige-lt",
@@ -2378,7 +2313,7 @@
     "threadNumbers": [
       "3047"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "yellow-beige-md",
@@ -2389,7 +2324,7 @@
     "threadNumbers": [
       "3046"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "yellow-beige-dk",
@@ -2411,7 +2346,7 @@
     "threadNumbers": [
       "167"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "off-white",
@@ -2422,7 +2357,7 @@
     "threadNumbers": [
       "746"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "old-gold-vy-lt",
@@ -2444,7 +2379,7 @@
     "threadNumbers": [
       "422"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "hazelnut-brown",
@@ -2455,7 +2390,7 @@
     "threadNumbers": [
       "3828"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "hazelnut-brown-dk",
@@ -2485,14 +2420,14 @@
     "threadIds": [
       "dmc:728",
       "dmc:783",
-      "dmc:782",
-      "dmc:781"
+      "dmc:781",
+      "dmc:782"
     ],
     "threadNumbers": [
       "728",
       "783",
-      "782",
-      "781"
+      "781",
+      "782"
     ],
     "hueBucket": "yellow"
   },
@@ -2505,7 +2440,7 @@
     "threadNumbers": [
       "780"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "orange"
   },
   {
     "id": "old-gold-lt",
@@ -2547,14 +2482,14 @@
     "label": "Straw",
     "threadIds": [
       "dmc:3822",
-      "dmc:3821",
       "dmc:3820",
+      "dmc:3821",
       "dmc:3852"
     ],
     "threadNumbers": [
       "3822",
-      "3821",
       "3820",
+      "3821",
       "3852"
     ],
     "hueBucket": "yellow"
@@ -2581,7 +2516,7 @@
     "threadNumbers": [
       "973"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "yellow"
   },
   {
     "id": "lemon-2",
@@ -2592,7 +2527,7 @@
     "threadNumbers": [
       "444"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "golden-yellow-vy-lt",
@@ -2620,20 +2555,11 @@
     "id": "topaz-2",
     "label": "Topaz",
     "threadIds": [
-      "dmc:726"
-    ],
-    "threadNumbers": [
-      "726"
-    ],
-    "hueBucket": "yellow"
-  },
-  {
-    "id": "topaz-med-lt",
-    "label": "Topaz Med Lt",
-    "threadIds": [
+      "dmc:726",
       "dmc:725"
     ],
     "threadNumbers": [
+      "726",
       "725"
     ],
     "hueBucket": "yellow"
@@ -2719,12 +2645,12 @@
     "id": "pumpkin",
     "label": "Pumpkin",
     "threadIds": [
-      "dmc:970",
-      "dmc:971"
+      "dmc:971",
+      "dmc:970"
     ],
     "threadNumbers": [
-      "970",
-      "971"
+      "971",
+      "970"
     ],
     "hueBucket": "orange"
   },
@@ -2748,7 +2674,7 @@
     "threadNumbers": [
       "946"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "burnt-orange-2",
@@ -2759,7 +2685,7 @@
     "threadNumbers": [
       "900"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "apricot",
@@ -2840,7 +2766,7 @@
     "threadNumbers": [
       "722"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "orange"
   },
   {
     "id": "orange-spice-med",
@@ -2851,7 +2777,7 @@
     "threadNumbers": [
       "721"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "orange"
   },
   {
     "id": "orange-spice-2",
@@ -2886,7 +2812,7 @@
       "922",
       "921"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "copper-med",
@@ -2897,7 +2823,7 @@
     "threadNumbers": [
       "920"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "red-copper",
@@ -2954,7 +2880,7 @@
     "threadNumbers": [
       "3776"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "mahogany-med",
@@ -2998,7 +2924,7 @@
     "threadNumbers": [
       "3823"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "yellow"
   },
   {
     "id": "autumn-gold-lt",
@@ -3090,7 +3016,7 @@
       "948",
       "754"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "terra-cotta",
@@ -3182,7 +3108,7 @@
     "threadNumbers": [
       "3858"
     ],
-    "hueBucket": "red-orange"
+    "hueBucket": "red"
   },
   {
     "id": "rosewood-2",
@@ -3204,7 +3130,7 @@
     "threadNumbers": [
       "3774"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "orange"
   },
   {
     "id": "desert-sand",
@@ -3239,7 +3165,7 @@
     "threadNumbers": [
       "3773"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "desert-sand-vy-dk",
@@ -3261,7 +3187,7 @@
     "threadNumbers": [
       "632"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "shell-gray",
@@ -3294,7 +3220,7 @@
     "threadNumbers": [
       "451"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "red-orange"
   },
   {
     "id": "cocoa",
@@ -3320,21 +3246,21 @@
     "threadNumbers": [
       "712"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "yellow"
   },
   {
     "id": "tan",
     "label": "Tan",
     "threadIds": [
       "dmc:739",
-      "dmc:738",
       "dmc:437",
+      "dmc:738",
       "dmc:436"
     ],
     "threadNumbers": [
       "739",
-      "738",
       "437",
+      "738",
       "436"
     ],
     "hueBucket": "yellow"
@@ -3350,7 +3276,7 @@
       "435",
       "434"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "brown-med",
@@ -3383,7 +3309,7 @@
     "threadNumbers": [
       "898"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "coffee-brown-ult-dk",
@@ -3394,7 +3320,7 @@
     "threadNumbers": [
       "938"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "red-orange"
   },
   {
     "id": "black-brown",
@@ -3416,7 +3342,7 @@
     "threadNumbers": [
       "543"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "orange"
   },
   {
     "id": "mocha-beige",
@@ -3427,7 +3353,7 @@
     "threadNumbers": [
       "3864"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "orange"
   },
   {
     "id": "mocha-beige-med",
@@ -3438,7 +3364,7 @@
     "threadNumbers": [
       "3863"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "orange"
   },
   {
     "id": "mocha-beige-2",
@@ -3460,7 +3386,7 @@
     "threadNumbers": [
       "3031"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "neutral"
   },
   {
     "id": "snow-white",
@@ -3504,7 +3430,7 @@
     "threadNumbers": [
       "Ecru"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "yellow"
   },
   {
     "id": "beige-gray",
@@ -3526,7 +3452,7 @@
     "threadNumbers": [
       "644"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "beige-gray-2",
@@ -3537,7 +3463,7 @@
     "threadNumbers": [
       "642"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "beige-gray-vy-dk",
@@ -3548,7 +3474,7 @@
     "threadNumbers": [
       "640"
     ],
-    "hueBucket": "yellow"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "brown-gray",
@@ -3570,7 +3496,7 @@
     "threadNumbers": [
       "3021"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "brown-gray-vy-lt",
@@ -3603,7 +3529,7 @@
     "threadNumbers": [
       "3022"
     ],
-    "hueBucket": "yellow-green"
+    "hueBucket": "neutral"
   },
   {
     "id": "ash-gray-vy-lt",
@@ -3636,7 +3562,7 @@
     "threadNumbers": [
       "3782"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "mocha-brown-med",
@@ -3647,7 +3573,7 @@
     "threadNumbers": [
       "3032"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow-green"
   },
   {
     "id": "beige-gray-ult-dk",
@@ -3658,7 +3584,7 @@
     "threadNumbers": [
       "3790"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "mocha-brown-dk",
@@ -3669,7 +3595,7 @@
     "threadNumbers": [
       "3781"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "yellow"
   },
   {
     "id": "mocha-brn",
@@ -3713,7 +3639,7 @@
     "threadNumbers": [
       "840"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "neutral"
   },
   {
     "id": "beige-brown-dk",
@@ -3724,7 +3650,7 @@
     "threadNumbers": [
       "839"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "neutral"
   },
   {
     "id": "beige-brown-vy-dk",
@@ -3735,7 +3661,7 @@
     "threadNumbers": [
       "838"
     ],
-    "hueBucket": "orange"
+    "hueBucket": "neutral"
   },
   {
     "id": "beaver-gray-vy-lt",
@@ -3834,7 +3760,7 @@
     "threadNumbers": [
       "318"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "violet"
   },
   {
     "id": "steel-gray-dk",
@@ -3871,7 +3797,7 @@
       "317",
       "413"
     ],
-    "hueBucket": "neutral"
+    "hueBucket": "violet"
   },
   {
     "id": "pewter-gray-vy-dk",
@@ -3894,5 +3820,255 @@
       "310"
     ],
     "hueBucket": "neutral"
+  },
+  {
+    "id": "white-tin",
+    "label": "White Tin",
+    "threadIds": [
+      "dmc:01"
+    ],
+    "threadNumbers": [
+      "01"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "tin",
+    "label": "Tin",
+    "threadIds": [
+      "dmc:02",
+      "dmc:03",
+      "dmc:04"
+    ],
+    "threadNumbers": [
+      "02",
+      "03",
+      "04"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "driftwood",
+    "label": "Driftwood",
+    "threadIds": [
+      "dmc:05",
+      "dmc:06",
+      "dmc:07",
+      "dmc:08"
+    ],
+    "threadNumbers": [
+      "05",
+      "06",
+      "07",
+      "08"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "cocoa-2",
+    "label": "Cocoa",
+    "threadIds": [
+      "dmc:09"
+    ],
+    "threadNumbers": [
+      "09"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "tender-green",
+    "label": "Tender Green",
+    "threadIds": [
+      "dmc:10",
+      "dmc:11",
+      "dmc:12"
+    ],
+    "threadNumbers": [
+      "10",
+      "11",
+      "12"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "nile-green-2",
+    "label": "Nile Green",
+    "threadIds": [
+      "dmc:13"
+    ],
+    "threadNumbers": [
+      "13"
+    ],
+    "hueBucket": "green"
+  },
+  {
+    "id": "apple-green",
+    "label": "Apple Green",
+    "threadIds": [
+      "dmc:14",
+      "dmc:15"
+    ],
+    "threadNumbers": [
+      "14",
+      "15"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "chartreuse-2",
+    "label": "Chartreuse",
+    "threadIds": [
+      "dmc:16"
+    ],
+    "threadNumbers": [
+      "16"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "yellow-plum",
+    "label": "Yellow Plum",
+    "threadIds": [
+      "dmc:17",
+      "dmc:18"
+    ],
+    "threadNumbers": [
+      "17",
+      "18"
+    ],
+    "hueBucket": "yellow-green"
+  },
+  {
+    "id": "autumn-gold",
+    "label": "Autumn Gold",
+    "threadIds": [
+      "dmc:19"
+    ],
+    "threadNumbers": [
+      "19"
+    ],
+    "hueBucket": "yellow"
+  },
+  {
+    "id": "shrimp",
+    "label": "Shrimp",
+    "threadIds": [
+      "dmc:20"
+    ],
+    "threadNumbers": [
+      "20"
+    ],
+    "hueBucket": "orange"
+  },
+  {
+    "id": "alizarin",
+    "label": "Alizarin",
+    "threadIds": [
+      "dmc:21",
+      "dmc:22"
+    ],
+    "threadNumbers": [
+      "21",
+      "22"
+    ],
+    "hueBucket": "red-orange"
+  },
+  {
+    "id": "apple-blossom",
+    "label": "Apple Blossom",
+    "threadIds": [
+      "dmc:23"
+    ],
+    "threadNumbers": [
+      "23"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "white-lavender",
+    "label": "White Lavender",
+    "threadIds": [
+      "dmc:24"
+    ],
+    "threadNumbers": [
+      "24"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "lavender-ultra-2",
+    "label": "Lavender Ultra",
+    "threadIds": [
+      "dmc:25"
+    ],
+    "threadNumbers": [
+      "25"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "lavender-2",
+    "label": "Lavender",
+    "threadIds": [
+      "dmc:26"
+    ],
+    "threadNumbers": [
+      "26"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "white-violet",
+    "label": "White Violet",
+    "threadIds": [
+      "dmc:27"
+    ],
+    "threadNumbers": [
+      "27"
+    ],
+    "hueBucket": "neutral"
+  },
+  {
+    "id": "eggplant",
+    "label": "Eggplant",
+    "threadIds": [
+      "dmc:28",
+      "dmc:29"
+    ],
+    "threadNumbers": [
+      "28",
+      "29"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "blueberry",
+    "label": "Blueberry",
+    "threadIds": [
+      "dmc:30",
+      "dmc:31",
+      "dmc:32"
+    ],
+    "threadNumbers": [
+      "30",
+      "31",
+      "32"
+    ],
+    "hueBucket": "magenta"
+  },
+  {
+    "id": "fuschia",
+    "label": "Fuschia",
+    "threadIds": [
+      "dmc:33",
+      "dmc:34",
+      "dmc:35"
+    ],
+    "threadNumbers": [
+      "33",
+      "34",
+      "35"
+    ],
+    "hueBucket": "red"
   }
 ]

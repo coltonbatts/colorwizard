@@ -8,6 +8,7 @@ import type { DMCCatalog, DMCFamily, DMCThread } from './types'
 export type { DMCCatalog, DMCFamily, DMCThread } from './types'
 export type {
   DMCBrand,
+  ColorConfidence,
   DMCProductLine,
   HueBucket,
   OklabCoords,

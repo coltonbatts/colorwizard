@@ -7,7 +7,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['lib/**/*.test.ts'],
+    include: ['lib/**/*.test.ts', 'components/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/.claude/**'],
     setupFiles: ['./vitest.setup.ts'],
   },

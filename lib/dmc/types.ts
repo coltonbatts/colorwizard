@@ -29,6 +29,8 @@ export type HueBucket =
 
 export type ThreadWarmth = 'warm' | 'cool' | 'neutral'
 
+export type ColorConfidence = 'measured' | 'approximate'
+
 export interface OklabCoords {
   L: number
   a: number
@@ -43,6 +45,12 @@ export interface DMCThread {
   name: string
   rgb: { r: number; g: number; b: number }
   hex: string
+  /**
+   * `measured`: averaged from DMC's own photo of the thread.
+   * `approximate`: DMC's photo was a thumbnail, out of step with its shade family, or missing,
+   * so the color may be visibly off. See `scripts/measure-dmc-swatches.mjs`.
+   */
+  colorConfidence: ColorConfidence
   productLine: DMCProductLine
   familyId: string
   familyLabel: string

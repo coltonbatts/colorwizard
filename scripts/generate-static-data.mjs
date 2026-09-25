@@ -3,7 +3,7 @@ import { enrichDmcCatalog } from './dmc-enrich.mjs'
 
 const repoRoot = process.cwd()
 const publicDataDir = `${repoRoot}/public/data`
-const dmcSourcePath = `${repoRoot}/scripts/source/dmcFloss.source.txt`
+const dmcSourcePath = `${repoRoot}/scripts/source/dmc-threads.json`
 const colorNamesSourcePath = `${repoRoot}/public/colornames.json`
 
 async function ensureDir(dirPath) {
@@ -15,25 +15,24 @@ async function copyColorNames() {
   await writeFile(`${publicDataDir}/colornames.json`, source)
 }
 
+/** `photo` threads were measured cleanly; `low` and `legacy` ones may be visibly off. */
+function toColorConfidence(confidence) {
+  return confidence === 'photo' ? 'measured' : 'approximate'
+}
+
 async function generateDmcFloss() {
-  const source = await readFile(dmcSourcePath, 'utf8')
-  const startToken = 'export const DMC_COLORS: DMCColor[] = ['
-  const endToken = '\n]\n\n/**'
-  const start = source.indexOf(startToken)
-
-  if (start === -1) {
-    throw new Error('Could not locate DMC_COLORS array in source snapshot.')
-  }
-
-  const startIndex = start + startToken.length - 1
-  const endIndex = source.indexOf(endToken, startIndex)
-
-  if (endIndex === -1) {
-    throw new Error('Could not locate end of DMC_COLORS array in source snapshot.')
-  }
-
-  const arrayLiteral = source.slice(startIndex, endIndex + 2)
-  const dmcColors = Function(`"use strict"; return (${arrayLiteral});`)()
+  const source = JSON.parse(await readFile(dmcSourcePath, 'utf8'))
+  const dmcColors = source.threads.map((thread) => ({
+    number: thread.number,
+    name: thread.name,
+    hex: thread.hex,
+    rgb: {
+      r: parseInt(thread.hex.slice(1, 3), 16),
+      g: parseInt(thread.hex.slice(3, 5), 16),
+      b: parseInt(thread.hex.slice(5, 7), 16),
+    },
+    colorConfidence: toColorConfidence(thread.confidence),
+  }))
   const { threads, families } = enrichDmcCatalog(dmcColors)
 
   await writeFile(`${publicDataDir}/dmc-floss.json`, `${JSON.stringify(threads, null, 2)}\n`)

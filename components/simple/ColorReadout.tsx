@@ -193,7 +193,12 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
               <button type="button" className={styles.threadPrimary} onClick={() => void copy(primary.number)} title="Copy DMC number">
                 <span>
                   <strong>DMC {primary.number}</strong>
-                  <small>{primary.name}</small>
+                  <small>
+                    {primary.name}
+                    {primary.colorConfidence === 'approximate' && (
+                      <span title="DMC's own photo of this thread was unreliable, so this color may be visibly off."> · approximate color</span>
+                    )}
+                  </small>
                 </span>
                 <em>{copied === primary.number ? 'Copied' : 'Copy'}</em>
               </button>

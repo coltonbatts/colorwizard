@@ -1,0 +1,3553 @@
+{
+  "source": "DMC Mouliné Spécial (117MC) product photos, https://www.dmc.com/US/en/api/quilt/products/mouline-special/product_data",
+  "method": "Linear-light average of the central 80% of each sRGB swatch photo. confidence: photo = measured; low = measured but a thumbnail or out of order with its shade family; legacy = no photo, kept from the old fan-made chart.",
+  "measuredAt": "2026-09-24",
+  "threads": [
+    {
+      "number": "3713",
+      "name": "Salmon Very Light",
+      "hex": "#DCB8B6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "761",
+      "name": "Salmon Light",
+      "hex": "#E2A49B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "760",
+      "name": "Salmon",
+      "hex": "#BA5D5F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3712",
+      "name": "Salmon Medium",
+      "hex": "#B93849",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3328",
+      "name": "Salmon Dark",
+      "hex": "#8C463E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "347",
+      "name": "Salmon Very Dark",
+      "hex": "#A62721",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "353",
+      "name": "Peach",
+      "hex": "#DB977D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "352",
+      "name": "Coral Light",
+      "hex": "#F37A67",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "351",
+      "name": "Coral",
+      "hex": "#D24D37",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "350",
+      "name": "Coral Medium",
+      "hex": "#C7392A",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "349",
+      "name": "Coral Dark",
+      "hex": "#DC3F3C",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "817",
+      "name": "Coral Red Very Dark",
+      "hex": "#7E1917",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3708",
+      "name": "Melon Light",
+      "hex": "#D78993",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3706",
+      "name": "Melon Medium",
+      "hex": "#DD6473",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3705",
+      "name": "Melon Dark",
+      "hex": "#B12842",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "3801",
+      "name": "Melon Very Dark",
+      "hex": "#CC2646",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "666",
+      "name": "Bright Red",
+      "hex": "#B70F17",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "321",
+      "name": "Red",
+      "hex": "#AD2029",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "304",
+      "name": "Red Medium",
+      "hex": "#8E1D2B",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "498",
+      "name": "Red Dark",
+      "hex": "#AC0746",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "816",
+      "name": "Garnet",
+      "hex": "#47131C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "815",
+      "name": "Garnet Medium",
+      "hex": "#6F2236",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "814",
+      "name": "Garnet Dark",
+      "hex": "#4A1B25",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "894",
+      "name": "Carnation Very Light",
+      "hex": "#F8A9AD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "893",
+      "name": "Carnation Light",
+      "hex": "#D54E69",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "892",
+      "name": "Carnation Medium",
+      "hex": "#E04C64",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "891",
+      "name": "Carnation Dark",
+      "hex": "#D1264B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "818",
+      "name": "Baby Pink",
+      "hex": "#E9C2C0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "957",
+      "name": "Geranium Pale",
+      "hex": "#E7808F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "956",
+      "name": "Geranium",
+      "hex": "#E15B77",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "309",
+      "name": "Rose Dark",
+      "hex": "#C63B4C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "963",
+      "name": "Dusty Rose Ult Vy Lt",
+      "hex": "#ECB4B8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3716",
+      "name": "Dusty Rose Med Vy Lt",
+      "hex": "#E3B4B7",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "962",
+      "name": "Dusty Rose Medium",
+      "hex": "#C07386",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "961",
+      "name": "Dusty Rose Dark",
+      "hex": "#C66079",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3833",
+      "name": "Raspberry Light",
+      "hex": "#CB6878",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3832",
+      "name": "Raspberry Medium",
+      "hex": "#BD3B59",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3831",
+      "name": "Raspberry Dark",
+      "hex": "#831034",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "777",
+      "name": "Raspberry Very Dark",
+      "hex": "#5E0326",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "819",
+      "name": "Baby Pink Light",
+      "hex": "#EDD7D0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3326",
+      "name": "Rose Light",
+      "hex": "#D4909B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "899",
+      "name": "Rose Medium",
+      "hex": "#D88A90",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "335",
+      "name": "Rose",
+      "hex": "#B36466",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "326",
+      "name": "Rose Very Dark",
+      "hex": "#B52A40",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "151",
+      "name": "Dusty Rose Vry Lt",
+      "hex": "#D48694",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3354",
+      "name": "Dusty Rose Light",
+      "hex": "#C28491",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3733",
+      "name": "Dusty Rose",
+      "hex": "#BD6875",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3731",
+      "name": "Dusty Rose Very Dark",
+      "hex": "#AD465C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3350",
+      "name": "Dusty Rose Ultra Dark",
+      "hex": "#862346",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "150",
+      "name": "Dusty Rose Ult Vy Dk",
+      "hex": "#780736",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3689",
+      "name": "Mauve Light",
+      "hex": "#DFBCC8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3688",
+      "name": "Mauve Medium",
+      "hex": "#C89AA8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3687",
+      "name": "Mauve",
+      "hex": "#9B5E6C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3803",
+      "name": "Mauve Dark",
+      "hex": "#79244B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3685",
+      "name": "Mauve Very Dark",
+      "hex": "#881531",
+      "confidence": "legacy",
+      "flags": [
+        "no-photo"
+      ]
+    },
+    {
+      "number": "605",
+      "name": "Cranberry Very Light",
+      "hex": "#E5A9BC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "604",
+      "name": "Cranberry Light",
+      "hex": "#ED9DB7",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "603",
+      "name": "Cranberry",
+      "hex": "#DF74A1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "602",
+      "name": "Cranberry Medium",
+      "hex": "#D95682",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "601",
+      "name": "Cranberry Dark",
+      "hex": "#BE4062",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "600",
+      "name": "Cranberry Very Dark",
+      "hex": "#A21741",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3806",
+      "name": "Cyclamen Pink Light",
+      "hex": "#C27185",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3805",
+      "name": "Cyclamen Pink",
+      "hex": "#A82967",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3804",
+      "name": "Cyclamen Pink Dark",
+      "hex": "#A91D62",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3609",
+      "name": "Plum Ultra Light",
+      "hex": "#D7B0C3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3608",
+      "name": "Plum Very Light",
+      "hex": "#BF869E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3607",
+      "name": "Plum Light",
+      "hex": "#9C5182",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "718",
+      "name": "Plum",
+      "hex": "#8A3968",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "917",
+      "name": "Plum Medium",
+      "hex": "#7D235D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "915",
+      "name": "Plum Dark",
+      "hex": "#660240",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "225",
+      "name": "Shell Pink Ult Vy Lt",
+      "hex": "#DAB2AE",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "224",
+      "name": "Shell Pink Very Light",
+      "hex": "#DDB4AE",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "152",
+      "name": "Shell Pink Med Light",
+      "hex": "#B37974",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "223",
+      "name": "Shell Pink Light",
+      "hex": "#B87B79",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3722",
+      "name": "Shell Pink Med",
+      "hex": "#874348",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3721",
+      "name": "Shell Pink Dark",
+      "hex": "#7F333B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "221",
+      "name": "Shell Pink Vy Dk",
+      "hex": "#662D2F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "778",
+      "name": "Antique Mauve Vy Lt",
+      "hex": "#B38E91",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3727",
+      "name": "Antique Mauve Light",
+      "hex": "#B7909A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "316",
+      "name": "Antique Mauve Med",
+      "hex": "#995A77",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3726",
+      "name": "Antique Mauve Dark",
+      "hex": "#673841",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "315",
+      "name": "Antique Mauve Md Dk",
+      "hex": "#572A37",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3802",
+      "name": "Antique Mauve Vy Dk",
+      "hex": "#612B3C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "902",
+      "name": "Garnet Very Dark",
+      "hex": "#682E39",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3743",
+      "name": "Antique Violet Vy Lt",
+      "hex": "#B6AAB6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3042",
+      "name": "Antique Violet Light",
+      "hex": "#CCC1CC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3041",
+      "name": "Antique Violet Medium",
+      "hex": "#867181",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3740",
+      "name": "Antique Violet Dark",
+      "hex": "#4E3444",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3836",
+      "name": "Grape Light",
+      "hex": "#9F7691",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3835",
+      "name": "Grape Medium",
+      "hex": "#7A4E6F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3834",
+      "name": "Grape Dark",
+      "hex": "#592A4C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "154",
+      "name": "Grape Very Dark",
+      "hex": "#47213F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "211",
+      "name": "Lavender Light",
+      "hex": "#D7C3E8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "210",
+      "name": "Lavender Medium",
+      "hex": "#B98FDC",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "209",
+      "name": "Lavender Dark",
+      "hex": "#C993E3",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "208",
+      "name": "Lavender Very Dark",
+      "hex": "#9559B4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3837",
+      "name": "Lavender Ultra Dark",
+      "hex": "#5F3877",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "327",
+      "name": "Violet Dark",
+      "hex": "#7E4D7F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "153",
+      "name": "Violet Very Light",
+      "hex": "#AC83A4",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "554",
+      "name": "Violet Light",
+      "hex": "#C69FCE",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "553",
+      "name": "Violet",
+      "hex": "#815E98",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "552",
+      "name": "Violet  Medium",
+      "hex": "#8E4FAA",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "550",
+      "name": "Violet Very Dark",
+      "hex": "#462158",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3747",
+      "name": "Blue Violet Vy Lt",
+      "hex": "#B3BBCC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "341",
+      "name": "Blue Violet Light",
+      "hex": "#B8C6E8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "156",
+      "name": "Blue Violet Med Lt",
+      "hex": "#747CAB",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "340",
+      "name": "Blue Violet Medium",
+      "hex": "#847CB9",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "155",
+      "name": "Blue Violet Med Dark",
+      "hex": "#7A67A5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3746",
+      "name": "Blue Violet Dark",
+      "hex": "#676198",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "333",
+      "name": "Blue Violet Very Dark",
+      "hex": "#4E3B82",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "157",
+      "name": "Cornflower Blue Vy Lt",
+      "hex": "#869BC2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "794",
+      "name": "Cornflower Blue Light",
+      "hex": "#89A1C7",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "793",
+      "name": "Cornflower Blue Med",
+      "hex": "#7887B8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3807",
+      "name": "Cornflower Blue",
+      "hex": "#525E8B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "792",
+      "name": "Cornflower Blue Dark",
+      "hex": "#332F80",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "158",
+      "name": "Cornflower Blu M V D",
+      "hex": "#374282",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "791",
+      "name": "Cornflower Blue V D",
+      "hex": "#2D246B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3840",
+      "name": "Lavender Blue Light",
+      "hex": "#A8B8D5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3839",
+      "name": "Lavender Blue Med",
+      "hex": "#6B7CB1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3838",
+      "name": "Lavender Blue Dark",
+      "hex": "#5D74AC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "800",
+      "name": "Delft Blue Pale",
+      "hex": "#98B9CB",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "809",
+      "name": "Delft Blue",
+      "hex": "#5672AC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "799",
+      "name": "Delft Blue Medium",
+      "hex": "#6C8FC2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "798",
+      "name": "Delft Blue Dark",
+      "hex": "#48599D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "797",
+      "name": "Royal Blue",
+      "hex": "#2E2C62",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "796",
+      "name": "Royal Blue Dark",
+      "hex": "#211C57",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "820",
+      "name": "Royal Blue Very Dark",
+      "hex": "#191444",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "162",
+      "name": "Blue Ultra Very Light",
+      "hex": "#91B0C1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "827",
+      "name": "Blue Very Light",
+      "hex": "#92B5CB",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "813",
+      "name": "Blue Light",
+      "hex": "#4F81A3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "826",
+      "name": "Blue Medium",
+      "hex": "#5A7BA9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "825",
+      "name": "Blue Dark",
+      "hex": "#3C5A8C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "824",
+      "name": "Blue Very Dark",
+      "hex": "#293866",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "996",
+      "name": "Electric Blue Medium",
+      "hex": "#5895D6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3843",
+      "name": "Electric Blue",
+      "hex": "#067EAB",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "995",
+      "name": "Electric Blue Dark",
+      "hex": "#145AA3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3846",
+      "name": "Turquoise Bright Light",
+      "hex": "#5BC1D0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3845",
+      "name": "Turquoise Bright Med",
+      "hex": "#47B8CC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3844",
+      "name": "Turquoise Bright Dark",
+      "hex": "#0989A3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "159",
+      "name": "Blue Gray Light",
+      "hex": "#999FB8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "160",
+      "name": "Blue Gray Medium",
+      "hex": "#697499",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "161",
+      "name": "Blue Gray",
+      "hex": "#4B537C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3756",
+      "name": "Baby Blue Ult Vy Lt",
+      "hex": "#B6BEBD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "775",
+      "name": "Baby Blue Very Light",
+      "hex": "#BDD0D8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3841",
+      "name": "Baby Blue Pale",
+      "hex": "#96ACB8",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "3325",
+      "name": "Baby Blue Light",
+      "hex": "#A6C0D4",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "3755",
+      "name": "Baby Blue",
+      "hex": "#7F9AB4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "334",
+      "name": "Baby Blue Medium",
+      "hex": "#708DB6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "322",
+      "name": "Baby Blue Dark",
+      "hex": "#4E5888",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "312",
+      "name": "Baby Blue Very Dark",
+      "hex": "#4B5D88",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "803",
+      "name": "Baby Blue Ult Vy Dk",
+      "hex": "#0C2A50",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "336",
+      "name": "Navy Blue",
+      "hex": "#272B47",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "823",
+      "name": "Navy Blue Dark",
+      "hex": "#1C192D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "939",
+      "name": "Navy Blue Very Dark",
+      "hex": "#161325",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3753",
+      "name": "Antique Blue Ult Vy Lt",
+      "hex": "#C3CDD4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3752",
+      "name": "Antique Blue Very Lt",
+      "hex": "#9CAAB5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "932",
+      "name": "Antique Blue Light",
+      "hex": "#9BAEBD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "931",
+      "name": "Antique Blue Medium",
+      "hex": "#5F6A86",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "930",
+      "name": "Antique Blue Dark",
+      "hex": "#4A5C72",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3750",
+      "name": "Antique Blue Very Dk",
+      "hex": "#212E3F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "828",
+      "name": "Sky Blue Vy Lt",
+      "hex": "#9CBDBD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3761",
+      "name": "Sky Blue Light",
+      "hex": "#A3BFC9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "519",
+      "name": "Sky Blue",
+      "hex": "#98BCCE",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "518",
+      "name": "Wedgewood Light",
+      "hex": "#4A87A6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3760",
+      "name": "Wedgewood Med",
+      "hex": "#174D66",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "517",
+      "name": "Wedgewood Dark",
+      "hex": "#213D60",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3842",
+      "name": "Wedgewood Vry Dk",
+      "hex": "#063D5B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "311",
+      "name": "Wedgewood Ult VyDk",
+      "hex": "#134778",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "747",
+      "name": "Peacock Blue Vy Lt",
+      "hex": "#B5D6D4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3766",
+      "name": "Peacock Blue Light",
+      "hex": "#7AAEB4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "807",
+      "name": "Peacock Blue",
+      "hex": "#3892A1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "806",
+      "name": "Peacock Blue Dark",
+      "hex": "#2B8BB7",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo"
+      ]
+    },
+    {
+      "number": "3765",
+      "name": "Peacock Blue Vy Dk",
+      "hex": "#125769",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3811",
+      "name": "Turquoise Very Light",
+      "hex": "#A7C1C3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "598",
+      "name": "Turquoise Light",
+      "hex": "#789BA2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "597",
+      "name": "Turquoise",
+      "hex": "#518B9C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3810",
+      "name": "Turquoise Dark",
+      "hex": "#296C76",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3809",
+      "name": "Turquoise Vy Dark",
+      "hex": "#165258",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3808",
+      "name": "Turquoise Ult Vy Dk",
+      "hex": "#073639",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "928",
+      "name": "Gray Green Vy Lt",
+      "hex": "#BAC0BA",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "927",
+      "name": "Gray Green Light",
+      "hex": "#798684",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "926",
+      "name": "Gray Green Med",
+      "hex": "#707D80",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3768",
+      "name": "Gray Green Dark",
+      "hex": "#33414B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "924",
+      "name": "Gray Green Vy Dark",
+      "hex": "#2E4652",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3849",
+      "name": "Teal Green Light",
+      "hex": "#6BA399",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3848",
+      "name": "Teal Green Med",
+      "hex": "#337E72",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3847",
+      "name": "Teal Green Dark",
+      "hex": "#1A5A60",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "964",
+      "name": "Sea Green Light",
+      "hex": "#B0E0D9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "959",
+      "name": "Sea Green Med",
+      "hex": "#60B19F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "958",
+      "name": "Sea Green Dark",
+      "hex": "#53A38F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3812",
+      "name": "Sea Green Vy Dk",
+      "hex": "#0F7564",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3851",
+      "name": "Green Bright Lt",
+      "hex": "#509E84",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "943",
+      "name": "Green Bright Md",
+      "hex": "#329576",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3850",
+      "name": "Green Bright Dk",
+      "hex": "#16724E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "993",
+      "name": "Aquamarine Vy Lt",
+      "hex": "#569384",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "992",
+      "name": "Aquamarine Lt",
+      "hex": "#70B8A6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3814",
+      "name": "Aquamarine",
+      "hex": "#38796C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "991",
+      "name": "Aquamarine Dk",
+      "hex": "#2B7360",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "966",
+      "name": "Jade Ultra Vy Lt",
+      "hex": "#B9D1BD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "564",
+      "name": "Jade Very Light",
+      "hex": "#94C1A1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "563",
+      "name": "Jade Light",
+      "hex": "#75AC88",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "562",
+      "name": "Jade Medium",
+      "hex": "#53855C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "505",
+      "name": "Jade Green",
+      "hex": "#33533F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3817",
+      "name": "Celadon Green Lt",
+      "hex": "#95AA9C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3816",
+      "name": "Celadon Green",
+      "hex": "#698D7F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "163",
+      "name": "Celadon Green Md",
+      "hex": "#4D755F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3815",
+      "name": "Celadon Green Dk",
+      "hex": "#4E7463",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "561",
+      "name": "Celadon Green VD",
+      "hex": "#3E5E4F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "504",
+      "name": "Blue Green Vy Lt",
+      "hex": "#99B09F",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo"
+      ]
+    },
+    {
+      "number": "3813",
+      "name": "Blue Green Lt",
+      "hex": "#91A295",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "503",
+      "name": "Blue Green Med",
+      "hex": "#5F8377",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "502",
+      "name": "Blue Green",
+      "hex": "#6C7F73",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "501",
+      "name": "Blue Green Dark",
+      "hex": "#5D736C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "500",
+      "name": "Blue Green Vy Dk",
+      "hex": "#2B3E37",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "955",
+      "name": "Nile Green Light",
+      "hex": "#97C08B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "954",
+      "name": "Nile Green",
+      "hex": "#83C98D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "913",
+      "name": "Nile Green Med",
+      "hex": "#67B07F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "912",
+      "name": "Emerald Green Lt",
+      "hex": "#428E6B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "911",
+      "name": "Emerald Green Med",
+      "hex": "#42805D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "910",
+      "name": "Emerald Green Dark",
+      "hex": "#386A47",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "909",
+      "name": "Emerald Green Vy Dk",
+      "hex": "#33793F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3818",
+      "name": "Emerald Grn Ult V Dk",
+      "hex": "#2D583A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "369",
+      "name": "Pistachio Green Vy Lt",
+      "hex": "#B6C7A2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "368",
+      "name": "Pistachio Green Lt",
+      "hex": "#8EB282",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "320",
+      "name": "Pistachio Green Med",
+      "hex": "#6F8F6E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "367",
+      "name": "Pistachio Green Dk",
+      "hex": "#6B8B6F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "319",
+      "name": "Pistachio Grn Vy Dk",
+      "hex": "#3A5241",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "890",
+      "name": "Pistachio Grn Ult V D",
+      "hex": "#33422E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "164",
+      "name": "Forest Green Lt",
+      "hex": "#98B186",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "989",
+      "name": "Forest Green",
+      "hex": "#89A067",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "988",
+      "name": "Forest Green Med",
+      "hex": "#6F8750",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "987",
+      "name": "Forest Green Dk",
+      "hex": "#526844",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "986",
+      "name": "Forest Green Vy Dk",
+      "hex": "#2B491E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "772",
+      "name": "Yellow Green Vy Lt",
+      "hex": "#CDD6A9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3348",
+      "name": "Yellow Green Lt",
+      "hex": "#A2A561",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3347",
+      "name": "Yellow Green Med",
+      "hex": "#72834F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3346",
+      "name": "Hunter Green",
+      "hex": "#47552F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3345",
+      "name": "Hunter Green Dk",
+      "hex": "#2C3A1F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "895",
+      "name": "Hunter Green Vy Dk",
+      "hex": "#2E4531",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "704",
+      "name": "Chartreuse Bright",
+      "hex": "#98C45B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "703",
+      "name": "Chartreuse",
+      "hex": "#88BB64",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "702",
+      "name": "Kelly Green",
+      "hex": "#71BA68",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "701",
+      "name": "Green Light",
+      "hex": "#3D8D47",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "700",
+      "name": "Green Bright",
+      "hex": "#3D7946",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "699",
+      "name": "Green",
+      "hex": "#2E653C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "907",
+      "name": "Parrot Green Lt",
+      "hex": "#A2BC4D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "906",
+      "name": "Parrot Green Md",
+      "hex": "#658827",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "905",
+      "name": "Parrot Green Dk",
+      "hex": "#547130",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "904",
+      "name": "Parrot Green V Dk",
+      "hex": "#4B5E35",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "472",
+      "name": "Avocado Grn U Lt",
+      "hex": "#B8C562",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "471",
+      "name": "Avocado Grn V Lt",
+      "hex": "#818C43",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "470",
+      "name": "Avocado Grn Lt",
+      "hex": "#829647",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "469",
+      "name": "Avocado Green",
+      "hex": "#636C36",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "937",
+      "name": "Avocado Green Md",
+      "hex": "#505D32",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "936",
+      "name": "Avocado Grn V Dk",
+      "hex": "#444326",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "935",
+      "name": "Avocado Green Dk",
+      "hex": "#393428",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "934",
+      "name": "Avocado Grn Black",
+      "hex": "#2C2F22",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "523",
+      "name": "Fern Green Lt",
+      "hex": "#85886A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3053",
+      "name": "Green Gray",
+      "hex": "#9EA281",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3052",
+      "name": "Green Gray Md",
+      "hex": "#636A4E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3051",
+      "name": "Green Gray Dk",
+      "hex": "#424831",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "524",
+      "name": "Fern Green Vy Lt",
+      "hex": "#8F927B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "522",
+      "name": "Fern Green",
+      "hex": "#8C957F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "520",
+      "name": "Fern Green Dark",
+      "hex": "#495444",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3364",
+      "name": "Pine Green",
+      "hex": "#778156",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3363",
+      "name": "Pine Green Md",
+      "hex": "#7B8969",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3362",
+      "name": "Pine Green Dk",
+      "hex": "#465138",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "165",
+      "name": "Moss Green Vy Lt",
+      "hex": "#D3C762",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3819",
+      "name": "Moss Green Lt",
+      "hex": "#C0BB67",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "166",
+      "name": "Moss Green Md Lt",
+      "hex": "#9E982D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "581",
+      "name": "Moss Green",
+      "hex": "#69741E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "580",
+      "name": "Moss Green Dk",
+      "hex": "#65651B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "734",
+      "name": "Olive Green Lt",
+      "hex": "#999152",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "733",
+      "name": "Olive Green Md",
+      "hex": "#837C40",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "732",
+      "name": "Olive Green",
+      "hex": "#585012",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "731",
+      "name": "Olive Green Dk",
+      "hex": "#7F762A",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo"
+      ]
+    },
+    {
+      "number": "730",
+      "name": "Olive Green V Dk",
+      "hex": "#645C3C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3013",
+      "name": "Khaki Green Lt",
+      "hex": "#969168",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3012",
+      "name": "Khaki Green Md",
+      "hex": "#7A7342",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3011",
+      "name": "Khaki Green Dk",
+      "hex": "#57522D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "372",
+      "name": "Mustard Lt",
+      "hex": "#8B8056",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "371",
+      "name": "Mustard",
+      "hex": "#73663F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "370",
+      "name": "Mustard Medium",
+      "hex": "#726B38",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "834",
+      "name": "Golden Olive Vy Lt",
+      "hex": "#B39B4E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "833",
+      "name": "Golden Olive Lt",
+      "hex": "#998131",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "832",
+      "name": "Golden Olive",
+      "hex": "#796419",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "831",
+      "name": "Golden Olive Md",
+      "hex": "#725F19",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "830",
+      "name": "Golden Olive Dk",
+      "hex": "#62513B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "829",
+      "name": "Golden Olive Vy Dk",
+      "hex": "#57401A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "613",
+      "name": "Drab Brown V Lt",
+      "hex": "#AFA086",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "612",
+      "name": "Drab Brown Lt",
+      "hex": "#8D8060",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "611",
+      "name": "Drab Brown",
+      "hex": "#56492F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "610",
+      "name": "Drab Brown Dk",
+      "hex": "#524428",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3047",
+      "name": "Yellow Beige Lt",
+      "hex": "#BCB78F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3046",
+      "name": "Yellow Beige Md",
+      "hex": "#D2C895",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3045",
+      "name": "Yellow Beige Dk",
+      "hex": "#A88856",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "167",
+      "name": "Yellow Beige V Dk",
+      "hex": "#906630",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "746",
+      "name": "Off White",
+      "hex": "#D9D4BD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "677",
+      "name": "Old Gold Vy Lt",
+      "hex": "#D3C38C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "422",
+      "name": "Hazelnut Brown Lt",
+      "hex": "#DDAD6A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3828",
+      "name": "Hazelnut Brown",
+      "hex": "#9B7B4C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "420",
+      "name": "Hazelnut Brown Dk",
+      "hex": "#AB713A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "869",
+      "name": "Hazelnut Brown V Dk",
+      "hex": "#5D4837",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "728",
+      "name": "Topaz",
+      "hex": "#D0A23D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "783",
+      "name": "Topaz Medium",
+      "hex": "#D69B3B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "782",
+      "name": "Topaz Dark",
+      "hex": "#8D5C12",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "781",
+      "name": "Topaz Very Dark",
+      "hex": "#CD8535",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo",
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "780",
+      "name": "Topaz Ultra Vy Dk",
+      "hex": "#784A14",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "676",
+      "name": "Old Gold Lt",
+      "hex": "#E6C27E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "729",
+      "name": "Old Gold Medium",
+      "hex": "#CBA151",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "680",
+      "name": "Old Gold Dark",
+      "hex": "#916D21",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3829",
+      "name": "Old Gold Vy Dark",
+      "hex": "#946C1F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3822",
+      "name": "Straw Light",
+      "hex": "#DBBD78",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3821",
+      "name": "Straw",
+      "hex": "#D5AF53",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3820",
+      "name": "Straw Dark",
+      "hex": "#D3B451",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3852",
+      "name": "Straw Very Dark",
+      "hex": "#B1861C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "445",
+      "name": "Lemon Light",
+      "hex": "#E5E35C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "307",
+      "name": "Lemon",
+      "hex": "#F4DC45",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "973",
+      "name": "Canary Bright",
+      "hex": "#F2C93B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "444",
+      "name": "Lemon Dark",
+      "hex": "#F6D021",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3078",
+      "name": "Golden Yellow Vy Lt",
+      "hex": "#E5DA94",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "727",
+      "name": "Topaz Vy Lt",
+      "hex": "#F4E499",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "726",
+      "name": "Topaz Light",
+      "hex": "#F3CE4C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "725",
+      "name": "Topaz Med Lt",
+      "hex": "#F3BA34",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "972",
+      "name": "Canary Deep",
+      "hex": "#F0B22A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "745",
+      "name": "Yellow Pale Light",
+      "hex": "#F1DA91",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "744",
+      "name": "Yellow Pale",
+      "hex": "#F4CC59",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "743",
+      "name": "Yellow Med",
+      "hex": "#FBC545",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "742",
+      "name": "Tangerine Light",
+      "hex": "#F7AC2C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "741",
+      "name": "Tangerine Med",
+      "hex": "#FA9130",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "740",
+      "name": "Tangerine",
+      "hex": "#F66E1D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "970",
+      "name": "Pumpkin Light",
+      "hex": "#E75820",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "971",
+      "name": "Pumpkin",
+      "hex": "#EE7F29",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo"
+      ]
+    },
+    {
+      "number": "947",
+      "name": "Burnt Orange",
+      "hex": "#EE5517",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "946",
+      "name": "Burnt Orange Med",
+      "hex": "#CF4920",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "900",
+      "name": "Burnt Orange Dark",
+      "hex": "#B63321",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "967",
+      "name": "Apricot Very Light",
+      "hex": "#E8B09E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3824",
+      "name": "Apricot Light",
+      "hex": "#DC9689",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3341",
+      "name": "Apricot",
+      "hex": "#E78376",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3340",
+      "name": "Apricot Med",
+      "hex": "#F07A66",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "608",
+      "name": "Burnt Orange Bright",
+      "hex": "#CA4518",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "606",
+      "name": "Orange Red Bright",
+      "hex": "#D21309",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "951",
+      "name": "Tawny Light",
+      "hex": "#E7BB9F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3856",
+      "name": "Mahogany Ult Vy Lt",
+      "hex": "#C89C74",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "722",
+      "name": "Orange Spice Light",
+      "hex": "#F49253",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "721",
+      "name": "Orange Spice Med",
+      "hex": "#C67142",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "720",
+      "name": "Orange Spice Dark",
+      "hex": "#B5401C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3825",
+      "name": "Pumpkin Pale",
+      "hex": "#D9875F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "922",
+      "name": "Copper Light",
+      "hex": "#C85F33",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "921",
+      "name": "Copper",
+      "hex": "#B65538",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "920",
+      "name": "Copper Med",
+      "hex": "#8C3B2E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "919",
+      "name": "Red Copper",
+      "hex": "#A44534",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "918",
+      "name": "Red Copper Dark",
+      "hex": "#702821",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3770",
+      "name": "Tawny Vy Light",
+      "hex": "#E9D9CD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "945",
+      "name": "Tawny",
+      "hex": "#D4B9A1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "402",
+      "name": "Mahogany Vy Lt",
+      "hex": "#D17A4A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3776",
+      "name": "Mahogany Light",
+      "hex": "#AF6442",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "301",
+      "name": "Mahogany Med",
+      "hex": "#A05828",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "400",
+      "name": "Mahogany Dark",
+      "hex": "#80461C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "300",
+      "name": "Mahogany Vy Dk",
+      "hex": "#72432B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3823",
+      "name": "Yellow Ultra Pale",
+      "hex": "#DFCBA2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3855",
+      "name": "Autumn Gold Lt",
+      "hex": "#E9B87B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3854",
+      "name": "Autumn Gold Med",
+      "hex": "#D9955D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3853",
+      "name": "Autumn Gold Dk",
+      "hex": "#CA713C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3827",
+      "name": "Golden Brown Pale",
+      "hex": "#CA9358",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "977",
+      "name": "Golden Brown Light",
+      "hex": "#C98B4B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "976",
+      "name": "Golden Brown Med",
+      "hex": "#B26C3C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3826",
+      "name": "Golden Brown",
+      "hex": "#975926",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "975",
+      "name": "Golden Brown Dk",
+      "hex": "#5D3119",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "948",
+      "name": "Peach Very Light",
+      "hex": "#E7C4B5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "754",
+      "name": "Peach Light",
+      "hex": "#E2A88E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3771",
+      "name": "Terra Cotta Ult Vy Lt",
+      "hex": "#CF9E8A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "758",
+      "name": "Terra Cotta Vy Lt",
+      "hex": "#D79179",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3778",
+      "name": "Terra Cotta Light",
+      "hex": "#A76A5D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "356",
+      "name": "Terra Cotta Med",
+      "hex": "#9B514A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3830",
+      "name": "Terra Cotta",
+      "hex": "#723028",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "355",
+      "name": "Terra Cotta Dark",
+      "hex": "#76230B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3777",
+      "name": "Terra Cotta Vy Dk",
+      "hex": "#6A1820",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3779",
+      "name": "Rosewood Ult Vy Lt",
+      "hex": "#C6968B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3859",
+      "name": "Rosewood Light",
+      "hex": "#A6766A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3858",
+      "name": "Rosewood Med",
+      "hex": "#653435",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3857",
+      "name": "Rosewood Dark",
+      "hex": "#4C2827",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3774",
+      "name": "Desert Sand Vy Lt",
+      "hex": "#D5B6A0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "950",
+      "name": "Desert Sand Light",
+      "hex": "#D4B7A5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3064",
+      "name": "Desert Sand",
+      "hex": "#96705D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "407",
+      "name": "Desert Sand Med",
+      "hex": "#A2735C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3773",
+      "name": "Desert Sand Dark",
+      "hex": "#A9786A",
+      "confidence": "low",
+      "flags": [
+        "low-res-photo"
+      ]
+    },
+    {
+      "number": "3772",
+      "name": "Desert Sand Vy Dk",
+      "hex": "#946752",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "632",
+      "name": "Desert Sand Ult Vy Dk",
+      "hex": "#643C3B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "453",
+      "name": "Shell Gray Light",
+      "hex": "#AFA49C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "452",
+      "name": "Shell Gray Med",
+      "hex": "#877775",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "451",
+      "name": "Shell Gray Dark",
+      "hex": "#6E5752",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3861",
+      "name": "Cocoa Light",
+      "hex": "#866E6C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3860",
+      "name": "Cocoa",
+      "hex": "#735553",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "779",
+      "name": "Cocoa Dark",
+      "hex": "#4E2F2A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "712",
+      "name": "Cream",
+      "hex": "#C9BFA8",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "739",
+      "name": "Tan Ult Vy Lt",
+      "hex": "#D5C8A2",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "738",
+      "name": "Tan Very Light",
+      "hex": "#B19166",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "437",
+      "name": "Tan Light",
+      "hex": "#F0BD8F",
+      "confidence": "low",
+      "flags": [
+        "ladder-inversion"
+      ]
+    },
+    {
+      "number": "436",
+      "name": "Tan",
+      "hex": "#B47949",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "435",
+      "name": "Brown Very Light",
+      "hex": "#826237",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "434",
+      "name": "Brown Light",
+      "hex": "#895427",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "433",
+      "name": "Brown Med",
+      "hex": "#552F17",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "801",
+      "name": "Coffee Brown Dk",
+      "hex": "#4E2D1C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "898",
+      "name": "Coffee Brown Vy Dk",
+      "hex": "#462B21",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "938",
+      "name": "Coffee Brown Ult Dk",
+      "hex": "#39261F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3371",
+      "name": "Black Brown",
+      "hex": "#211B19",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "543",
+      "name": "Beige Brown Ult Vy Lt",
+      "hex": "#C8B2A4",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3864",
+      "name": "Mocha Beige Light",
+      "hex": "#A38972",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3863",
+      "name": "Mocha Beige Med",
+      "hex": "#9B735B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3862",
+      "name": "Mocha Beige Dark",
+      "hex": "#846049",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3031",
+      "name": "Mocha Brown Vy Dk",
+      "hex": "#4D4132",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "B5200",
+      "name": "Snow White",
+      "hex": "#DEE0E5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "White",
+      "name": "White",
+      "hex": "#EAEBEB",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3865",
+      "name": "Winter White",
+      "hex": "#D6D1C3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "Ecru",
+      "name": "Ecru",
+      "hex": "#DAC7AD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "822",
+      "name": "Beige Gray Light",
+      "hex": "#D8D3C5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "644",
+      "name": "Beige Gray Med",
+      "hex": "#C0BCA6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "642",
+      "name": "Beige Gray Dark",
+      "hex": "#727058",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "640",
+      "name": "Beige Gray Vy Dk",
+      "hex": "#726E56",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3787",
+      "name": "Brown Gray Dark",
+      "hex": "#524D40",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3021",
+      "name": "Brown Gray Vy Dk",
+      "hex": "#3E3A27",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3024",
+      "name": "Brown Gray Vy Lt",
+      "hex": "#C7C8C1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3023",
+      "name": "Brown Gray Light",
+      "hex": "#9B9683",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3022",
+      "name": "Brown Gray Med",
+      "hex": "#767460",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "535",
+      "name": "Ash Gray Vy Lt",
+      "hex": "#534D50",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3033",
+      "name": "Mocha Brown Vy Lt",
+      "hex": "#E3DACC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3782",
+      "name": "Mocha Brown Lt",
+      "hex": "#AEA78E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3032",
+      "name": "Mocha Brown Med",
+      "hex": "#777258",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3790",
+      "name": "Beige Gray Ult Dk",
+      "hex": "#7C6B56",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3781",
+      "name": "Mocha Brown Dk",
+      "hex": "#5C4B36",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3866",
+      "name": "Mocha Brn Ult Vy Lt",
+      "hex": "#CFC8B9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "842",
+      "name": "Beige Brown Vy Lt",
+      "hex": "#AF9983",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "841",
+      "name": "Beige Brown Lt",
+      "hex": "#A79083",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "840",
+      "name": "Beige Brown Med",
+      "hex": "#534238",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "839",
+      "name": "Beige Brown Dk",
+      "hex": "#453B30",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "838",
+      "name": "Beige Brown Vy Dk",
+      "hex": "#352C26",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3072",
+      "name": "Beaver Gray Vy Lt",
+      "hex": "#C4C8BF",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "648",
+      "name": "Beaver Gray Lt",
+      "hex": "#A99F9B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "647",
+      "name": "Beaver Gray Med",
+      "hex": "#7E7E73",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "646",
+      "name": "Beaver Gray Dk",
+      "hex": "#5E5E52",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "645",
+      "name": "Beaver Gray Vy Dk",
+      "hex": "#4A4341",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "844",
+      "name": "Beaver Gray Ult Dk",
+      "hex": "#2E2E2C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "762",
+      "name": "Pearl Gray Vy Lt",
+      "hex": "#E0E0E3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "415",
+      "name": "Pearl Gray",
+      "hex": "#9496A5",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "318",
+      "name": "Steel Gray Lt",
+      "hex": "#9196AC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "414",
+      "name": "Steel Gray Dk",
+      "hex": "#6A697C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "168",
+      "name": "Pewter Very Light",
+      "hex": "#8E969B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "169",
+      "name": "Pewter Light",
+      "hex": "#747C7E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "317",
+      "name": "Pewter Gray",
+      "hex": "#57576A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "413",
+      "name": "Pewter Gray Dark",
+      "hex": "#3A3C44",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "3799",
+      "name": "Pewter Gray Vy Dk",
+      "hex": "#2F2F32",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "310",
+      "name": "Black",
+      "hex": "#232228",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "01",
+      "name": "White Tin",
+      "hex": "#D4D3D1",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "02",
+      "name": "Tin",
+      "hex": "#C6C6C6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "03",
+      "name": "Tin Medium",
+      "hex": "#A9A8AC",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "04",
+      "name": "Tin Dark",
+      "hex": "#787578",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "05",
+      "name": "Driftwood Light",
+      "hex": "#D0C2B7",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "06",
+      "name": "Driftwood Medium Light",
+      "hex": "#CDBDB0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "07",
+      "name": "Driftwood",
+      "hex": "#A18B7A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "08",
+      "name": "Driftwood Dark",
+      "hex": "#735D4C",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "09",
+      "name": "Cocoa Very Dark",
+      "hex": "#513D3D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "10",
+      "name": "Tender Green Very Light",
+      "hex": "#E6E0B3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "11",
+      "name": "Tender Green Light",
+      "hex": "#E7DF80",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "12",
+      "name": "Tender Green",
+      "hex": "#D4D14F",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "13",
+      "name": "Nile Green Medium Light",
+      "hex": "#A7CC9E",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "14",
+      "name": "Apple Green Pale",
+      "hex": "#DDE9A6",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "15",
+      "name": "Apple Green",
+      "hex": "#CFD983",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "16",
+      "name": "Chartreuse Light",
+      "hex": "#BBCC57",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "17",
+      "name": "Yellow Plum Light",
+      "hex": "#EFD662",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "18",
+      "name": "Yellow Plum",
+      "hex": "#E7CD4A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "19",
+      "name": "Autumn Gold Medium Light",
+      "hex": "#FDD174",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "20",
+      "name": "Shrimp",
+      "hex": "#FDCEB0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "21",
+      "name": "Alizarin Light",
+      "hex": "#C0745D",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "22",
+      "name": "Alizarin",
+      "hex": "#B14239",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "23",
+      "name": "Apple Blossom",
+      "hex": "#F5DDDB",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "24",
+      "name": "White Lavender",
+      "hex": "#ECDEE7",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "25",
+      "name": "Lavender Ultra Light",
+      "hex": "#D5CCD9",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "26",
+      "name": "Lavender Pale",
+      "hex": "#C9C6DD",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "27",
+      "name": "White Violet",
+      "hex": "#DEDBE0",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "28",
+      "name": "Eggplant Medium Light",
+      "hex": "#847890",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "29",
+      "name": "Eggplant",
+      "hex": "#4A3954",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "30",
+      "name": "Blueberry Medium Light",
+      "hex": "#908BB3",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "31",
+      "name": "Blueberry",
+      "hex": "#5C5C8A",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "32",
+      "name": "Blueberry Dark",
+      "hex": "#4A4A77",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "33",
+      "name": "Fuschia",
+      "hex": "#9A578B",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "34",
+      "name": "Fuschia Dark",
+      "hex": "#813063",
+      "confidence": "photo",
+      "flags": []
+    },
+    {
+      "number": "35",
+      "name": "Fuschia Very Dark",
+      "hex": "#5B193C",
+      "confidence": "photo",
+      "flags": []
+    }
+  ],
+  "retired": [
+    {
+      "number": "776",
+      "name": "Pink Medium",
+      "lastHex": "#FCB0B9"
+    }
+  ],
+  "variegated": [
+    {
+      "number": "105",
+      "dmcName": "Woodwork Ombre"
+    },
+    {
+      "number": "106",
+      "dmcName": "Mercurochrome Ombre"
+    },
+    {
+      "number": "107",
+      "dmcName": "Passion Pink Ombre"
+    },
+    {
+      "number": "111",
+      "dmcName": "Burnt Savannah Ombre"
+    },
+    {
+      "number": "115",
+      "dmcName": "Opera Red Ombre"
+    },
+    {
+      "number": "121",
+      "dmcName": "Cyclades Blue Ombre"
+    },
+    {
+      "number": "125",
+      "dmcName": "Spring Green Ombre"
+    },
+    {
+      "number": "48",
+      "dmcName": "Indian Rose Ombre"
+    },
+    {
+      "number": "51",
+      "dmcName": "Pumpkin Ombre"
+    },
+    {
+      "number": "52",
+      "dmcName": "Violet Perfume Ombre"
+    },
+    {
+      "number": "53",
+      "dmcName": "Nocturnal Ombre"
+    },
+    {
+      "number": "69",
+      "dmcName": "Mahogany Ombre"
+    },
+    {
+      "number": "90",
+      "dmcName": "Sunny Yellow Ombre"
+    },
+    {
+      "number": "92",
+      "dmcName": "Foliage Green Ombre"
+    },
+    {
+      "number": "93",
+      "dmcName": "Cornflower Ombre"
+    },
+    {
+      "number": "94",
+      "dmcName": "Moss Green Ombre"
+    },
+    {
+      "number": "99",
+      "dmcName": "Redouté Rose Ombre"
+    }
+  ]
+}

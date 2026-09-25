@@ -71,7 +71,8 @@ Heavy color processing runs in Web Workers via Comlink (`lib/workers/`).
 ### Data Pipeline
 
 Build-time scripts generate static JSON consumed at runtime:
-- `scripts/generate-static-data.mjs` extracts DMC floss from `scripts/source/dmcFloss.source.txt` → `public/data/dmc-floss.json` and copies `public/colornames.json` → `public/data/colornames.json`
+- `scripts/generate-static-data.mjs` enriches `scripts/source/dmc-threads.json` → `public/data/dmc-floss.json` + `dmc-families.json` and copies `public/colornames.json` → `public/data/colornames.json`
+- DMC publishes no color values. `scripts/source/dmc-threads.json` holds the classic thread names in color-card order (family ladders depend on that order) with colors measured from DMC's own product photos. Refresh the colors with `node scripts/measure-dmc-swatches.mjs` (network; output is committed). Threads whose photos were unreliable carry `confidence: low`, and the UI labels them approximate.
 - This script runs automatically as `predev` and `prebuild`
 
 ### Color Spaces
