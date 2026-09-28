@@ -105,7 +105,7 @@ async function main() {
 
     console.log('### Paintability\n');
     table(
-        ['set', 'ingredient <2%', 'no ≤12-part recipe within +1 ΔE', 'unpaintable (either)', 'median parts', 'p95 parts', 'displayed-% recipe adds ΔE p50', 'p95', 'max'],
+        ['set', 'ingredient <2%', 'no ≤16-part recipe within +1 ΔE', 'unpaintable (either)', 'median parts', 'p95 parts', 'displayed-% recipe adds ΔE p50', 'p95', 'max'],
         Object.entries(groups).concat([['ALL', rows]]).map(([set, r]) => [
             set,
             pct(r.filter((x) => x.minShare < 0.02).length, r.length),

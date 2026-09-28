@@ -205,32 +205,37 @@ export function getCachedColorSync(hex: string, tintingStrength = 1): SpectralCo
     return color;
 }
 
+/**
+ * Resolve a registered pigment (dynamic registry first, then the legacy PALETTE) to its cached Color.
+ */
+export function getPigmentColorSync(pigmentId: string): SpectralColor {
+    // Try dynamic registry first (for catalog paints), then legacy PALETTE_MAP
+    let pigmentData = dynamicPigmentRegistry.get(pigmentId);
+    if (!pigmentData) {
+        const legacyPigment = PALETTE_MAP.get(pigmentId);
+        if (legacyPigment) {
+            pigmentData = { hex: legacyPigment.hex, tintingStrength: legacyPigment.tintingStrength };
+        }
+    }
+
+    if (!pigmentData) {
+        throw new Error(`Pigment ${pigmentId} not registered. Call registerPigments() first.`);
+    }
+
+    const color = colorCache.get(`${pigmentData.hex}-${pigmentData.tintingStrength}`);
+    if (!color) {
+        throw new Error(`Color for pigment ${pigmentId} not in cache.`);
+    }
+    return color;
+}
+
 export function mixPigmentsSync(inputs: MixInput[]): { hex: string, spectralColor: SpectralColor } {
     const spectral = getSpectralSync();
 
     const validInputs = inputs.filter((i) => i.weight > 0);
     if (validInputs.length === 0) throw new Error('At least one input with positive weight required');
 
-    const mixArgs: [SpectralColor, number][] = validInputs.map((input) => {
-        // Try dynamic registry first (for catalog paints), then legacy PALETTE_MAP
-        let pigmentData = dynamicPigmentRegistry.get(input.pigmentId);
-        if (!pigmentData) {
-            const legacyPigment = PALETTE_MAP.get(input.pigmentId);
-            if (legacyPigment) {
-                pigmentData = { hex: legacyPigment.hex, tintingStrength: legacyPigment.tintingStrength };
-            }
-        }
-
-        if (!pigmentData) {
-            throw new Error(`Pigment ${input.pigmentId} not registered. Call registerPigments() first.`);
-        }
-
-        const color = colorCache.get(`${pigmentData.hex}-${pigmentData.tintingStrength}`);
-        if (!color) {
-            throw new Error(`Color for pigment ${input.pigmentId} not in cache.`);
-        }
-        return [color, input.weight];
-    });
+    const mixArgs: [SpectralColor, number][] = validInputs.map((input) => [getPigmentColorSync(input.pigmentId), input.weight]);
 
     const mixed = spectral.mix(...mixArgs);
     return {

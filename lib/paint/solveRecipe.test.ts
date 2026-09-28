@@ -1,6 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { solveRecipe } from './solveRecipe';
+import { generatePainterlyMixingSteps } from './mixingWorkflow';
 
 describe('solveRecipe pigment accuracy', () => {
     it('uses a chromatic Core 6 recipe for the Terracotta demo', async () => {
@@ -101,12 +102,30 @@ describe('solveRecipe pigment accuracy', () => {
         expect(recipe.steps.some(step => step.includes('Tip:') && step.includes('Phthalo Blue'))).toBe(true);
     });
 
-    it('labels trace cadmium red on muted blue as mute, not a warm accent step', async () => {
+    it('labels trace cadmium red on muted blue as mute, not a warm accent step', () => {
+        const steps = generatePainterlyMixingSteps(
+            [
+                { id: 'titanium-white', name: 'Titanium White', weight: 0.82, isValueAdjuster: true },
+                { id: 'phthalo-blue', name: 'Phthalo Blue', weight: 0.12, tintingStrength: 10 },
+                { id: 'cadmium-red', name: 'Cadmium Red', weight: 0.06, tintingStrength: 1.5 },
+            ],
+            { targetLightness: 60, targetHex: '#5A8FB8' }
+        )
+
+        expect(steps.some((step) => step.includes('Mute and balance'))).toBe(true)
+        expect(steps.some((step) => step.includes('Adjust temperature'))).toBe(false)
+    })
+
+    it('prefers a simpler whole-part recipe over a trace pigment when it costs under 1 ΔE', async () => {
+        // The unrounded optimum adds ~6% cadmium red (error 0.49); 7 parts white + 1 part blue is 1.06.
         const recipe = await solveRecipe('#5A8FB8')
 
-        expect(recipe.ingredients.some((ingredient) => ingredient.pigment.id === 'cadmium-red')).toBe(true)
-        expect(recipe.steps.some((step) => step.includes('Mute and balance'))).toBe(true)
-        expect(recipe.steps.some((step) => step.includes('Adjust temperature'))).toBe(false)
+        expect(recipe.paintable).toBe(true)
+        expect(recipe.ingredients.map((i) => [i.pigment.id, i.parts])).toEqual([
+            ['titanium-white', 7],
+            ['phthalo-blue', 1],
+        ])
+        expect(recipe.error - recipe.unroundedError!).toBeLessThanOrEqual(1)
     })
 
     it('stays on the six-color default palette and does not pull in Raw Umber', async () => {

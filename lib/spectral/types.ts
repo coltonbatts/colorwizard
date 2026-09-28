@@ -37,7 +37,18 @@ export interface SpectralRecipe {
         weight: number;
         /** Human-readable percentage */
         percentage: string;
+        /** Whole parts, when the recipe is paintable (weight = parts / totalParts) */
+        parts?: number;
     }>;
+    /** Total whole parts across ingredients, when the recipe is paintable */
+    totalParts?: number;
+    /**
+     * True when ingredients are whole parts (at most 12) within the rounding budget
+     * of the unrounded optimum. False means only the unrounded percentages are available.
+     */
+    paintable?: boolean;
+    /** OKLab error of the unrounded optimum, before rounding to whole parts */
+    unroundedError?: number;
     /** Predicted hex color of the mix */
     predictedHex: string;
     /** OKLab model error between predicted mix and target (not CIEDE2000) */

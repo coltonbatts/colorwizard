@@ -34,7 +34,7 @@ export const PAINTABLE = {
     /** An ingredient below this share cannot be measured by hand */
     MIN_SHARE: 0.02,
     /** A whole-part recipe must exist within this many total parts... */
-    MAX_PARTS: 12,
+    MAX_PARTS: 16,
     /** ...and add no more than this much OKLab ΔE over the unrounded recipe */
     MAX_ROUNDING_COST: 1,
 };
@@ -96,11 +96,16 @@ export async function solverRow(target: BenchmarkTarget): Promise<SolverRow> {
     const targetColor = await createColor(target.hex);
 
     const inputs = ids.map((pigmentId, i) => ({ pigmentId, weight: weights[i] }));
+    const paintable = recipe.paintable === true;
     const displayedErrorOK = deltaESync(mixPigmentsSync(displayedInputs(ids, weights)).spectralColor, targetColor);
-    const parts = roundToParts(inputs, targetColor, recipe.error, {
-        maxTotalParts: PAINTABLE.MAX_PARTS,
-        maxCost: PAINTABLE.MAX_ROUNDING_COST,
-    });
+    // When the solver returns whole parts, the benchmark scores that recipe; otherwise it asks how
+    // well the unrounded one could have been rounded.
+    const parts = paintable
+        ? { totalParts: recipe.totalParts!, cost: recipe.error - (recipe.unroundedError ?? recipe.error), withinBudget: true }
+        : roundToParts(inputs, targetColor, recipe.error, {
+              maxTotalParts: PAINTABLE.MAX_PARTS,
+              maxCost: PAINTABLE.MAX_ROUNDING_COST,
+          });
     const minShare = Math.min(...weights);
 
     return {

@@ -5,7 +5,7 @@
  * Requires spectral.js to be loaded and the recipe's pigments to be cached
  * (both are true right after solveRecipe has run).
  */
-import { deltaESync, mixPigmentsSync } from '../spectral/adapter';
+import { deltaESync, getPigmentColorSync, getSpectralSync, mixPigmentsSync } from '../spectral/adapter';
 import type { MixInput } from '../spectral/types';
 import type { Color as SpectralColor } from 'spectral.js';
 
@@ -97,4 +97,90 @@ export function roundToParts(
 
     if (!fallback) throw new Error('No whole-part recipe could be built');
     return fallback;
+}
+
+export interface PaintablePartsOptions extends PartsOptions {
+    /** Largest number of pigments in a recipe */
+    maxPigments?: number;
+    /** Fewest pigments in a recipe (a single tube is not a mix); default 2 when the palette has 2+ */
+    minPigments?: number;
+    /** Each pigment beyond the third must improve the best smaller recipe by this much ΔE-OK */
+    extraPigmentGain?: number;
+}
+
+/**
+ * Search whole-part recipes over the entire palette (not just the pigments of
+ * an unrounded solution) and return the simplest one within `maxCost` of
+ * `referenceError`. Fewer total parts wins; a 4th pigment is only used when it
+ * beats the best 3-pigment recipe at the same part count by `extraPigmentGain`.
+ * When nothing fits, returns the lowest-error recipe found, flagged
+ * withinBudget: false.
+ */
+export function findPaintableParts(
+    pigmentIds: string[],
+    targetColor: SpectralColor,
+    referenceError: number,
+    options: PaintablePartsOptions = {}
+): PartsRecipe {
+    const { maxTotalParts = 12, maxCost = 0.5, maxPigments = 4, extraPigmentGain = 1 } = options;
+    const minPigments = options.minPigments ?? (pigmentIds.length >= 2 ? 2 : 1);
+    const spectral = getSpectralSync();
+    const colors = new Map(pigmentIds.map((id) => [id, getPigmentColorSync(id)]));
+    const [tL, ta, tb] = targetColor.OKLab;
+    const errorOf = (ids: string[], split: number[]) => {
+        const args: [SpectralColor, number][] = ids.map((id, i) => [colors.get(id)!, split[i]]);
+        const [L, a, b] = spectral.mix(...args).OKLab;
+        return Math.sqrt((L - tL) ** 2 + (a - ta) ** 2 + (b - tb) ** 2) * 100;
+    };
+
+    const bySize: string[][][] = [];
+    for (let size = 1; size <= Math.min(maxPigments, pigmentIds.length); size++) bySize[size] = pigmentSubsets(pigmentIds, size);
+
+    let fallback: PartsRecipe | null = null;
+    const make = (ids: string[], split: number[], total: number, error: number): PartsRecipe => ({
+        parts: ids.map((pigmentId, i) => ({ pigmentId, parts: split[i] })),
+        totalParts: total,
+        error,
+        cost: error - referenceError,
+        withinBudget: error - referenceError <= maxCost,
+    });
+
+    for (let total = 1; total <= maxTotalParts; total++) {
+        let best: PartsRecipe | null = null;
+        const bestPerSize: Array<PartsRecipe | null> = [];
+
+        for (let size = minPigments; size < bySize.length && size <= total; size++) {
+            let bestForSize: PartsRecipe | null = null;
+            for (const ids of bySize[size]) {
+                for (const split of compositions(total, size)) {
+                    const error = errorOf(ids, split);
+                    if (!bestForSize || error < bestForSize.error) bestForSize = make(ids, split, total, error);
+                }
+            }
+            bestPerSize[size] = bestForSize;
+        }
+
+        // Up to 3 pigments compete on error alone; each pigment beyond 3 must earn its place.
+        for (let size = minPigments; size < bestPerSize.length; size++) {
+            const candidate = bestPerSize[size];
+            if (!candidate) continue;
+            const needed = size > 3 ? extraPigmentGain : 0;
+            if (!best || candidate.error <= best.error - needed) best = candidate;
+        }
+
+        if (best?.withinBudget) return best;
+        if (best && (!fallback || best.error < fallback.error)) fallback = best;
+    }
+
+    if (!fallback) throw new Error('No whole-part recipe could be built');
+    return fallback;
+}
+
+function pigmentSubsets(items: string[], size: number): string[][] {
+    if (size === 1) return items.map((x) => [x]);
+    const out: string[][] = [];
+    for (let i = 0; i <= items.length - size; i++) {
+        for (const tail of pigmentSubsets(items.slice(i + 1), size - 1)) out.push([items[i], ...tail]);
+    }
+    return out;
 }

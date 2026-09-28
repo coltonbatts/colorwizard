@@ -44,6 +44,24 @@ describe('solver output invariants', () => {
         }
     });
 
+    it('returns whole parts within budget, and says so when it cannot', async () => {
+        for (const target of CURATED.filter((_, i) => i % 5 === 0)) {
+            const recipe = await solveRecipe(target.hex);
+            if (recipe.paintable) {
+                expect(recipe.totalParts).toBeLessThanOrEqual(16);
+                expect(recipe.ingredients.reduce((s, i) => s + (i.parts ?? NaN), 0)).toBe(recipe.totalParts);
+                for (const i of recipe.ingredients) {
+                    expect(Number.isInteger(i.parts)).toBe(true);
+                    expect(i.weight).toBeCloseTo(i.parts! / recipe.totalParts!, 9);
+                }
+                expect(recipe.error - recipe.unroundedError!).toBeLessThanOrEqual(1 + 1e-9);
+            } else {
+                expect(recipe.totalParts).toBeUndefined();
+                expect(recipe.ingredients.every((i) => i.parts === undefined)).toBe(true);
+            }
+        }
+    });
+
     it('is deterministic when other targets are solved in between', async () => {
         const first = await solveRecipe('#87CEEB');
         await solveRecipe('#C45C3E');
@@ -58,9 +76,11 @@ describe('accuracy ratchets (Core 6, default options)', () => {
         const rows = [];
         for (const target of CURATED) rows.push(await solverRow(target));
         const errors = rows.map((r) => r.errorOK);
-        // Measured (64 targets): p50 0.48, p95 3.01, max 5.31, none Poor. Was 1.05 / 3.81 / 5.31.
-        expect(quantile(errors, 0.5)).toBeLessThan(0.6);
-        expect(quantile(errors, 0.95)).toBeLessThan(3.3);
+        // Measured (64 targets, error of the whole-part recipe as printed): p50 1.11, p95 3.54, max 5.31,
+        // 23.4% without a clean <=16-part recipe. Was 1.05 / 3.81 / 5.31 unrounded, 40.6% unpaintable.
+        expect(quantile(errors, 0.5)).toBeLessThan(1.3);
+        expect(quantile(errors, 0.95)).toBeLessThan(3.7);
+        expect(rows.filter((r) => r.unpaintable).length / rows.length).toBeLessThan(0.27);
         expect(Math.max(...errors)).toBeLessThan(5.6);
         expect(rows.filter((r) => r.matchQuality === 'Poor')).toHaveLength(0);
     }, 60000);
@@ -69,8 +89,9 @@ describe('accuracy ratchets (Core 6, default options)', () => {
         const rows = [];
         for (const target of await knownMixes(30, 1)) rows.push(await solverRow(target));
         const errors = rows.map((r) => r.errorOK);
-        // Measured: p95 0.26, max 0.38 (was 1.27 / 1.33; the truth scores ~0.2 from hex rounding alone).
-        expect(quantile(errors, 0.95)).toBeLessThan(0.4);
-        expect(Math.max(...errors)).toBeLessThan(0.5);
+        // Measured: p95 1.06, max 1.20 as printed in whole parts (unrounded 0.26 / 0.38; the truth scores ~0.2).
+        expect(quantile(errors, 0.95)).toBeLessThan(1.2);
+        expect(Math.max(...errors)).toBeLessThan(1.4);
+        expect(rows.every((r) => !r.unpaintable)).toBe(true);
     }, 60000);
 });

@@ -21,6 +21,7 @@ import { nelderMeadRefine } from './nelderMead';
 import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS, Pigment } from '../spectral/types';
 import { getPaints, paintToPigment } from './catalog';
 import { generatePainterlyMixingSteps } from './mixingWorkflow';
+import { findPaintableParts } from './parts';
 
 /**
  * Solver configuration.
@@ -32,6 +33,10 @@ const CONFIG = {
     FOUR_PIGMENT_STEP: 5,
     /** Skip the 3-pigment search when 2 pigments already match this closely (hex rounding noise) */
     THREE_PIGMENT_THRESHOLD: 0.3,
+    /** Largest total number of parts in a paintable recipe */
+    MAX_PARTS: 16,
+    /** How much ΔE-OK rounding to whole parts may add over the unrounded optimum */
+    MAX_ROUNDING_COST: 1,
     /** A 4th pigment must improve on the best 3-pigment recipe by at least this much ΔE-OK */
     FOUR_PIGMENT_MIN_GAIN: 1.0,
     /** Minimum weight to include a pigment */
@@ -326,6 +331,22 @@ export async function solveRecipe(
         }
     }
 
+    // Step 4: Round to whole parts a painter can measure. The reported error is that of the
+    // recipe as printed, not of the unrounded optimum.
+    const unroundedError = best.error;
+    const wholeParts = findPaintableParts(
+        filteredPalette.map((pigment) => pigment.id),
+        targetColor,
+        unroundedError,
+        { maxTotalParts: CONFIG.MAX_PARTS, maxCost: CONFIG.MAX_ROUNDING_COST }
+    );
+    const partsById = new Map<string, number>();
+    if (wholeParts.withinBudget) {
+        const inputs = wholeParts.parts.map((part) => ({ pigmentId: part.pigmentId, weight: part.parts }));
+        best = { inputs, hex: mixPigmentsSync(inputs).hex, error: wholeParts.error };
+        for (const part of wholeParts.parts) partsById.set(part.pigmentId, part.parts);
+    }
+
     // Build result
     const totalWeight = best.inputs.reduce((sum, i) => sum + i.weight, 0);
     const pigmentById = new Map(filteredPalette.map((pigment) => [pigment.id, pigment]));
@@ -340,6 +361,7 @@ export async function solveRecipe(
                 pigment,
                 weight: normalizedWeight,
                 percentage: `${Math.round(normalizedWeight * 100)}%`,
+                ...(partsById.has(input.pigmentId) ? { parts: partsById.get(input.pigmentId) } : {}),
             };
         })
         .filter((i) => i.weight >= CONFIG.MIN_WEIGHT)
@@ -349,6 +371,9 @@ export async function solveRecipe(
         ingredients,
         predictedHex: best.hex,
         error: best.error,
+        paintable: wholeParts.withinBudget,
+        unroundedError,
+        ...(wholeParts.withinBudget ? { totalParts: wholeParts.totalParts } : {}),
         matchQuality: getMatchQuality(best.error),
         steps: generateSteps(ingredients, targetLightness, targetHex),
     };
