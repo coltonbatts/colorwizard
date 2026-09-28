@@ -24,6 +24,7 @@ export interface PaintColor {
 export const HEURISTIC_WEIGHT_MAP: Record<string, number> = {
   'mostly': 0.7,
   'base': 0.6,
+  'generous': 0.45,
   'moderate': 0.3,
   'small amount': 0.15,
   'touch': 0.05,

@@ -26,6 +26,7 @@ import { solveRecipe } from '../lib/paint/solveRecipe';
 
 const args = process.argv.slice(2);
 const quick = args.includes('--quick');
+const skipBaseline = args.includes('--skip-baseline');
 const jsonPath = args.includes('--json') ? args[args.indexOf('--json') + 1] : null;
 
 const f = (n: number, d = 2) => (Number.isFinite(n) ? n.toFixed(d) : 'n/a');
@@ -64,6 +65,9 @@ function summarizeSolver(label: string, rows: SolverRow[]) {
 }
 
 async function main() {
+    const finish = () => {
+        if (jsonPath) writeFileSync(jsonPath, JSON.stringify(out, null, 2));
+    };
     const sweep = gamutSweep();
     const known = await knownMixes(quick ? 30 : 100, 1);
     const targets = [...CURATED, ...sweep, ...known];
@@ -166,6 +170,7 @@ async function main() {
     console.log(`Spectral solver beats the heuristic by >0.5 ΔE-OK on ${pct(wins, hrows.length)} of curated+sweep targets.\n`);
 
     // 4. Solver vs brute-force baseline ---------------------------------
+    if (!skipBaseline) {
     console.log('## 4. Does the solver find the true optimum?\n');
     const sample = quick
         ? [...CURATED.filter((_, i) => i % 6 === 0)]
@@ -208,7 +213,10 @@ async function main() {
     const trulyPoor = gaps.filter((x) => x.baseline >= MATCH_THRESHOLDS.FAIR).length;
     console.log(`Targets that no ≤4-pigment mix of the Core 6 can reach within ΔE-OK 6 (genuinely out of gamut): ${pct(trulyPoor, gaps.length)}\n`);
 
+    }
+
     // 5. Tinting-strength assumptions -----------------------------------
+    if (skipBaseline) return finish();
     console.log('## 5. Tinting strength\n');
     await getPaletteColors();
     const white = await createColor(PALETTE[0].hex);
@@ -281,7 +289,7 @@ async function main() {
     const a2 = await solveRecipe('#87CEEB');
     console.log(`Deterministic across interleaved solves (A, B, A): ${JSON.stringify(a.ingredients.map((i) => [i.pigment.id, i.weight])) === JSON.stringify(a2.ingredients.map((i) => [i.pigment.id, i.weight]))}`);
 
-    if (jsonPath) writeFileSync(jsonPath, JSON.stringify(out, null, 2));
+    finish();
 }
 
 main().catch((err) => {
