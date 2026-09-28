@@ -249,6 +249,20 @@ Caveats specific to derived piles:
 - **They lean on the model twice.** A derived pile treats a base as "its pigments in the proportions of its recipe", and the model's weights are spectral.js factors, not volumes (accuracy audit §5a). A recipe of "3 parts pile A + 1 part white" therefore inherits the same unvalidated assumption as any recipe, once more. The plan UI must show it as a prediction like the rest.
 - **The base has to be mixed in enough quantity** for its own area plus what the derived piles take. The plan says which pile is the base but does not size batches.
 
+## Performance
+
+Whole-plan wall time in Node, Core six, nine pictures (p50 / p95, ms):
+
+| piles | naive baseline (one solve per pile) | library, scratch piles | library with derived piles (final) |
+|---|---|---|---|
+| 5 | 510 / 636 | 148 / 308 | **178 / 339** |
+| 8 | 892 / 1063 | 157 / 305 | **204 / 368** |
+| 12 | 1200 / 1493 | 169 / 322 | **242 / 393** |
+
+Zorn: 95 / 115, 159 / 177, 227 / 258 → **109 / 204, 121 / 218, 151 / 242**. The baseline scales with the budget (about 100 ms per solve); the library plan does not, because it makes no solver calls. The one-time cost of a palette's library is about 130 ms (37k recipes, Core six), cached per palette; the derived candidates for a base are built once and cached (66 mixes each). Where a 12-pile plan spends its 150 to 300 ms, for three pictures (ms): library search for candidates 21 to 67, exact ΔE00 cost matrix 20 to 138, selection 3 to 64, derivation pass 36 to 54, assigning the full picture 27 to 52, on 171 to 527 merged colors and 760 to 1700 candidates. The cost matrix went from 380 ns to 160 ns per ΔE00 evaluation with `deltaE.ts`. A cache by hex and options, as a solver-based plan would have needed, is moot now that no solver runs.
+
+The browser will run this in a Web Worker (Phase 3). It needs no batching: the work is one pass, not one solve per pile. Timings there are not measured yet.
+
 ## Tried and not adopted: a structural value-first mode
 
 Plan value steps first, then hue variants: choose 40–60% of the piles under a strongly value-weighted cost (CIEDE2000 kL 0.2–0.4), then fill the rest with the normal objective, with the value piles either frozen or refined afterwards. Measured against the default (Core six, 9 pictures):
