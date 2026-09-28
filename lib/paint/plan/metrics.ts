@@ -135,8 +135,14 @@ export interface PlanScore {
     unreachableArea: number
     /** Share of pixels more than 5 ΔE00 from their pile's swatch, whatever the pile's own label says */
     visiblyOffArea: number
-    /** Whole parts to measure across all piles that have a clean ratio */
+    /**
+     * Whole parts to measure across all piles: a scratch pile's parts, or for a derived pile the
+     * parts of its base it uses plus its extra parts (the base is counted once, as its own pile)
+     */
     totalParts: number
+    /** Piles mixed from another pile, and piles mixed from scratch (shared-base score = derived / pileCount) */
+    derivedPiles: number
+    scratchPiles: number
     /** Piles with no clean whole-part ratio (percentages only) */
     unpaintablePiles: number
     /** Different pigments used anywhere in the plan */
@@ -147,6 +153,12 @@ export interface PlanScore {
     pileAreas: number[]
     /** Mean ΔE00 within each pile, in pile order (NaN for a pile nothing uses) */
     pileMeanDeltaE00: number[]
+}
+
+/** Parts a painter measures for this pile as the plan lists it. */
+export function listedParts(pile: Plan['piles'][number]): number {
+    if (pile.derived) return pile.derived.baseParts + pile.derived.extra.reduce((sum, e) => sum + e.parts, 0)
+    return pile.recipe.paintable ? (pile.recipe.totalParts ?? 0) : 0
 }
 
 export function scorePlan(hist: Histogram, plan: Plan, mode: AssignMode = 'swatch'): PlanScore {
@@ -181,7 +193,9 @@ export function scorePlan(hist: Histogram, plan: Plan, mode: AssignMode = 'swatc
         meanValueError: valueSum / hist.total,
         unreachableArea: unreachable / hist.total,
         visiblyOffArea: off / hist.total,
-        totalParts: plan.piles.reduce((sum, p) => sum + (p.recipe.paintable ? (p.recipe.totalParts ?? 0) : 0), 0),
+        totalParts: plan.piles.reduce((sum, p) => sum + listedParts(p), 0),
+        derivedPiles: plan.piles.filter((p) => p.derived).length,
+        scratchPiles: plan.piles.filter((p) => !p.derived).length,
         unpaintablePiles: plan.piles.filter((p) => p.recipe.paintable !== true).length,
         distinctPigments: pigments.size,
         minorPiles: Array.from(area).filter((a) => a / hist.total < MINOR_AREA).length,

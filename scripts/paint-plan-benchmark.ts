@@ -56,10 +56,10 @@ async function main() {
     console.log('### Summary per budget (every picture counts equally)\n')
     const summaries = budgets.map((budget) => summarize(rows.filter((r) => r.budget === budget)))
     table(
-        ['piles', 'mean ΔE00', 'p95 (mean)', 'p95 (worst)', 'value err', 'unreachable (mean)', 'unreachable (worst)', 'visibly off', 'parts', 'unpaintable piles', 'pigments', 'minor piles', 'ms p50', 'ms p95'],
+        ['piles', 'mean ΔE00', 'p95 (mean)', 'p95 (worst)', 'value err', 'unreachable (mean)', 'unreachable (worst)', 'visibly off', 'parts', 'derived piles', 'unpaintable piles', 'pigments', 'minor piles', 'ms p50', 'ms p95'],
         summaries.map((s) => [
             s.budget, f(s.meanDeltaE00), f(s.p95DeltaE00), f(s.worstP95DeltaE00), f(s.meanValueError), pct(s.unreachableArea), pct(s.worstUnreachableArea), pct(s.visiblyOffArea),
-            f(s.totalParts, 1), pct(s.unpaintableShare), f(s.distinctPigments, 1), f(s.minorPiles, 1), f(s.msP50, 0), f(s.msP95, 0),
+            f(s.totalParts, 1), f(s.derivedPiles, 1), pct(s.unpaintableShare), f(s.distinctPigments, 1), f(s.minorPiles, 1), f(s.msP50, 0), f(s.msP95, 0),
         ]),
     )
 

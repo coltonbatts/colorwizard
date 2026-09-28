@@ -15,7 +15,8 @@ import { buildHistogram } from './histogram'
 import { hexToRgb, srgb8ToOklab } from './color'
 import { naivePlan } from './naive'
 import { makePlan } from './plan'
-import { scorePlan } from './metrics'
+import { hexLab, listedParts, scorePlan } from './metrics'
+import { mixPigmentsSync } from '../../spectral/adapter'
 import { resolvePalettePigments } from '../palettePigments'
 import { DEFAULT_PALETTE } from '../../types/palette'
 import { differenceCiede2000 } from 'culori'
@@ -96,21 +97,26 @@ describe('plan invariants (any algorithm)', () => {
 
 describe('library planner (the current algorithm)', () => {
     let rows: PlanRow[] = []
+    let scratchRows: PlanRow[] = []
     beforeAll(async () => {
         rows = await runBenchmark(images, [5, 8], PLANNERS.library, contextFor('core6'))
-    }, 120000)
+        scratchRows = await runBenchmark(images, [5, 8], PLANNERS['library-scratch'], contextFor('core6'))
+    }, 180000)
 
     it('stays within the measured envelope at 5 and 8 piles', () => {
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
-        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.42, visibly off 38.2%; 8 piles mean 4.48, p95 10.38,
-        // visibly off 30.3%, value error 2.68. Naive baseline was 6.46 / 52.8% and 4.92 / 9.97 / 38.2% / 2.49.
-        expect(five.meanDeltaE00).toBeLessThan(5.6)
-        expect(five.visiblyOffArea).toBeLessThan(0.4)
-        expect(eight.meanDeltaE00).toBeLessThan(4.65)
-        expect(eight.visiblyOffArea).toBeLessThan(0.32)
-        expect(eight.p95DeltaE00).toBeLessThan(10.7)
-        expect(eight.meanValueError).toBeLessThan(2.8)
+        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 37.8%; 8 piles mean 4.32, p95 10.22,
+        // visibly off 30.0%, value error 2.65, 61.9 parts, 2.1 derived piles. Naive baseline was 6.46 / 52.8% and
+        // 4.92 / 9.97 / 38.2% / 2.49 / 47.3 parts (its 29% unmeasurable piles count as zero parts).
+        expect(five.meanDeltaE00).toBeLessThan(5.45)
+        expect(five.visiblyOffArea).toBeLessThan(0.39)
+        expect(eight.meanDeltaE00).toBeLessThan(4.45)
+        expect(eight.p95DeltaE00).toBeLessThan(10.5)
+        expect(eight.visiblyOffArea).toBeLessThan(0.31)
+        expect(eight.meanValueError).toBeLessThan(2.75)
+        expect(eight.totalParts).toBeLessThan(68)
+        expect(eight.derivedPiles).toBeGreaterThan(1.5)
         expect(eight.msP95).toBeLessThan(2000)
     })
 
@@ -118,18 +124,61 @@ describe('library planner (the current algorithm)', () => {
         // Naive baseline, seed 1, Core six (docs/paint-plan-audit.md): 5 piles 6.46 / 52.8% visibly off, 8 piles 4.92 / 38.2%.
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
-        expect(five.meanDeltaE00).toBeLessThan(6.46 - 0.7)
-        expect(eight.meanDeltaE00).toBeLessThan(4.92 - 0.3)
-        expect(five.visiblyOffArea).toBeLessThan(0.528 - 0.1)
-        expect(eight.visiblyOffArea).toBeLessThan(0.382 - 0.05)
+        expect(five.meanDeltaE00).toBeLessThan(6.46 - 0.9)
+        expect(eight.meanDeltaE00).toBeLessThan(4.92 - 0.5)
+        expect(five.visiblyOffArea).toBeLessThan(0.528 - 0.13)
+        expect(eight.visiblyOffArea).toBeLessThan(0.382 - 0.07)
     })
 
-    it('never produces a pile without a clean whole-part ratio', () => {
+    it('knows where it is still behind the naive baseline: landscape at 5 piles (7.78 vs 7.37)', () => {
+        // The library only holds recipes of at most 16 parts; landscape's yellow-greens and pale blues need a touch of a
+        // strong pigment. Recorded so the gap can only close: no picture may be more than 0.5 ΔE00 behind the naive plan.
+        const naive = { 'landscape@5': 7.37, 'landscape@8': 6.16, 'high-key@8': 2.01, 'fruit-saturated@5': 7.26, 'sunset@5': 10.49 }
+        for (const [key, baseline] of Object.entries(naive)) {
+            const [image, budget] = key.split('@')
+            const row = rows.find((r) => r.image === image && r.budget === Number(budget))!
+            expect(row.score.meanDeltaE00).toBeLessThan(baseline + 0.5)
+        }
+    })
+
+    it('never produces a scratch pile without a clean whole-part ratio, and lists every derived pile as parts', () => {
         for (const row of rows) for (const pile of row.plan.piles) {
             expect(pile.recipe.paintable).toBe(true)
             expect(Number.isInteger(pile.recipe.totalParts)).toBe(true)
             expect(pile.recipe.totalParts).toBeLessThanOrEqual(16)
-            expect(pile.recipe.ingredients.reduce((sum, i) => sum + (i.parts ?? NaN), 0)).toBe(pile.recipe.totalParts)
+            if (!pile.derived) {
+                expect(pile.recipe.ingredients.reduce((sum, i) => sum + (i.parts ?? NaN), 0)).toBe(pile.recipe.totalParts)
+            } else {
+                expect(pile.derived.baseParts).toBeGreaterThanOrEqual(1)
+                expect(pile.derived.baseParts).toBeLessThanOrEqual(4)
+                for (const extra of pile.derived.extra) {
+                    expect(Number.isInteger(extra.parts)).toBe(true)
+                    expect(extra.parts).toBeLessThanOrEqual(4)
+                }
+                expect(pile.recipe.totalParts).toBe(listedParts(pile))
+            }
+        }
+    })
+
+    it('derives from scratch piles only (one level), and keeps a base pile even if no pixel uses it', () => {
+        for (const row of rows) {
+            row.plan.piles.forEach((pile, index) => {
+                if (!pile.derived) return
+                expect(pile.derived.base).not.toBe(index)
+                expect(pile.derived.base).toBeGreaterThanOrEqual(0)
+                expect(pile.derived.base).toBeLessThan(row.plan.piles.length)
+                expect(row.plan.piles[pile.derived.base].derived).toBeUndefined()
+            })
+            expect(row.score.derivedPiles + row.score.scratchPiles).toBe(row.plan.piles.length)
+        }
+    })
+
+    it('predicts a derived swatch that matches mixing its flattened pigments', () => {
+        const de = differenceCiede2000()
+        for (const row of rows) for (const pile of row.plan.piles.filter((p) => p.derived)) {
+            const hex = mixPigmentsSync(pile.recipe.ingredients.map((i) => ({ pigmentId: i.pigment.id, weight: i.weight }))).hex
+            // ingredients under 0.5% are left out of the flattened list, so allow a hair of difference
+            expect(de(hex, pile.recipe.predictedHex)).toBeLessThan(0.6)
         }
     })
 
@@ -148,13 +197,29 @@ describe('library planner (the current algorithm)', () => {
             expect(row.plan.piles.length).toBeGreaterThan(0)
             expect(row.score.pileAreas.reduce((s, a) => s + a, 0)).toBeCloseTo(1, 9)
             expect(new Set(row.plan.piles.map((p) => p.recipe.predictedHex)).size).toBe(row.plan.piles.length)
+            const lightness = row.plan.piles.map((p) => hexLab(p.recipe.predictedHex).l) // CIELAB L*, what value error measures
+            expect(lightness).toEqual([...lightness].sort((a, b) => a - b))
         }
     })
 
-    it('never looks worse with more piles', () => {
-        // Naive baseline: 2 of 9 pictures got worse. A nearest-swatch repaint cannot get worse with a superset of piles,
-        // and greedy selection builds one: this is a ratchet at zero.
-        expect(monotonicityViolations(rows)).toEqual([])
+    it('never looks worse with more piles: exactly for scratch plans, within 0.05 ΔE00 with derived piles', () => {
+        // A nearest-swatch repaint cannot get worse when piles are added, and greedy selection builds a superset: zero.
+        expect(monotonicityViolations(scratchRows)).toEqual([])
+        // The derivation pass is greedy, so it can give back a hair: high-key 5 -> 8 piles goes 2.09 -> 2.10.
+        expect(monotonicityViolations(rows, 0.05)).toEqual([])
+    })
+
+    it('derived piles are what fixes pale tints: high-key gets clearly better than from-scratch piles', () => {
+        const pick = (set: PlanRow[]) => set.find((r) => r.image === 'high-key' && r.budget === 8)!.score.meanDeltaE00
+        // measured 2.62 from scratch, 2.10 with derived piles
+        expect(pick(rows)).toBeLessThan(pick(scratchRows) - 0.3)
+    })
+
+    it('spends no more parts than from-scratch piles, and gets a better repaint for them', () => {
+        const eight = summarize(rows.filter((r) => r.budget === 8))
+        const scratch = summarize(scratchRows.filter((r) => r.budget === 8))
+        expect(eight.totalParts).toBeLessThan(scratch.totalParts)
+        expect(eight.meanDeltaE00).toBeLessThan(scratch.meanDeltaE00)
     })
 
     it('is deterministic, and independent of what was planned before', async () => {
@@ -164,6 +229,7 @@ describe('library planner (the current algorithm)', () => {
         await PLANNERS.library(buildHistogram(images[2].data), 5, ctx)
         const b = await PLANNERS.library(hist, 8, ctx)
         expect(key(a)).toBe(key(b))
+        expect(JSON.stringify(a.piles.map((p) => p.derived ?? null))).toBe(JSON.stringify(b.piles.map((p) => p.derived ?? null)))
     }, 30000)
 
     it('uses only the tubes in the palette, including a tube the user made up', async () => {

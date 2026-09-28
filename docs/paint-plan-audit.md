@@ -213,3 +213,61 @@ Two things stand out. First, the parts ceiling costs real accuracy: 24 parts wou
 
 - `deltaE.ts`: an allocation-free CIEDE2000 kernel, 160 ns per call against 340 ns for culori's on prepared Lab values, tested equal to culori to 1e-7 (worst seen 2e-9, on a ΔE of 90 at near-opposite hues). `metrics.ts` now uses it. **Re-running the naive baseline through it changes no number (largest difference 2.5e-14)**, so the Phase 1 table above still stands.
 - Library check against the per-color solver on the 64 curated colors of the accuracy audit: library ΔE00 mean 2.81 against 2.92, better by more than 0.5 on 32 of 64 and by more than 2 on 8. It is never worse than a solver recipe that had a clean ratio (asserted in `library.test.ts`); the 15 colors where it is worse are all ones where the solver fell back to unmeasurable percentages (pale blues and off-whites).
+
+## Step 2: derived piles, "pile A plus N parts of X" (`derive.ts`)
+
+A pile may be mixed from another pile instead of from scratch: k parts of a base pile plus d parts of one pigment (k and d up to 4, reduced). In the model the base counts as its pigments in the proportions of its recipe, so this is one pigment-level mix with those weights. Only one level deep: a base is always a scratch pile. This reaches tints finer than 16 parts allow (dilute a mid tint, in measurable steps) and needs fewer parts to measure. A base that no pixel uses directly is kept as a pile, because something is made from it.
+
+Scratch-only library plan → with derived piles (Core six):
+
+| piles | mean ΔE00 | visibly off | total parts | derived piles | ms p50 |
+|---|---|---|---|---|---|
+| 5 | 5.42 → **5.30** | 38.2% → **37.8%** | 51.3 → **45.4** (−11%) | 0 → 1.3 | 148 → 178 |
+| 8 | 4.48 → **4.32** | 30.3% → **30.0%** | 76.1 → **61.9** (−19%) | 0 → 2.1 | 157 → 204 |
+| 12 | 4.08 → **3.89** | 25.9% → **25.1%** | 106.6 → **78.9** (−26%) | 0 → 4.8 | 169 → 242 |
+
+Zorn: mean ΔE00 6.99 / 6.25 / 5.88 → **6.93 / 6.17 / 5.76**, parts 48.6 / 71.2 / 99.9 → **43.3 / 56.4 / 72.3**. Total parts count each pile as the plan lists it (a derived pile: base parts plus extra parts; the base is counted once, as its own pile). The shared-base score (derived / piles) is 26% at 5 and 8 piles and 40% at 12.
+
+The pale-tint pictures are where it pays:
+
+| picture (mean ΔE00 @5 / 8 / 12) | naive baseline | scratch library | with derived piles |
+|---|---|---|---|
+| high-key | 2.65 / 2.01 / 1.97 | 2.63 / 2.62 / 2.61 | **2.09 / 2.10 / 1.95** |
+| landscape | 7.37 / 6.16 / 5.57 | 8.31 / 7.00 / 6.72 | **7.78 / 6.30 / 5.98** |
+
+Overall, naive baseline → final plan (Core six): mean ΔE00 6.46 / 4.92 / 4.55 → **5.30 / 4.32 / 3.89**, visibly off 52.8 / 38.2 / 32.5% → **37.8 / 30.0 / 25.1%**, no pile without a clean ratio (was 20–29%), p50 runtime 510 / 892 / 1200 ms → **178 / 204 / 242 ms**. Zorn: 7.99 / 6.55 / 6.40 → **6.93 / 6.17 / 5.76**.
+
+What I measured and chose:
+
+- **Ratio range.** Up to 4 + 4 parts gives 5.30 / 4.32 / 3.89 at 234 ms; 8 + 8 the same at 381 ms; 12 + 12 the same at 607 ms. Finer ratios do not help, so the plan uses 4 + 4.
+- **Interaction with the parts price.** With derived piles, α = 0.0025 gives 5.18 / 4.26 / 3.82 at 48 / 67 / 94 parts, α = 0.01 gives 5.31 / 4.34 / 3.98 at 38 / 52 / 69. I kept α = 0.005: it lowers ΔE00 and parts together relative to scratch-only, which is the claim I can state without a caveat.
+- **Monotonicity is no longer exact.** The derivation pass is greedy, so one picture gives back a hair: `high-key` 2.09 at 5 piles, 2.10 at 8. Scratch-only plans are exactly monotone (ratcheted at zero); derived plans are ratcheted at 0.05 ΔE00.
+- **Runtime rose by about 30–80 ms** (the derivation pass evaluates each pile against every other pile's dilutions). Still 3–5× faster than the naive plan and independent of the budget.
+
+Caveats specific to derived piles:
+
+- **They lean on the model twice.** A derived pile treats a base as "its pigments in the proportions of its recipe", and the model's weights are spectral.js factors, not volumes (accuracy audit §5a). A recipe of "3 parts pile A + 1 part white" therefore inherits the same unvalidated assumption as any recipe, once more. The plan UI must show it as a prediction like the rest.
+- **The base has to be mixed in enough quantity** for its own area plus what the derived piles take. The plan says which pile is the base but does not size batches.
+
+## What is still weak after Phase 2
+
+1. **The library's resolution is the limit on some pictures, and that is not a selection problem.** Even with a pile for every color, the nearest library swatch is more than 5 ΔE00 away for 55% of `landscape` and 51% of `sunset`. Mean ΔE00 to the nearest library swatch (every fit color gets its own pile, area-weighted, 1500 merged colors) against the per-color solver's sampled reference:
+
+   | picture | library, a pile per color | per-color solver reference | share of area >5 from every library swatch |
+   |---|---|---|---|
+   | fruit-saturated | 2.29 | 3.68 | 7% |
+   | high-key | 2.48 | 2.77 | 2% |
+   | interior-warm | 2.41 | 2.65 | 4% |
+   | **landscape** | **5.45** | **4.51** | **55%** |
+   | low-key | 3.01 | 4.39 | 6% |
+   | portrait-deep | 2.04 | 2.94 | 2% |
+   | portrait-light | 1.81 | 3.60 | 2% |
+   | still-life-muted | 1.48 | 4.28 | 0% |
+   | sunset | 7.08 | 7.71 | 51% |
+
+   For eight of nine pictures the library reaches closer than the per-color solver, often by a lot. `landscape` is the exception: its yellow-greens (`#84A93D`: library 8.4, solver 5.4) and pale blues (`#B8D4EA`: 7.3 vs 3.9) need a touch of a strong pigment (a fraction of one part in 16), which the solver reached with percentage recipes that have no clean ratio. Derived piles recover part of it (7.00 → 6.30 at 8 piles); the 12-pile plan (5.98) is already close to the library's own floor (5.45), so more careful selection cannot close the rest. Allowing longer ratios would (24 parts gained 0.23 ΔE00 overall), at the price of piles a painter cannot measure. That is a product decision, not a tuning one.
+2. **`sunset` (palette-limited) is unchanged**: 9.20 / 8.11 / 7.89 against a naive 10.49 / 8.94 / 8.45. Half its area is beyond the Core six's gamut with any recipe.
+3. **The tail is not better.** p95 ΔE00 (mean over pictures) is 13.96 / 10.22 / 9.01 against the baseline's 13.04 / 9.97 / 8.93. The plan minimizes mean ΔE00; small saturated accents are the first thing it gives up. The cost exponent that protected them (γ) was measured and rejected because it inflated parts and hurt small budgets.
+4. **Value error** is 3.62 / 2.65 / 2.17 ΔL* against the baseline's 3.34 / 2.49 / 2.07: about 5–8% higher, even with the value-weighted objective.
+5. **`landscape` is still behind the naive plan at 5 and 12 piles** (7.78 vs 7.37, 5.98 vs 5.57), recorded as a ratchet so the gap can only close.
+6. **Not tested: real photographs.** All of this is on nine generated pictures.

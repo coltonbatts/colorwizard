@@ -31,6 +31,8 @@ export type Planner = (hist: Histogram, budget: number, ctx: PlanContext) => Pro
 export const PLANNERS: Record<string, Planner> = {
     naive: (hist, budget, ctx) => naivePlan(hist, budget, ctx.solve),
     library: (hist, budget, ctx) => makePlan(hist, budget, ctx.pigments),
+    /** The library planner with every pile mixed from scratch (no derived piles): what step 1 of Phase 2 measured. */
+    'library-scratch': (hist, budget, ctx) => makePlan(hist, budget, ctx.pigments, { derive: false }),
 }
 
 /** A planner with explicit options, for experiments. */
@@ -115,6 +117,7 @@ export interface Summary {
     worstUnreachableArea: number
     visiblyOffArea: number
     totalParts: number
+    derivedPiles: number
     unpaintableShare: number
     distinctPigments: number
     minorPiles: number
@@ -135,6 +138,7 @@ export function summarize(rows: PlanRow[]): Summary {
         worstUnreachableArea: Math.max(...pick((r) => r.score.unreachableArea)),
         visiblyOffArea: mean(pick((r) => r.score.visiblyOffArea)),
         totalParts: mean(pick((r) => r.score.totalParts)),
+        derivedPiles: mean(pick((r) => r.score.derivedPiles)),
         unpaintableShare: rows.reduce((s, r) => s + r.score.unpaintablePiles, 0) / rows.reduce((s, r) => s + r.score.pileCount, 0),
         distinctPigments: mean(pick((r) => r.score.distinctPigments)),
         minorPiles: mean(pick((r) => r.score.minorPiles)),
@@ -173,17 +177,17 @@ export async function measurePerPixelReference(image: CorpusImage, solve: PlanSo
 }
 
 /**
- * Pictures whose mean ΔE00 got WORSE when the pile budget went up. A plan with more piles
- * could always reuse a smaller plan's piles, so each entry is an algorithm weakness.
+ * Pictures whose mean ΔE00 got WORSE (by more than `tolerance`) when the pile budget went up. A
+ * nearest-swatch repaint cannot get worse when piles are added, so each entry is an algorithm weakness.
  */
-export function monotonicityViolations(rows: PlanRow[]): Array<{ image: string; from: number; to: number; before: number; after: number }> {
+export function monotonicityViolations(rows: PlanRow[], tolerance = 0): Array<{ image: string; from: number; to: number; before: number; after: number }> {
     const out: Array<{ image: string; from: number; to: number; before: number; after: number }> = []
     const budgets = [...new Set(rows.map((r) => r.budget))].sort((a, b) => a - b)
     for (const image of new Set(rows.map((r) => r.image))) {
         for (let i = 1; i < budgets.length; i++) {
             const before = rows.find((r) => r.image === image && r.budget === budgets[i - 1])
             const after = rows.find((r) => r.image === image && r.budget === budgets[i])
-            if (before && after && after.score.meanDeltaE00 > before.score.meanDeltaE00 + 1e-9) {
+            if (before && after && after.score.meanDeltaE00 > before.score.meanDeltaE00 + tolerance + 1e-9) {
                 out.push({ image, from: budgets[i - 1], to: budgets[i], before: before.score.meanDeltaE00, after: after.score.meanDeltaE00 })
             }
         }
