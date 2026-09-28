@@ -85,7 +85,7 @@ async function main() {
         [...Object.entries(groups).map(([set, r]) => summarizeSolver(set, r)), summarizeSolver('ALL', rows)]
     );
 
-    console.log('Match-quality bands (recipe.error thresholds Excellent <1, Good <2.5, Fair <6):\n');
+    console.log('Match-quality bands (ΔE00 of predictedHex: Excellent <1, Good <2.5, Fair <5):\n');
     table(
         ['set', 'Excellent', 'Good', 'Fair', 'Poor'],
         Object.entries(groups).map(([set, r]) => [
@@ -94,7 +94,7 @@ async function main() {
         ])
     );
 
-    console.log('What each match-quality label means in CIEDE2000 (predictedHex vs target):\n');
+    console.log('What each match-quality label covers in CIEDE2000 (predictedHex vs target):\n');
     table(
         ['label', 'n', 'ΔE00 p50', 'p95', 'max'],
         (['Excellent', 'Good', 'Fair', 'Poor'] as const).map((q) => {

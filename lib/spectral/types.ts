@@ -53,7 +53,9 @@ export interface SpectralRecipe {
     predictedHex: string;
     /** OKLab model error between predicted mix and target (not CIEDE2000) */
     error: number;
-    /** Model-fit band derived from OKLab error thresholds */
+    /** CIEDE2000 between predictedHex and the target hex */
+    error00?: number;
+    /** Model-fit band derived from CIEDE2000 (same bands as the thread match) */
     matchQuality: 'Excellent' | 'Good' | 'Fair' | 'Poor';
     /** Step-by-step mixing instructions */
     steps: string[];
@@ -62,7 +64,26 @@ export interface SpectralRecipe {
 }
 
 /**
- * Spectral model-fit thresholds (OKLab error, not CIEDE2000)
+ * CIEDE2000 bands for a recipe's predicted color vs the target: under 1 is
+ * imperceptible, under 2.5 close side by side, under 5 a visible but usable
+ * miss. Matches the thread-match wording.
+ */
+export const MATCH_THRESHOLDS_00 = {
+    EXCELLENT: 1,
+    GOOD: 2.5,
+    FAIR: 5,
+} as const;
+
+export function getMatchQuality00(error00: number): SpectralRecipe['matchQuality'] {
+    if (error00 < MATCH_THRESHOLDS_00.EXCELLENT) return 'Excellent';
+    if (error00 < MATCH_THRESHOLDS_00.GOOD) return 'Good';
+    if (error00 < MATCH_THRESHOLDS_00.FAIR) return 'Fair';
+    return 'Poor';
+}
+
+/**
+ * Spectral model-fit thresholds on OKLab error (not CIEDE2000). Used where
+ * only an OKLab error is available (Mix Lab); recipes use getMatchQuality00.
  */
 export const MATCH_THRESHOLDS = {
     EXCELLENT: 1.0,

@@ -18,7 +18,8 @@ import {
     registerPigments,
 } from '../spectral/adapter';
 import { nelderMeadRefine } from './nelderMead';
-import { SpectralRecipe, MixInput, getMatchQuality, MATCH_THRESHOLDS, Pigment } from '../spectral/types';
+import { differenceCiede2000 } from 'culori';
+import { SpectralRecipe, MixInput, getMatchQuality00, Pigment } from '../spectral/types';
 import { getPaints, paintToPigment } from './catalog';
 import { generatePainterlyMixingSteps } from './mixingWorkflow';
 import { findPaintableParts } from './parts';
@@ -367,14 +368,17 @@ export async function solveRecipe(
         .filter((i) => i.weight >= CONFIG.MIN_WEIGHT)
         .sort((a, b) => b.weight - a.weight);
 
+    const error00 = differenceCiede2000()(best.hex, targetHex);
+
     return {
         ingredients,
         predictedHex: best.hex,
         error: best.error,
+        error00,
         paintable: wholeParts.withinBudget,
         unroundedError,
         ...(wholeParts.withinBudget ? { totalParts: wholeParts.totalParts } : {}),
-        matchQuality: getMatchQuality(best.error),
+        matchQuality: getMatchQuality00(error00),
         steps: generateSteps(ingredients, targetLightness, targetHex),
     };
 }

@@ -82,7 +82,13 @@ describe('accuracy ratchets (Core 6, default options)', () => {
         expect(quantile(errors, 0.95)).toBeLessThan(3.7);
         expect(rows.filter((r) => r.unpaintable).length / rows.length).toBeLessThan(0.27);
         expect(Math.max(...errors)).toBeLessThan(5.6);
-        expect(rows.filter((r) => r.matchQuality === 'Poor')).toHaveLength(0);
+        // Labels are CIEDE2000 bands; 12/64 curated colors are honestly >5 ΔE00 (was 0 by the OKLab bands).
+        expect(rows.filter((r) => r.matchQuality === 'Poor').length).toBeLessThanOrEqual(12);
+        // A label must never claim more than its band: Excellent <1, Good <2.5, Fair <5 ΔE00.
+        for (const row of rows) {
+            const limit = { Excellent: 1, Good: 2.5, Fair: 5, Poor: Infinity }[row.matchQuality as 'Excellent'];
+            expect(row.error00).toBeLessThan(limit);
+        }
     }, 60000);
 
     it('recovers colors that are exactly mixable from a known recipe', async () => {
