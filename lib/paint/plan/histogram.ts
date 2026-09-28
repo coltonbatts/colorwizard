@@ -73,3 +73,40 @@ export function buildHistogram(rgba: ArrayLike<number>, options: HistogramOption
     })
     return { size, rgb, count, oklab, total }
 }
+
+/**
+ * Merge a histogram's near colors so it has at most `maxColors` entries: the finest
+ * bit depth that fits. Each merged color is the pixel-weighted mean of what it replaces.
+ * Plans FIT on this and are SCORED on the full histogram.
+ */
+export function coarsenHistogram(hist: Histogram, maxColors: number): Histogram {
+    if (hist.size <= maxColors) return hist
+    for (let bits = 7; bits >= 1; bits--) {
+        const shift = 8 - bits
+        const groups = new Map<number, [number, number, number, number]>()
+        for (let i = 0; i < hist.size; i++) {
+            const n = hist.count[i]
+            const key = ((hist.rgb[i * 3] >> shift) << 16) | ((hist.rgb[i * 3 + 1] >> shift) << 8) | (hist.rgb[i * 3 + 2] >> shift)
+            const g = groups.get(key)
+            if (g) {
+                g[0] += n
+                g[1] += n * hist.rgb[i * 3]
+                g[2] += n * hist.rgb[i * 3 + 1]
+                g[3] += n * hist.rgb[i * 3 + 2]
+            } else groups.set(key, [n, n * hist.rgb[i * 3], n * hist.rgb[i * 3 + 1], n * hist.rgb[i * 3 + 2]])
+        }
+        if (groups.size > maxColors && bits > 1) continue
+        const keys = [...groups.keys()].sort((a, b) => a - b)
+        const rgb = new Uint8Array(keys.length * 3)
+        const count = new Float64Array(keys.length)
+        const oklab = new Float64Array(keys.length * 3)
+        keys.forEach((key, i) => {
+            const [n, r, g, b] = groups.get(key)!
+            rgb.set([Math.round(r / n), Math.round(g / n), Math.round(b / n)], i * 3)
+            count[i] = n
+            oklab.set(srgb8ToOklab(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]), i * 3)
+        })
+        return { size: keys.length, rgb, count, oklab, total: hist.total }
+    }
+    return hist
+}

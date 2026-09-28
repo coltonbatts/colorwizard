@@ -2,7 +2,7 @@
  * Whole-picture paint plan benchmark.
  *
  *   npx vite-node -c vitest.config.ts scripts/paint-plan-benchmark.ts \
- *     [--algo naive] [--palette core6|zorn] [--budgets 5,8,12] [--reference] [--photos] [--json out.json]
+ *     [--algo library|naive] [--palette core6|zorn] [--budgets 5,8,12] [--reference] [--photos] [--json out.json]
  *
  * Plans every corpus picture (lib/paint/plan/fixtures/) at each pile budget with the chosen
  * algorithm and prints markdown tables: quality per picture, the summary per budget, and
@@ -12,12 +12,12 @@
  */
 import { writeFileSync } from 'node:fs'
 import { loadCorpus } from '../lib/paint/plan/fixtures/corpus'
-import { measurePerPixelReference, monotonicityViolations, PALETTES, PLANNERS, runBenchmark, solverFor, summarize, type PerPixelReference } from '../lib/paint/plan/benchmark'
+import { measurePerPixelReference, monotonicityViolations, contextFor, PALETTES, PLANNERS, runBenchmark, summarize, type PerPixelReference } from '../lib/paint/plan/benchmark'
 import { buildHistogram } from '../lib/paint/plan/histogram'
 
 const args = process.argv.slice(2)
 const option = (name: string, fallback: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback)
-const algo = option('--algo', 'naive')
+const algo = option('--algo', 'library')
 const palette = option('--palette', 'core6')
 const budgets = option('--budgets', '5,8,12').split(',').map(Number)
 const withReference = args.includes('--reference')
@@ -39,10 +39,10 @@ function table(headers: string[], rows: Array<Array<string | number>>) {
 
 async function main() {
     const images = loadCorpus(withPhotos ? 'all' : 'synthetic')
-    const solve = solverFor(palette)
+    const ctx = contextFor(palette)
     console.log(`## Plan benchmark: algorithm \`${algo}\`, palette \`${palette}\`, ${images.length} pictures, budgets ${budgets.join('/')}\n`)
 
-    const rows = await runBenchmark(images, budgets, PLANNERS[algo], solve)
+    const rows = await runBenchmark(images, budgets, PLANNERS[algo], ctx)
 
     console.log('### Per picture\n')
     table(
@@ -86,8 +86,8 @@ async function main() {
 
     console.log('### Determinism\n')
     const probe = images[0]
-    const a = await PLANNERS[algo](buildHistogram(probe.data), budgets[0], solve)
-    const b = await PLANNERS[algo](buildHistogram(probe.data), budgets[0], solve)
+    const a = await PLANNERS[algo](buildHistogram(probe.data), budgets[0], ctx)
+    const b = await PLANNERS[algo](buildHistogram(probe.data), budgets[0], ctx)
     const same = JSON.stringify(a.piles.map((p) => [p.targetHex, p.recipe.predictedHex, p.recipe.ingredients.map((i) => [i.pigment.id, i.parts ?? i.weight])])) ===
         JSON.stringify(b.piles.map((p) => [p.targetHex, p.recipe.predictedHex, p.recipe.ingredients.map((i) => [i.pigment.id, i.parts ?? i.weight])]))
     console.log(`Same picture, palette and budget twice (${probe.name}, ${budgets[0]} piles) gives an identical plan: **${same}**\n`)
@@ -106,7 +106,7 @@ async function main() {
     if (withReference) {
         console.log('### Reference: solve each sampled pixel on its own with the per-color solver\n')
         console.log('Not a strict floor: the solver minimizes OKLab distance and rounds to whole parts, while a plan gives each pixel the nearest swatch in ΔE00, so a plan can beat it.\n')
-        for (const image of images) references.push(await measurePerPixelReference(image, solve))
+        for (const image of images) references.push(await measurePerPixelReference(image, ctx.solve))
         table(
             ['picture', 'sampled pixels', 'mean ΔE00', 'own recipe still Poor (>5)'],
             references.map((x) => [x.image, x.samples, f(x.meanDeltaE00), pct(x.unreachableShare)]),

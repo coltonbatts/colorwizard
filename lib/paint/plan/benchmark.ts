@@ -7,31 +7,61 @@
  */
 import { performance } from 'node:perf_hooks'
 import { solveRecipe, type SolveOptions } from '../solveRecipe'
-import type { SpectralRecipe } from '../../spectral/types'
+import { resolvePalettePigments } from '../palettePigments'
+import { DEFAULT_PALETTE, type Palette } from '../../types/palette'
+import type { Pigment, SpectralRecipe } from '../../spectral/types'
 import { buildHistogram, type Histogram } from './histogram'
 import type { CorpusImage } from './fixtures/corpus'
 import { mean, quantile, scorePlan, type PlanScore } from './metrics'
 import { naivePlan } from './naive'
+import { makePlan, type PlanOptions } from './plan'
 import { seededRandom } from './rng'
 import { rgbToHex } from './color'
 import type { Plan, PlanSolver } from './types'
 
-export type Planner = (hist: Histogram, budget: number, solve: PlanSolver) => Promise<Plan>
+/** What a planner is given besides the picture: how to solve a color, and the palette's tubes. */
+export interface PlanContext {
+    solve: PlanSolver
+    pigments: Pigment[]
+}
+
+export type Planner = (hist: Histogram, budget: number, ctx: PlanContext) => Promise<Plan>
 
 /** Every plan algorithm the benchmark knows, by name. The naive one never changes: it is the baseline. */
 export const PLANNERS: Record<string, Planner> = {
-    naive: (hist, budget, solve) => naivePlan(hist, budget, solve),
+    naive: (hist, budget, ctx) => naivePlan(hist, budget, ctx.solve),
+    library: (hist, budget, ctx) => makePlan(hist, budget, ctx.pigments),
 }
 
-const CORE_SIX_ZORN = ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red']
+/** A planner with explicit options, for experiments. */
+export const libraryPlanner = (options: PlanOptions): Planner => (hist, budget, ctx) => makePlan(hist, budget, ctx.pigments, options)
 
-/** Palettes the benchmark runs. `core6` is the app default; `zorn` is the classic four-tube limited palette. */
-export const PALETTES: Record<string, SolveOptions | undefined> = {
-    core6: undefined,
-    zorn: { paletteColorIds: CORE_SIX_ZORN },
+const palette = (name: string, ids: string[]): Palette => ({
+    id: name,
+    name,
+    colors: DEFAULT_PALETTE.colors.filter((c) => ids.includes(c.id)),
+    isActive: false,
+    isDefault: false,
+    createdAt: 0,
+})
+
+/**
+ * Palettes the benchmark runs. `core6` is the app default; `zorn` is the classic four-tube
+ * limited palette. Each gives the solver options the naive baseline uses and the pigments
+ * the library planner uses, both from the same palette.
+ */
+export const PALETTES: Record<string, { options: SolveOptions | undefined; pigments: Pigment[] }> = {
+    core6: { options: undefined, pigments: resolvePalettePigments(DEFAULT_PALETTE.colors) },
+    zorn: {
+        options: { paletteColorIds: ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red'] },
+        pigments: resolvePalettePigments(palette('zorn', ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red']).colors),
+    },
 }
 
-export const solverFor = (palette: string): PlanSolver => (hex) => solveRecipe(hex, PALETTES[palette])
+export const contextFor = (name: string): PlanContext => ({
+    solve: (hex) => solveRecipe(hex, PALETTES[name].options),
+    pigments: PALETTES[name].pigments,
+})
 
 export interface PlanRow {
     image: string
@@ -46,10 +76,10 @@ export interface PlanRow {
     plan: Plan
 }
 
-export async function runPlan(image: CorpusImage, budget: number, planner: Planner, solve: PlanSolver): Promise<PlanRow> {
+export async function runPlan(image: CorpusImage, budget: number, planner: Planner, ctx: PlanContext): Promise<PlanRow> {
     const hist = buildHistogram(image.data)
     const t0 = performance.now()
-    const plan = await planner(hist, budget, solve)
+    const plan = await planner(hist, budget, ctx)
     const ms = performance.now() - t0
     const labels = { Excellent: 0, Good: 0, Fair: 0, Poor: 0 }
     for (const pile of plan.piles) labels[pile.recipe.matchQuality]++
@@ -65,10 +95,10 @@ export async function runPlan(image: CorpusImage, budget: number, planner: Plann
     }
 }
 
-export async function runBenchmark(images: CorpusImage[], budgets: number[], planner: Planner, solve: PlanSolver): Promise<PlanRow[]> {
-    await planner(buildHistogram(images[0].data), 2, solve) // warm-up: the first call loads spectral.js
+export async function runBenchmark(images: CorpusImage[], budgets: number[], planner: Planner, ctx: PlanContext): Promise<PlanRow[]> {
+    await planner(buildHistogram(images[0].data), 2, ctx) // warm-up: the first call loads spectral.js
     const rows: PlanRow[] = []
-    for (const budget of budgets) for (const image of images) rows.push(await runPlan(image, budget, planner, solve))
+    for (const budget of budgets) for (const image of images) rows.push(await runPlan(image, budget, planner, ctx))
     return rows
 }
 

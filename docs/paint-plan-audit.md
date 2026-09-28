@@ -163,3 +163,53 @@ Per picture the best-to-worst spread across seeds is 0.05–0.42 ΔE00, except `
 - Timings are Node, single run, one machine. The browser runs the solver in a worker, so expect the same order of magnitude.
 - The reference is a 120-pixel sample and not a strict floor.
 - Only the Core six and Zorn palettes were run; no palette with custom tubes.
+
+# Phase 2: fixes, with measured before and after
+
+Each row is a measured before → after on the same nine pictures. "Before" is the naive baseline above; "after" is `npm run benchmark:plan` (default algorithm `library`). Every experiment below was run on Core six and Zorn.
+
+## Step 1: choose piles from a recipe library (`library.ts`, `select.ts`, `plan.ts`)
+
+Instead of clustering and asking the per-color solver, the plan builds a table of every whole-part recipe the palette can make (≤4 pigments, ≤16 parts, reduced ratios: 37,226 recipes for the Core six, built in about 130 ms and cached per palette), each with the swatch spectral.js predicts. It then picks piles by k-medoids over that table, judging candidates by ΔE00 of the predicted swatch, the metric users see. No randomness, no solver calls.
+
+| piles | mean ΔE00 | visibly off (>5) | piles with no clean ratio | pictures that got worse with more piles | ms p50 / p95 |
+|---|---|---|---|---|---|
+| 5 | 6.46 → **5.42** | 52.8% → **38.2%** | 20.0% → **0%** | | 510 / 636 → **148 / 308** |
+| 8 | 4.92 → **4.48** | 38.2% → **30.3%** | 29.2% → **0%** | 2 → **0** | 892 / 1063 → **157 / 305** |
+| 12 | 4.55 → **4.08** | 32.5% → **25.9%** | 21.3% → **0%** | | 1200 / 1493 → **169 / 322** |
+
+Zorn (four tubes): mean ΔE00 7.99 / 6.55 / 6.40 → **6.99 / 6.25 / 5.88**, visibly off 57.6 / 43.5 / 41.0% → **45.1 / 38.2 / 34.7%**, no piles without a clean ratio, runtime unchanged in kind (about 100 ms).
+
+The gain at 8 and 12 piles (0.44 and 0.47 ΔE00) is more than twice the k-means seed noise measured above (0.18 on the mean over pictures). Runtime no longer depends on the budget: it is dominated by fitting, not by one solve per pile.
+
+### What did NOT improve, or got worse
+
+- **Tail error.** p95 ΔE00 (mean over pictures) is 14.05 / 10.38 / 8.99 against the baseline's 13.04 / 9.97 / 8.93: flat to slightly worse, and the worst picture's p95 at 5 piles is 25.3 against 19.1. The plan minimizes mean ΔE00, so it favors the bulk of the picture over small saturated accents.
+- **Value error** is still higher than the baseline (2.25 vs 2.07 ΔL* at 12 piles, 2.68 vs 2.49 at 8), even with the value-weighted objective below, which cut it by 12% from where it would otherwise be.
+- **Two pictures are worse than the baseline**, both pale-tint pictures: `landscape` 6.16 → 7.00 at 8 piles and `high-key` 2.01 → 2.62 (flat at 2.6 from 8 piles up). The naive solver reached sky blues and off-whites with percentage recipes that have no clean ratio; ≤16 whole parts cannot express a 1:60 tint of a strong pigment, so a library restricted to measurable recipes cannot reach them. This is the case a diluted, derived pile is for.
+- **Parts per pile** with a clean ratio rose (10.3 / 9.5 / 9.0 against the baseline's 9.0 / 8.4 / 8.2 among its measurable piles). The totals in the summary are not comparable (the baseline counts unmeasurable piles as zero parts).
+- **Fewer piles than asked** when the palette cannot tell more apart: `high-key` returns 8 piles for a 12-pile budget (only 234 distinct near-white swatches exist among its candidates, and no further one lowers the cost). The UI has to say "8 of 12 used".
+- "Unreachable" (Poor-pile area) is essentially unchanged (20.8 / 17.1 / 17.2% against 25.2 / 19.0 / 17.1%): it is set by the palette, as expected.
+
+### Experiments (Core six, 9 pictures; each row also run on Zorn)
+
+The exchange rates are `alpha` (mean ΔE00 a plan may give up to save one part in a pile) and `beta` (to avoid one extra pigment). Both are in mean-ΔE00 units, so a sliver of the picture automatically gets a simpler recipe than a large pile.
+
+| knob | values tried | result | chosen |
+|---|---|---|---|
+| parts price α | 0 / .002 / .005 / .01 / .02 | total parts at 12 piles 154 / 119 / 100 / 87 / 76 for mean ΔE00 3.95 / 3.97 / 4.03 / 4.11 / 4.26 | **0.005** (a third fewer parts for +0.08) |
+| tube price β | 0 / .02 / .05 / .1 / .2 | distinct pigments at 8 piles 4.9 / 4.7 / 4.6 / 4.3 / 4.2 for mean ΔE00 +0 / .01 / .02 / .04 / .04 | **0.1** |
+| lightness weight kL in the objective | 1 / .8 / .65 / .5 | value error at 8 piles 3.03 / 2.79 / 2.65 / 2.61; mean ΔE00 unchanged from 8 piles up, +0.10 at 5 piles for .65 | **0.65** |
+| cost exponent γ | 1 / 1.3 / 1.6 / 2 | p95 at 8 piles 10.33 / 10.17 / 9.67 / 9.36, but 12–33% more parts at 12 piles (106 / 119 / 131 / 141), worse at 5 piles | rejected |
+| stop when a pile adds <ε | 0 / .01 / .03 / .06 | no change up to .03; at .06 drops to 10.3 of 12 piles for +0.04 | 0 (fill the budget) |
+| fit colors | 600 / 1200 / 2400 | ΔE00 within 0.03; runtime 422 / 563 / 1484 ms | **600** |
+| candidates per fit color | 12 / 24 / 48 | ΔE00 within 0.04; runtime 424 / 563 / 751 ms | **12** |
+| library depth | 12 / 16 / 24 parts | mean ΔE00 5.82 / 5.40 / 5.18 at 5 piles (4.98 / 4.44 / 4.29 at 8) | 16, the solver's limit (see below) |
+| library width | ≤3 / ≤4 pigments | ≤3 pigments is +0.5 to +0.7 worse | 4 |
+
+Two things stand out. First, the parts ceiling costs real accuracy: 24 parts would gain 0.23 ΔE00, mostly in tints. I kept the solver's limit of 16 because that is what the app already calls measurable, and will test dilution as the honest way to get finer tints. Second, the value-weighted objective is the right direction (the metric is still plain ΔE00 with kL = 1, so this cannot flatter the score), but it did not bring value error back down to the baseline's.
+
+### Measurement changes made along the way
+
+- `deltaE.ts`: an allocation-free CIEDE2000 kernel, 160 ns per call against 340 ns for culori's on prepared Lab values, tested equal to culori to 1e-7 (worst seen 2e-9, on a ΔE of 90 at near-opposite hues). `metrics.ts` now uses it. **Re-running the naive baseline through it changes no number (largest difference 2.5e-14)**, so the Phase 1 table above still stands.
+- Library check against the per-color solver on the 64 curated colors of the accuracy audit: library ΔE00 mean 2.81 against 2.92, better by more than 0.5 on 32 of 64 and by more than 2 on 8. It is never worse than a solver recipe that had a clean ratio (asserted in `library.test.ts`); the 15 colors where it is worse are all ones where the solver fell back to unmeasurable percentages (pale blues and off-whites).

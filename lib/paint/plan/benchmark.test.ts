@@ -9,11 +9,16 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest'
 import { solveRecipe } from '../solveRecipe'
-import { monotonicityViolations, PLANNERS, runBenchmark, runPlan, solverFor, summarize, type PlanRow } from './benchmark'
+import { contextFor, monotonicityViolations, PLANNERS, runBenchmark, runPlan, summarize, type PlanRow } from './benchmark'
 import { loadCorpus } from './fixtures/corpus'
 import { buildHistogram } from './histogram'
 import { hexToRgb, srgb8ToOklab } from './color'
 import { naivePlan } from './naive'
+import { makePlan } from './plan'
+import { scorePlan } from './metrics'
+import { resolvePalettePigments } from '../palettePigments'
+import { DEFAULT_PALETTE } from '../../types/palette'
+import { differenceCiede2000 } from 'culori'
 
 const images = loadCorpus('synthetic')
 const key = (plan: Awaited<ReturnType<typeof naivePlan>>) =>
@@ -22,7 +27,7 @@ const key = (plan: Awaited<ReturnType<typeof naivePlan>>) =>
 describe('naive baseline (the reference every algorithm is measured against)', () => {
     let rows: PlanRow[] = []
     beforeAll(async () => {
-        rows = await runBenchmark(images, [5, 8], PLANNERS.naive, solverFor('core6'))
+        rows = await runBenchmark(images, [5, 8], PLANNERS.naive, contextFor('core6'))
     }, 120000)
 
     it('stays within the measured envelope at 5 and 8 piles', () => {
@@ -68,23 +73,117 @@ describe('naive baseline (the reference every algorithm is measured against)', (
 describe('plan invariants (any algorithm)', () => {
     it('gives the identical plan for the same picture, palette and budget', async () => {
         const hist = buildHistogram(images[6].data)
-        const solve = solverFor('core6')
-        const a = await PLANNERS.naive(hist, 5, solve)
+        const ctx = contextFor('core6')
+        const a = await PLANNERS.naive(hist, 5, ctx)
         // Solve something else in between: results must not depend on solver history.
         await solveRecipe('#87CEEB')
-        const b = await PLANNERS.naive(hist, 5, solve)
+        const b = await PLANNERS.naive(hist, 5, ctx)
         expect(key(a)).toBe(key(b))
     }, 30000)
 
     it('uses only the tubes in the palette', async () => {
-        const row = await runPlan(images[6], 5, PLANNERS.naive, solverFor('zorn'))
+        const row = await runPlan(images[6], 5, PLANNERS.naive, contextFor('zorn'))
         const allowed = new Set(['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red'])
         for (const pile of row.plan.piles) for (const ingredient of pile.recipe.ingredients) expect(allowed.has(ingredient.pigment.id)).toBe(true)
     }, 30000)
 
     it('plans a picture with fewer distinct colors than piles without failing', async () => {
         const data = new Uint8Array([255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255])
-        const plan = await naivePlan(buildHistogram(data), 5, solverFor('core6'))
+        const plan = await naivePlan(buildHistogram(data), 5, contextFor('core6').solve)
         expect(plan.piles).toHaveLength(2)
+    }, 30000)
+})
+
+describe('library planner (the current algorithm)', () => {
+    let rows: PlanRow[] = []
+    beforeAll(async () => {
+        rows = await runBenchmark(images, [5, 8], PLANNERS.library, contextFor('core6'))
+    }, 120000)
+
+    it('stays within the measured envelope at 5 and 8 piles', () => {
+        const five = summarize(rows.filter((r) => r.budget === 5))
+        const eight = summarize(rows.filter((r) => r.budget === 8))
+        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.42, visibly off 38.2%; 8 piles mean 4.48, p95 10.38,
+        // visibly off 30.3%, value error 2.68. Naive baseline was 6.46 / 52.8% and 4.92 / 9.97 / 38.2% / 2.49.
+        expect(five.meanDeltaE00).toBeLessThan(5.6)
+        expect(five.visiblyOffArea).toBeLessThan(0.4)
+        expect(eight.meanDeltaE00).toBeLessThan(4.65)
+        expect(eight.visiblyOffArea).toBeLessThan(0.32)
+        expect(eight.p95DeltaE00).toBeLessThan(10.7)
+        expect(eight.meanValueError).toBeLessThan(2.8)
+        expect(eight.msP95).toBeLessThan(2000)
+    })
+
+    it('beats the recorded naive baseline by a margin larger than k-means seed noise (about 0.2)', () => {
+        // Naive baseline, seed 1, Core six (docs/paint-plan-audit.md): 5 piles 6.46 / 52.8% visibly off, 8 piles 4.92 / 38.2%.
+        const five = summarize(rows.filter((r) => r.budget === 5))
+        const eight = summarize(rows.filter((r) => r.budget === 8))
+        expect(five.meanDeltaE00).toBeLessThan(6.46 - 0.7)
+        expect(eight.meanDeltaE00).toBeLessThan(4.92 - 0.3)
+        expect(five.visiblyOffArea).toBeLessThan(0.528 - 0.1)
+        expect(eight.visiblyOffArea).toBeLessThan(0.382 - 0.05)
+    })
+
+    it('never produces a pile without a clean whole-part ratio', () => {
+        for (const row of rows) for (const pile of row.plan.piles) {
+            expect(pile.recipe.paintable).toBe(true)
+            expect(Number.isInteger(pile.recipe.totalParts)).toBe(true)
+            expect(pile.recipe.totalParts).toBeLessThanOrEqual(16)
+            expect(pile.recipe.ingredients.reduce((sum, i) => sum + (i.parts ?? NaN), 0)).toBe(pile.recipe.totalParts)
+        }
+    })
+
+    it('labels each pile by the real ΔE00 of its swatch against its target, never better', () => {
+        const de = differenceCiede2000()
+        for (const row of rows) for (const pile of row.plan.piles) {
+            expect(pile.recipe.error00!).toBeCloseTo(de(pile.recipe.predictedHex, pile.targetHex), 6)
+            const limit = { Excellent: 1, Good: 2.5, Fair: 5, Poor: Infinity }[pile.recipe.matchQuality]
+            expect(pile.recipe.error00!).toBeLessThan(limit)
+        }
+    })
+
+    it('makes plans no larger than the budget, dark to light, covering the whole picture', () => {
+        for (const row of rows) {
+            expect(row.plan.piles.length).toBeLessThanOrEqual(row.budget)
+            expect(row.plan.piles.length).toBeGreaterThan(0)
+            expect(row.score.pileAreas.reduce((s, a) => s + a, 0)).toBeCloseTo(1, 9)
+            expect(new Set(row.plan.piles.map((p) => p.recipe.predictedHex)).size).toBe(row.plan.piles.length)
+        }
+    })
+
+    it('never looks worse with more piles', () => {
+        // Naive baseline: 2 of 9 pictures got worse. A nearest-swatch repaint cannot get worse with a superset of piles,
+        // and greedy selection builds one: this is a ratchet at zero.
+        expect(monotonicityViolations(rows)).toEqual([])
+    })
+
+    it('is deterministic, and independent of what was planned before', async () => {
+        const hist = buildHistogram(images[6].data)
+        const ctx = contextFor('core6')
+        const a = await PLANNERS.library(hist, 8, ctx)
+        await PLANNERS.library(buildHistogram(images[2].data), 5, ctx)
+        const b = await PLANNERS.library(hist, 8, ctx)
+        expect(key(a)).toBe(key(b))
+    }, 30000)
+
+    it('uses only the tubes in the palette, including a tube the user made up', async () => {
+        const hist = buildHistogram(images[8].data) // sunset
+        const zorn = await PLANNERS.library(hist, 8, contextFor('zorn'))
+        const allowed = new Set(['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red'])
+        for (const pile of zorn.piles) for (const i of pile.recipe.ingredients) expect(allowed.has(i.pigment.id)).toBe(true)
+
+        const magenta = { id: 'custom-magenta-c2185b', displayName: 'Magenta', hex: '#C2185B', tintingStrength: 2 }
+        const custom = resolvePalettePigments([...DEFAULT_PALETTE.colors, magenta])
+        const plan = await makePlan(hist, 8, custom)
+        expect(plan.piles.some((p) => p.recipe.ingredients.some((i) => i.pigment.id === magenta.id))).toBe(true)
+        const before = scorePlan(hist, zorn).meanDeltaE00
+        expect(scorePlan(hist, plan).meanDeltaE00).toBeLessThan(before) // more tubes cannot make the sunset worse
+    }, 60000)
+
+    it('plans a picture with fewer distinct colors than piles without failing', async () => {
+        const data = new Uint8Array([255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 255, 255])
+        const plan = await makePlan(buildHistogram(data), 5, contextFor('core6').pigments)
+        expect(plan.piles.length).toBeLessThanOrEqual(3)
+        expect(plan.piles.length).toBeGreaterThan(0)
     }, 30000)
 })
