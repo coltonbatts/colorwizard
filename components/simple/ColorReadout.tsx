@@ -5,16 +5,19 @@
  * Every swatch here is itself a color you can open.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { getColorName } from '@/lib/colorNaming'
 import { getColorTemperature } from '@/lib/colorTheory'
 import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
 import { getPainterChroma } from '@/lib/paintingMath'
-import { solveRecipe } from '@/lib/paint/solveRecipe'
+import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
+import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getPerceptualValue } from '@/lib/valueScale'
 import { getSolverWorker } from '@/lib/workers'
 import FlossImage from './FlossImage'
+import PaintPalette, { usePaintPalette } from './PaintPalette'
+import { describePaintFit, formatAmount, MODEL_CAVEAT, roundingNote } from './paintFit'
 import { pour, type PourOrigin } from './pour'
 import type { PickedColor } from './SimpleCanvas'
 import styles from './simple.module.css'
@@ -41,13 +44,6 @@ export function originOf(event: MouseEvent<HTMLElement>): PourOrigin {
 
 const SETTLE_MS = 120 // let a drag come to rest before running the solvers
 
-const PAINT_FIT: Record<SpectralRecipe['matchQuality'], string> = {
-  Excellent: 'Very close',
-  Good: 'Close',
-  Fair: 'Approximate',
-  Poor: 'Rough',
-}
-
 function threadFit(deltaE00: number) {
   if (deltaE00 < 1) return 'Exact'
   if (deltaE00 < 2.5) return 'Very close'
@@ -64,12 +60,12 @@ function useSettled<T>(value: T, delay: number) {
   return settled
 }
 
-async function solvePaint(hex: string): Promise<SpectralRecipe> {
+async function solvePaint(hex: string, options?: SolveOptions): Promise<SpectralRecipe> {
   try {
     const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000))
-    return await Promise.race([getSolverWorker().solveRecipe(hex), timeout])
+    return await Promise.race([getSolverWorker().solveRecipe(hex, options), timeout])
   } catch {
-    return solveRecipe(hex)
+    return solveRecipe(hex, options)
   }
 }
 
@@ -89,6 +85,8 @@ function useCopy() {
 
 export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
+  const palette = usePaintPalette()
+  const solveOptions = useMemo(() => getPaletteSolveOptions(palette), [palette])
   const [name, setName] = useState('')
   const [recipe, setRecipe] = useState<SpectralRecipe | null>(null)
   const [threads, setThreads] = useState<ThreadMatchResult | null>(null)
@@ -115,12 +113,12 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
       b: parseInt(settledHex.slice(5, 7), 16),
     }
     getColorName(settledHex).then((result) => { if (!cancelled) setName(result.name) }).catch(() => { if (!cancelled) setName('') })
-    solvePaint(settledHex).then((result) => { if (!cancelled) setRecipe(result) }).catch(() => { if (!cancelled) setRecipe(null) })
+    solvePaint(settledHex, solveOptions).then((result) => { if (!cancelled) setRecipe(result) }).catch(() => { if (!cancelled) setRecipe(null) })
     getThreadMatchContext(rgb, { alternativeCount: 3, topMatchCount: 4 })
       .then((result) => { if (!cancelled) setThreads(result) })
       .catch(() => { if (!cancelled) setThreads(null) })
     return () => { cancelled = true }
-  }, [settledHex])
+  }, [settledHex, solveOptions])
 
   const isCurrent = settledHex === color.hex
   const value = Math.round(getPerceptualValue(color.rgb.r, color.rgb.g, color.rgb.b) * 100) / 10
@@ -135,6 +133,7 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
     : []
   const ladder = threads?.familyLadder ?? []
   const ingredients = recipe?.ingredients.filter((ingredient) => ingredient.weight >= 0.005) ?? []
+  const fit = recipe ? describePaintFit(recipe, palette.isDefault ? 'The Core six' : 'Your palette') : null
 
   return (
     <div className={styles.readout}>
@@ -157,28 +156,38 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
       <section className={styles.section} aria-labelledby="paint-heading" aria-busy={!isCurrent || !recipe}>
         <div className={styles.sectionHead}>
           <h3 id="paint-heading">Paint</h3>
-          {recipe && <span>{PAINT_FIT[recipe.matchQuality]}</span>}
+          {fit && <span data-verdict={fit.verdict}>{fit.label}</span>}
         </div>
-        {ingredients.length > 0 ? (
+        {recipe && fit && ingredients.length > 0 ? (
           <div className={isCurrent ? undefined : styles.stale}>
-            <div className={styles.mixBar} aria-hidden="true">
-              {ingredients.map(({ pigment, weight }) => (
-                <i key={pigment.id} style={{ flexGrow: weight, backgroundColor: pigment.hex }} />
-              ))}
+            <div className={styles.compare} role="img" aria-label={`Target ${color.hex}, predicted mix ${recipe.predictedHex}`}>
+              <div style={{ backgroundColor: color.hex }}><span>Target</span></div>
+              <div style={{ backgroundColor: recipe.predictedHex }}><span>{fit.verdict === 'cannot' ? 'Closest' : 'Mix'}</span></div>
             </div>
-            <ul className={styles.rows}>
-              {ingredients.map(({ pigment, weight }) => (
-                <li key={pigment.id}>
-                  <i style={{ backgroundColor: pigment.hex }} aria-hidden="true" />
-                  <span>{pigment.name}</span>
-                  <code>{Math.round(weight * 100)}%</code>
-                </li>
-              ))}
-            </ul>
+            <p className={`${styles.fitNote} ${fit.verdict === 'cannot' ? styles.fitCannot : ''}`}>{fit.detail}</p>
+            <div className={fit.verdict === 'cannot' ? styles.dimmed : undefined}>
+              <div className={styles.mixBar} aria-hidden="true">
+                {ingredients.map(({ pigment, weight }) => (
+                  <i key={pigment.id} style={{ flexGrow: weight, backgroundColor: pigment.hex }} />
+                ))}
+              </div>
+              <ul className={styles.rows}>
+                {ingredients.map((ingredient) => (
+                  <li key={ingredient.pigment.id}>
+                    <i style={{ backgroundColor: ingredient.pigment.hex }} aria-hidden="true" />
+                    <span>{ingredient.pigment.name}</span>
+                    <code>{formatAmount(recipe, ingredient)}</code>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {roundingNote(recipe) && <p className={styles.smallNote}>{roundingNote(recipe)}</p>}
+            <p className={styles.smallNote}>{MODEL_CAVEAT}</p>
           </div>
         ) : (
-          <p className={styles.pending}>Mixing…</p>
+          <p className={styles.pending}>{recipe ? 'This paint set can’t make a recipe.' : 'Mixing…'}</p>
         )}
+        <PaintPalette palette={palette} />
       </section>
 
       <section className={styles.section} aria-labelledby="thread-heading" aria-busy={!isCurrent || !threads}>
