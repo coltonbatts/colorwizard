@@ -249,6 +249,20 @@ Caveats specific to derived piles:
 - **They lean on the model twice.** A derived pile treats a base as "its pigments in the proportions of its recipe", and the model's weights are spectral.js factors, not volumes (accuracy audit §5a). A recipe of "3 parts pile A + 1 part white" therefore inherits the same unvalidated assumption as any recipe, once more. The plan UI must show it as a prediction like the rest.
 - **The base has to be mixed in enough quantity** for its own area plus what the derived piles take. The plan says which pile is the base but does not size batches.
 
+## Tried and not adopted: a structural value-first mode
+
+Plan value steps first, then hue variants: choose 40–60% of the piles under a strongly value-weighted cost (CIEDE2000 kL 0.2–0.4), then fill the rest with the normal objective, with the value piles either frozen or refined afterwards. Measured against the default (Core six, 9 pictures):
+
+| variant | mean ΔE00 @5 / 8 / 12 | value error @8 | p95 @8 |
+|---|---|---|---|
+| default (kL 0.65 throughout) | 5.30 / 4.32 / 3.89 | 2.65 | 10.22 |
+| 50% at kL 0.3, frozen | 5.58 / 4.49 / 3.94 | 2.66 | 10.36 |
+| 50% at kL 0.3, refined | 5.47 / 4.41 / 3.92 | 2.68 | 10.03 |
+| 40% at kL 0.2, frozen | 5.47 / 4.50 / 3.98 | 2.61 | 11.03 |
+| 60% at kL 0.4, refined | 5.38 / 4.36 / 3.88 | 2.63 | 10.23 |
+
+No variant moves value error by more than 0.04 ΔL* while mean ΔE00 gets worse (up to +0.28 at 5 piles), so the plain value-weighted objective stays and the code was removed. The residual value gap to the naive plan (see below) is not a piling-order problem.
+
 ## What is still weak after Phase 2
 
 1. **The library's resolution is the limit on some pictures, and that is not a selection problem.** Even with a pile for every color, the nearest library swatch is more than 5 ΔE00 away for 55% of `landscape` and 51% of `sunset`. Mean ΔE00 to the nearest library swatch (every fit color gets its own pile, area-weighted, 1500 merged colors) against the per-color solver's sampled reference:
