@@ -55,6 +55,7 @@ describe('solver output invariants', () => {
                     expect(i.weight).toBeCloseTo(i.parts! / recipe.totalParts!, 9);
                 }
                 expect(recipe.error - recipe.unroundedError!).toBeLessThanOrEqual(1 + 1e-9);
+                expect(recipe.unroundedError00).toBeGreaterThanOrEqual(0);
             } else {
                 expect(recipe.totalParts).toBeUndefined();
                 expect(recipe.ingredients.every((i) => i.parts === undefined)).toBe(true);

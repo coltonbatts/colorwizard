@@ -346,6 +346,7 @@ export async function solveRecipe(
     // Step 4: Round to whole parts a painter can measure. The reported error is that of the
     // recipe as printed, not of the unrounded optimum.
     const unroundedError = best.error;
+    const unroundedError00 = differenceCiede2000()(best.hex, targetHex);
     const wholeParts = findPaintableParts(
         filteredPalette.map((pigment) => pigment.id),
         targetColor,
@@ -388,6 +389,7 @@ export async function solveRecipe(
         error00,
         paintable: wholeParts.withinBudget,
         unroundedError,
+        unroundedError00,
         ...(wholeParts.withinBudget ? { totalParts: wholeParts.totalParts } : {}),
         matchQuality: getMatchQuality00(error00),
         steps: generateSteps(ingredients, targetLightness, targetHex),

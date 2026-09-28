@@ -49,6 +49,8 @@ export interface SpectralRecipe {
     paintable?: boolean;
     /** OKLab error of the unrounded optimum, before rounding to whole parts */
     unroundedError?: number;
+    /** CIEDE2000 of the unrounded optimum's swatch vs the target (error00 minus this is the rounding cost) */
+    unroundedError00?: number;
     /** Predicted hex color of the mix */
     predictedHex: string;
     /** OKLab model error between predicted mix and target (not CIEDE2000) */
