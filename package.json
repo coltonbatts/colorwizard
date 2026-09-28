@@ -25,6 +25,7 @@
     "tauri:build:dmg": "tauri build --bundles dmg",
     "tauri:build": "tauri build",
     "benchmark:paint": "vite-node -c vitest.config.ts scripts/paint-benchmark.ts",
+    "benchmark:plan": "vite-node -c vitest.config.ts scripts/paint-plan-benchmark.ts",
     "validate:paints": "node scripts/validate-paints.mjs"
   },
   "dependencies": {
