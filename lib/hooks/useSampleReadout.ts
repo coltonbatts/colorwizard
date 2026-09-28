@@ -7,6 +7,7 @@ import { getPainterChroma, getLuminance, getPainterValuePercent, getValueBand } 
 import { getValueModeMetadataFromRgb, valueToGrayHex } from '@/lib/valueMode'
 import { luminanceToValue01 } from '@/lib/valueScale'
 import type { Palette } from '@/lib/types/palette'
+import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 
 export type SampleReadoutColor = {
   hex: string
@@ -24,11 +25,7 @@ export type SampleReadoutColor = {
 type ValueModeSteps = 5 | 7 | 9 | 11
 
 export function getPaletteRecipeOptions(activePalette?: Palette) {
-  if (!activePalette || activePalette.isDefault) return undefined
-
-  return {
-    paletteColorIds: activePalette.colors.map(color => color.id),
-  }
+  return getPaletteSolveOptions(activePalette)
 }
 
 export function useSampleReadout({

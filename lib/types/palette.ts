@@ -10,6 +10,13 @@ export interface PaletteColor {
     id: string;
     /** Display name (e.g., 'Titanium White') */
     displayName: string;
+    /**
+     * Set on a tube the user defined themselves (id starts with `custom-`). Library
+     * colors resolve their hex and strength from spectral/palette.ts instead.
+     */
+    hex?: string;
+    /** Custom tube tinting strength relative to titanium white (1.0); see spectral/palette.ts */
+    tintingStrength?: number;
 }
 
 /**

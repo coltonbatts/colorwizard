@@ -19,6 +19,7 @@ import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import type { ColorCard } from '@/lib/types/colorCard'
 import type { Palette } from '@/lib/types/palette'
+import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import type { PinnedColor } from '@/lib/types/pinnedColor'
 
 export type InspectorDisclosure = 'collapsed' | 'medium' | 'expanded'
@@ -82,8 +83,7 @@ export default function SampleInspector({
     if (hasPaintPalette && selectedPaintIds.length) {
       return { useCatalog: true as const, paintIds: selectedPaintIds }
     }
-    if (activePalette.isDefault) return undefined
-    return { paletteColorIds: activePalette.colors.map((color) => color.id) }
+    return getPaletteSolveOptions(activePalette)
   }, [activePalette, hasPaintPalette, selectedPaintIds])
 
   const labValue = useMemo(() => {

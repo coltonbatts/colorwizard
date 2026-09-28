@@ -122,6 +122,12 @@ export interface SolveOptions {
     paletteColorIds?: string[];
 
     /**
+     * Use exactly these pigments (the user's own tubes, see palettePigments.ts).
+     * Takes precedence over paletteColorIds; useCatalog takes precedence over both.
+     */
+    pigments?: Pigment[];
+
+    /**
      * Use the new paint catalog instead of legacy PALETTE.
      * When true, brandId and lineId filters are used.
      */
@@ -267,6 +273,11 @@ export async function solveRecipe(
                 hex: p.hex,
                 tintingStrength: p.behavior?.tintingStrength ?? 1.0,
             }))
+        );
+    } else if (options?.pigments) {
+        filteredPalette = options.pigments;
+        await registerPigments(
+            filteredPalette.map((p) => ({ id: p.id, hex: p.hex, tintingStrength: p.tintingStrength }))
         );
     } else if (options?.paletteColorIds) {
         // Legacy mode: filter by pigment IDs

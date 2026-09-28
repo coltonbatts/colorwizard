@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_PALETTE, Palette } from '../types/palette'
+import { DEFAULT_PALETTE, Palette, PaletteColor } from '../types/palette'
 import { safeStorage } from './storage'
 
 interface PaletteState {
@@ -12,6 +12,9 @@ interface PaletteState {
     updatePalette: (palette: Palette) => void
     deletePalette: (id: string) => void
     setActivePalette: (id: string) => void
+    /** Add a color (library or the user's own tube) to a palette; no-op if it is already there. */
+    addColorToPalette: (paletteId: string, color: PaletteColor) => void
+    removeColorFromPalette: (paletteId: string, colorId: string) => void
 }
 
 export const usePaletteStore = create<PaletteState>()(
@@ -41,6 +44,20 @@ export const usePaletteStore = create<PaletteState>()(
 
                 return { palettes: filtered }
             }),
+            addColorToPalette: (paletteId, color) => set((state) => ({
+                palettes: state.palettes.map((palette) => (
+                    palette.id !== paletteId || palette.isDefault || palette.colors.some((c) => c.id === color.id)
+                        ? palette
+                        : { ...palette, colors: [...palette.colors, color] }
+                ))
+            })),
+            removeColorFromPalette: (paletteId, colorId) => set((state) => ({
+                palettes: state.palettes.map((palette) => (
+                    palette.id !== paletteId || palette.isDefault
+                        ? palette
+                        : { ...palette, colors: palette.colors.filter((c) => c.id !== colorId) }
+                ))
+            })),
             setActivePalette: (id) => set((state) => ({
                 palettes: state.palettes.map((palette) => ({
                     ...palette,

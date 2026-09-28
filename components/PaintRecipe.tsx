@@ -13,6 +13,7 @@ import ProcreateExportButton from './ProcreateExportButton'
 import { SPECTRAL_RECIPE_DISCLAIMER } from '@/lib/colorSemantics'
 import type { ProcreateColor } from '@/lib/types/procreate'
 import { getPaletteSetupState, getRecipeTrustState } from '@/lib/paint/recipeGuard'
+import { getPaletteSolveOptions, resolvePalettePigments } from '@/lib/paint/palettePigments'
 
 interface PaintRecipeProps {
   hsl: { h: number; s: number; l: number }
@@ -68,9 +69,10 @@ export default function PaintRecipe({
   const [solverFailed, setSolverFailed] = useState(false)
   const showLoading = useDebouncedLoading(isLoading, 100)
   const heuristicRecipe = useMemo(() => generatePaintRecipe(hsl), [hsl])
+  const paletteOptions = useMemo(() => getPaletteSolveOptions(activePalette), [activePalette])
   const paletteColorIds = useMemo(
     () => activePalette && !activePalette.isDefault
-      ? activePalette.colors.map((color) => color.id)
+      ? resolvePalettePigments(activePalette.colors).map((pigment) => pigment.id)
       : undefined,
     [activePalette],
   )
@@ -92,7 +94,7 @@ export default function PaintRecipe({
       setSolverFailed(false)
       let options: SolveOptions | undefined
       if (useCatalog) options = { useCatalog: true, brandId, lineId, paintIds }
-      else if (paletteColorIds) options = { paletteColorIds }
+      else if (paletteOptions) options = paletteOptions
 
       try {
         const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000))
@@ -117,7 +119,7 @@ export default function PaintRecipe({
     }
     void solve()
     return () => { cancelled = true }
-  }, [brandId, paintIds, paletteColorIds, paletteSetupState, lineId, targetHex, useCatalog])
+  }, [brandId, paintIds, paletteOptions, paletteSetupState, lineId, targetHex, useCatalog])
 
   const fallbackIngredients = useMemo<SpectralRecipe['ingredients']>(() => {
     const raw = heuristicRecipe.colors.map((color) => {

@@ -54,8 +54,9 @@ function getRecipeSourceLabel(options: CreateColorCardOptions): string {
         return count ? `Paint library (${count})` : 'Paint library'
     }
 
-    if (options.solveOptions?.paletteColorIds?.length) {
-        return `Active palette (${options.solveOptions.paletteColorIds.length})`
+    const paletteSize = options.solveOptions?.pigments?.length ?? options.solveOptions?.paletteColorIds?.length
+    if (paletteSize) {
+        return `Active palette (${paletteSize})`
     }
 
     return 'Core six-color mix'
