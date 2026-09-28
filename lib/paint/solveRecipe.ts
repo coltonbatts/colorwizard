@@ -26,12 +26,14 @@ import { generatePainterlyMixingSteps } from './mixingWorkflow';
  * Solver configuration.
  */
 const CONFIG = {
-    /** Coarse grid step (percentage points) */
+    /** Coarse grid step (percentage points) for 2- and 3-pigment searches */
     COARSE_STEP: 2,
-    /** Fine grid step for refinement */
-    FINE_STEP: 0.5,
-    /** Error threshold to include 3-pigment search */
-    THREE_PIGMENT_THRESHOLD: 1.5,
+    /** Coarser grid for the 4-pigment search (its grid is much larger) */
+    FOUR_PIGMENT_STEP: 5,
+    /** Skip the 3-pigment search when 2 pigments already match this closely (hex rounding noise) */
+    THREE_PIGMENT_THRESHOLD: 0.3,
+    /** A 4th pigment must improve on the best 3-pigment recipe by at least this much ΔE-OK */
+    FOUR_PIGMENT_MIN_GAIN: 1.0,
     /** Minimum weight to include a pigment */
     MIN_WEIGHT: 0.01,
     /** Max value deviation that triggers white/black */
@@ -145,31 +147,32 @@ export interface SolveDiagnostics {
     threePigmentError?: number;
     /** True when the 3-pigment result replaced the 2-pigment one */
     usedThreePigment?: boolean;
-    /** Error before Nelder-Mead refinement */
+    /** Best error after the 2- and 3-pigment stages, before the 4-pigment stage */
     preRefineError?: number;
+    /** True when the 4-pigment recipe replaced the 3-pigment one */
+    usedFourPigment?: boolean;
 }
 
 /**
- * Search for best 2-pigment mix.
+ * Grid search over every n-pigment subset of the palette.
  */
-function search2PigmentsSync(
+function searchPigmentsSync(
     targetColor: any, // SpectralColor
-    filteredPalette: typeof PALETTE
+    filteredPalette: typeof PALETTE,
+    n: number,
+    step: number
 ): SolverCandidate | null {
-    const pigmentCombos = combinations(filteredPalette.map((p) => p.id), 2);
-    const weights = weightGrid(2, CONFIG.COARSE_STEP);
+    const pigmentCombos = combinations(filteredPalette.map((p) => p.id), n);
+    const weights = weightGrid(n, step);
 
     let best: SolverCandidate | null = null;
 
-    for (const [p1, p2] of pigmentCombos) {
-        for (const [w1, w2] of weights) {
-            if (w1 < CONFIG.MIN_WEIGHT || w2 < CONFIG.MIN_WEIGHT) continue;
+    for (const ids of pigmentCombos) {
+        for (const w of weights) {
+            if (w.some((weight) => weight < CONFIG.MIN_WEIGHT)) continue;
 
             try {
-                const inputs: MixInput[] = [
-                    { pigmentId: p1, weight: w1 },
-                    { pigmentId: p2, weight: w2 },
-                ];
+                const inputs: MixInput[] = ids.map((pigmentId, i) => ({ pigmentId, weight: w[i] }));
                 const result = mixPigmentsSync(inputs);
                 const error = deltaESync(result.spectralColor, targetColor);
 
@@ -179,102 +182,6 @@ function search2PigmentsSync(
             } catch {
                 // Skip invalid combinations
             }
-        }
-    }
-
-    return best;
-}
-
-/**
- * Search for best 3-pigment mix.
- */
-function search3PigmentsSync(
-    targetColor: any, // SpectralColor
-    filteredPalette: typeof PALETTE
-): SolverCandidate | null {
-    const pigmentCombos = combinations(filteredPalette.map((p) => p.id), 3);
-    const weights = weightGrid(3, CONFIG.COARSE_STEP);
-
-    let best: SolverCandidate | null = null;
-
-    for (const [p1, p2, p3] of pigmentCombos) {
-        for (const [w1, w2, w3] of weights) {
-            if (w1 < CONFIG.MIN_WEIGHT || w2 < CONFIG.MIN_WEIGHT || w3 < CONFIG.MIN_WEIGHT) continue;
-
-            try {
-                const inputs: MixInput[] = [
-                    { pigmentId: p1, weight: w1 },
-                    { pigmentId: p2, weight: w2 },
-                    { pigmentId: p3, weight: w3 },
-                ];
-                const result = mixPigmentsSync(inputs);
-                const error = deltaESync(result.spectralColor, targetColor);
-
-                if (!best || error < best.error) {
-                    best = { inputs, hex: result.hex, error };
-                }
-            } catch {
-                // Skip invalid combinations
-            }
-        }
-    }
-
-    return best;
-}
-
-/**
- * Refine a candidate with finer weight steps.
- */
-function refineCandidateSync(
-    candidate: SolverCandidate,
-    targetColor: any // SpectralColor
-): SolverCandidate {
-    const n = candidate.inputs.length;
-    let best = candidate;
-
-    // Generate fine grid around current weights
-    const baseWeights = candidate.inputs.map((i) => i.weight);
-    const fineStep = CONFIG.FINE_STEP / 100;
-    const range = CONFIG.COARSE_STEP / 100;
-
-    // Try variations
-    const variations: number[][] = [];
-    function generateVariations(current: number[], idx: number) {
-        if (idx === n) {
-            const sum = current.reduce((a, b) => a + b, 0);
-            if (sum > 0.9 && sum < 1.1) {
-                // Normalize and add
-                variations.push(current.map((w) => w / sum));
-            }
-            return;
-        }
-        const base = baseWeights[idx];
-        for (let delta = -range; delta <= range; delta += fineStep) {
-            const newW = Math.max(0, base + delta);
-            current.push(newW);
-            generateVariations(current, idx + 1);
-            current.pop();
-        }
-    }
-    generateVariations([], 0);
-
-    for (const weights of variations) {
-        const inputs = candidate.inputs.map((i, idx) => ({
-            ...i,
-            weight: weights[idx],
-        }));
-
-        if (inputs.some((i) => i.weight < CONFIG.MIN_WEIGHT)) continue;
-
-        try {
-            const result = mixPigmentsSync(inputs);
-            const error = deltaESync(result.spectralColor, targetColor);
-
-            if (error < best.error) {
-                best = { inputs, hex: result.hex, error };
-            }
-        } catch {
-            // Skip invalid
         }
     }
 
@@ -367,8 +274,12 @@ export async function solveRecipe(
         throw new Error('Palette must contain at least one color');
     }
 
+    const refine = (candidate: SolverCandidate) =>
+        nelderMeadRefine(candidate, targetColor, { maxIterations: 100, tolerance: 0.5 });
+    const diagnostics = options?.diagnostics;
+
     // Step 1: Coarse 2-pigment search (or single if only 1 color)
-    let best = filteredPalette.length >= 2 ? search2PigmentsSync(targetColor, filteredPalette) : null;
+    let best = filteredPalette.length >= 2 ? searchPigmentsSync(targetColor, filteredPalette, 2, CONFIG.COARSE_STEP) : null;
 
     // If only 1 color in palette, create a 1-pigment "mix"
     if (!best && filteredPalette.length === 1) {
@@ -382,29 +293,38 @@ export async function solveRecipe(
     if (!best) {
         throw new Error('No valid mix found with available colors');
     }
-
-    // Step 2: Try 3-pigment if error is high (and we have enough colors)
-    const diagnostics = options?.diagnostics;
     if (diagnostics) diagnostics.twoPigmentError = best.error;
+
+    // Step 2: Refine the 2-pigment candidate, then try 3 pigments unless it is already near-exact.
+    // (Nelder-Mead refinement makes the 2-pigment gate meaningful: the grid alone overstates its error.)
+    best = refine(best);
     if (best.error > CONFIG.THREE_PIGMENT_THRESHOLD && filteredPalette.length >= 3) {
-        const best3 = search3PigmentsSync(targetColor, filteredPalette);
+        const best3 = searchPigmentsSync(targetColor, filteredPalette, 3, CONFIG.COARSE_STEP);
         if (diagnostics) {
             diagnostics.triedThreePigment = true;
             diagnostics.threePigmentError = best3?.error;
         }
-        if (best3 && best3.error < best.error) {
-            best = best3;
-            if (diagnostics) diagnostics.usedThreePigment = true;
+        if (best3) {
+            const refined3 = refine(best3);
+            if (refined3.error < best.error) {
+                best = refined3;
+                if (diagnostics) diagnostics.usedThreePigment = true;
+            }
         }
     }
     if (diagnostics) diagnostics.preRefineError = best.error;
 
-    // Step 3: Refine best candidate with Nelder-Mead optimization
-    // This achieves "True Zero" matches with ΔE < 0.5
-    best = nelderMeadRefine(best, targetColor, {
-        maxIterations: 100,
-        tolerance: 0.5,
-    });
+    // Step 3: A 4th pigment only when it buys a clearly better match.
+    if (best.error >= CONFIG.FOUR_PIGMENT_MIN_GAIN && filteredPalette.length >= 4) {
+        const best4 = searchPigmentsSync(targetColor, filteredPalette, 4, CONFIG.FOUR_PIGMENT_STEP);
+        if (best4) {
+            const refined4 = refine(best4);
+            if (refined4.error <= best.error - CONFIG.FOUR_PIGMENT_MIN_GAIN) {
+                best = refined4;
+                if (diagnostics) diagnostics.usedFourPigment = true;
+            }
+        }
+    }
 
     // Build result
     const totalWeight = best.inputs.reduce((sum, i) => sum + i.weight, 0);

@@ -58,9 +58,9 @@ describe('accuracy ratchets (Core 6, default options)', () => {
         const rows = [];
         for (const target of CURATED) rows.push(await solverRow(target));
         const errors = rows.map((r) => r.errorOK);
-        // Measured 2026-09-28 (64 targets): p50 1.05, p95 3.81, max 5.31, none Poor.
-        expect(quantile(errors, 0.5)).toBeLessThan(1.2);
-        expect(quantile(errors, 0.95)).toBeLessThan(4.1);
+        // Measured (64 targets): p50 0.48, p95 3.01, max 5.31, none Poor. Was 1.05 / 3.81 / 5.31.
+        expect(quantile(errors, 0.5)).toBeLessThan(0.6);
+        expect(quantile(errors, 0.95)).toBeLessThan(3.3);
         expect(Math.max(...errors)).toBeLessThan(5.6);
         expect(rows.filter((r) => r.matchQuality === 'Poor')).toHaveLength(0);
     }, 60000);
@@ -69,8 +69,8 @@ describe('accuracy ratchets (Core 6, default options)', () => {
         const rows = [];
         for (const target of await knownMixes(30, 1)) rows.push(await solverRow(target));
         const errors = rows.map((r) => r.errorOK);
-        // Measured: p50 0.21, p95 1.27, max 1.33 (the truth scores ~0.2 from hex rounding alone).
-        expect(quantile(errors, 0.95)).toBeLessThan(1.5);
-        expect(Math.max(...errors)).toBeLessThan(1.6);
+        // Measured: p95 0.26, max 0.38 (was 1.27 / 1.33; the truth scores ~0.2 from hex rounding alone).
+        expect(quantile(errors, 0.95)).toBeLessThan(0.4);
+        expect(Math.max(...errors)).toBeLessThan(0.5);
     }, 60000);
 });
