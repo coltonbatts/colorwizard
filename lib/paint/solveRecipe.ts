@@ -127,6 +127,26 @@ export interface SolveOptions {
 
     /** Only include paints with these pigment IDs (requires useCatalog: true) */
     paintIds?: string[];
+
+    /**
+     * Optional out-parameter. When provided, the solver records what it did
+     * (used by the accuracy benchmark; has no effect on the result).
+     */
+    diagnostics?: SolveDiagnostics;
+}
+
+/** What the solver did on one call. Filled in only when SolveOptions.diagnostics is set. */
+export interface SolveDiagnostics {
+    /** Best error after the coarse 2-pigment grid */
+    twoPigmentError?: number;
+    /** True when the 2-pigment error exceeded the threshold and the 3-pigment grid ran */
+    triedThreePigment?: boolean;
+    /** Best 3-pigment grid error, when it ran */
+    threePigmentError?: number;
+    /** True when the 3-pigment result replaced the 2-pigment one */
+    usedThreePigment?: boolean;
+    /** Error before Nelder-Mead refinement */
+    preRefineError?: number;
 }
 
 /**
@@ -364,12 +384,20 @@ export async function solveRecipe(
     }
 
     // Step 2: Try 3-pigment if error is high (and we have enough colors)
+    const diagnostics = options?.diagnostics;
+    if (diagnostics) diagnostics.twoPigmentError = best.error;
     if (best.error > CONFIG.THREE_PIGMENT_THRESHOLD && filteredPalette.length >= 3) {
         const best3 = search3PigmentsSync(targetColor, filteredPalette);
+        if (diagnostics) {
+            diagnostics.triedThreePigment = true;
+            diagnostics.threePigmentError = best3?.error;
+        }
         if (best3 && best3.error < best.error) {
             best = best3;
+            if (diagnostics) diagnostics.usedThreePigment = true;
         }
     }
+    if (diagnostics) diagnostics.preRefineError = best.error;
 
     // Step 3: Refine best candidate with Nelder-Mead optimization
     // This achieves "True Zero" matches with ΔE < 0.5
