@@ -54,13 +54,16 @@ The app has **two separate** recipe generators — don't conflate them:
 - Returns steps like "mostly Titanium White + small amount of Yellow Ochre"
 
 **Spectral** (`lib/paint/solveRecipe.ts`):
-- Physics-based via Kubelka-Munk theory (spectral.js)
-- Grid search: coarse 2% steps → fine 0.5% refinement around best candidate
-- Escalates to 3-pigment if 2-pigment error > 1.5 deltaE (OKLab)
-- Returns precise weights, `error` (deltaE), `matchQuality`, `predictedHex`
-- Computationally intensive — caches Color objects by hex+tinting strength (`lib/spectral/adapter.ts`)
+- spectral.js mixing (Kubelka-Munk-inspired). Concentration ∝ (weight × tintingStrength)² × luminance, so weights are spectral.js "factors", not volume fractions.
+- Coarse 2% grid over 2 pigments, then 3 (skipped only when 2 already match within 0.3 OKLab), each refined by Nelder-Mead (`nelderMead.ts`). A 4th pigment (5% grid + refinement) is used only if it gains ≥1 OKLab ΔE over the best 3.
+- Then `lib/paint/parts.ts` finds the simplest whole-part recipe (≤16 parts) within +1 ΔE of the unrounded optimum. `recipe.error` is the printed recipe's error; `unroundedError` is the optimum; `paintable`/`totalParts`/`ingredient.parts` describe the ratio (`paintable: false` means no clean ratio, percentages only).
+- `matchQuality` is banded on CIEDE2000 of the predicted swatch (`error00`: <1 / <2.5 / <5), like the thread match. `error` is OKLab ×100.
+- Caches Color objects by hex+tinting strength (`lib/spectral/adapter.ts`, unbounded).
+- Tinting strengths in `lib/spectral/palette.ts` (white 1, black 5, ochre 0.9, cad red 1.5, phthalo green 8, phthalo blue 10) are hand-set and NOT validated against real paint; a self-consistent ΔE benchmark cannot detect a wrong one.
 
-Both use the same 6-color limited palette defined in `lib/spectral/palette.ts` (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Blue, Phthalo Green). Phthalos have tinting strength 2.0; others 1.0. Palette changes require testing both solvers.
+**Default palette**: `lib/spectral/palette.ts` defines seven pigments; the solver defaults to the Core 6 (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Blue, Phthalo Green) via `CORE_SIX_PIGMENT_IDS`. `colorMixer.ts` hard-codes those six names. Users can instead solve with their own palette (`SolveOptions.pigments` from `lib/paint/palettePigments.ts`, stored in `usePaletteStore`, custom tubes carry their own hex and strength) or the Winsor & Newton catalog (`useCatalog`, `usePaintPaletteStore`).
+
+Accuracy: `npm run benchmark:paint` (add `--skip-baseline` for a fast run) measures both engines; `lib/paint/benchmark/benchmark.test.ts` holds ratchets that only tighten. Findings and method: `docs/paint-accuracy-audit.md`. Solver or palette changes must keep both solvers' tests and the ratchets passing.
 
 ### Canvas System
 

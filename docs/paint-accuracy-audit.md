@@ -8,6 +8,29 @@ npm run benchmark:paint -- --quick # ~1 min
 npx vitest run lib/paint/benchmark # fast regression ratchets
 ```
 
+## Phase 2 results (fixes applied)
+
+Every row is a measured before → after on the same target sets. "Before" is the audit above; "after" is `npm run benchmark:paint` at the final Phase 2 commit. Details are in each commit message.
+
+| finding | measure | before | after | commit |
+|---|---|---|---|---|
+| 3-pigment cap | gap to brute-force ≤4-pigment optimum, unrounded (n=136): p95 / max / >2 | 2.07 / 3.92 / 5.1% | 0.88 / 1.17 / 0% | Let the solver use a 4th pigment |
+| escalation gate | known 3-pigment recipes left >0.5 on the table | 39.1% | 0% (max 1.38 → 0.38 unrounded) | same |
+| skin tones | ΔE-OK p50 / max | 1.59 / 3.92 | 0.47 / 2.38 (unrounded) | same |
+| paintability | curated colors without a clean ≤16-part recipe | 40.6% (at ≤12 parts) | 23.4% | Return recipes in whole parts |
+| paintability | all targets unpaintable / ingredient <2% | 24.7% / 5.3% | 13.2% / 1.3% | same |
+| labels | ΔE00 reached by "Excellent" / "Good" / "Fair" (max) | 4.39 / 7.73 / 16.45 | 1.00 / 2.48 / 4.86 | Label match quality by CIEDE2000 |
+| heuristic bug | recipes with an unmapped amount | 22.1% | 0% | Give 'generous' a weight |
+| custom palette | (feature, not a benchmark move) | fixed Core 6 or library ids | user tubes with hex and strength | Let users solve with their own tubes |
+
+What it costs, so the numbers above are not read as free:
+
+- **Printed-recipe error rose by the rounding budget.** `recipe.error` is now the whole-part recipe as printed. Curated ΔE-OK p50 is 1.11 (0.48 unrounded), p95 3.54, max 5.31 unchanged. Rounding may add up to 1 ΔE-OK over `unroundedError`, which is still returned. Against the brute-force optimum the *printed* recipe is p50 0.54 / p95 1.50 / max 1.81 worse, by design.
+- **Honest labels read worse.** 12 of 64 curated colors (foliage 5/14, sky 3/12, skin 3/20) now label Poor: the predicted swatch is over 5 ΔE00 from the target. The OKLab bands said 0 of 64.
+- **Slower.** Node p50 57 → 97 ms, p95 59 → 178 ms per solve (worker in the browser).
+- **Still 13% unpaintable, and curated recipes still need a median of 11–12 parts.** Skin and sky colors need long ratios for sub-1 ΔE; fewer parts costs accuracy (measured: ≤8 parts is paintable for 28% of curated colors, ≤12 for 53%, ≤16 for 75%, at a 1 ΔE budget).
+- **Not fixed:** the tinting-strength constants and the "weights are factors, not volumes" question (§5). They need physical swatches.
+
 ## What this can and cannot prove
 
 **Everything below scores a recipe against spectral.js's own forward model.** The repo has no measured paint swatches, so this audit measures search quality, internal consistency and paintability. It does **not** show that a recipe reproduces the color when mixed from real tubes. Section 5 shows why that gap is the largest open risk.
