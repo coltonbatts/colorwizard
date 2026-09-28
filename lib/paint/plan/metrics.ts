@@ -9,13 +9,13 @@
  *
  * Pure and browser-safe: the UI shows these same numbers.
  */
-import { converter, differenceCiede2000 } from 'culori'
+import { converter } from 'culori'
 import { hexToRgb, srgb8ToOklab } from './color'
+import { ciede2000 } from './deltaE'
 import type { Histogram } from './histogram'
 import type { Plan } from './types'
 
 const toLab = converter('lab65')
-const de00 = differenceCiede2000()
 
 type Lab = { mode: 'lab65'; l: number; a: number; b: number }
 
@@ -25,15 +25,17 @@ export const VISIBLE_MISS = 5
 /** A pile with less area than this is a minor pile: it spends a pile on a sliver of the picture. */
 export const MINOR_AREA = 0.02
 
-const labCache = new WeakMap<Histogram, Lab[]>()
+const labCache = new WeakMap<Histogram, Float64Array>()
 
-function histogramLab(hist: Histogram): Lab[] {
+/** CIELAB D65 of every histogram color (l, a, b per entry), computed once per histogram. */
+export function histogramLab(hist: Histogram): Float64Array {
     let labs = labCache.get(hist)
     if (!labs) {
-        labs = Array.from({ length: hist.size }, (_, i) => {
+        labs = new Float64Array(hist.size * 3)
+        for (let i = 0; i < hist.size; i++) {
             const lab = toLab({ mode: 'rgb', r: hist.rgb[i * 3] / 255, g: hist.rgb[i * 3 + 1] / 255, b: hist.rgb[i * 3 + 2] / 255 })!
-            return { mode: 'lab65', l: lab.l, a: lab.a, b: lab.b }
-        })
+            labs.set([lab.l, lab.a, lab.b], i * 3)
+        }
         labCache.set(hist, labs)
     }
     return labs
@@ -79,11 +81,14 @@ export function assignPixels(hist: Histogram, plan: Plan, mode: AssignMode = 'sw
     const deltaE00 = new Float64Array(hist.size)
 
     for (let i = 0; i < hist.size; i++) {
+        const l = labs[i * 3]
+        const a = labs[i * 3 + 1]
+        const b = labs[i * 3 + 2]
         let best = 0
         if (mode === 'swatch') {
             let bestD = Infinity
             for (let p = 0; p < swatches.length; p++) {
-                const d = de00(labs[i], swatches[p])
+                const d = ciede2000(l, a, b, swatches[p].l, swatches[p].a, swatches[p].b)
                 if (d < bestD) {
                     bestD = d
                     best = p
@@ -103,7 +108,7 @@ export function assignPixels(hist: Histogram, plan: Plan, mode: AssignMode = 'sw
             }
         }
         pile[i] = best
-        deltaE00[i] = de00(labs[i], swatches[best])
+        deltaE00[i] = ciede2000(l, a, b, swatches[best].l, swatches[best].a, swatches[best].b)
     }
     return { pile, deltaE00 }
 }
@@ -161,7 +166,7 @@ export function scorePlan(hist: Histogram, plan: Plan, mode: AssignMode = 'swatc
         area[p] += n
         errorSum[p] += n * deltaE00[i]
         errorTotal += n * deltaE00[i]
-        valueSum += n * Math.abs(labs[i].l - swatches[p].l)
+        valueSum += n * Math.abs(labs[i * 3] - swatches[p].l)
         if (deltaE00[i] > VISIBLE_MISS) off += n
         if (plan.piles[p].recipe.matchQuality === 'Poor') unreachable += n
     }
