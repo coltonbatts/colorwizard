@@ -781,3 +781,269 @@
   border-radius: 4px;
   background: var(--s-white);
 }
+
+/* ---------- Plan: the whole picture ---------- */
+
+.stageOverlay {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+
+.peekButton {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(17, 17, 17, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff !important;
+  font-size: 13px;
+  font-weight: 500;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.peekButton[aria-pressed='true'] {
+  background: var(--s-white);
+  color: var(--s-ink) !important;
+  box-shadow: inset 0 0 0 1.5px var(--s-ink);
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pile budget: real radio buttons, drawn as a segmented control. */
+.budget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.budget legend {
+  float: left;
+  margin: 0 12px 0 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 32px;
+  text-transform: uppercase;
+}
+
+.budget label {
+  position: relative;
+  display: inline-block;
+}
+
+.budget input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.budget span {
+  display: inline-block;
+  min-width: 48px;
+  padding: 5px 0;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.budget input:hover + span {
+  border-color: var(--s-ink);
+}
+
+.budget input:checked + span {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white);
+}
+
+.budget input:focus-visible + span {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 2px;
+}
+
+.planHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--s-ink-3);
+}
+
+.planSummary {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--s-rule);
+}
+
+.planHeadline {
+  margin: 0 0 6px;
+  font-family: var(--s-serif);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.planNote {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.planFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 14px 0 0;
+}
+
+.planFacts div {
+  min-width: 0;
+}
+
+.planFacts dt {
+  font-size: 11px;
+  color: var(--s-ink-3);
+}
+
+.planFacts dd {
+  margin: 1px 0 0;
+  font-family: var(--s-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--s-ink-2);
+  cursor: pointer;
+}
+
+.check input {
+  margin: 0;
+}
+
+/* The legend for the hatching drawn over the picture. */
+.hatchKey {
+  width: 22px;
+  height: 14px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(135deg, var(--s-ink) 0 1px, transparent 1px 5px);
+  box-shadow: inset 0 0 0 1px var(--s-rule);
+}
+
+.piles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pile {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+}
+
+.pile:hover {
+  border-color: var(--s-rule);
+}
+
+.pile[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-white);
+}
+
+.pileSwatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.pileText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.pileHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pileHead strong {
+  font-size: 13px;
+  color: var(--s-ink);
+}
+
+.pileHead span {
+  font-size: 12px;
+  color: var(--s-ink-3);
+}
+
+.pileHead span[data-verdict='cannot'] {
+  color: var(--s-ink);
+  font-weight: 600;
+}
+
+.pileText small {
+  font-size: 11px;
+  color: var(--s-ink-3);
+}
+
+.pileShare {
+  font-family: var(--s-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--s-ink-2);
+}
+
+.pileDetail {
+  margin: 2px 0 8px 54px;
+}
+
+@media (max-width: 760px) {
+  .stageOverlay {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .planHeadline {
+    font-size: 24px;
+  }
+
+  .pileDetail {
+    margin-left: 8px;
+  }
+}

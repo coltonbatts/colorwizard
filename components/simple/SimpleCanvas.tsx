@@ -9,7 +9,7 @@
  * and a click samples the single pixel under it, so what you see is exactly what you get.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { rgbToHex } from '@/lib/color/conversions'
 import { linearToSRGB, getRelativeLuminance } from '@/lib/valueScale'
 import styles from './simple.module.css'
@@ -28,6 +28,16 @@ export interface PickedColor {
 
 interface SimpleCanvasProps {
   source: HTMLCanvasElement
+  /**
+   * Draw this instead of the picture (the Plan view's repaint). It must have the picture's
+   * proportions, at any resolution. Clicks still report the source pixel under the pointer,
+   * and the loupe steps aside because it would magnify the wrong picture.
+   */
+  display?: HTMLCanvasElement | null
+  /** Screen-reader description of what the canvas shows */
+  label?: string
+  /** Overlay controls, drawn in the stage's corner */
+  children?: ReactNode
   valueView: boolean
   point: SamplePoint | null
   /** `origin` (client px) is set for deliberate clicks and taps, not drags, so the pick can pour in. */
@@ -92,7 +102,15 @@ function buildValueCanvas(source: HTMLCanvasElement, pixels: ImageData) {
   return canvas
 }
 
-export default function SimpleCanvas({ source, valueView, point, onSample }: SimpleCanvasProps) {
+/** A gray copy of any canvas, by luminance (the source's is cached separately). */
+function valueCanvasOf(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  return ctx ? buildValueCanvas(canvas, ctx.getImageData(0, 0, canvas.width, canvas.height)) : canvas
+}
+
+const PICTURE_LABEL = 'Your picture. Click to read a color, drag to move, scroll or pinch to zoom.'
+
+export default function SimpleCanvas({ source, display = null, label = PICTURE_LABEL, children, valueView, point, onSample }: SimpleCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loupeRef = useRef<HTMLCanvasElement>(null)
@@ -118,6 +136,10 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
     }
     return valueCanvasRef.current.canvas
   }, [pixels, source])
+
+  const displayValue = useMemo(() => (display && valueView ? valueCanvasOf(display) : null), [display, valueView])
+  /** What the stage actually draws: the picture, its values, or the plan's repaint (or its values). */
+  const drawable = display ? (displayValue ?? display) : valueView ? getValueCanvas() : source
 
   useEffect(() => {
     const frame = frameRef.current
@@ -187,7 +209,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
     ctx.clearRect(0, 0, size.width, size.height)
     ctx.imageSmoothingEnabled = view.scale < CRISP_SCALE
     ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(valueView ? getValueCanvas() : source, view.x, view.y, source.width * view.scale, source.height * view.scale)
+    ctx.drawImage(drawable, view.x, view.y, source.width * view.scale, source.height * view.scale)
 
     if (point) {
       const cx = view.x + (point.x + 0.5) * view.scale
@@ -207,7 +229,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
       ctx.strokeStyle = '#ffffff'
       ctx.stroke()
     }
-  }, [getValueCanvas, point, size, source, valueView, view])
+  }, [drawable, point, size, source, view])
 
   const toLocal = useCallback((clientX: number, clientY: number) => {
     const bounds = canvasRef.current?.getBoundingClientRect()
@@ -419,7 +441,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
   // Nearest-neighbour magnification: the loupe shows real pixels, never smoothed guesses.
   // Once the picture itself is zoomed past the loupe's magnification, the loupe steps aside.
   const loupeCell = LOUPE_SIZE / LOUPE_SPAN
-  const showLoupe = !!hover && (hover.touch || view.scale < loupeCell)
+  const showLoupe = !display && !!hover && (hover.touch || view.scale < loupeCell)
 
   useEffect(() => {
     const loupe = loupeRef.current
@@ -482,7 +504,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
         ref={canvasRef}
         className={`${styles.stageCanvas} ${isPanning ? styles.panning : ''}`}
         style={{ width: size.width, height: size.height }}
-        aria-label="Your picture. Click to read a color, drag to move, scroll or pinch to zoom."
+        aria-label={label}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -498,6 +520,7 @@ export default function SimpleCanvas({ source, valueView, point, onSample }: Sim
           aria-hidden="true"
         />
       )}
+      {children}
       <div className={styles.zoomControls}>
         <button type="button" onClick={() => zoomAt(view, 1 / KEY_ZOOM_STEP, size.width / 2, size.height / 2)} disabled={isFit} aria-label="Zoom out (−)">−</button>
         <button type="button" className={styles.zoomReadout} onClick={() => setUserView(null)} disabled={isFit} title="Fit to window (0)">
