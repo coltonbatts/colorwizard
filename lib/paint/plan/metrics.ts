@@ -161,8 +161,8 @@ export function listedParts(pile: Plan['piles'][number]): number {
     return pile.recipe.paintable ? (pile.recipe.totalParts ?? 0) : 0
 }
 
-export function scorePlan(hist: Histogram, plan: Plan, mode: AssignMode = 'swatch'): PlanScore {
-    const { pile, deltaE00 } = assignPixels(hist, plan, mode)
+export function scorePlan(hist: Histogram, plan: Plan, mode: AssignMode = 'swatch', assignment?: Assignment): PlanScore {
+    const { pile, deltaE00 } = assignment ?? assignPixels(hist, plan, mode)
     const labs = histogramLab(hist)
     const swatches = plan.piles.map((p) => hexLab(p.recipe.predictedHex))
 

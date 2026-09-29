@@ -5,10 +5,12 @@
 import { wrap, type Remote } from 'comlink';
 import type { SolverWorkerAPI } from '../paint/solver.worker';
 import type { ImageProcessorWorker } from './imageProcessor.worker';
+import type { PlanWorkerAPI } from '../paint/plan/plan.worker';
 
 // Singleton worker instances
 let solverWorker: Remote<SolverWorkerAPI> | null = null;
 let imageProcessorWorker: Remote<ImageProcessorWorker> | null = null;
+let planWorker: Remote<PlanWorkerAPI> | null = null;
 
 /**
  * Get the solver worker instance.
@@ -23,6 +25,21 @@ export function getSolverWorker(): Remote<SolverWorkerAPI> {
         solverWorker = wrap<SolverWorkerAPI>(worker);
     }
     return solverWorker;
+}
+
+/**
+ * Get the paint plan worker instance (plans a whole picture off the main thread).
+ * Creates worker on first call, reuses on subsequent calls.
+ */
+export function getPlanWorker(): Remote<PlanWorkerAPI> {
+    if (!planWorker) {
+        const worker = new Worker(
+            new URL('../paint/plan/plan.worker.ts', import.meta.url),
+            { type: 'module' }
+        );
+        planWorker = wrap<PlanWorkerAPI>(worker);
+    }
+    return planWorker;
 }
 
 /**
@@ -46,6 +63,7 @@ export function getImageProcessorWorker(): Remote<ImageProcessorWorker> {
 export function terminateWorkers(): void {
     solverWorker = null;
     imageProcessorWorker = null;
+    planWorker = null;
 }
 
 /**
