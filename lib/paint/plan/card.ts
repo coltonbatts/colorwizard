@@ -13,10 +13,16 @@ import { placeLabels } from './labels'
 import type { PicturePlan } from './picture'
 
 /**
- * Card geometry in CSS pixels. The card is drawn to fit the smaller of US Letter and A4 in
- * each direction (A4 is narrower, Letter is shorter) inside 10 mm margins: 718 x 980 px.
+ * Card geometry in CSS pixels.
  */
 export const CARD = {
+    /**
+     * The room a page leaves inside 10 mm margins, for the smaller of Letter and A4 in each
+     * direction: A4 is narrower (718 px), Letter is shorter (980 px). The card is laid out at
+     * this width and, if it comes out taller than this height, zoomed down until it fits.
+     */
+    pageWidth: 718,
+    pageHeight: 980,
     /** The largest either picture is drawn */
     imageMaxWidth: 351,
     imageMaxHeight: 240,
@@ -78,6 +84,9 @@ export interface CardModel {
     columns: [CardCell[], CardCell[]]
     caveats: string[]
 }
+
+/** Said next to the Print card button. */
+export const PRINT_NOTE = 'One page, Letter or A4, black and white safe. In the print dialog, Save as PDF keeps a copy.'
 
 export const MIX_ORDER_LABEL = 'Mix in this order:'
 export const PARTS_LABEL = 'One part ='

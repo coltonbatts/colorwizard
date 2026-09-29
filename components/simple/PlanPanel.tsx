@@ -6,11 +6,15 @@
  * panel says what they are and are not.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Palette } from '@/lib/types/palette'
+import { buildCard, PRINT_NOTE, type CardModel } from '@/lib/paint/plan/card'
 import { describePlanForExport } from '@/lib/paint/plan/export'
 import { PROCREATE_NOTE, savePlanAsProcreatePalette } from '@/lib/paint/plan/procreatePalette'
 import PaintPalette from './PaintPalette'
+import PlanCard from './PlanCard'
+import { renderCardImages, type CardImages } from './planCardImages'
 import { BUDGETS, DERIVED_CAVEAT, describePiles, describePlan, describePlanFacts, formatDeltaE, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from '@/lib/paint/plan/planFit'
 import type { PlanState } from './usePlan'
 import styles from './simple.module.css'
@@ -26,9 +30,11 @@ interface PlanPanelProps {
   onMarkMisses: (on: boolean) => void
   /** The picture's name without extension, when known: it names the exports */
   pictureName?: string
+  /** The picture that was opened: the card prints it beside the repaint */
+  pictureSource?: HTMLCanvasElement | null
 }
 
-export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName }: PlanPanelProps) {
+export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName, pictureSource }: PlanPanelProps) {
   const paletteName = palette.isDefault ? 'The Core six' : 'Your palette'
   const { result } = state
   const summary = useMemo(() => (result ? describePlan(result, state.resultBudget ?? budget, paletteName) : null), [result, state.resultBudget, budget, paletteName])
@@ -40,8 +46,28 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
     [result, paletteName, palette.isDefault, palette.name, pictureName],
   )
   const [saveStatus, setSaveStatus] = useState<{ ok: boolean; text: string } | null>(null)
+  // The card being printed, if any: it is drawn off screen and handed to the browser's print.
+  const [printJob, setPrintJob] = useState<{ card: CardModel; images: CardImages } | null>(null)
   // A message about one plan's file must not outlive that plan.
-  useEffect(() => setSaveStatus(null), [result])
+  useEffect(() => {
+    setSaveStatus(null)
+    setPrintJob(null)
+  }, [result])
+  const printDone = useCallback(() => setPrintJob(null), [])
+
+  const printCard = () => {
+    // The button stays enabled while a card is open: disabling a focused button drops keyboard focus to <body>.
+    if (!result || !exportModel || !pictureSource || printJob) return
+    try {
+      const images = renderCardImages(result, pictureSource)
+      if (!images) throw new Error('No canvas to draw the card pictures on')
+      const dateText = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+      setPrintJob({ card: buildCard(result, exportModel, { dateText }), images })
+    } catch (error) {
+      console.error('Making the card failed', error)
+      setSaveStatus({ ok: false, text: 'Couldn’t make the card.' })
+    }
+  }
 
   const saveProcreate = async () => {
     if (!exportModel) return
@@ -148,9 +174,14 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
         <button type="button" className={styles.planButton} disabled={planning || !exportModel} onClick={() => void saveProcreate()}>
           Save Procreate palette
         </button>
+        <button type="button" className={styles.planButton} disabled={planning || !exportModel || !pictureSource} onClick={printCard}>
+          Print card
+        </button>
         <p role="status" aria-live="polite" className={saveStatus && !saveStatus.ok ? styles.planStatusFailed : styles.planStatus}>{saveStatus?.text ?? ''}</p>
         <p className={styles.smallNote}>{PROCREATE_NOTE}</p>
+        <p className={styles.smallNote}>{PRINT_NOTE}</p>
       </section>
+      {printJob && createPortal(<PlanCard card={printJob.card} images={printJob.images} onDone={printDone} />, document.body)}
 
       <p className={styles.smallNote}>{MODEL_CAVEAT}</p>
       <p className={styles.smallNote}>{PLAN_CAVEAT_COPY}</p>

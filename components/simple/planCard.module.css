@@ -1,0 +1,229 @@
+/*
+ * The printable card. Sizes are CSS pixels chosen to fit the smaller of US Letter and A4 in each
+ * direction (718 x 980 px inside 10 mm margins), so the same card is one page on either.
+ * Black on white: nothing depends on color, and nothing depends on "background graphics".
+ */
+
+.card {
+  box-sizing: border-box;
+  width: 100%;
+  color: #111;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  line-height: 1.28;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.card p,
+.card h1,
+.card h2,
+.card figure,
+.card dl,
+.card dd,
+.card ol {
+  margin: 0;
+  padding: 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid #111;
+}
+
+.head h1 {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.meta {
+  font-size: 10.5px;
+  text-align: right;
+}
+
+.pictures {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.pictures figure {
+  width: 351px;
+}
+
+.frame {
+  position: relative;
+  border: 1px solid #111;
+  box-sizing: content-box;
+  background: #fff;
+}
+
+.frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.badges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.badgeText {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.pictures figcaption {
+  margin-top: 3px;
+  font-size: 9px;
+  color: #333;
+}
+
+.unlabeled {
+  display: block;
+}
+
+.summary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #111;
+}
+
+.summary h2 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.summaryNote {
+  margin-top: 2px;
+  font-size: 10px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.facts dt {
+  font-size: 9px;
+  color: #333;
+}
+
+.facts dd {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mix {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 5px 0;
+  border-top: 1px solid #111;
+  border-bottom: 1px solid #111;
+  font-size: 11px;
+}
+
+.blank {
+  display: inline-block;
+  width: 120px;
+  border-bottom: 1px solid #111;
+}
+
+.piles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+  margin-top: 2px;
+}
+
+.piles ol {
+  list-style: none;
+}
+
+.cell {
+  display: grid;
+  grid-template-columns: 16px 30px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 7px;
+  padding: 4px 0;
+  border-bottom: 0.75px solid #999;
+  break-inside: avoid;
+}
+
+.cellBadge {
+  margin-top: 7px;
+}
+
+.swatch {
+  display: block;
+}
+
+.cellHead {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.fit {
+  font-size: 9.5px;
+  color: #333;
+}
+
+.cannot {
+  padding: 0 3px;
+  border: 1px solid #111;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.recipe {
+  font-size: 10px;
+}
+
+.parts {
+  font-size: 9.5px;
+  color: #333;
+}
+
+.cellNotes {
+  margin-top: 1px;
+  font-size: 9px;
+  color: #333;
+  line-height: 1.25;
+}
+
+.share {
+  padding-top: 1px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.caveats {
+  margin-top: 8px;
+  padding-top: 5px;
+  border-top: 1.5px solid #111;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #222;
+}
+
+.caveats p + p {
+  margin-top: 1px;
+}

@@ -328,6 +328,7 @@ export default function SimpleApp() {
               markMisses={markMisses}
               onMarkMisses={setMarkMisses}
               pictureName={pictureName}
+              pictureSource={source}
             />
           ) : color ? (
             <ColorReadout

@@ -144,8 +144,8 @@ describe('card geometry', () => {
       expect(c.image.width).toBeLessThanOrEqual(CARD.imageMaxWidth)
       expect(c.image.height).toBeLessThanOrEqual(CARD.imageMaxHeight + 0.01)
       expect(c.image.width / c.image.height).toBeCloseTo(p.width / p.height, 2)
-      // two pictures and a 16 px gap fit the narrower A4 page inside 10 mm margins (718 px)
-      expect(2 * c.image.width + 16).toBeLessThanOrEqual(718)
+      // two pictures and a 16 px gap fit the narrower A4 page inside 10 mm margins
+      expect(2 * c.image.width + 16).toBeLessThanOrEqual(CARD.pageWidth)
     }
   })
 
