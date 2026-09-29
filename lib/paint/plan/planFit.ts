@@ -15,6 +15,15 @@ export { MODEL_CAVEAT }
 /** Where the numbers come from, and that the picture stays in the browser. */
 export const PLAN_CAVEAT_COPY = 'Measured on a copy of your picture at most 512 px on its long side, in this browser. Nothing is uploaded.'
 
+/** Shown whenever a pile is mixed from another pile: it leans on the model's assumptions one more time. */
+export const DERIVED_CAVEAT = 'A pile mixed from another counts that base as its pigments in the same proportions. That is one more model assumption, not a measurement.'
+
+/** Parts are the model's ratios (spectral.js factors), not volumes: the card leaves the unit for the painter to write in. */
+export const PARTS_CAVEAT = 'Parts are ratios in the model, not measured volumes.'
+
+/** For anything printed or saved to a file, where the reader cannot hover or scroll to the caveats. */
+export const PRINT_CAVEAT = 'Colors here are approximate: paper and screens both change them. Do not match paint to this printout.'
+
 export const BUDGETS = [5, 8, 12] as const
 export type Budget = (typeof BUDGETS)[number]
 
@@ -68,6 +77,27 @@ export function describePlan(plan: PicturePlan, budget: number, paletteName: str
   return { verdict, headline: HEADLINES[verdict], notes }
 }
 
+/** "8 piles", or "8 of 12 piles" when the plan uses fewer than the painter asked for. */
+export function pileCountLabel(used: number, budget: number): string {
+  return used < budget ? `${used} of ${budget} piles` : `${used} ${used === 1 ? 'pile' : 'piles'}`
+}
+
+export interface PlanFact {
+  label: string
+  value: string
+}
+
+/** The numbers under the headline, in the order the panel and the card show them. */
+export function describePlanFacts(plan: PicturePlan): PlanFact[] {
+  const { score } = plan
+  return [
+    { label: 'Average miss', value: `ΔE ${formatDeltaE(score.meanDeltaE00)}` },
+    { label: 'Visibly off', value: formatShare(score.visiblyOffArea) },
+    { label: 'In piles it can’t mix', value: formatShare(score.unreachableArea) },
+    { label: 'To measure', value: `${score.totalParts} parts` },
+  ]
+}
+
 export const pileName = (index: number) => `Pile ${index + 1}`
 
 /**
@@ -103,16 +133,33 @@ export interface PileView {
   basedOnBy: number[]
   /** True for a base that no part of the picture uses directly */
   mixOnly: boolean
+  /** "5 parts" */
+  partsText: string
+  /** "only used to mix Pile 2, 4" for a base no pixel uses, otherwise null */
+  onlyUsedToMix: string | null
+  /** Instructions about mixing order and quantity, for a pile made from another or one others are made from */
+  mixNotes: string[]
 }
 
 export function describePiles(plan: PicturePlan, paletteName: string): PileView[] {
-  return plan.plan.piles.map((pile, index) => ({
-    name: pileName(index),
-    recipe: pileRecipeText(pile),
-    parts: pileParts(pile),
-    share: formatShare(plan.score.pileAreas[index]),
-    fit: describePaintFit(pile.recipe, paletteName),
-    basedOnBy: plan.plan.piles.flatMap((other, i) => (other.derived?.base === index ? [i + 1] : [])),
-    mixOnly: plan.score.pileAreas[index] === 0,
-  }))
+  return plan.plan.piles.map((pile, index) => {
+    const basedOnBy = plan.plan.piles.flatMap((other, i) => (other.derived?.base === index ? [i + 1] : []))
+    const mixOnly = plan.score.pileAreas[index] === 0
+    const parts = pileParts(pile)
+    const mixNotes: string[] = []
+    if (pile.derived) mixNotes.push(`Mixed from ${pileName(pile.derived.base)}: make enough of it for both.`)
+    if (basedOnBy.length > 0 && !mixOnly) mixNotes.push(`Pile ${basedOnBy.join(', ')} ${basedOnBy.length === 1 ? 'is' : 'are'} mixed from this one: make extra.`)
+    return {
+      name: pileName(index),
+      recipe: pileRecipeText(pile),
+      parts,
+      share: formatShare(plan.score.pileAreas[index]),
+      fit: describePaintFit(pile.recipe, paletteName),
+      basedOnBy,
+      mixOnly,
+      partsText: `${parts} ${parts === 1 ? 'part' : 'parts'}`,
+      onlyUsedToMix: mixOnly && basedOnBy.length > 0 ? `only used to mix Pile ${basedOnBy.join(', ')}` : null,
+      mixNotes,
+    }
+  })
 }
