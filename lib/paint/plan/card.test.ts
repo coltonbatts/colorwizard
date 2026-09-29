@@ -140,13 +140,28 @@ describe('pile numbers on the picture', () => {
 describe('card geometry', () => {
   it('draws both pictures inside the space a Letter or A4 page leaves', async () => {
     for (const [name, budget] of [['landscape', 8], ['portrait-light', 8], ['portrait-deep', 5]] as Array<[string, number]>) {
+      // (these are 4:3; the wide case is below)
       const { p, card: c } = await card(name, budget)
       expect(c.image.width).toBeLessThanOrEqual(CARD.imageMaxWidth)
       expect(c.image.height).toBeLessThanOrEqual(CARD.imageMaxHeight + 0.01)
       expect(c.image.width / c.image.height).toBeCloseTo(p.width / p.height, 2)
-      // two pictures and a 16 px gap fit the narrower A4 page inside 10 mm margins
-      expect(2 * c.image.width + 16).toBeLessThanOrEqual(CARD.pageWidth)
+      // two pictures with their 1 px frames and a 16 px gap fit the narrower A4 page inside 10 mm margins
+      expect(2 * (c.image.width + 2) + 16).toBeLessThanOrEqual(CARD.pageWidth)
     }
+  })
+
+  it('keeps a very wide and a very tall picture inside the page too', async () => {
+    const image = corpus.find((i) => i.name === 'landscape')!
+    for (const [w, h] of [[400, 100], [100, 400]]) {
+      // stretch the fixture to an extreme shape: only the pile map's shape matters here
+      const pile = new Uint8Array(w * h)
+      const p = { ...(await plan('landscape', 5)), width: w, height: h, pile }
+      const c = buildCard(p, describePlanForExport(p, OPTIONS), { dateText: 'x' })
+      expect(c.image.width).toBeLessThanOrEqual(CARD.imageMaxWidth)
+      expect(c.image.height).toBeLessThanOrEqual(CARD.imageMaxHeight + 0.01)
+      expect(2 * (c.image.width + 2) + 16).toBeLessThanOrEqual(CARD.pageWidth)
+    }
+    expect(image).toBeDefined()
   })
 
   it('is deterministic', async () => {

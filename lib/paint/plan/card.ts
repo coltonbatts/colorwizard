@@ -23,8 +23,8 @@ export const CARD = {
      */
     pageWidth: 718,
     pageHeight: 980,
-    /** The largest either picture is drawn */
-    imageMaxWidth: 351,
+    /** The largest either picture is drawn, inside its 1 px frame: two frames and a 16 px gap fill pageWidth */
+    imageMaxWidth: 349,
     imageMaxHeight: 240,
     /** Pile-number badge radius; 8 px numbers about 9.5 px tall, which is legible on paper */
     badgeRadius: 8,
