@@ -299,3 +299,41 @@ No variant moves value error by more than 0.04 ΔL* while mean ΔE00 gets worse 
 4. **Value error** is 3.62 / 2.65 / 2.17 ΔL* against the baseline's 3.34 / 2.49 / 2.07: about 5–8% higher, even with the value-weighted objective.
 5. **`landscape` is still behind the naive plan at 5 and 12 piles** (7.78 vs 7.37, 5.98 vs 5.57), recorded as a ratchet so the gap can only close.
 6. **Not tested: real photographs.** All of this is on nine generated pictures.
+
+# Phase 3: the Plan view on `/`
+
+Press **P** (or the Plan button beside Open and Value) with a picture open. The stage shows the picture repainted with only the plan's piles; the panel shows a pile budget (5 / 8 / 12), a headline with the numbers behind it, and each pile: swatch, recipe in whole parts, share of the picture, and the same fit label the Paint section uses. Click a pile to see where it goes (everything else fades); click a spot in the picture to find its pile; hold **B** or the "Hold for original" button to see the original; **Esc** lets go of a pile. Changing tubes under "Your paints" re-plans. The plan runs in a Web Worker (`plan.worker.ts`) on a copy of the picture at most 512 px on the long side, and nothing is uploaded.
+
+## What the words are allowed to say
+
+The headline is chosen from the share of the picture that is visibly off (more than ΔE 5 from its pile), the pixel-level number, not from pile labels, because pile labels understate the problem (audit item 5 above): under 10% "A close repaint", under 30% "A fair", under 60% "A rough", otherwise "A poor". Against the benchmark's 8-pile plans on the Core six that gives: close for `high-key` and `still-life-muted`, fair for four pictures, rough for `interior-warm`, poor for `landscape` and `sunset`. Under the headline are always the visible-miss share and the average miss; a second note appears when 5% or more sits in piles the palette can't mix (those piles read "Can't match", with the closest mix shown and the recipe dimmed), and a third when fewer piles than the budget are used. The model caveat (`MODEL_CAVEAT`), a note that derived piles lean on one more model assumption, and where the numbers were measured are on screen, not behind a link.
+
+Hatching marks the visibly-off pixels (pixel level), not "unreachable" piles, so the picture shows the honest miss. A pile that is only a base for others is listed with "only used to mix Pile N" and no share.
+
+## Checked in the browser (in-app Chromium, dev build)
+
+| check | result |
+|---|---|
+| UI numbers against the benchmark, `landscape` on the Core six at 5 / 8 / 12 piles | ΔE 7.8 / 6.3 / 6.0, visibly off 83 / 72 / 63%, unmixable 52 / 59 / 55%, parts 40 / 70 / 92: **identical to the benchmark rows** |
+| `portrait-light`, 8 piles | ΔE 3.6, 21% off, 3% unmixable, "A fair repaint": matches the benchmark (3.60) |
+| custom palette (Core six plus a Quinacridone Magenta tube already saved in this browser) | plans with the extra tube (a periwinkle sky tint uses it); switching to "Back to the Core six" re-plans and changes the numbers |
+| where the worker ran | the `plan.worker` chunk was fetched; the fallback path was not needed |
+| 4000 × 3000 picture, warm | ready in **338 ms**, worst main-thread stall 10 ms |
+| cold start (page load, spectral.js and the library built in the worker) | ready in **518 ms**, worst stall 12 ms |
+| pile ↔ picture | clicking a pile fades the rest; clicking a spot selects its pile and scrolls the row into view; a deliberate second click lets go |
+| before/after peek | held button and held **B** show the original, release restores the repaint |
+| Value view inside Plan | shows the repaint in values (a check on whether the plan holds its value structure) |
+| keyboard | **P**, hold **B**, **Esc**, arrow keys on the budget radios (a real `fieldset` of radio buttons), visible focus rings on radios and pile rows (computed `outline: 2px solid`) |
+| phone width (375 × 812) | stacked layout, no horizontal scroll, pile detail fits, taps select piles |
+| network during the whole session | every request went to `localhost`; the budget is the only thing persisted (`localStorage`) |
+| production build (`npm run build`, static export) | succeeds; the plan worker chunk is emitted |
+| console | no plan-related errors. One `Uncaught SyntaxError: Invalid or unexpected token` appears on every page load **with and without this work** (checked by stashing the change); none of the page's 28 scripts fails to parse, so it is most likely injected by the preview browser |
+
+Not verified: real touch hardware, Safari or Firefox (only the in-app Chromium), a screen reader actually announcing results (the summary is a polite live region and the controls are real buttons, radios and a checkbox, but I did not listen to it), the Tauri desktop app (it opens the workbench, not `/`), and real photographs.
+
+## Rough edges left in the UI
+
+- On a poor plan the hatching covers most of the picture (63–83% for `landscape` and `sunset`, depending on the budget). That is the honest picture, but it is busy; the toggle turns it off.
+- The loupe is hidden in Plan view, because it would magnify the original while you look at the repaint. A press-and-hold on touch selects piles as you drag.
+- Opening another picture leaves Plan view. The repaint is drawn at the planning copy's resolution (at most 512 px) and smoothed when zoomed, so it is a coarse tool, not a pixel-level one.
+- Total parts counts each listed pile once; the base of a derived pile is not sized for the batches that draw from it.
