@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { Palette } from '@/lib/types/palette'
 import PaintPalette from './PaintPalette'
-import { BUDGETS, describePiles, describePlan, formatDeltaE, formatShare, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from './planFit'
+import { BUDGETS, describePiles, describePlan, formatDeltaE, formatShare, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from '@/lib/paint/plan/planFit'
 import type { PlanState } from './usePlan'
 import styles from './simple.module.css'
 

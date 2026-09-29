@@ -6,9 +6,9 @@
  * plan on the Core six leaves 25–40% of a picture more than ΔE 5 from its pile at 5 to 12
  * piles, so a headline may only say "close" when very little is visibly off.
  */
-import type { PicturePlan } from '@/lib/paint/plan/picture'
-import type { PlanPile } from '@/lib/paint/plan/types'
-import { describePaintFit, MODEL_CAVEAT, type PaintFit } from './paintFit'
+import type { PicturePlan } from './picture'
+import type { PlanPile } from './types'
+import { describePaintFit, MODEL_CAVEAT, type PaintFit } from '../paintFit'
 
 export { MODEL_CAVEAT }
 

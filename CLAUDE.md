@@ -69,7 +69,7 @@ Accuracy: `npm run benchmark:paint` (add `--skip-baseline` for a fast run) measu
 
 ### Whole-Picture Paint Plan
 
-`/` (the simple web version, `components/simple/`) has a Plan view (press P): given the open picture, the active palette and a pile budget (5 / 8 / 12) it says "mix these N piles, here is what each is, here is where each goes". It is separate from the per-color solvers above and does not call `solveRecipe`. Everything is under `lib/paint/plan/`, pure and React-free, with the UI in `components/simple/` (`PlanPanel`, `usePlan`, `planFit` for wording, `planRender` for the repaint).
+`/` (the simple web version, `components/simple/`) has a Plan view (press P): given the open picture, the active palette and a pile budget (5 / 8 / 12) it says "mix these N piles, here is what each is, here is where each goes". It is separate from the per-color solvers above and does not call `solveRecipe`. Everything is under `lib/paint/plan/`, pure and React-free, with the UI in `components/simple/` (`PlanPanel`, `usePlan`, `lib/paint/plan/planFit.ts` for wording, `planRender` for the repaint).
 
 How a plan is made (`plan.ts`, details and every measured choice in `docs/paint-plan-audit.md`):
 - `library.ts` builds, per palette, every reduced whole-part recipe of ≤4 pigments and ≤16 parts (37k for the Core six, ~130 ms, cached) with the spectral.js swatch it predicts. **Plans are measurable-only by construction**: no pile lacks a clean ratio (the solver's 13% "no clean ratio" cases are avoided, at some accuracy cost on pale tints; longer ratios would gain ~0.23 ΔE00 overall).
@@ -110,4 +110,4 @@ Tests live alongside source with `.test.ts` suffix:
 - `lib/spectral/adapter.test.ts`
 - `lib/paint/solveRecipe.test.ts`
 - `lib/paint/plan/*.test.ts` (library, selector, planner ratchets in `benchmark.test.ts`, worker-free `picture.test.ts`)
-- `components/simple/planFit.test.ts`, `planRender.test.ts` (Plan view wording and repaint)
+- `lib/paint/plan/planFit.test.ts`, `lib/paint/paintFit.test.ts` (wording), `components/simple/planRender.test.ts` (Plan view repaint)

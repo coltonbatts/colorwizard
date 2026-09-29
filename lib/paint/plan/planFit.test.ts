@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { PALETTES } from '@/lib/paint/plan/benchmark'
-import { loadCorpus } from '@/lib/paint/plan/fixtures/corpus'
-import { planPicture, type PicturePlan } from '@/lib/paint/plan/picture'
+import { PALETTES } from './benchmark'
+import { loadCorpus } from './fixtures/corpus'
+import { planPicture, type PicturePlan } from './picture'
 import { describePiles, describePlan, formatDeltaE, formatShare, MODEL_CAVEAT, pileParts, pileRecipeText, planVerdict } from './planFit'
 
 const image = loadCorpus('synthetic').find((i) => i.name === 'landscape')!

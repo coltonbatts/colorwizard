@@ -2,7 +2,7 @@
  * What the paint section says about a recipe. Kept free of React so the wording
  * (the part users have to be able to trust) is easy to test.
  */
-import type { SpectralRecipe } from '@/lib/spectral/types'
+import type { SpectralRecipe } from '../spectral/types'
 
 export type PaintVerdict = 'match' | 'close' | 'approximate' | 'cannot'
 
