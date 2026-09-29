@@ -6,10 +6,12 @@
  * panel says what they are and are not.
  */
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Palette } from '@/lib/types/palette'
+import { describePlanForExport } from '@/lib/paint/plan/export'
+import { PROCREATE_NOTE, savePlanAsProcreatePalette } from '@/lib/paint/plan/procreatePalette'
 import PaintPalette from './PaintPalette'
-import { BUDGETS, describePiles, describePlan, formatDeltaE, formatShare, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from '@/lib/paint/plan/planFit'
+import { BUDGETS, DERIVED_CAVEAT, describePiles, describePlan, describePlanFacts, formatDeltaE, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from '@/lib/paint/plan/planFit'
 import type { PlanState } from './usePlan'
 import styles from './simple.module.css'
 
@@ -22,22 +24,43 @@ interface PlanPanelProps {
   onSelect: (pile: number | null) => void
   markMisses: boolean
   onMarkMisses: (on: boolean) => void
+  /** The picture's name without extension, when known: it names the exports */
+  pictureName?: string
 }
 
-export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses }: PlanPanelProps) {
+export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName }: PlanPanelProps) {
   const paletteName = palette.isDefault ? 'The Core six' : 'Your palette'
   const { result } = state
   const summary = useMemo(() => (result ? describePlan(result, state.resultBudget ?? budget, paletteName) : null), [result, state.resultBudget, budget, paletteName])
   const piles = useMemo(() => (result ? describePiles(result, paletteName) : []), [result, paletteName])
   const rowRefs = useRef<Array<HTMLLIElement | null>>([])
   const planning = state.status === 'planning'
+  const exportModel = useMemo(
+    () => (result ? describePlanForExport(result, { paletteName, paletteLabel: palette.isDefault ? undefined : palette.name, pictureName }) : null),
+    [result, paletteName, palette.isDefault, palette.name, pictureName],
+  )
+  const [saveStatus, setSaveStatus] = useState<{ ok: boolean; text: string } | null>(null)
+  // A message about one plan's file must not outlive that plan.
+  useEffect(() => setSaveStatus(null), [result])
+
+  const saveProcreate = async () => {
+    if (!exportModel) return
+    try {
+      const saved = await savePlanAsProcreatePalette(exportModel)
+      const left = saved.omitted > 0 ? ` ${saved.omitted} more didn’t fit: Procreate holds ${saved.count}.` : ''
+      setSaveStatus({ ok: true, text: `Saved ${saved.filename} (${saved.count} ${saved.count === 1 ? 'color' : 'colors'}).${left}` })
+    } catch (error) {
+      console.error('Saving the Procreate palette failed', error)
+      setSaveStatus({ ok: false, text: 'Couldn’t save the palette.' })
+    }
+  }
 
   // A click in the picture selects a pile; bring its row into view.
   useEffect(() => {
     if (selected !== null) rowRefs.current[selected]?.scrollIntoView({ block: 'nearest' })
   }, [selected])
 
-  const totalParts = result?.score.totalParts ?? 0
+  const facts = useMemo(() => (result ? describePlanFacts(result) : []), [result])
   const derivedCount = result?.plan.piles.filter((pile) => pile.derived).length ?? 0
 
   return (
@@ -63,10 +86,7 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
             <h2 id="plan-heading" className={styles.planHeadline} data-verdict={summary.verdict}>{summary.headline}</h2>
             {summary.notes.map((note) => <p key={note} className={styles.planNote}>{note}</p>)}
             <dl className={styles.planFacts}>
-              <div><dt>Average miss</dt><dd>ΔE {formatDeltaE(result.score.meanDeltaE00)}</dd></div>
-              <div><dt>Visibly off</dt><dd>{formatShare(result.score.visiblyOffArea)}</dd></div>
-              <div><dt>In piles it can’t mix</dt><dd>{formatShare(result.score.unreachableArea)}</dd></div>
-              <div><dt>To measure</dt><dd>{totalParts} parts</dd></div>
+              {facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
             </dl>
             <label className={styles.check}>
               <input type="checkbox" checked={markMisses} onChange={(event) => onMarkMisses(event.target.checked)} />
@@ -99,8 +119,8 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
                       </span>
                       <span className={cannot ? styles.dimmed : undefined}>{view.recipe}</span>
                       <small>
-                        {view.parts} {view.parts === 1 ? 'part' : 'parts'} to measure
-                        {view.mixOnly && view.basedOnBy.length > 0 ? ` · only used to mix Pile ${view.basedOnBy.join(', ')}` : ''}
+                        {view.partsText} to measure
+                        {view.onlyUsedToMix ? ` · ${view.onlyUsedToMix}` : ''}
                       </small>
                     </span>
                     <span className={styles.pileShare}>{view.mixOnly ? '—' : view.share}</span>
@@ -113,17 +133,24 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
                       </div>
                       <p className={`${styles.fitNote} ${cannot ? styles.fitCannot : ''}`}>{view.fit.detail}</p>
                       {!view.mixOnly && <p className={styles.smallNote}>Across the pixels it paints, the average miss is ΔE {formatDeltaE(result.score.pileMeanDeltaE00[index])}.</p>}
-                      {pile.derived && <p className={styles.smallNote}>Mixed from {`Pile ${pile.derived.base + 1}`}: make enough of it for both.</p>}
-                      {view.basedOnBy.length > 0 && !view.mixOnly && <p className={styles.smallNote}>Pile {view.basedOnBy.join(', ')} {view.basedOnBy.length === 1 ? 'is' : 'are'} mixed from this one: make extra.</p>}
+                      {view.mixNotes.map((note) => <p key={note} className={styles.smallNote}>{note}</p>)}
                     </div>
                   )}
                 </li>
               )
             })}
           </ol>
-          {derivedCount > 0 && <p className={styles.smallNote}>A pile mixed from another counts that base as its pigments in the same proportions. That is one more model assumption, not a measurement.</p>}
+          {derivedCount > 0 && <p className={styles.smallNote}>{DERIVED_CAVEAT}</p>}
         </section>
       )}
+
+      <section className={styles.planActions} aria-label="Take the plan with you">
+        <button type="button" className={styles.planButton} disabled={planning || !exportModel} onClick={() => void saveProcreate()}>
+          Save Procreate palette
+        </button>
+        <p role="status" aria-live="polite" className={saveStatus && !saveStatus.ok ? styles.planStatusFailed : styles.planStatus}>{saveStatus?.text ?? ''}</p>
+        <p className={styles.smallNote}>{PROCREATE_NOTE}</p>
+      </section>
 
       <p className={styles.smallNote}>{MODEL_CAVEAT}</p>
       <p className={styles.smallNote}>{PLAN_CAVEAT_COPY}</p>

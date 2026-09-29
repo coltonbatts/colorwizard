@@ -118,23 +118,29 @@ export async function createSwatchesFile(
 }
 
 /**
- * Trigger browser download of .swatches file
- * @param blob ZIP blob to download
- * @param filename Filename (without extension)
+ * The file name a download of `filename` gets: lowercased, anything but letters and digits
+ * collapsed to "-", plus the .swatches extension
  */
-export function downloadSwatchesFile(blob: Blob, filename: string): void {
-    // Sanitize filename
+export function swatchesFilename(filename: string): string {
     const safeName = filename
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
         || 'palette';
+    return `${safeName}.swatches`;
+}
 
+/**
+ * Trigger browser download of .swatches file
+ * @param blob ZIP blob to download
+ * @param filename Filename (without extension)
+ */
+export function downloadSwatchesFile(blob: Blob, filename: string): void {
     // Create download link
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${safeName}.swatches`;
+    link.download = swatchesFilename(filename);
 
     // Trigger download
     document.body.appendChild(link);

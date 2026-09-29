@@ -70,6 +70,7 @@ export default function SimpleApp() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [source, setSource] = useState<HTMLCanvasElement | null>(null)
   const [pictureId, setPictureId] = useState(0)
+  const [pictureName, setPictureName] = useState<string | undefined>()
   const [point, setPoint] = useState<SamplePoint | null>(null)
   const [color, setColor] = useState<PickedColor | null>(null)
   const [arrival, setArrival] = useState<Arrival | null>(null)
@@ -123,6 +124,7 @@ export default function SimpleApp() {
       const image = await decodeImageFile(file)
       setSource(await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION))
       setPictureId((id) => id + 1)
+      setPictureName(file.name.replace(/\.[^./\\]+$/, '').trim() || undefined)
       setPoint(null)
       setColor(null)
       setValueView(false)
@@ -325,6 +327,7 @@ export default function SimpleApp() {
               onSelect={setSelectedPile}
               markMisses={markMisses}
               onMarkMisses={setMarkMisses}
+              pictureName={pictureName}
             />
           ) : color ? (
             <ColorReadout
