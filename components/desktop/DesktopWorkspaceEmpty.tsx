@@ -29,7 +29,7 @@ export default function DesktopWorkspaceEmpty() {
   const runtimeImage = useCanvasStore((s) => s.image)
   const setReferenceImage = useCanvasStore((s) => s.setReferenceImage)
   const setDemoReferenceHex = useCanvasStore((s) => s.setDemoReferenceHex)
-  const setSampledColor = useSessionStore((s) => s.setSampledColor)
+  const selectSampledColor = useSessionStore((s) => s.selectSampledColor)
   const [busy, setBusy] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
@@ -184,7 +184,7 @@ export default function DesktopWorkspaceEmpty() {
                 onClick={() => {
                   setDemoReferenceHex(swatch.hex)
                   setReferenceImage(createSolidColorDemoDataUrl(swatch.hex))
-                  setSampledColor(hexToSampleColor(swatch.hex))
+                  selectSampledColor(hexToSampleColor(swatch.hex))
                 }}
                 aria-label={`Try demo color ${swatch.label}`}
                 title={swatch.label}

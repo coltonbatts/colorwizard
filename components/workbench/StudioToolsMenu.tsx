@@ -3,6 +3,7 @@
 import { useRef, type MouseEvent, type ReactNode } from 'react'
 import OverlaySurface from '@/components/ui/Overlay'
 import type { TabType } from '@/components/CollapsibleSidebar'
+import { useSessionStore } from '@/lib/store/useSessionStore'
 import {
   DeckWorkbenchIcon,
   LibraryWorkbenchIcon,
@@ -59,6 +60,8 @@ function ToolsContent({
 }: Omit<StudioToolsMenuProps, 'variant' | 'isOpen' | 'onOpenChange' | 'onViewChange'> & {
   onSelect: (view: StudioView, event?: MouseEvent<HTMLButtonElement>) => void
 }) {
+  const soundEnabled = useSessionStore(state => state.selectionSoundEnabled)
+  const setSoundEnabled = useSessionStore(state => state.setSelectionSoundEnabled)
   return (
     <div className="studio-tools-content">
       {activeView !== 'sample' && (
@@ -101,6 +104,9 @@ function ToolsContent({
       </section>
 
       <section className="studio-tools-utilities" aria-label="Workspace settings">
+        <button type="button" role="switch" aria-checked={soundEnabled} onClick={() => setSoundEnabled(!soundEnabled)}>
+          Color selection sound: {soundEnabled ? 'On' : 'Off'}
+        </button>
         <button type="button" onClick={onOpenReferencePreview}>Full-screen Reference</button>
         <button type="button" onClick={onOpenCanvasSettings}>Canvas Settings</button>
         <button type="button" onClick={onOpenCalibration}>Calibration & Measurement</button>

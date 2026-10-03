@@ -36,6 +36,7 @@ import { DEFAULT_VALUE_STEP_COUNT } from '@/lib/valueMode'
 import { buildImageValueContext } from '@/lib/dmcFloss'
 import { createSolidColorDemoImage, hexToSampleColor } from '@/lib/demoColor'
 import { DEFAULT_PALETTE } from '@/lib/types/palette'
+import { prepareColorSelectionSound } from '@/lib/audio/colorSelectionSound'
 
 import MatchesTab from '@/components/tabs/MatchesTab'
 import PaintLibraryTab from '@/components/tabs/PaintLibraryTab'
@@ -144,6 +145,7 @@ export default function CoreWorkbench() {
 
   const sampledColor = useSessionStore(state => state.sampledColor)
   const setSampledColor = useSessionStore(state => state.setSampledColor)
+  const selectSampledColor = useSessionStore(state => state.selectSampledColor)
   const activeHighlightColor = useSessionStore(state => state.activeHighlightColor)
   const setActiveHighlightColor = useSessionStore(state => state.setActiveHighlightColor)
   const highlightTolerance = useSessionStore(state => state.highlightTolerance)
@@ -420,9 +422,9 @@ export default function CoreWorkbench() {
   }, [analyzerValueScaleResult, setActiveValueBandIndex])
 
   const applySampleColor = useCallback((color: Parameters<typeof setSampledColor>[0]) => {
-    setSampledColor(color)
+    selectSampledColor(color)
     syncActiveBandFromColor(color)
-  }, [setSampledColor, syncActiveBandFromColor])
+  }, [selectSampledColor, syncActiveBandFromColor])
 
   const handleCanvasAnalysisChange = useCallback((analysis: ImageAnalysisSnapshot) => {
     setImageAnalysis((current) => (
@@ -432,6 +434,7 @@ export default function CoreWorkbench() {
 
   const handleTryDemoColor = useCallback(
     async (hex: string) => {
+      if (useSessionStore.getState().selectionSoundEnabled) prepareColorSelectionSound()
       try {
         const img = await createSolidColorDemoImage(hex)
         setDemoReferenceHex(hex)

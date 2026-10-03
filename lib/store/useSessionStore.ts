@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
 import { safeStorage } from './storage'
 import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
+import { playColorSelectionSound } from '../audio/colorSelectionSound'
 
 type SampledColor = {
     hex: string
@@ -27,8 +28,11 @@ interface SessionState {
     valueModeEnabled: boolean
     valueModeSteps: 5 | 7 | 9 | 11
     lastSampleTime: number
+    selectionSoundEnabled: boolean
 
     setSampledColor: (color: SampledColor) => void
+    selectSampledColor: (color: SampledColor) => void
+    setSelectionSoundEnabled: (enabled: boolean) => void
     setLastSampleTime: (time: number) => void
     setActiveHighlightColor: (color: SessionState['activeHighlightColor']) => void
     setHighlightTolerance: (tolerance: number) => void
@@ -44,7 +48,7 @@ interface SessionState {
 
 export const useSessionStore = create<SessionState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             sampledColor: null,
             activeHighlightColor: null,
             highlightTolerance: 20,
@@ -53,6 +57,7 @@ export const useSessionStore = create<SessionState>()(
             valueModeEnabled: false,
             valueModeSteps: DEFAULT_VALUE_STEP_COUNT,
             lastSampleTime: 0,
+            selectionSoundEnabled: true,
 
             setSampledColor: (sampledColor) => {
                 if (sampledColor) {
@@ -62,6 +67,11 @@ export const useSessionStore = create<SessionState>()(
                 }
             },
             setLastSampleTime: (lastSampleTime) => set({ lastSampleTime }),
+            selectSampledColor: (color) => {
+                get().setSampledColor(color)
+                if (color) void playColorSelectionSound(() => get().selectionSoundEnabled)
+            },
+            setSelectionSoundEnabled: (selectionSoundEnabled) => set({ selectionSoundEnabled }),
             setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
             setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
             setHighlightMode: (highlightMode) => set({ highlightMode }),
@@ -87,6 +97,7 @@ export const useSessionStore = create<SessionState>()(
                 pinnedColors: state.pinnedColors,
                 valueModeEnabled: state.valueModeEnabled,
                 valueModeSteps: state.valueModeSteps,
+                selectionSoundEnabled: state.selectionSoundEnabled,
             }),
         }
     )
