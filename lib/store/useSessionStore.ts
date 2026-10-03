@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
 import { safeStorage } from './storage'
 import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
+import { isDesktopApp } from '../desktop/detect'
 import { playColorSelectionSound } from '../audio/colorSelectionSound'
 
 type SampledColor = {
@@ -46,6 +47,13 @@ interface SessionState {
     clearPinned: () => void
 }
 
+const persistedSession = (state: SessionState) => ({
+    pinnedColors: state.pinnedColors,
+    valueModeEnabled: state.valueModeEnabled,
+    valueModeSteps: state.valueModeSteps,
+    selectionSoundEnabled: state.selectionSoundEnabled,
+})
+
 export const useSessionStore = create<SessionState>()(
     persist(
         (set, get) => ({
@@ -80,11 +88,19 @@ export const useSessionStore = create<SessionState>()(
             toggleValueMode: () => set((state) => ({ valueModeEnabled: !state.valueModeEnabled })),
             setValueModeSteps: (valueModeSteps) => set({ valueModeSteps }),
 
-            pinColor: (newPin) => set((state) => {
+            pinColor: (newPin) => {
+                const state = get()
                 const filtered = state.pinnedColors.filter((pinnedColor) => pinnedColor.hex !== newPin.hex)
                 const next = [newPin, ...filtered].slice(0, 30)
-                return { pinnedColors: next }
-            }),
+                // An explicit web Save must persist before it is acknowledged. Other session
+                // preferences can still use safeStorage's in-memory fallback; Tauri uses SQLite.
+                if (typeof window !== 'undefined' && !isDesktopApp()) {
+                    window.localStorage.setItem('colorwizard-session', JSON.stringify({
+                        state: { ...persistedSession(state), pinnedColors: next }, version: 0,
+                    }))
+                }
+                set({ pinnedColors: next })
+            },
             unpinColor: (id) => set((state) => ({
                 pinnedColors: state.pinnedColors.filter((pinnedColor) => pinnedColor.id !== id)
             })),
@@ -93,12 +109,7 @@ export const useSessionStore = create<SessionState>()(
         {
             name: 'colorwizard-session',
             storage: safeStorage,
-            partialize: (state) => ({
-                pinnedColors: state.pinnedColors,
-                valueModeEnabled: state.valueModeEnabled,
-                valueModeSteps: state.valueModeSteps,
-                selectionSoundEnabled: state.selectionSoundEnabled,
-            }),
+            partialize: persistedSession,
         }
     )
 )

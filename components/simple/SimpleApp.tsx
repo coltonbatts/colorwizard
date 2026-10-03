@@ -8,6 +8,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
+import { createSolidColorDemoImage } from '@/lib/demoColor'
+import { parseSavedColors, storeSavedColors, SIMPLE_SAVED_KEY, type SavedPaintColor } from '@/lib/simpleSavedColors'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
@@ -21,29 +23,11 @@ import type { PourOrigin } from './pour'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
 import styles from './simple.module.css'
 
-const SAVED_KEY = 'colorwizard-simple-saved'
 const BUDGET_KEY = 'colorwizard-simple-plan-budget'
 const DEFAULT_BUDGET: Budget = 8
 // Keep detail for zooming in: 4096 holds a whole 12 MP phone photo. iOS canvas memory is tighter, so it gets less.
 const MAX_DIMENSION = 4096
 const MAX_DIMENSION_CONSTRAINED = 3072
-
-function loadSaved(): string[] {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(SAVED_KEY) ?? '[]')
-    return Array.isArray(parsed) ? parsed.filter((hex) => typeof hex === 'string') : []
-  } catch {
-    return []
-  }
-}
-
-function storeSaved(saved: string[]) {
-  try {
-    window.localStorage.setItem(SAVED_KEY, JSON.stringify(saved))
-  } catch {
-    /* saving is a convenience; a full or blocked store should not break sampling */
-  }
-}
 
 function loadBudget(): Budget {
   try {
@@ -81,11 +65,24 @@ export default function SimpleApp() {
   const [selectedPile, setSelectedPile] = useState<number | null>(null)
   const [markMisses, setMarkMisses] = useState(true)
   const [peek, setPeek] = useState(false)
-  const [saved, setSaved] = useState<string[]>([])
+  const [saved, setSaved] = useState<SavedPaintColor[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => setSaved(loadSaved()), [])
+  const [savedColor, setSavedColor] = useState<SavedPaintColor | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [savedReadable, setSavedReadable] = useState(false)
+  const [opening, setOpening] = useState(false)
+  const openRequestRef = useRef(0)
+
+  useEffect(() => {
+    try {
+      setSaved(parseSavedColors(window.localStorage.getItem(SIMPLE_SAVED_KEY)))
+      setSavedReadable(true)
+    } catch {
+      setSaveError('Saved colors couldn’t be read. Saving is unavailable; existing data has been kept. Try allowing browser storage and reload.')
+    }
+  }, [])
   useEffect(() => setBudget(loadBudget()), [])
 
   const palette = usePaintPalette()
@@ -115,27 +112,42 @@ export default function SimpleApp() {
     return canvas
   }, [planMode, peek, plan, selectedPile, markMisses])
 
-  const openFile = useCallback(async (file: File | null | undefined) => {
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setError('That file isn’t a picture.')
-      return
-    }
+  const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string) => {
+    const request = ++openRequestRef.current
+    setOpening(true)
+    setError(null)
     try {
-      const image = await decodeImageFile(file)
-      setSource(await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION))
+      const image = await decode()
+      const buffer = await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION)
+      if (request !== openRequestRef.current) return
+      setSource(buffer)
       setPictureId((id) => id + 1)
-      setPictureName(file.name.replace(/\.[^./\\]+$/, '').trim() || undefined)
+      setPictureName(name)
       setPoint(null)
       setColor(null)
+      setSavedColor(null)
       setValueView(false)
       setPlanMode(false)
       setSelectedPile(null)
-      setError(null)
     } catch {
-      setError('Couldn’t open that picture. Try a JPEG or PNG.')
+      if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
+    } finally {
+      if (request === openRequestRef.current) setOpening(false)
     }
   }, [])
+
+  const openFile = useCallback(async (file: File | null | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      ++openRequestRef.current
+      setOpening(false)
+      setError('That file isn’t a picture.')
+      return
+    }
+    await openPicture(() => decodeImageFile(file), file.name)
+  }, [openPicture])
+
+  const openDemo = () => openPicture(() => createSolidColorDemoImage('#C45C3E'), 'Terracotta demo')
 
   const choosePicture = useCallback(() => fileInputRef.current?.click(), [])
 
@@ -151,6 +163,7 @@ export default function SimpleApp() {
       setSelectedPile((current) => (origin && current === pile ? null : pile))
       return
     }
+    setSavedColor(null)
     setPoint(nextPoint)
     setColor(picked)
     arrive(origin)
@@ -159,18 +172,51 @@ export default function SimpleApp() {
   const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
     if (!picked) return
+    setSavedColor(null)
     setPoint(null)
     setColor(picked)
     arrive(origin)
   }, [arrive])
 
-  const updateSaved = useCallback((update: (current: string[]) => string[]) => {
-    setSaved((current) => {
-      const next = update(current)
-      storeSaved(next)
-      return next
-    })
-  }, [])
+  const updateSaved = (next: SavedPaintColor[]) => {
+    if (!savedReadable) return false
+    try {
+      storeSavedColors(window.localStorage, next)
+      setSaved(next)
+      setSaveError(null)
+      return true
+    } catch {
+      setSaveError('Couldn’t save changes on this device. Browser storage may be full or blocked. Your recipe is still here; try saving again.')
+      return false
+    }
+  }
+
+  const savedList = saved.length > 0 && (
+    <footer className={styles.saved} aria-label="Saved colors">
+      <span className={styles.rowLabel}>Saved on this device</span>
+      <ul>
+        {saved.map((entry) => (
+          <li key={entry.id}>
+            <button
+              type="button"
+              className={`${styles.savedChip} ${savedColor?.id === entry.id ? styles.savedChipActive : ''}`}
+              style={{ backgroundColor: entry.hex }}
+              onClick={(event) => {
+                openColor(entry.hex, originOf(event))
+                setSavedColor(entry)
+                setPlanMode(false)
+              }}
+              title={`${entry.hex} · ${entry.recipe ? entry.paletteName : 'Color only — make a recipe'}`}
+              aria-label={`Open saved color ${entry.hex}`}
+            />
+            <button type="button" className={styles.savedRemove} aria-label={`Remove saved color ${entry.hex}`} onClick={() => {
+              if (updateSaved(saved.filter((color) => color.id !== entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
+            }}>×</button>
+          </li>
+        ))}
+      </ul>
+    </footer>
+  )
 
   // Drop or paste a picture anywhere; V for values; P for the plan; hold B for the original; ⌘O to open.
   useEffect(() => {
@@ -201,7 +247,7 @@ export default function SimpleApp() {
         return
       } else if (event.key.toLowerCase() === 'v') {
         setValueView((on) => !on)
-      } else if (event.key.toLowerCase() === 'p') {
+      } else if (event.key.toLowerCase() === 'p' && source) {
         setPeek(false)
         setPlanMode((on) => !on)
       } else if (event.key.toLowerCase() === 'b') {
@@ -230,7 +276,7 @@ export default function SimpleApp() {
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
     }
-  }, [choosePicture, openFile])
+  }, [choosePicture, openFile, source])
 
   const fileInput = (
     <input
@@ -245,7 +291,7 @@ export default function SimpleApp() {
     />
   )
 
-  if (!source) {
+  if (!source && !color) {
     return (
       <main id="main-content" className={`${styles.app} ${styles.welcome} ${isDragging ? styles.dragging : ''}`}>
         {fileInput}
@@ -265,23 +311,24 @@ export default function SimpleApp() {
           <h1 className={styles.wordmark}>ColorWizard</h1>
           <p className={styles.tagline}>Open a picture. Click any color.</p>
           <button type="button" className={styles.primaryButton} onClick={choosePicture}>
-            Open picture <span aria-hidden="true">↗</span>
+            {opening ? 'Opening…' : 'Open picture'} <span aria-hidden="true">↗</span>
           </button>
-          <p className={styles.hint} role="status">
-            {error ?? (isDragging ? 'Drop your picture to begin.' : 'Or drop or paste a picture here.')}
+          <button type="button" className={styles.linkButton} onClick={() => void openDemo()}>Try demo color Terracotta</button>
+          <p className={styles.hint} role={error ? 'alert' : 'status'}>
+            {error ?? (opening ? 'Opening picture…' : isDragging ? 'Drop your picture to begin.' : 'Or drop or paste a picture here.')}
           </p>
           <p className={styles.privacyNote}>Your picture stays on this device.</p>
+          {savedList}
+          {saveError && <p role="alert" className={styles.smallNote}>{saveError}</p>}
         </div>
       </main>
     )
   }
 
-  const isSaved = !!color && saved.includes(color.hex)
-
   return (
     <main id="main-content" className={`${styles.app} ${styles.workspace} ${isDragging ? styles.dragging : ''}`}>
       {fileInput}
-      <SimpleCanvas
+      {source ? <SimpleCanvas
         key={pictureId}
         source={source}
         display={display}
@@ -322,18 +369,27 @@ export default function SimpleApp() {
             </button>
           </div>
         )}
-      </SimpleCanvas>
+      </SimpleCanvas> : (
+        <div className={styles.recoveredStage}>
+          <p>Saved color & recipe</p>
+          <p className={styles.smallNote}>Open a picture to sample more colors.</p>
+          <button type="button" className={styles.primaryButton} onClick={choosePicture}>Open picture</button>
+        </div>
+      )}
 
       <aside className={styles.panel} aria-label={planMode ? 'Plan' : 'Color'}>
         <div className={styles.toolbar}>
           <span className={styles.wordmarkSmall}>ColorWizard</span>
           <div className={styles.toolbarButtons}>
             <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
-            <button type="button" onClick={() => { setPeek(false); setPlanMode((on) => !on) }} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
-            <button type="button" onClick={() => setValueView((on) => !on)} aria-pressed={valueView} title="Show values only (V)">Value</button>
+            <button type="button" onClick={() => { setPeek(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
+            <button type="button" onClick={() => setValueView((on) => !on)} disabled={!source} aria-pressed={valueView} title="Show values only (V)">Value</button>
           </div>
         </div>
 
+        {opening && <p className={styles.notice} role="status">Opening picture…</p>}
+        {error && <p className={styles.notice} role="alert">{error}</p>}
+        {saveError && <p className={styles.notice} role="alert">{saveError}</p>}
         <div className={styles.panelBody}>
           {planMode ? (
             <PlanPanel
@@ -352,8 +408,16 @@ export default function SimpleApp() {
             <ColorReadout
               color={color}
               arrival={arrival}
-              isSaved={isSaved}
-              onSave={() => updateSaved((current) => (current.includes(color.hex) ? current : [...current, color.hex]))}
+              canSave={savedReadable}
+              savedColor={savedColor}
+              onSave={(result) => {
+                const entry: SavedPaintColor = {
+                  id: crypto.randomUUID(), hex: color.hex, ...result, savedAt: Date.now(),
+                  pictureName: point ? pictureName : savedColor?.pictureName,
+                }
+                if (updateSaved([...saved, entry])) setSavedColor(entry)
+              }}
+              onRecalculate={() => setSavedColor(null)}
               onOpenColor={openColor}
             />
           ) : (
@@ -361,33 +425,7 @@ export default function SimpleApp() {
           )}
         </div>
 
-        {saved.length > 0 && !planMode && (
-          <footer className={styles.saved}>
-            <span className={styles.rowLabel}>Saved</span>
-            <ul>
-              {saved.map((hex) => (
-                <li key={hex}>
-                  <button
-                    type="button"
-                    className={`${styles.savedChip} ${color?.hex === hex ? styles.savedChipActive : ''}`}
-                    style={{ backgroundColor: hex }}
-                    onClick={(event) => openColor(hex, originOf(event))}
-                    title={hex}
-                    aria-label={`Open saved color ${hex}`}
-                  />
-                  <button
-                    type="button"
-                    className={styles.savedRemove}
-                    onClick={() => updateSaved((current) => current.filter((entry) => entry !== hex))}
-                    aria-label={`Remove ${hex}`}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </footer>
-        )}
+        {!planMode && savedList}
       </aside>
     </main>
   )

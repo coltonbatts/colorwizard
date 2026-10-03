@@ -13,6 +13,8 @@ import {
     getCards,
     updateCard,
 } from '@/lib/colorCardStorage'
+import { useSessionStore } from '@/lib/store/useSessionStore'
+import { formatAmount, MODEL_CAVEAT } from '@/lib/paint/paintFit'
 import { getColorName } from '@/lib/colorNaming'
 import { ColorCard } from '@/lib/types/colorCard'
 import {
@@ -91,6 +93,7 @@ export default function ColorDeckPanel({
     onGoToSample,
 }: ColorDeckPanelProps) {
     const [cards, setCards] = useState<ColorCard[]>([])
+    const savedSamples = useSessionStore(state => state.pinnedColors)
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
     const [draftName, setDraftName] = useState('')
     const [draftProject, setDraftProject] = useState('')
@@ -342,7 +345,7 @@ export default function ColorDeckPanel({
     const hasSampleMatch = (card: ColorCard) => sampledColor?.hex.toLowerCase() === card.color.hex.toLowerCase()
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-paper-elevated text-ink">
+        <div className="h-full min-h-0 overflow-y-auto bg-paper-elevated text-ink">
             <div className="border-b border-ink-hairline bg-paper-elevated/90 p-4 backdrop-blur-sm">
                 <div className="flex items-start justify-between gap-3">
                     <div>
@@ -355,7 +358,7 @@ export default function ColorDeckPanel({
                         </p>
                     </div>
                     <div className="rounded-2xl border border-ink-hairline bg-paper-recessed px-3 py-2 text-right" aria-live="polite">
-                        <div className="text-lg font-black text-ink">{cards.length}</div>
+                        <div className="text-lg font-black text-ink">{cards.length + savedSamples.length}</div>
                         <div className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
                             saved
                         </div>
@@ -532,7 +535,39 @@ export default function ColorDeckPanel({
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto p-4">
+            <div className="p-4">
+                {!selectedCard && savedSamples.length > 0 && (
+                    <section aria-label="Saved samples" className="mb-6 space-y-3">
+                        <h3 className="font-bold">Saved samples</h3>
+                        <p className="text-xs text-ink-muted">The last 30 saved samples, with their original recipes. These are model-based starting points.</p>
+                        {savedSamples.map(sample => (
+                            <details key={sample.id} className="rounded-xl border border-ink-hairline p-3">
+                                <summary className="cursor-pointer py-2">
+                                    <span className="mr-2 inline-block h-5 w-5 rounded align-middle" style={{ backgroundColor: sample.hex }} />
+                                    {sample.label} · {sample.hex.toUpperCase()}
+                                </summary>
+                                {sample.spectralRecipe ? (
+                                    <div className="mt-3 text-sm">
+                                        <p>Spectral model · Target {sample.hex.toUpperCase()} · Predicted {sample.spectralRecipe.predictedHex}</p>
+                                        <ul className="my-3 space-y-1">
+                                            {sample.spectralRecipe.ingredients.map(ingredient => (
+                                                <li key={ingredient.pigment.id}>{ingredient.pigment.name}: {formatAmount(sample.spectralRecipe!, ingredient)}</li>
+                                            ))}
+                                        </ul>
+                                        <ol className="mb-3 list-decimal space-y-1 pl-5">{sample.spectralRecipe.steps.map((step, index) => <li key={index}>{step.replaceAll('**', '')}</li>)}</ol>
+                                        <p className="text-xs text-ink-muted">{MODEL_CAVEAT}</p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 text-sm">
+                                        <p>Traditional heuristic guide · Adjust by eye.</p>
+                                        <ul>{sample.fallbackRecipe.colors.map(ingredient => <li key={ingredient.name}>{ingredient.name}: {ingredient.amount}</li>)}</ul>
+                                        <ol className="mt-3 list-decimal space-y-1 pl-5">{sample.fallbackRecipe.steps.map((step, index) => <li key={index}>{step.replaceAll('**', '')}</li>)}</ol>
+                                    </div>
+                                )}
+                            </details>
+                        ))}
+                    </section>
+                )}
                 {selectedCard ? (
                     <div className="flex h-full min-h-[280px] flex-col gap-4">
                         <div className="flex items-center justify-between gap-3">

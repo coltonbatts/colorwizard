@@ -61,6 +61,7 @@ export default function SampleInspector({
 }: SampleInspectorProps) {
   const [copied, setCopied] = useState<string | null>(null)
   const [isPinning, setIsPinning] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [isCreatingCard, setIsCreatingCard] = useState(false)
   const [showColorPreview, setShowColorPreview] = useState(false)
   const [pendingCard, setPendingCard] = useState<ColorCard | null>(null)
@@ -101,11 +102,14 @@ export default function SampleInspector({
   const handlePin = async () => {
     if (!sampledColor || isPinned) return
     setIsPinning(true)
+    setSaveError(null)
     try {
       onPin(await createPinnedColor(sampledColor, {
         label: sampledColor.label?.trim() || readout.colorName || `Color ${sampledColor.hex}`,
         solveOptions,
       }))
+    } catch {
+      setSaveError('Couldn’t save this color. Browser storage may be full or blocked. Try saving again.')
     } finally {
       setIsPinning(false)
     }
@@ -216,6 +220,9 @@ export default function SampleInspector({
                 </button>
                 {onOpenThreads && <button type="button" onClick={onOpenThreads}>Embroidery Match</button>}
               </div>
+
+              {saveError && <p role="alert">{saveError}</p>}
+              {isPinned && <p className="text-xs text-ink-muted">Open Studio Tools → Saved Colors to recover this sample and recipe.</p>}
 
               {showExpanded && (
                 <>

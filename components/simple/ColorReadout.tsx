@@ -12,6 +12,7 @@ import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
 import { getPainterChroma } from '@/lib/paintingMath'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
+import type { SavedPaintColor } from '@/lib/simpleSavedColors'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getPerceptualValue } from '@/lib/valueScale'
 import { getSolverWorker } from '@/lib/workers'
@@ -31,8 +32,10 @@ interface ColorReadoutProps {
   color: PickedColor
   /** Set when a color was picked on purpose (a click, not a drag), so it pours in. */
   arrival: Arrival | null
-  isSaved: boolean
-  onSave: () => void
+  canSave: boolean
+  savedColor: SavedPaintColor | null
+  onSave: (result: { recipe: SpectralRecipe; name: string; paletteName: string }) => void
+  onRecalculate: () => void
   onOpenColor: (hex: string, origin?: PourOrigin) => void
 }
 
@@ -61,11 +64,14 @@ function useSettled<T>(value: T, delay: number) {
 }
 
 async function solvePaint(hex: string, options?: SolveOptions): Promise<SpectralRecipe> {
+  let timer: number | undefined
   try {
-    const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000))
+    const timeout = new Promise<never>((_, reject) => { timer = window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000) })
     return await Promise.race([getSolverWorker().solveRecipe(hex, options), timeout])
   } catch {
     return solveRecipe(hex, options)
+  } finally {
+    window.clearTimeout(timer)
   }
 }
 
@@ -83,13 +89,24 @@ function useCopy() {
   return { copied, copy }
 }
 
-export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenColor }: ColorReadoutProps) {
+export default function ColorReadout({ color, arrival, canSave, savedColor, onSave, onRecalculate, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
   const palette = usePaintPalette()
   const solveOptions = useMemo(() => getPaletteSolveOptions(palette), [palette])
-  const [name, setName] = useState('')
-  const [recipe, setRecipe] = useState<SpectralRecipe | null>(null)
-  const [threads, setThreads] = useState<ThreadMatchResult | null>(null)
+  const [named, setNamed] = useState<{ hex: string; name: string } | null>(null)
+  const [paint, setPaint] = useState<{ key: string; recipe: SpectralRecipe | null; failed: boolean } | null>(null)
+  const [threadResult, setThreadResult] = useState<{ hex: string; result: ThreadMatchResult | null } | null>(null)
+  const [retry, setRetry] = useState(0)
+  const paletteKey = JSON.stringify(solveOptions)
+  const requestKey = `${settledHex}:${paletteKey}:${retry}`
+  const currentKey = `${color.hex}:${paletteKey}:${retry}`
+  const snapshot = savedColor?.recipe
+  const recipe = snapshot ?? (paint?.key === currentKey ? paint.recipe : null)
+  const paintFailed = !snapshot && paint?.key === currentKey && paint.failed
+  const name = savedColor?.name || (named?.hex === color.hex ? named.name : '')
+  const threads = threadResult?.hex === color.hex ? threadResult.result : null
+  const threadFailed = threadResult?.hex === color.hex && !threadResult.result
+  const paletteName = snapshot ? savedColor.paletteName! : palette.isDefault ? 'Core six' : palette.name
   const { copied, copy } = useCopy()
   const swatchRef = useRef<HTMLDivElement>(null)
   const fillRef = useRef<HTMLDivElement>(null)
@@ -112,13 +129,21 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
       g: parseInt(settledHex.slice(3, 5), 16),
       b: parseInt(settledHex.slice(5, 7), 16),
     }
-    getColorName(settledHex).then((result) => { if (!cancelled) setName(result.name) }).catch(() => { if (!cancelled) setName('') })
-    solvePaint(settledHex, solveOptions).then((result) => { if (!cancelled) setRecipe(result) }).catch(() => { if (!cancelled) setRecipe(null) })
+    getColorName(settledHex).then((result) => { if (!cancelled) setNamed({ hex: settledHex, name: result.name }) }).catch(() => { if (!cancelled) setNamed({ hex: settledHex, name: '' }) })
     getThreadMatchContext(rgb, { alternativeCount: 3, topMatchCount: 4 })
-      .then((result) => { if (!cancelled) setThreads(result) })
-      .catch(() => { if (!cancelled) setThreads(null) })
+      .then((result) => { if (!cancelled) setThreadResult({ hex: settledHex, result }) })
+      .catch(() => { if (!cancelled) setThreadResult({ hex: settledHex, result: null }) })
     return () => { cancelled = true }
-  }, [settledHex, solveOptions])
+  }, [settledHex])
+
+  useEffect(() => {
+    if (snapshot) return
+    let cancelled = false
+    solvePaint(settledHex, solveOptions)
+      .then((result) => { if (!cancelled) setPaint({ key: requestKey, recipe: result, failed: false }) })
+      .catch(() => { if (!cancelled) setPaint({ key: requestKey, recipe: null, failed: true }) })
+    return () => { cancelled = true }
+  }, [settledHex, solveOptions, requestKey, snapshot])
 
   const isCurrent = settledHex === color.hex
   const value = Math.round(getPerceptualValue(color.rgb.r, color.rgb.g, color.rgb.b) * 100) / 10
@@ -133,7 +158,7 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
     : []
   const ladder = threads?.familyLadder ?? []
   const ingredients = recipe?.ingredients.filter((ingredient) => ingredient.weight >= 0.005) ?? []
-  const fit = recipe ? describePaintFit(recipe, palette.isDefault ? 'The Core six' : 'Your palette') : null
+  const fit = recipe ? describePaintFit(recipe, paletteName) : null
 
   return (
     <div className={styles.readout}>
@@ -153,13 +178,13 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
         </div>
       </header>
 
-      <section className={styles.section} aria-labelledby="paint-heading" aria-busy={!isCurrent || !recipe}>
+      <section className={styles.section} aria-labelledby="paint-heading" aria-busy={!recipe && !paintFailed} data-recipe-target={recipe ? color.hex : undefined}>
         <div className={styles.sectionHead}>
           <h3 id="paint-heading">Paint</h3>
           {fit && <span data-verdict={fit.verdict}>{fit.label}</span>}
         </div>
         {recipe && fit && ingredients.length > 0 ? (
-          <div className={isCurrent ? undefined : styles.stale}>
+          <div>
             <div className={styles.compare} role="img" aria-label={`Target ${color.hex}, predicted mix ${recipe.predictedHex}`}>
               <div style={{ backgroundColor: color.hex }}><span>Target</span></div>
               <div style={{ backgroundColor: recipe.predictedHex }}><span>{fit.verdict === 'cannot' ? 'Closest' : 'Mix'}</span></div>
@@ -182,15 +207,28 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
               </ul>
             </div>
             {roundingNote(recipe) && <p className={styles.smallNote}>{roundingNote(recipe)}</p>}
+            <p className={styles.smallNote}>Spectral model · {paletteName}. A starting point to adjust by eye.</p>
             <p className={styles.smallNote}>{MODEL_CAVEAT}</p>
           </div>
         ) : (
-          <p className={styles.pending}>{recipe ? 'This paint set can’t make a recipe.' : 'Mixing…'}</p>
+          <div role={paintFailed ? 'alert' : 'status'} className={styles.pending}>
+            {paintFailed ? 'Couldn’t calculate a paint recipe.' : recipe ? 'This paint set can’t make a recipe.' : 'Mixing…'}
+            {paintFailed && <button type="button" className={styles.linkButton} onClick={() => setRetry(value => value + 1)}>Try recipe again</button>}
+          </div>
         )}
-        <PaintPalette palette={palette} />
+        {snapshot ? (
+          <p className={styles.smallNote}>
+            Saved recipe · {savedColor.pictureName || 'Saved color'}. Restored as saved.
+            {' '}<button type="button" className={styles.linkButton} onClick={onRecalculate}>Make a new recipe</button>
+          </p>
+        ) : <PaintPalette palette={palette} />}
+        <button type="button" className={styles.saveButton} onClick={() => recipe && onSave({ recipe, name, paletteName })} disabled={!canSave || !!snapshot || !recipe || ingredients.length === 0}>
+          {snapshot ? 'Saved on this device' : 'Save Color & Recipe'}
+        </button>
+        <p className={styles.smallNote}>Saves the color and paint recipe in this browser. The picture is not saved.</p>
       </section>
 
-      <section className={styles.section} aria-labelledby="thread-heading" aria-busy={!isCurrent || !threads}>
+      <section className={styles.section} aria-labelledby="thread-heading" aria-busy={!threads && !threadFailed}>
         <div className={styles.sectionHead}>
           <h3 id="thread-heading">Thread</h3>
           {primary && <span>{threadFit(primary.deltaE00)}</span>}
@@ -245,13 +283,10 @@ export default function ColorReadout({ color, arrival, isSaved, onSave, onOpenCo
             </div>
           </div>
         ) : (
-          <p className={styles.pending}>Matching…</p>
+          <p className={styles.pending}>{threadFailed ? "Thread matches are unavailable. Your paint recipe is still usable." : "Matching…"}</p>
         )}
       </section>
 
-      <button type="button" className={styles.saveButton} onClick={onSave} disabled={isSaved}>
-        {isSaved ? 'Saved' : 'Save Color'}
-      </button>
     </div>
   )
 }
