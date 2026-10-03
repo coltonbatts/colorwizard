@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Image from 'next/image'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
@@ -249,10 +250,27 @@ export default function SimpleApp() {
       <main id="main-content" className={`${styles.app} ${styles.welcome} ${isDragging ? styles.dragging : ''}`}>
         {fileInput}
         <div className={styles.welcomeBody}>
+          <figure className={styles.pigmentStudy} aria-hidden="true">
+            <Image
+              src="/images/welcome-pigment-cutout.webp"
+              alt=""
+              width={1536}
+              height={512}
+              priority
+              sizes="(max-width: 760px) 100vw, 740px"
+              className={styles.pigmentImage}
+            />
+            <figcaption className={styles.studyCaption}>A study in color</figcaption>
+          </figure>
           <h1 className={styles.wordmark}>ColorWizard</h1>
           <p className={styles.tagline}>Open a picture. Click any color.</p>
-          <button type="button" className={styles.primaryButton} onClick={choosePicture}>Open Picture…</button>
-          <p className={styles.hint}>{error ?? 'Or drop or paste one here. It never leaves this computer.'}</p>
+          <button type="button" className={styles.primaryButton} onClick={choosePicture}>
+            Open picture <span aria-hidden="true">↗</span>
+          </button>
+          <p className={styles.hint} role="status">
+            {error ?? (isDragging ? 'Drop your picture to begin.' : 'Or drop or paste a picture here.')}
+          </p>
+          <p className={styles.privacyNote}>Your picture stays on this device.</p>
         </div>
       </main>
     )

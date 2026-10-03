@@ -1,11 +1,12 @@
 /*
- * The only color on screen should be the user's.
- * Everything else is paper, ink, and a neutral middle-gray stage for judging color honestly.
+ * The working canvas stays neutral for judging color honestly.
+ * Paper surfaces share one texture, from the welcome to the working sidebar.
  */
 
 .app {
-  --s-paper: #fbfaf7;
-  --s-white: #ffffff;
+  --s-paper: #f5f0e8;
+  --s-paper-texture: url('/textures/cotton-paper.webp');
+  --s-white: #fcfaf5;
   --s-ink: #111111;
   --s-ink-2: rgba(17, 17, 17, 0.64);
   --s-ink-3: rgba(17, 17, 17, 0.42);
@@ -18,7 +19,8 @@
   position: fixed;
   inset: 0;
   z-index: 10;
-  background: var(--s-paper);
+  background: var(--s-paper) var(--s-paper-texture) repeat;
+  background-size: 768px 768px;
   color: var(--s-ink);
   font-family: var(--s-sans);
   font-size: 14px;
@@ -49,54 +51,112 @@
 /* ---------- Welcome ---------- */
 
 .welcome {
+  --s-ink: #302e29;
   display: grid;
   place-items: center;
-  padding: 24px 16px;
+  overflow-y: auto;
+  padding: 48px 24px;
 }
 
 .welcomeBody {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: min(100%, 840px);
   text-align: center;
+}
+
+.pigmentStudy {
+  width: min(100%, 740px);
+  margin: 0 0 38px;
+}
+
+.pigmentImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.studyCaption {
+  margin-top: 10px;
+  color: #716a5e;
+  font-family: var(--s-serif);
+  font-size: 17px;
+  font-style: italic;
+  letter-spacing: 0.015em;
 }
 
 .wordmark {
   margin: 0;
   font-family: var(--s-serif);
-  font-size: clamp(44px, 8vw, 64px);
-  font-weight: 500;
-  letter-spacing: -0.015em;
+  font-size: clamp(52px, 8vw, 76px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
   line-height: 1;
 }
 
 .tagline {
-  margin: 14px 0 32px;
+  margin: 18px 0 30px;
   font-size: 17px;
   color: var(--s-ink-2);
 }
 
-/* A nod to the classic Mac default button: the ring means "Return does this". */
 .primaryButton {
-  padding: 10px 26px;
-  border: 1.5px solid var(--s-ink);
-  border-radius: 8px;
-  background: var(--s-white);
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: 0 0 0 3px var(--s-paper), 0 0 0 5px var(--s-ink);
-  transition: background-color 120ms, color 120ms;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  min-height: 48px;
+  padding: 12px 22px;
+  border: 1px solid var(--s-ink);
+  border-radius: 3px;
+  background: var(--s-ink);
+  color: #fcfaf3 !important;
+  box-shadow: 0 2px 3px rgba(48, 46, 41, 0.1);
+  transition: background-color 140ms, box-shadow 140ms;
 }
 
 .primaryButton:hover {
-  background: var(--s-ink);
-  color: var(--s-white) !important;
+  background: #4e493e;
+  box-shadow: 0 4px 8px rgba(48, 46, 41, 0.14);
 }
 
 .hint {
-  margin: 24px 0 0;
+  margin: 18px 0 0;
   font-size: 13px;
-  color: var(--s-ink-3);
+  color: #6d675d;
+}
+
+.privacyNote {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #716a5e;
+}
+
+@media (max-width: 760px) {
+  .welcome {
+    padding: 36px 24px;
+  }
+
+  .pigmentStudy {
+    width: calc(100% + 24px);
+    margin-bottom: 32px;
+  }
+
+  .studyCaption {
+    font-size: 15px;
+  }
+
+  .tagline {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome .primaryButton {
+    transition: none;
+  }
 }
 
 /* ---------- Workspace ---------- */
@@ -176,7 +236,8 @@
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--s-rule);
-  background: var(--s-paper);
+  background: var(--s-paper) var(--s-paper-texture) repeat;
+  background-size: 768px 768px;
 }
 
 .toolbar {
