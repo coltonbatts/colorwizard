@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-  emptyLibrary, findByHex, LIBRARY_KEY, loadLibrary, migrateV1, parseLibrary, removeColor, saveColor, setNote, storeLibrary,
+  collectionNameProblem, colorsIn, createCollection, deleteCollection, emptyLibrary, setMembership, MAX_COLLECTIONS, findByHex, LIBRARY_KEY, loadLibrary, migrateV1, parseLibrary, removeColor, saveColor, setNote, storeLibrary,
   type ColorLibrary,
 } from './colorLibrary'
 import { SIMPLE_SAVED_KEY, type SavedPaintColor } from './simpleSavedColors'
@@ -155,5 +155,101 @@ describe('v1 migration', () => {
     const lib = migrateV1([v1])
     expect(findByHex(lib, '#397da8')?.id).toBe('a')
     expect(findByHex(lib, '#000000')).toBeUndefined()
+  })
+})
+
+
+describe('collections', () => {
+  const two = () => {
+    let lib = saveColor(emptyLibrary(), { id: 'c1', hex: '#C45C3E', name: '', now: 1 }).library
+    lib = saveColor(lib, { id: 'c2', hex: '#397DA8', name: '', now: 2 }).library
+    return createCollection(lib, { id: 'k1', name: '  Roof   tiles ', now: 3 })
+  }
+
+  it('creates a collection with a cleaned name', () => {
+    const { library, collection } = two()
+    expect(collection).toEqual({ id: 'k1', name: 'Roof tiles', createdAt: 3 })
+    expect(library.collections).toEqual([collection])
+  })
+
+  it('explains a name that cannot be used, and does not create it', () => {
+    const { library } = two()
+    expect(collectionNameProblem(library, '   ')).toMatch(/name/)
+    expect(collectionNameProblem(library, 'x'.repeat(41))).toMatch(/40/)
+    expect(collectionNameProblem(library, 'ROOF TILES')).toMatch(/already/)
+    expect(collectionNameProblem(library, 'Walls')).toBeNull()
+    const again = createCollection(library, { id: 'k2', name: 'roof tiles', now: 4 })
+    expect(again.collection).toBeNull()
+    expect(again.library).toBe(library)
+  })
+
+  it('caps how many collections there can be', () => {
+    let lib = emptyLibrary()
+    for (let i = 0; i < MAX_COLLECTIONS; i++) lib = createCollection(lib, { id: `k${i}`, name: `Group ${i}`, now: i }).library
+    expect(collectionNameProblem(lib, 'One more')).toMatch(/up to 50/)
+  })
+
+  it('puts a color in and takes it out, without duplicating or touching other colors', () => {
+    let { library } = two()
+    library = setMembership(library, 'c1', 'k1', true, 10)
+    library = setMembership(library, 'c1', 'k1', true, 11)
+    expect(library.colors[0].collectionIds).toEqual(['k1'])
+    expect(library.colors[0].updatedAt).toBe(10) // the second, identical call changed nothing
+    expect(library.colors[1].collectionIds).toEqual([])
+    expect(colorsIn(library, 'k1').map(c => c.id)).toEqual(['c1'])
+    expect(colorsIn(library, null)).toHaveLength(2)
+    library = setMembership(library, 'c1', 'k1', false, 12)
+    expect(library.colors[0].collectionIds).toEqual([])
+  })
+
+  it('ignores a collection that does not exist', () => {
+    const { library } = two()
+    expect(setMembership(library, 'c1', 'nope', true, 5)).toBe(library)
+  })
+
+  it('deleting a collection keeps every color and clears only that grouping', () => {
+    let { library } = two()
+    library = createCollection(library, { id: 'k2', name: 'Walls', now: 4 }).library
+    library = setMembership(setMembership(setMembership(library, 'c1', 'k1', true, 5), 'c1', 'k2', true, 5), 'c2', 'k1', true, 5)
+    const after = deleteCollection(library, 'k1')
+    expect(after.collections.map(c => c.id)).toEqual(['k2'])
+    expect(after.colors.map(c => [c.id, c.collectionIds])).toEqual([['c1', ['k2']], ['c2', []]])
+  })
+
+  it('is kept by saving, noting and removing colors', () => {
+    let { library } = two()
+    library = setMembership(library, 'c1', 'k1', true, 5)
+    library = setNote(library, 'c1', 'hi', 6)
+    library = saveColor(library, { id: 'x', hex: '#C45C3E', name: '', now: 7 }).library
+    expect(library.collections).toHaveLength(1)
+    expect(library.colors[0].collectionIds).toEqual(['k1'])
+    expect(removeColor(library, 'c2').collections).toHaveLength(1)
+  })
+
+  it('round-trips through storage', () => {
+    let { library } = two()
+    library = setMembership(library, 'c2', 'k1', true, 5)
+    const setItem = vi.fn()
+    storeLibrary({ setItem }, library)
+    expect(parseLibrary(setItem.mock.calls[0][1])).toEqual(library)
+  })
+
+  it('reads a library saved before collections existed as having none', () => {
+    const { library } = two()
+    const old = JSON.stringify({ version: 2, colors: library.colors })
+    expect(parseLibrary(old).collections).toEqual([])
+  })
+
+  it.each([
+    ['unknown collection on a color', (l: ColorLibrary) => ({ ...l, collections: [], colors: [{ ...l.colors[0], collectionIds: ['ghost'] }] })],
+    ['the same collection twice on a color', (l: ColorLibrary) => ({ ...l, colors: [{ ...l.colors[0], collectionIds: ['k1', 'k1'] }] })],
+    ['duplicate collection id', (l: ColorLibrary) => ({ ...l, collections: [l.collections[0], { ...l.collections[0], name: 'Other' }] })],
+    ['duplicate collection name', (l: ColorLibrary) => ({ ...l, collections: [l.collections[0], { ...l.collections[0], id: 'k9', name: 'roof tiles' }] })],
+    ['empty collection name', (l: ColorLibrary) => ({ ...l, collections: [{ ...l.collections[0], name: ' ' }] })],
+    ['collections that is not a list', (l: ColorLibrary) => ({ ...l, collections: {} })],
+  ])('rejects %s so the data is kept, not overwritten', (_name, damage) => {
+    const { library } = two()
+    const withMember = setMembership(library, 'c1', 'k1', true, 5)
+    expect(() => parseLibrary(JSON.stringify(damage(withMember)))).toThrow()
   })
 })

@@ -1459,3 +1459,136 @@
   font-size: 13px;
   color: var(--s-ink);
 }
+
+/* ---------- Collections ---------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.filters button {
+  padding: 3px 10px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.filters button span {
+  color: var(--s-ink-3);
+}
+
+.filters button[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white);
+}
+
+.filters button[aria-pressed='true'] span {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.collections {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.collections legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--s-ink-3);
+}
+
+.collections > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+}
+
+.collections form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.collections form input {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font: inherit;
+  color: var(--s-ink);
+}
+
+.collections form input[aria-invalid='true'] {
+  border-color: #a33;
+}
+
+.collections form button {
+  padding: 6px 10px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font-size: 13px;
+}
+
+.collections form .smallNote {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.collections > label input[type='checkbox'] {
+  display: grid;
+  flex: none;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 1.5px solid var(--s-ink-3);
+  border-radius: 4px;
+  background: var(--s-white);
+  box-shadow: none;
+}
+
+.collections > label input[type='checkbox']:checked {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+}
+
+.collections > label input[type='checkbox']:checked::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  margin-top: -2px;
+  border: solid var(--s-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.collections > label input[type='checkbox']:focus-visible {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 2px;
+}
+
+.collections > label input[type='checkbox']::before {
+  content: none; /* the app-wide checkbox mark; this one draws its own check */
+}
+
+.collections > label input[type='checkbox']:hover {
+  border-color: var(--s-ink);
+}

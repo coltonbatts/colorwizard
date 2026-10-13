@@ -9,6 +9,8 @@ import type { SpectralRecipe } from './spectral/types'
 
 export const LIBRARY_KEY = 'colorwizard-simple-library-v2'
 export const MAX_NOTE_LENGTH = 1000
+export const MAX_COLLECTION_NAME = 40
+export const MAX_COLLECTIONS = 50
 
 /** `kind` is explicit so a qualitative recipe can never be mistaken for a spectral one. */
 export interface PaintAttachment {
@@ -34,7 +36,7 @@ export interface SavedColor {
   /** The name shown when it was saved. Names come from a list and are a convenience. */
   nameSnapshot: string
   note?: string
-  /** Reserved for collections; always empty until they exist. */
+  /** Collections this color is in. A color can be in any number, or none. */
   collectionIds: string[]
   createdAt: number
   updatedAt: number
@@ -42,12 +44,20 @@ export interface SavedColor {
   attachments: { paint?: PaintAttachment; thread?: ThreadAttachment }
 }
 
+/** A named group of saved colors. Membership lives on each color (`collectionIds`). */
+export interface Collection {
+  id: string
+  name: string
+  createdAt: number
+}
+
 export interface ColorLibrary {
   version: 2
   colors: SavedColor[]
+  collections: Collection[]
 }
 
-export const emptyLibrary = (): ColorLibrary => ({ version: 2, colors: [] })
+export const emptyLibrary = (): ColorLibrary => ({ version: 2, colors: [], collections: [] })
 
 const isHex = (value: unknown): value is string => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
@@ -75,21 +85,54 @@ function validColor(entry: unknown): entry is SavedColor {
   return (paint === undefined || isPaint(paint)) && (thread === undefined || isThread(thread))
 }
 
-/** Strict: unreadable data throws so the caller can keep it instead of overwriting it. */
+const cleanName = (name: string) => name.trim().replace(/\s+/g, ' ')
+
+/** Why this name can't be used for a new collection, or null if it can. */
+export function collectionNameProblem(library: ColorLibrary, name: string): string | null {
+  const clean = cleanName(name)
+  if (!clean) return 'Give the collection a name.'
+  if (clean.length > MAX_COLLECTION_NAME) return `Use ${MAX_COLLECTION_NAME} characters or fewer.`
+  if (library.collections.some(collection => collection.name.toLowerCase() === clean.toLowerCase())) return 'You already have a collection with that name.'
+  if (library.collections.length >= MAX_COLLECTIONS) return `You can have up to ${MAX_COLLECTIONS} collections.`
+  return null
+}
+
+function validCollection(entry: unknown): entry is Collection {
+  return record(entry) && typeof entry.id === 'string' && typeof entry.name === 'string' &&
+    entry.name === cleanName(entry.name) && entry.name.length > 0 && entry.name.length <= MAX_COLLECTION_NAME && finite(entry.createdAt)
+}
+
+/** Strict: unreadable data throws so the caller can keep it instead of overwriting it. A library saved before collections existed has none. */
 export function parseLibrary(raw: string): ColorLibrary {
   const parsed: unknown = JSON.parse(raw)
-  if (!record(parsed) || parsed.version !== 2 || !Array.isArray(parsed.colors)) throw new Error('Unrecognized color library')
+  if (!record(parsed) || parsed.version !== 2 || !Array.isArray(parsed.colors) ||
+      (parsed.collections !== undefined && !Array.isArray(parsed.collections))) throw new Error('Unrecognized color library')
+  const collections = (parsed.collections ?? []).map((entry: unknown) => {
+    if (!validCollection(entry)) throw new Error('Invalid collection')
+    return entry
+  })
+  const collectionIds = new Set<string>()
+  const collectionNames = new Set<string>()
+  for (const collection of collections) {
+    const name = collection.name.toLowerCase()
+    if (collectionIds.has(collection.id) || collectionNames.has(name)) throw new Error('Duplicate collection')
+    collectionIds.add(collection.id)
+    collectionNames.add(name)
+  }
   const ids = new Set<string>()
   const hexes = new Set<string>()
   const colors = parsed.colors.map(entry => {
     if (!validColor(entry)) throw new Error('Invalid saved color')
     const hex = entry.hex.toUpperCase()
     if (ids.has(entry.id) || hexes.has(hex)) throw new Error('Duplicate saved color')
+    if (new Set(entry.collectionIds).size !== entry.collectionIds.length || !entry.collectionIds.every(id => collectionIds.has(id))) {
+      throw new Error('Saved color is in an unknown collection')
+    }
     ids.add(entry.id)
     hexes.add(hex)
     return { ...entry, hex }
   })
-  return { version: 2, colors }
+  return { version: 2, colors, collections }
 }
 
 /** v1 entries become v2 references. Several v1 saves of one hex merge into one, keeping the newest. */
@@ -111,7 +154,7 @@ export function migrateV1(entries: SavedPaintColor[]): ColorLibrary {
       ? { paint: { kind: 'spectral', paletteName: entry.paletteName, recipe: entry.recipe, savedAt: entry.savedAt } }
       : {},
   }))
-  return { version: 2, colors }
+  return { version: 2, colors, collections: [] }
 }
 
 /** The v2 library if there is one; otherwise v1 migrated in memory (v1 is left as it is); otherwise empty. */
@@ -162,7 +205,7 @@ export function saveColor(library: ColorLibrary, input: SaveInput): { library: C
     attachments,
   }
   return {
-    library: { version: 2, colors: existing ? library.colors.map(entry => entry.id === color.id ? color : entry) : [...library.colors, color] },
+    library: { ...library, colors: existing ? library.colors.map(entry => entry.id === color.id ? color : entry) : [...library.colors, color] },
     color,
     updated: !!existing,
   }
@@ -172,7 +215,7 @@ export function saveColor(library: ColorLibrary, input: SaveInput): { library: C
 export function setNote(library: ColorLibrary, id: string, note: string, now: number): ColorLibrary {
   const text = note.trim().slice(0, MAX_NOTE_LENGTH)
   return {
-    version: 2,
+    ...library,
     colors: library.colors.map(color => {
       if (color.id !== id) return color
       const next: SavedColor = { ...color, updatedAt: now }
@@ -184,5 +227,39 @@ export function setNote(library: ColorLibrary, id: string, note: string, now: nu
 }
 
 export function removeColor(library: ColorLibrary, id: string): ColorLibrary {
-  return { version: 2, colors: library.colors.filter(color => color.id !== id) }
+  return { ...library, colors: library.colors.filter(color => color.id !== id) }
 }
+
+/** Make a collection. The caller checks `collectionNameProblem` first; a bad name returns the library unchanged. */
+export function createCollection(library: ColorLibrary, input: { id: string; name: string; now: number }): { library: ColorLibrary; collection: Collection | null } {
+  if (collectionNameProblem(library, input.name)) return { library, collection: null }
+  const collection: Collection = { id: input.id, name: cleanName(input.name), createdAt: input.now }
+  return { library: { ...library, collections: [...library.collections, collection] }, collection }
+}
+
+/** Put a color in a collection, or take it out. Colors are never lost by either. */
+export function setMembership(library: ColorLibrary, colorId: string, collectionId: string, member: boolean, now: number): ColorLibrary {
+  if (!library.collections.some(collection => collection.id === collectionId)) return library
+  return {
+    ...library,
+    colors: library.colors.map(color => {
+      if (color.id !== colorId || color.collectionIds.includes(collectionId) === member) return color
+      const collectionIds = member ? [...color.collectionIds, collectionId] : color.collectionIds.filter(id => id !== collectionId)
+      return { ...color, collectionIds, updatedAt: now }
+    }),
+  }
+}
+
+/** Deleting a collection removes the grouping only. Every color stays saved. */
+export function deleteCollection(library: ColorLibrary, collectionId: string): ColorLibrary {
+  return {
+    ...library,
+    collections: library.collections.filter(collection => collection.id !== collectionId),
+    colors: library.colors.map(color => color.collectionIds.includes(collectionId)
+      ? { ...color, collectionIds: color.collectionIds.filter(id => id !== collectionId) }
+      : color),
+  }
+}
+
+export const colorsIn = (library: ColorLibrary, collectionId: string | null) =>
+  collectionId === null ? library.colors : library.colors.filter(color => color.collectionIds.includes(collectionId))

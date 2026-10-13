@@ -9,14 +9,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { createSolidColorDemoImage } from '@/lib/demoColor'
-import { emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setNote, storeLibrary, type ColorLibrary, type SavedColor } from '@/lib/colorLibrary'
+import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import ColorEntry from './ColorEntry'
-import ColorReadout, { originOf, type Arrival } from './ColorReadout'
+import ColorReadout, { type Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
 import PlanPanel from './PlanPanel'
+import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
 import { usePicturePlan } from './usePlan'
@@ -75,6 +76,7 @@ export default function SimpleApp() {
   const [savedReadable, setSavedReadable] = useState(false)
   const [opening, setOpening] = useState(false)
   const [entryOpen, setEntryOpen] = useState(false)
+  const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
   const openRequestRef = useRef(0)
 
   useEffect(() => {
@@ -199,31 +201,30 @@ export default function SimpleApp() {
     }
   }
 
+  const refreshSaved = (next: ColorLibrary) =>
+    setSavedColor((current) => current ? next.colors.find((entry) => entry.id === current.id) ?? null : current)
+
   const savedList = library.colors.length > 0 && (
-    <footer className={styles.saved} aria-label="Saved colors">
-      <span className={styles.rowLabel}>Saved on this device</span>
-      <ul>
-        {library.colors.map((entry) => (
-          <li key={entry.id}>
-            <button
-              type="button"
-              className={`${styles.savedChip} ${savedColor?.id === entry.id ? styles.savedChipActive : ''}`}
-              style={{ backgroundColor: entry.hex }}
-              onClick={(event) => {
-                openColor(entry.hex, originOf(event))
-                setSavedColor(entry)
-                setPlanMode(false)
-              }}
-              title={[entry.hex, entry.attachments.paint ? entry.attachments.paint.paletteName : 'Color only — make a recipe', entry.attachments.thread && `DMC ${entry.attachments.thread.number}`, entry.note && 'has a note'].filter(Boolean).join(' · ')}
-              aria-label={`Open saved color ${entry.hex}`}
-            />
-            <button type="button" className={styles.savedRemove} aria-label={`Remove saved color ${entry.hex}`} onClick={() => {
-              if (updateLibrary(removeColor(library, entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
-            }}>×</button>
-          </li>
-        ))}
-      </ul>
-    </footer>
+    <SavedStrip
+      library={library}
+      activeId={savedColor?.id ?? null}
+      filter={collectionFilter}
+      onFilter={setCollectionFilter}
+      onOpen={(entry, origin) => {
+        openColor(entry.hex, origin)
+        setSavedColor(entry)
+        setPlanMode(false)
+      }}
+      onRemove={(entry) => {
+        if (updateLibrary(removeColor(library, entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
+      }}
+      onDeleteCollection={(collectionId) => {
+        const next = deleteCollection(library, collectionId)
+        if (!updateLibrary(next)) return
+        setCollectionFilter(null)
+        refreshSaved(next)
+      }}
+    />
   )
 
   // Drop or paste a picture anywhere; V for values; P for the plan; hold B for the original; ⌘O to open.
@@ -435,6 +436,22 @@ export default function SimpleApp() {
                 if (!updateLibrary(next)) return false
                 setSavedColor((current) => current?.id === id ? next.colors.find((entry) => entry.id === id) ?? current : current)
                 return true
+              }}
+              collections={library.collections}
+              onToggleCollection={(colorId, collectionId, member) => {
+                const next = setMembership(library, colorId, collectionId, member, Date.now())
+                if (!updateLibrary(next)) return false
+                refreshSaved(next)
+                return true
+              }}
+              onCreateCollection={(colorId, name) => {
+                const problem = collectionNameProblem(library, name)
+                if (problem) return problem
+                const made = createCollection(library, { id: crypto.randomUUID(), name, now: Date.now() })
+                const next = setMembership(made.library, colorId, made.collection!.id, true, Date.now())
+                if (!updateLibrary(next)) return 'Couldn’t save the collection on this device. Try again.'
+                refreshSaved(next)
+                return null
               }}
               onRecalculate={() => setSavedColor(null)}
               onOpenColor={openColor}

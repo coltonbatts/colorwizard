@@ -10,10 +10,11 @@ import { getColorName } from '@/lib/colorNaming'
 import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
-import type { SaveInput, SavedColor } from '@/lib/colorLibrary'
+import type { Collection, SaveInput, SavedColor } from '@/lib/colorLibrary'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getSolverWorker } from '@/lib/workers'
 import BasisNote from './BasisNote'
+import CollectionPicker from './CollectionPicker'
 import ColorUnderstanding from './ColorUnderstanding'
 import FlossImage from './FlossImage'
 import PaintPalette, { usePaintPalette } from './PaintPalette'
@@ -40,6 +41,9 @@ interface ColorReadoutProps {
   existing: SavedColor | null
   onSave: (result: Pick<SaveInput, 'name' | 'paint' | 'thread'>) => 'created' | 'updated' | null
   onNote: (id: string, note: string) => boolean
+  collections: Collection[]
+  onToggleCollection: (colorId: string, collectionId: string, member: boolean) => boolean
+  onCreateCollection: (colorId: string, name: string) => string | null
   onRecalculate: () => void
   onOpenColor: (hex: string, origin?: PourOrigin) => void
 }
@@ -83,7 +87,7 @@ function useCopy() {
   return { copied, copy }
 }
 
-export default function ColorReadout({ color, arrival, canSave, savedColor, existing, onSave, onNote, onRecalculate, onOpenColor }: ColorReadoutProps) {
+export default function ColorReadout({ color, arrival, canSave, savedColor, existing, onSave, onNote, collections, onToggleCollection, onCreateCollection, onRecalculate, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
   const palette = usePaintPalette()
   const solveOptions = useMemo(() => getPaletteSolveOptions(palette), [palette])
@@ -194,6 +198,15 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
         </p>
         <p className={styles.smallNote}>Keeps this color with the paint recipe and thread match shown here, in this browser. The picture is not saved.</p>
         {keptEntry && <SavedNote key={keptEntry.id} note={keptEntry.note ?? ''} onCommit={(note) => onNote(keptEntry.id, note)} />}
+        {keptEntry && (
+          <CollectionPicker
+            key={keptEntry.id}
+            color={keptEntry}
+            collections={collections}
+            onToggle={(collectionId, member) => onToggleCollection(keptEntry.id, collectionId, member)}
+            onCreate={(name) => onCreateCollection(keptEntry.id, name)}
+          />
+        )}
       </section>
 
       <ColorUnderstanding hex={color.hex} onOpenColor={onOpenColor} />

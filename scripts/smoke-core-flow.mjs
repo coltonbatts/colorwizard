@@ -535,6 +535,103 @@ async function keepFlow(name, options) {
   } finally { await context.close() }
 }
 
+async function collectionsFlow(name, options) {
+  const context = await browser.newContext(options)
+  const page = await context.newPage()
+  const issues = watch(page)
+  const touch = !!options.hasTouch
+  const keepSection = page.getByRole('region', { name: 'Keep this color', exact: true })
+  const filters = page.getByRole('group', { name: 'Show collection', exact: true })
+  const library = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
+  const chips = () => page.getByRole('button', { name: /^Open saved color #/ })
+  const typeColor = async hex => {
+    await tap(page, page.getByRole('button', { name: 'Color…', exact: true }), touch)
+    const input = page.getByLabel('Color as a hex code')
+    await input.fill(hex)
+    await input.press('Enter')
+    assert.equal(await hexReadout(page).innerText(), hex)
+  }
+  const newCollection = async title => {
+    await tap(page, keepSection.getByRole('button', { name: 'New collection…', exact: true }), touch)
+    await keepSection.getByLabel('Collection name').fill(title)
+    await keepSection.getByLabel('Collection name').press('Enter')
+  }
+  try {
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: 'Type a color', exact: true }), touch)
+    const first = page.getByLabel('Color as a hex code')
+    await first.fill('#4F7A3A')
+    await first.press('Enter')
+    await saveAndRead(page, touch, '#4F7A3A')
+    await typeColor('#C45C3E')
+    await saveAndRead(page, touch, '#C45C3E')
+    assert.equal(await filters.count(), 0, 'Filters show before any collection exists')
+
+    // A new collection takes the color it was made from.
+    await newCollection('Roof')
+    await keepSection.getByRole('checkbox', { name: 'Roof', exact: true }).waitFor()
+    assert.equal(await keepSection.getByRole('checkbox', { name: 'Roof', exact: true }).isChecked(), true)
+    let stored = await library()
+    assert.deepEqual(stored.collections.map(c => c.name), ['Roof'])
+    const roof = stored.collections[0].id
+    assert.deepEqual(stored.colors.find(c => c.hex === '#C45C3E').collectionIds, [roof])
+    assert.deepEqual(stored.colors.find(c => c.hex === '#4F7A3A').collectionIds, [])
+
+    // A name already used is explained, and nothing is created.
+    await newCollection('  roof ')
+    await keepSection.getByRole('alert').filter({ hasText: 'already have a collection' }).waitFor()
+    assert.equal((await library()).collections.length, 1)
+    await keepSection.getByLabel('Collection name').press('Escape')
+
+    // Put the other color in Roof, then give it a collection of its own and take it out of Roof.
+    await tap(page, page.getByRole('button', { name: 'Open saved color #4F7A3A', exact: true }), touch)
+    await keepSection.getByRole('checkbox', { name: 'Roof', exact: true }).check()
+    assert.deepEqual((await library()).colors.find(c => c.hex === '#4F7A3A').collectionIds, [roof])
+    await newCollection('Walls')
+    await keepSection.getByRole('checkbox', { name: 'Walls', exact: true }).waitFor()
+    await keepSection.getByRole('checkbox', { name: 'Roof', exact: true }).uncheck()
+    await keepSection.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: path.join(artifacts, `${name}-collections-picker.png`), fullPage: true })
+    stored = await library()
+    const walls = stored.collections.find(c => c.name === 'Walls').id
+    assert.deepEqual(stored.colors.find(c => c.hex === '#4F7A3A').collectionIds, [walls])
+    assert.deepEqual(stored.colors.find(c => c.hex === '#C45C3E').collectionIds, [roof])
+
+    // Filtering the saved strip, and the choices survive a reload.
+    await page.reload({ waitUntil: 'networkidle' })
+    assert.equal(await chips().count(), 2)
+    await filters.getByRole('button', { name: /^Roof/ }).click()
+    assert.deepEqual(await chips().evaluateAll(list => list.map(el => el.getAttribute('aria-label'))), ['Open saved color #C45C3E'])
+    await filters.getByRole('button', { name: /^Walls/ }).click()
+    assert.deepEqual(await chips().evaluateAll(list => list.map(el => el.getAttribute('aria-label'))), ['Open saved color #4F7A3A'])
+    await filters.getByRole('button', { name: /^All/ }).click()
+    assert.equal(await chips().count(), 2)
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
+    await page.screenshot({ path: path.join(artifacts, `${name}-collections.png`), fullPage: true })
+
+    // Deleting a collection takes away the grouping, never the colors.
+    await filters.getByRole('button', { name: /^Walls/ }).click()
+    await page.getByRole('button', { name: 'Delete this collection…', exact: true }).click()
+    await page.getByText('The colors stay saved.').waitFor()
+    await page.getByRole('button', { name: 'Keep it', exact: true }).click()
+    assert.equal((await library()).collections.length, 2, 'Cancel still deleted the collection')
+    await page.getByRole('button', { name: 'Delete this collection…', exact: true }).click()
+    await page.getByRole('button', { name: 'Delete collection', exact: true }).click()
+    stored = await library()
+    assert.deepEqual(stored.collections.map(c => c.name), ['Roof'])
+    assert.equal(stored.colors.length, 2)
+    assert.deepEqual(stored.colors.find(c => c.hex === '#4F7A3A').collectionIds, [])
+    assert.equal(await chips().count(), 2, 'The strip did not return to All')
+    assert.deepEqual(issues, [], 'Browser console failures')
+    console.log(`${name}-collections: passed`)
+    results.push({ name: `${name}-collections`, status: 'passed', touch, consoleIssues: issues })
+  } catch (error) {
+    results.push({ name: `${name}-collections`, status: 'failed', consoleIssues: issues, body: (await page.locator('body').innerText()).slice(0, 3000) })
+    await page.screenshot({ path: path.join(artifacts, `${name}-collections-failure.png`), fullPage: true }).catch(() => {})
+    throw error
+  } finally { await context.close() }
+}
+
 try {
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
@@ -546,6 +643,8 @@ try {
   await understandFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await keepFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
   await keepFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await collectionsFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await collectionsFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await storageFailures()
   await imageAndSolverBoundaries()
   await artworkUpload(false)
