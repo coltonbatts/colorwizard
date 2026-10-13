@@ -77,7 +77,7 @@ export default function ColorUnderstanding({ hex, onOpenColor }: ColorUnderstand
           </div>
         )
       })}
-      <p className={styles.smallNote}>
+      <p className={`${styles.smallNote} ${styles.legible}`}>
         Relationships between screen colors, not paint or thread matches.
       </p>
       <BasisNote topic="relationships" />
