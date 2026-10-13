@@ -16,6 +16,7 @@ import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import ColorEntry from './ColorEntry'
 import ColorReadout, { type Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
+import LibraryTools from './LibraryTools'
 import PlanPanel from './PlanPanel'
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
@@ -204,6 +205,19 @@ export default function SimpleApp() {
   const refreshSaved = (next: ColorLibrary) =>
     setSavedColor((current) => current ? next.colors.find((entry) => entry.id === current.id) ?? null : current)
 
+  const libraryTools = (
+    <LibraryTools
+      library={library}
+      canWrite={savedReadable}
+      onImport={(merged) => {
+        if (!updateLibrary(merged)) return false
+        refreshSaved(merged)
+        setCollectionFilter(null)
+        return true
+      }}
+    />
+  )
+
   const savedList = library.colors.length > 0 && (
     <SavedStrip
       library={library}
@@ -331,6 +345,7 @@ export default function SimpleApp() {
           </p>
           <p className={styles.privacyNote}>Your picture stays on this device.</p>
           {savedList}
+          {libraryTools}
           {saveError && <p role="alert" className={styles.smallNote}>{saveError}</p>}
         </div>
       </main>
@@ -461,7 +476,7 @@ export default function SimpleApp() {
           )}
         </div>
 
-        {!planMode && savedList}
+        {!planMode && <>{savedList}{libraryTools}</>}
       </aside>
     </main>
   )

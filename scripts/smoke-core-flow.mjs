@@ -265,7 +265,7 @@ async function imageAndSolverBoundaries() {
   const page = await context.newPage()
   const issues = watch(page)
   await page.goto(origin, { waitUntil: 'networkidle' })
-  const input = page.locator('input[type=file]')
+  const input = page.locator('input[type=file][accept="image/*"]')
   await input.setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') })
   await page.getByRole('alert').filter({ hasText: 'That file isn’t a picture.' }).waitFor()
   await input.setInputFiles({ name: 'slow.png', mimeType: 'image/png', buffer: await readFile(fixture) })
@@ -632,6 +632,144 @@ async function collectionsFlow(name, options) {
   } finally { await context.close() }
 }
 
+async function backupFlow(name, options) {
+  const touch = !!options.hasTouch
+  const keepSection = page => page.getByRole('region', { name: 'Keep this color', exact: true })
+  const library = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
+  const chips = page => page.getByRole('button', { name: /^Open saved color #/ })
+  const backupInput = page => page.getByLabel('Backup file', { exact: true })
+  const restoreStatus = page => page.locator('[role="status"]').filter({ hasText: /Imported|Everything in that file|Downloaded/ })
+  const backupPath = path.join(artifacts, `${name}-backup.json`)
+  const issues = []
+  const open = async () => {
+    const context = await browser.newContext({ ...options, acceptDownloads: true })
+    const page = await context.newPage()
+    issues.push(...[])
+    page.on('pageerror', error => issues.push(`pageerror: ${error.message}`))
+    page.on('console', message => { if (message.type() === 'error') issues.push(`${message.type()}: ${message.text()}`) })
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    return { context, page }
+  }
+  const typeColor = async (page, hex, first) => {
+    if (first) await tap(page, page.getByRole('button', { name: 'Type a color', exact: true }), touch)
+    else await tap(page, page.getByRole('button', { name: 'Color…', exact: true }), touch)
+    const input = page.getByLabel('Color as a hex code')
+    await input.fill(hex)
+    await input.press('Enter')
+    assert.equal(await hexReadout(page).innerText(), hex)
+  }
+  const first = await open()
+  let original
+  try {
+    // A library with two colors, a note, a collection, recipes and threads.
+    await typeColor(first.page, '#4F7A3A', true)
+    await saveAndRead(first.page, touch, '#4F7A3A')
+    await keepSection(first.page).getByLabel('Note').fill('Leaves, second pass')
+    await keepSection(first.page).getByLabel('Note').blur()
+    await keepSection(first.page).getByText('Note saved.').waitFor()
+    await tap(first.page, keepSection(first.page).getByRole('button', { name: 'New collection…', exact: true }), touch)
+    await keepSection(first.page).getByLabel('Collection name').fill('Roof')
+    await keepSection(first.page).getByLabel('Collection name').press('Enter')
+    await keepSection(first.page).getByRole('checkbox', { name: 'Roof', exact: true }).waitFor()
+    await typeColor(first.page, '#C45C3E', false)
+    await saveAndRead(first.page, touch, '#C45C3E')
+    original = await library(first.page)
+    assert.equal(original.colors.length, 2)
+
+    // Export: a real download whose contents are exactly what is saved.
+    const download = first.page.waitForEvent('download')
+    await tap(first.page, first.page.getByRole('button', { name: 'Download a backup', exact: true }), touch)
+    const file = await download
+    assert.match(file.suggestedFilename(), /^colorwizard-colors-\d{4}-\d{2}-\d{2}\.json$/)
+    await file.saveAs(backupPath)
+    const backup = JSON.parse(await readFile(backupPath, 'utf8'))
+    assert.equal(backup.format, 'colorwizard-library')
+    assert.equal(backup.formatVersion, 1)
+    assert.deepEqual(backup.library, original)
+    await restoreStatus(first.page).filter({ hasText: 'Pictures aren’t included.' }).waitFor()
+  } finally { await first.context.close() }
+
+  const second = await open()
+  const { page } = second
+  try {
+    // A browser with nothing saved can restore, and cannot back up nothing.
+    assert.equal(await chips(page).count(), 0)
+    assert.equal(await page.getByRole('button', { name: 'Download a backup', exact: true }).count(), 0)
+    await page.getByRole('button', { name: 'Restore from a backup…', exact: true }).waitFor()
+
+    // Files that are not backups are refused with a reason, and nothing is written.
+    const refuse = async (file, text) => {
+      await backupInput(page).setInputFiles(file)
+      await page.getByRole('alert').filter({ hasText: text }).waitFor()
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), null, 'A refused file wrote something')
+    }
+    await refuse({ name: 'notes.json', mimeType: 'application/json', buffer: Buffer.from('{broken') }, 'isn’t readable as JSON')
+    await refuse({ name: 'other.json', mimeType: 'application/json', buffer: Buffer.from('{"colors": []}') }, 'isn’t a ColorWizard backup.')
+    await refuse({ name: 'newer.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'colorwizard-library', formatVersion: 2, library: {} })) }, 'newer version of ColorWizard')
+    await refuse({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'colorwizard-library', formatVersion: 1, library: { version: 2, colors: [{ id: 'x', hex: 'red' }] } })) }, 'looks damaged')
+
+    // A real backup shows what it will do first. Cancel writes nothing.
+    await backupInput(page).setInputFiles(backupPath)
+    const preview = page.getByRole('group', { name: 'Import preview', exact: true })
+    await preview.waitFor()
+    await page.screenshot({ path: path.join(artifacts, `${name}-restore-preview.png`), fullPage: true })
+    assert.match(await preview.innerText(), /This file has 2 colors and 1 collection\. Importing will add 2 new colors and add 1 collection\. Nothing is deleted\./)
+    await preview.getByRole('button', { name: 'Cancel', exact: true }).click()
+    assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), null, 'Cancel wrote something')
+
+    // Restore into the empty browser: the same library, exactly.
+    await backupInput(page).setInputFiles(backupPath)
+    await tap(page, preview.getByRole('button', { name: 'Import', exact: true }), touch)
+    await restoreStatus(page).filter({ hasText: 'Imported: 2 added, 0 updated, 1 collection added.' }).waitFor()
+    assert.deepEqual(await library(page), original)
+    assert.equal(await chips(page).count(), 2)
+    await page.getByRole('group', { name: 'Show collection', exact: true }).getByRole('button', { name: /^Roof 1/ }).waitFor()
+    await tap(page, page.getByRole('button', { name: 'Open saved color #4F7A3A', exact: true }), touch)
+    assert.equal(await keepSection(page).getByLabel('Note').inputValue(), 'Leaves, second pass')
+    assert.equal(await keepSection(page).getByRole('checkbox', { name: 'Roof', exact: true }).isChecked(), true)
+    const entry = original.colors.find(color => color.hex === '#4F7A3A')
+    assert.deepEqual((await waitForRecipe(page, '#4F7A3A')).predicted, entry.attachments.paint.recipe.predictedHex)
+    await page.getByRole('region', { name: 'Thread', exact: true }).getByText(`DMC ${entry.attachments.thread.number}`, { exact: true }).waitFor()
+
+    // The same file again changes nothing.
+    await backupInput(page).setInputFiles(backupPath)
+    await restoreStatus(page).filter({ hasText: 'Everything in that file is already saved here. Nothing changed.' }).waitFor()
+    assert.deepEqual(await library(page), original)
+
+    // A newer note here survives the file; a color removed here comes back, and the rest stays as it is.
+    await keepSection(page).getByLabel('Note').fill('Newer note, made here')
+    await keepSection(page).getByLabel('Note').blur()
+    await keepSection(page).getByText('Note saved.').waitFor()
+    if (!touch) await page.getByRole('button', { name: 'Open saved color #C45C3E', exact: true }).hover()
+    await tap(page, page.getByRole('button', { name: 'Remove saved color #C45C3E', exact: true }), touch)
+    assert.equal(await chips(page).count(), 1)
+    await backupInput(page).setInputFiles(backupPath)
+    assert.match(await preview.innerText(), /Importing will add 1 new color\. 1 color you already have stays as it is\. Nothing is deleted\./)
+    await tap(page, preview.getByRole('button', { name: 'Import', exact: true }), touch)
+    await restoreStatus(page).filter({ hasText: 'Imported: 1 added, 0 updated, 0 collections added.' }).waitFor()
+    const merged = await library(page)
+    assert.equal(merged.colors.length, 2)
+    assert.equal(merged.colors.find(color => color.hex === '#4F7A3A').note, 'Newer note, made here')
+    assert.equal(merged.collections.length, 1, 'Restoring made a second Roof')
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
+    await page.screenshot({ path: path.join(artifacts, `${name}-restore.png`), fullPage: true })
+
+    // When saved data can't be read, restoring is off, so it can't overwrite it.
+    await page.evaluate(key => localStorage.setItem(key, '{damaged'), savedKey)
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('alert').filter({ hasText: 'Saved colors couldn’t be read' }).waitFor()
+    assert.ok(await page.getByRole('button', { name: 'Restore from a backup…', exact: true }).isDisabled())
+    assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), '{damaged')
+    assert.deepEqual(issues.filter(issue => !/Failed to load resource/.test(issue)), [], 'Browser console failures')
+    console.log(`${name}-backup: passed`)
+    results.push({ name: `${name}-backup`, status: 'passed', touch })
+  } catch (error) {
+    results.push({ name: `${name}-backup`, status: 'failed', body: (await page.locator('body').innerText()).slice(0, 3000) })
+    await page.screenshot({ path: path.join(artifacts, `${name}-backup-failure.png`), fullPage: true }).catch(() => {})
+    throw error
+  } finally { await second.context.close() }
+}
+
 try {
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
@@ -645,6 +783,8 @@ try {
   await keepFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await collectionsFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
   await collectionsFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await backupFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await backupFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await storageFailures()
   await imageAndSolverBoundaries()
   await artworkUpload(false)
