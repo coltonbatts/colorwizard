@@ -17,7 +17,7 @@ const isHex = (value: unknown): value is string => typeof value === 'string' && 
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object'
 
-function isRecipe(value: unknown): value is SpectralRecipe {
+export function isRecipe(value: unknown): value is SpectralRecipe {
   if (!record(value) || !isHex(value.predictedHex) || !finite(value.error) || value.error < 0 ||
       !['Excellent', 'Good', 'Fair', 'Poor'].includes(String(value.matchQuality)) || value.isFallback === true ||
       !Array.isArray(value.steps) || !value.steps.every(step => typeof step === 'string') ||

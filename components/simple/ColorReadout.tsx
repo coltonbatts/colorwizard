@@ -10,13 +10,14 @@ import { getColorName } from '@/lib/colorNaming'
 import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
-import type { SavedPaintColor } from '@/lib/simpleSavedColors'
+import type { SaveInput, SavedColor } from '@/lib/colorLibrary'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getSolverWorker } from '@/lib/workers'
 import BasisNote from './BasisNote'
 import ColorUnderstanding from './ColorUnderstanding'
 import FlossImage from './FlossImage'
 import PaintPalette, { usePaintPalette } from './PaintPalette'
+import SavedNote from './SavedNote'
 import { describeThreadFit } from '@/lib/dmc/threadFit'
 import { describePaintFit, formatAmount, MODEL_CAVEAT, roundingNote } from '@/lib/paint/paintFit'
 import { originOf, pour, type PourOrigin } from './pour'
@@ -33,8 +34,12 @@ interface ColorReadoutProps {
   /** Set when a color was picked on purpose (a click, not a drag), so it pours in. */
   arrival: Arrival | null
   canSave: boolean
-  savedColor: SavedPaintColor | null
-  onSave: (result: { recipe: SpectralRecipe; name: string; paletteName: string }) => void
+  /** The saved color being viewed as it was saved (its recipe is restored, not recalculated). */
+  savedColor: SavedColor | null
+  /** A saved color with this same hex, if any: saving again updates it. */
+  existing: SavedColor | null
+  onSave: (result: Pick<SaveInput, 'name' | 'paint' | 'thread'>) => 'created' | 'updated' | null
+  onNote: (id: string, note: string) => boolean
   onRecalculate: () => void
   onOpenColor: (hex: string, origin?: PourOrigin) => void
 }
@@ -78,7 +83,7 @@ function useCopy() {
   return { copied, copy }
 }
 
-export default function ColorReadout({ color, arrival, canSave, savedColor, onSave, onRecalculate, onOpenColor }: ColorReadoutProps) {
+export default function ColorReadout({ color, arrival, canSave, savedColor, existing, onSave, onNote, onRecalculate, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
   const palette = usePaintPalette()
   const solveOptions = useMemo(() => getPaletteSolveOptions(palette), [palette])
@@ -89,14 +94,16 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
   const paletteKey = JSON.stringify(solveOptions)
   const requestKey = `${settledHex}:${paletteKey}:${retry}`
   const currentKey = `${color.hex}:${paletteKey}:${retry}`
-  const snapshot = savedColor?.recipe
+  const snapshot = savedColor?.attachments.paint?.recipe
   const recipe = snapshot ?? (paint?.key === currentKey ? paint.recipe : null)
   const paintFailed = !snapshot && paint?.key === currentKey && paint.failed
-  const name = savedColor?.name || (named?.hex === color.hex ? named.name : '')
+  const name = savedColor?.nameSnapshot || (named?.hex === color.hex ? named.name : '')
   const threads = threadResult?.hex === color.hex ? threadResult.result : null
   const threadFailed = threadResult?.hex === color.hex && !threadResult.result
-  const paletteName = snapshot ? savedColor.paletteName! : palette.isDefault ? 'Core six' : palette.name
+  const paletteName = snapshot ? savedColor.attachments.paint!.paletteName : palette.isDefault ? 'Core six' : palette.name
   const { copied, copy } = useCopy()
+  const [kept, setKept] = useState<'created' | 'updated' | null>(null)
+  useEffect(() => setKept(null), [color.hex])
   const swatchRef = useRef<HTMLDivElement>(null)
   const fillRef = useRef<HTMLDivElement>(null)
   const shownHexRef = useRef<string | null>(null)
@@ -145,6 +152,8 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
   const ladder = threads?.familyLadder ?? []
   const ingredients = recipe?.ingredients.filter((ingredient) => ingredient.weight >= 0.005) ?? []
   const fit = recipe ? describePaintFit(recipe, paletteName) : null
+  const keptEntry = savedColor ?? existing
+  const canKeep = canSave && !snapshot && isCurrent && (!!recipe || paintFailed) && (!!threads || threadFailed)
   const threadFit = primary ? describeThreadFit(primary.deltaE00, primary.colorConfidence) : null
 
   return (
@@ -163,6 +172,29 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
         </div>
         {isCurrent && name && <BasisNote topic="name" />}
       </header>
+
+      <section className={styles.keep} aria-label="Keep this color">
+        <button
+          type="button"
+          className={styles.saveButton}
+          disabled={!canKeep}
+          onClick={() => {
+            const outcome = onSave({
+              name,
+              paint: !snapshot && recipe && ingredients.length > 0 ? { paletteName, recipe } : undefined,
+              thread: primary ? { number: primary.number, name: primary.name, hex: primary.hex, deltaE00: primary.deltaE00, colorConfidence: primary.colorConfidence } : undefined,
+            })
+            if (outcome) setKept(outcome)
+          }}
+        >
+          {snapshot ? 'Saved on this device' : existing ? 'Update saved color' : 'Save color'}
+        </button>
+        <p className={styles.smallNote} role="status">
+          {!keptEntry ? '' : kept === 'updated' ? 'Updated the saved color.' : kept === 'created' ? 'Saved. Find it under Saved on this device.' : ''}
+        </p>
+        <p className={styles.smallNote}>Keeps this color with the paint recipe and thread match shown here, in this browser. The picture is not saved.</p>
+        {keptEntry && <SavedNote key={keptEntry.id} note={keptEntry.note ?? ''} onCommit={(note) => onNote(keptEntry.id, note)} />}
+      </section>
 
       <ColorUnderstanding hex={color.hex} onOpenColor={onOpenColor} />
 
@@ -206,15 +238,11 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
         )}
         {snapshot ? (
           <p className={styles.smallNote}>
-            Saved recipe · {savedColor.pictureName || 'Saved color'}. Restored as saved.
+            Saved recipe · {savedColor.source?.pictureName || 'Saved color'}. Restored as saved.
             {' '}<button type="button" className={styles.linkButton} onClick={onRecalculate}>Make a new recipe</button>
           </p>
         ) : <PaintPalette palette={palette} />}
         <BasisNote topic="paint" />
-        <button type="button" className={styles.saveButton} onClick={() => recipe && onSave({ recipe, name, paletteName })} disabled={!canSave || !!snapshot || !recipe || ingredients.length === 0}>
-          {snapshot ? 'Saved on this device' : 'Save Color & Recipe'}
-        </button>
-        <p className={styles.smallNote}>Saves the color and paint recipe in this browser. The picture is not saved.</p>
       </section>
 
       <section className={styles.section} aria-labelledby="thread-heading" aria-busy={!threads && !threadFailed}>
@@ -274,6 +302,9 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
           </div>
         ) : (
           <p className={styles.pending}>{threadFailed ? "Thread matches are unavailable. Your paint recipe is still usable." : "Matching…"}</p>
+        )}
+        {primary && savedColor?.attachments.thread && savedColor.attachments.thread.number !== primary.number && (
+          <p className={styles.smallNote}>Saved with DMC {savedColor.attachments.thread.number}; the catalog now matches DMC {primary.number}.</p>
         )}
         {primary && <BasisNote topic="thread" />}
       </section>

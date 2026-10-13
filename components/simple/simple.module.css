@@ -1421,3 +1421,41 @@
 .threadNote {
   margin: 0 0 10px;
 }
+
+/* ---------- Keep: save a color, add a note ---------- */
+
+.keep {
+  margin-top: 16px;
+}
+
+.keep .saveButton {
+  width: 100%;
+  margin-top: 0;
+}
+
+.keep .smallNote:empty {
+  display: none;
+}
+
+.noteField {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--s-ink-3);
+}
+
+.noteField label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.noteField textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font: inherit;
+  font-size: 13px;
+  color: var(--s-ink);
+}

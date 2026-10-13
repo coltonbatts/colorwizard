@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { createSolidColorDemoImage } from '@/lib/demoColor'
-import { parseSavedColors, storeSavedColors, SIMPLE_SAVED_KEY, type SavedPaintColor } from '@/lib/simpleSavedColors'
+import { emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setNote, storeLibrary, type ColorLibrary, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
@@ -66,11 +66,11 @@ export default function SimpleApp() {
   const [selectedPile, setSelectedPile] = useState<number | null>(null)
   const [markMisses, setMarkMisses] = useState(true)
   const [peek, setPeek] = useState(false)
-  const [saved, setSaved] = useState<SavedPaintColor[]>([])
+  const [library, setLibrary] = useState<ColorLibrary>(emptyLibrary)
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [savedColor, setSavedColor] = useState<SavedPaintColor | null>(null)
+  const [savedColor, setSavedColor] = useState<SavedColor | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedReadable, setSavedReadable] = useState(false)
   const [opening, setOpening] = useState(false)
@@ -79,7 +79,7 @@ export default function SimpleApp() {
 
   useEffect(() => {
     try {
-      setSaved(parseSavedColors(window.localStorage.getItem(SIMPLE_SAVED_KEY)))
+      setLibrary(loadLibrary(window.localStorage))
       setSavedReadable(true)
     } catch {
       setSaveError('Saved colors couldn’t be read. Saving is unavailable; existing data has been kept. Try allowing browser storage and reload.')
@@ -186,11 +186,11 @@ export default function SimpleApp() {
     openColor(hex)
   }, [openColor])
 
-  const updateSaved = (next: SavedPaintColor[]) => {
+  const updateLibrary = (next: ColorLibrary) => {
     if (!savedReadable) return false
     try {
-      storeSavedColors(window.localStorage, next)
-      setSaved(next)
+      storeLibrary(window.localStorage, next)
+      setLibrary(next)
       setSaveError(null)
       return true
     } catch {
@@ -199,11 +199,11 @@ export default function SimpleApp() {
     }
   }
 
-  const savedList = saved.length > 0 && (
+  const savedList = library.colors.length > 0 && (
     <footer className={styles.saved} aria-label="Saved colors">
       <span className={styles.rowLabel}>Saved on this device</span>
       <ul>
-        {saved.map((entry) => (
+        {library.colors.map((entry) => (
           <li key={entry.id}>
             <button
               type="button"
@@ -214,11 +214,11 @@ export default function SimpleApp() {
                 setSavedColor(entry)
                 setPlanMode(false)
               }}
-              title={`${entry.hex} · ${entry.recipe ? entry.paletteName : 'Color only — make a recipe'}`}
+              title={[entry.hex, entry.attachments.paint ? entry.attachments.paint.paletteName : 'Color only — make a recipe', entry.attachments.thread && `DMC ${entry.attachments.thread.number}`, entry.note && 'has a note'].filter(Boolean).join(' · ')}
               aria-label={`Open saved color ${entry.hex}`}
             />
             <button type="button" className={styles.savedRemove} aria-label={`Remove saved color ${entry.hex}`} onClick={() => {
-              if (updateSaved(saved.filter((color) => color.id !== entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
+              if (updateLibrary(removeColor(library, entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
             }}>×</button>
           </li>
         ))}
@@ -423,12 +423,18 @@ export default function SimpleApp() {
               arrival={arrival}
               canSave={savedReadable}
               savedColor={savedColor}
+              existing={findByHex(library, color.hex) ?? null}
               onSave={(result) => {
-                const entry: SavedPaintColor = {
-                  id: crypto.randomUUID(), hex: color.hex, ...result, savedAt: Date.now(),
-                  pictureName: point ? pictureName : savedColor?.pictureName,
-                }
-                if (updateSaved([...saved, entry])) setSavedColor(entry)
+                const next = saveColor(library, { id: crypto.randomUUID(), hex: color.hex, now: Date.now(), pictureName: point ? pictureName : undefined, ...result })
+                if (!updateLibrary(next.library)) return null
+                setSavedColor(next.color)
+                return next.updated ? 'updated' : 'created'
+              }}
+              onNote={(id, note) => {
+                const next = setNote(library, id, note, Date.now())
+                if (!updateLibrary(next)) return false
+                setSavedColor((current) => current?.id === id ? next.colors.find((entry) => entry.id === id) ?? current : current)
+                return true
               }}
               onRecalculate={() => setSavedColor(null)}
               onOpenColor={openColor}

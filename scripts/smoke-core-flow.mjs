@@ -7,7 +7,8 @@ import sharp from 'sharp'
 // Test the public web entry, even when an older invocation supplies /workbench.
 const origin = new URL(process.env.COLORWIZARD_URL || 'http://localhost:3000').origin
 const artifacts = path.resolve(process.env.COLORWIZARD_ARTIFACTS || 'output/core-flow/smoke')
-const savedKey = 'colorwizard-simple-saved'
+const legacyKey = 'colorwizard-simple-saved' // v1: read once, never written
+const savedKey = 'colorwizard-simple-library-v2'
 await mkdir(artifacts, { recursive: true })
 const fixture = path.join(artifacts, 'sample-blocks.png')
 // A real file upload with independently known pixels on both sides of the image.
@@ -17,7 +18,7 @@ const browser = await chromium.launch({ headless: true })
 const paint = page => page.getByRole('region', { name: 'Paint', exact: true })
 const canvas = page => page.locator('canvas[aria-label^="Your picture."]')
 const hexReadout = page => page.locator('button[title="Copy hex"]')
-const saveButton = page => page.getByRole('button', { name: 'Save Color & Recipe', exact: true })
+const saveButton = page => page.getByRole('button', { name: /^(Save color|Update saved color)$/ })
 
 function watch(page) {
   const issues = []
@@ -76,13 +77,18 @@ async function saveAndRead(page, touch, hex) {
   await tap(page, saveButton(page), touch)
   await page.getByRole('button', { name: 'Saved on this device', exact: true }).waitFor()
   const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
-  const entry = stored.colors.at(-1)
-  assert.equal(entry.hex, hex)
-  assert.equal(entry.recipe.predictedHex, shown.predicted)
-  for (const ingredient of entry.recipe.ingredients) {
+  assert.equal(stored.version, 2)
+  const entry = stored.colors.find(color => color.hex === hex)
+  assert.ok(entry, `No saved color ${hex}`)
+  assert.equal(stored.colors.filter(color => color.hex === hex).length, 1, 'Saving made a twin')
+  const recipe = entry.attachments.paint.recipe
+  assert.equal(entry.attachments.paint.kind, 'spectral')
+  assert.equal(recipe.predictedHex, shown.predicted)
+  assert.match(entry.attachments.thread.number, /^[A-Z0-9]+$/i, 'The thread match was not kept')
+  for (const ingredient of recipe.ingredients) {
     if (ingredient.weight < .005) continue
     assert.ok(shown.ingredients.includes(ingredient.pigment.name), 'Saved ingredient differs from the displayed recipe')
-    const amount = entry.recipe.paintable ? `${ingredient.parts} ${ingredient.parts === 1 ? 'part' : 'parts'}` : `${Math.round(ingredient.weight * 100)}%`
+    const amount = recipe.paintable ? `${ingredient.parts} ${ingredient.parts === 1 ? 'part' : 'parts'}` : `${Math.round(ingredient.weight * 100)}%`
     assert.ok(shown.ingredients.includes(amount), 'Saved amount differs from the displayed recipe')
   }
   return { entry, shown }
@@ -155,7 +161,7 @@ async function runViewport(name, options) {
     await waitForRecipe(page, '#397DA8')
     await tap(page, page.getByRole('button', { name: 'Value', exact: true }), options.hasTouch)
     const saved = await saveAndRead(page, options.hasTouch, '#397DA8')
-    assert.equal(saved.entry.pictureName, 'sample-blocks.png')
+    assert.equal(saved.entry.source.pictureName, 'sample-blocks.png')
     await assertLayout(page)
     await paint(page).scrollIntoViewIfNeeded()
     await page.screenshot({ path: path.join(artifacts, `${name}-saved.png`), fullPage: true })
@@ -178,7 +184,7 @@ async function runViewport(name, options) {
     await paint(page).getByText(/Restored as saved/).waitFor()
     await paint(page).scrollIntoViewIfNeeded()
     await page.screenshot({ path: path.join(artifacts, `${name}-recovered.png`), fullPage: true })
-    assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).colors.at(-1), savedKey), saved.entry)
+    assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).colors.find(color => color.hex === '#397DA8'), savedKey), saved.entry)
     // Recalculate with a changed palette, then recover the original snapshot without changing it.
     await tap(page, page.getByRole('button', { name: 'Make a new recipe' }), options.hasTouch)
     await page.locator('summary').filter({ hasText: 'Your paints' }).click()
@@ -203,7 +209,7 @@ async function storageFailures() {
   const page = await context.newPage()
   const issues = watch(page)
   await page.goto(origin, { waitUntil: 'networkidle' })
-  await page.evaluate(key => localStorage.setItem(key, '["#397da8"]'), savedKey)
+  await page.evaluate(key => localStorage.setItem(key, '["#397da8"]'), legacyKey) // an old save: hex only
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'Open saved color #397DA8' }).click()
   await waitForRecipe(page, '#397DA8')
@@ -222,9 +228,11 @@ async function storageFailures() {
   assert.ok(errorBox.y >= 0 && errorBox.y + errorBox.height <= 720, 'Save error is outside the visible viewport')
   await page.screenshot({ path: path.join(artifacts, 'storage-error.png'), fullPage: true })
   assert.equal(await page.getByRole('button', { name: 'Saved on this device', exact: true }).count(), 0)
-  assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), '["#397da8"]')
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), null, 'A failed save left a partial library')
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), legacyKey), '["#397da8"]')
   await page.evaluate(() => window.restoreStorage())
   await saveAndRead(page, false, '#397DA8')
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), legacyKey), '["#397da8"]', 'The old save was modified')
   await page.evaluate(key => localStorage.setItem(key, '{damaged'), savedKey)
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('alert').filter({ hasText: 'Saved colors couldn’t be read' }).waitFor()
@@ -232,7 +240,12 @@ async function storageFailures() {
   await pick(page, .5, false, '#C45C3E')
   await waitForRecipe(page, '#C45C3E')
   assert.ok(await saveButton(page).isDisabled(), 'Save must be disabled when existing data cannot be read')
-  assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), '{damaged', 'Damaged saves were overwritten')
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), savedKey), '{damaged', 'A damaged library was overwritten')
+  // An unreadable old save is kept too, when there is no new library yet.
+  await page.evaluate(([key, old]) => { localStorage.removeItem(key); localStorage.setItem(old, '{damaged') }, [savedKey, legacyKey])
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.getByRole('alert').filter({ hasText: 'Saved colors couldn’t be read' }).waitFor()
+  assert.equal(await page.evaluate(key => localStorage.getItem(key), legacyKey), '{damaged', 'A damaged old save was overwritten')
   assert.deepEqual(issues, [])
   await context.close()
   results.push({ name: 'storage-boundaries', status: 'passed', checks: ['legacy migration', 'failed save is visible and retryable', 'unreadable saves preserved'] })
@@ -272,7 +285,8 @@ async function imageAndSolverBoundaries() {
   await pick(page, .5, false, '#C45C3E')
   await page.getByRole('alert').filter({ hasText: 'Couldn’t calculate a paint recipe.' }).waitFor()
   assert.equal(await paint(page).getAttribute('aria-busy'), 'false', 'Failed solver must not show endless loading')
-  assert.ok(await saveButton(page).isDisabled())
+  // The color is the durable thing: it can still be kept without a recipe once the thread lookup has finished.
+  await page.locator('section[aria-label="Keep this color"] button:not([disabled])').waitFor()
   await page.getByRole('button', { name: 'Try recipe again' }).click()
   await page.getByRole('alert').filter({ hasText: 'Couldn’t calculate a paint recipe.' }).waitFor()
   await page.locator('summary').filter({ hasText: 'Your paints' }).click()
@@ -451,6 +465,76 @@ async function understandFlow(name, options) {
   } finally { await context.close() }
 }
 
+async function keepFlow(name, options) {
+  const context = await browser.newContext(options)
+  const page = await context.newPage()
+  const issues = watch(page)
+  const touch = !!options.hasTouch
+  const keepSection = page.getByRole('region', { name: 'Keep this color', exact: true })
+  const typeColor = async hex => {
+    await tap(page, page.getByRole('button', { name: 'Color…', exact: true }), touch)
+    const input = page.getByLabel('Color as a hex code')
+    await input.fill(hex)
+    await input.press('Enter')
+    assert.equal(await hexReadout(page).innerText(), hex)
+  }
+  try {
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: 'Type a color', exact: true }), touch)
+    const input = page.getByLabel('Color as a hex code')
+    await input.fill('#4F7A3A')
+    await input.press('Enter')
+    assert.ok(await saveButton(page).isDisabled(), 'Save is enabled before the paint and thread results arrive')
+    await waitForRecipe(page, '#4F7A3A')
+    await tap(page, saveButton(page), touch)
+    await keepSection.getByRole('button', { name: 'Saved on this device', exact: true }).waitFor()
+    await keepSection.getByText('Saved. Find it under Saved on this device.').waitFor()
+    let stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
+    assert.equal(stored.colors.length, 1)
+    const first = stored.colors[0]
+    assert.ok(first.nameSnapshot && first.attachments.paint && first.attachments.thread && first.collectionIds.length === 0)
+    // A note is saved when you leave the field.
+    await keepSection.getByLabel('Note').fill('Leaves, second pass')
+    await keepSection.getByLabel('Note').blur()
+    await keepSection.getByText('Note saved.').waitFor()
+    // Reload: the color, its recipe, its thread and its note come back as saved.
+    await page.reload({ waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: 'Open saved color #4F7A3A', exact: true }), touch)
+    await keepSection.getByRole('button', { name: 'Saved on this device', exact: true }).waitFor()
+    assert.equal(await keepSection.getByLabel('Note').inputValue(), 'Leaves, second pass')
+    assert.deepEqual((await waitForRecipe(page, '#4F7A3A')).predicted, first.attachments.paint.recipe.predictedHex)
+    await page.getByRole('region', { name: 'Thread', exact: true }).getByText(`DMC ${first.attachments.thread.number}`, { exact: true }).waitFor()
+    // The same color again updates the reference. No twin, the note stays.
+    await typeColor('#4F7A3A')
+    await waitForRecipe(page, '#4F7A3A')
+    assert.equal(await keepSection.getByLabel('Note').inputValue(), 'Leaves, second pass')
+    await tap(page, page.getByRole('button', { name: 'Update saved color', exact: true }), touch)
+    await keepSection.getByText('Updated the saved color.').waitFor()
+    stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
+    assert.equal(stored.colors.length, 1, 'Saving the same color twice made a twin')
+    assert.equal(stored.colors[0].id, first.id)
+    assert.equal(stored.colors[0].note, 'Leaves, second pass')
+    assert.equal(stored.colors[0].createdAt, first.createdAt)
+    assert.ok(stored.colors[0].updatedAt >= first.updatedAt)
+    // Removing it leaves nothing behind.
+    if (!touch) await page.getByRole('button', { name: 'Open saved color #4F7A3A', exact: true }).hover() // the × shows on hover
+    await tap(page, page.getByRole('button', { name: 'Remove saved color #4F7A3A', exact: true }), touch)
+    stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), savedKey)
+    assert.equal(stored.colors.length, 0)
+    await page.getByRole('button', { name: 'Save color', exact: true }).waitFor()
+    assert.equal(await keepSection.getByText('Updated the saved color.').count(), 0, 'A removed color still says it was saved')
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
+    await page.screenshot({ path: path.join(artifacts, `${name}-keep.png`), fullPage: true })
+    assert.deepEqual(issues, [], 'Browser console failures')
+    console.log(`${name}-keep: passed`)
+    results.push({ name: `${name}-keep`, status: 'passed', touch, consoleIssues: issues })
+  } catch (error) {
+    results.push({ name: `${name}-keep`, status: 'failed', consoleIssues: issues, body: (await page.locator('body').innerText()).slice(0, 3000) })
+    await page.screenshot({ path: path.join(artifacts, `${name}-keep-failure.png`), fullPage: true }).catch(() => {})
+    throw error
+  } finally { await context.close() }
+}
+
 try {
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
@@ -460,6 +544,8 @@ try {
   ]) await runViewport(name, options)
   await understandFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
   await understandFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await keepFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await keepFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await storageFailures()
   await imageAndSolverBoundaries()
   await artworkUpload(false)
