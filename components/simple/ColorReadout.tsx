@@ -5,21 +5,19 @@
  * Every swatch here is itself a color you can open.
  */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getColorName } from '@/lib/colorNaming'
-import { getColorTemperature } from '@/lib/colorTheory'
 import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
-import { getPainterChroma } from '@/lib/paintingMath'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { SavedPaintColor } from '@/lib/simpleSavedColors'
 import type { SpectralRecipe } from '@/lib/spectral/types'
-import { getPerceptualValue } from '@/lib/valueScale'
 import { getSolverWorker } from '@/lib/workers'
+import ColorUnderstanding from './ColorUnderstanding'
 import FlossImage from './FlossImage'
 import PaintPalette, { usePaintPalette } from './PaintPalette'
 import { describePaintFit, formatAmount, MODEL_CAVEAT, roundingNote } from '@/lib/paint/paintFit'
-import { pour, type PourOrigin } from './pour'
+import { originOf, pour, type PourOrigin } from './pour'
 import type { PickedColor } from './SimpleCanvas'
 import styles from './simple.module.css'
 
@@ -39,11 +37,7 @@ interface ColorReadoutProps {
   onOpenColor: (hex: string, origin?: PourOrigin) => void
 }
 
-/** The center of whatever was clicked, as a place for a pour to start. */
-export function originOf(event: MouseEvent<HTMLElement>): PourOrigin {
-  const rect = event.currentTarget.getBoundingClientRect()
-  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-}
+export { originOf }
 
 const SETTLE_MS = 120 // let a drag come to rest before running the solvers
 
@@ -146,9 +140,6 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
   }, [settledHex, solveOptions, requestKey, snapshot])
 
   const isCurrent = settledHex === color.hex
-  const value = Math.round(getPerceptualValue(color.rgb.r, color.rgb.g, color.rgb.b) * 100) / 10
-  const temperature = getColorTemperature(color.rgb)
-  const chroma = getPainterChroma(color.hex).label
 
   const primary = threads?.primary
   const nearby = threads
@@ -172,11 +163,10 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
           <button type="button" className={styles.code} onClick={() => void copy(color.hex)} title="Copy hex">
             {copied === color.hex ? 'Copied' : color.hex}
           </button>
-          <span>Value {value.toFixed(1)}</span>
-          <span className={styles.capitalize}>{temperature}</span>
-          <span>{chroma}</span>
         </div>
       </header>
+
+      <ColorUnderstanding hex={color.hex} onOpenColor={onOpenColor} />
 
       <section className={styles.section} aria-labelledby="paint-heading" aria-busy={!recipe && !paintFailed} data-recipe-target={recipe ? color.hex : undefined}>
         <div className={styles.sectionHead}>

@@ -374,6 +374,63 @@ async function workbenchFlow(touch) {
   await context.close()
 }
 
+async function understandFlow(name, options) {
+  const context = await browser.newContext(options)
+  const page = await context.newPage()
+  const issues = watch(page)
+  const touch = !!options.hasTouch
+  try {
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: 'Type a color', exact: true }), touch)
+    const input = page.getByLabel('Color as a hex code')
+    await input.fill('zzz')
+    await input.press('Enter')
+    await page.getByRole('alert').filter({ hasText: 'Enter a hex code' }).waitFor()
+    await input.fill('#4f7a3a')
+    await input.press('Enter')
+    assert.equal(await hexReadout(page).innerText(), '#4F7A3A')
+    const understanding = page.getByTestId('understanding')
+    await understanding.waitFor()
+    assert.match(await understanding.innerText(), /^THIS COLOR\s+A cool, mid-value, muted yellow-green\./i)
+    for (const label of ['Lighter', 'Darker', 'Softer', 'Stronger', 'Leans warmer', 'Leans cooler', 'Opposite']) {
+      assert.equal(await understanding.getByRole('button', { name: new RegExp(`^${label}:`) }).count(), 1, `Missing ${label}`)
+    }
+    // Technical values stay closed until asked for.
+    const technical = understanding.locator('details')
+    assert.equal(await technical.evaluate(el => el.open), false)
+    await technical.locator('summary').scrollIntoViewIfNeeded()
+    await technical.locator('summary').click()
+    assert.match(await technical.innerText(), /OKLCH/)
+    // Paint and thread still arrive for a typed color, and a relationship opens as a color of its own.
+    await waitForRecipe(page, '#4F7A3A')
+    const opposite = understanding.getByRole('button', { name: /^Opposite:/ })
+    const target = (await opposite.getAttribute('aria-label')).match(/#[0-9A-F]{6}/)[0]
+    await tap(page, opposite, touch)
+    // The opposite is usually outside what the paints can mix, so check that a recipe arrived, not how close it is.
+    await page.waitForFunction(hex => document.querySelector('[data-recipe-target]')?.getAttribute('data-recipe-target') === hex, target)
+    assert.equal(await hexReadout(page).innerText(), target)
+    assert.notEqual(target, '#4F7A3A')
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
+    for (const swatch of [understanding.getByRole('button').first(), understanding.getByRole('button').last()]) {
+      await swatch.scrollIntoViewIfNeeded()
+      const readable = await swatch.evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+        return rect.top >= 0 && rect.bottom <= innerHeight && (hit === element || element.contains(hit))
+      })
+      assert.ok(readable, 'A relationship swatch is clipped or covered')
+    }
+    await page.screenshot({ path: path.join(artifacts, `${name}-understand.png`), fullPage: true })
+    assert.deepEqual(issues, [], 'Browser console failures')
+    console.log(`${name}-understand: passed`)
+    results.push({ name: `${name}-understand`, status: 'passed', typed: '#4F7A3A', opened: target, touch, consoleIssues: issues })
+  } catch (error) {
+    results.push({ name: `${name}-understand`, status: 'failed', consoleIssues: issues, body: (await page.locator('body').innerText()).slice(0, 3000) })
+    await page.screenshot({ path: path.join(artifacts, `${name}-understand-failure.png`), fullPage: true }).catch(() => {})
+    throw error
+  } finally { await context.close() }
+}
+
 try {
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
@@ -381,6 +438,8 @@ try {
     ['tablet-768', { viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true }],
     ['phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }],
   ]) await runViewport(name, options)
+  await understandFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await understandFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await storageFailures()
   await imageAndSolverBoundaries()
   await artworkUpload(false)

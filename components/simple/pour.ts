@@ -71,3 +71,9 @@ export function pour(origin: PourOrigin, hex: string, previousHex: string | null
     { duration: FILL_MS, delay: FLIGHT_MS - 30, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)', fill: 'backwards' },
   )
 }
+
+/** The center of whatever was clicked, as a place for a pour to start. */
+export function originOf(event: { currentTarget: HTMLElement }): PourOrigin {
+  const rect = event.currentTarget.getBoundingClientRect()
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+}

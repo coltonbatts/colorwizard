@@ -13,6 +13,7 @@ import { parseSavedColors, storeSavedColors, SIMPLE_SAVED_KEY, type SavedPaintCo
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
+import ColorEntry from './ColorEntry'
 import ColorReadout, { originOf, type Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
 import PlanPanel from './PlanPanel'
@@ -73,6 +74,7 @@ export default function SimpleApp() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedReadable, setSavedReadable] = useState(false)
   const [opening, setOpening] = useState(false)
+  const [entryOpen, setEntryOpen] = useState(false)
   const openRequestRef = useRef(0)
 
   useEffect(() => {
@@ -177,6 +179,12 @@ export default function SimpleApp() {
     setColor(picked)
     arrive(origin)
   }, [arrive])
+
+  const openTyped = useCallback((hex: string) => {
+    setEntryOpen(false)
+    setPlanMode(false)
+    openColor(hex)
+  }, [openColor])
 
   const updateSaved = (next: SavedPaintColor[]) => {
     if (!savedReadable) return false
@@ -314,6 +322,9 @@ export default function SimpleApp() {
             {opening ? 'Opening…' : 'Open picture'} <span aria-hidden="true">↗</span>
           </button>
           <button type="button" className={styles.linkButton} onClick={() => void openDemo()}>Try demo color Terracotta</button>
+          {entryOpen
+            ? <ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} />
+            : <button type="button" className={styles.linkButton} onClick={() => setEntryOpen(true)}>Type a color</button>}
           <p className={styles.hint} role={error ? 'alert' : 'status'}>
             {error ?? (opening ? 'Opening picture…' : isDragging ? 'Drop your picture to begin.' : 'Or drop or paste a picture here.')}
           </p>
@@ -371,7 +382,7 @@ export default function SimpleApp() {
         )}
       </SimpleCanvas> : (
         <div className={styles.recoveredStage}>
-          <p>Saved color & recipe</p>
+          <p>{savedColor ? 'Saved color & recipe' : 'No picture open'}</p>
           <p className={styles.smallNote}>Open a picture to sample more colors.</p>
           <button type="button" className={styles.primaryButton} onClick={choosePicture}>Open picture</button>
         </div>
@@ -382,11 +393,13 @@ export default function SimpleApp() {
           <span className={styles.wordmarkSmall}>ColorWizard</span>
           <div className={styles.toolbarButtons}>
             <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
+            <button type="button" onClick={() => setEntryOpen((on) => !on)} aria-pressed={entryOpen} title="Type an exact color">Color…</button>
             <button type="button" onClick={() => { setPeek(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
             <button type="button" onClick={() => setValueView((on) => !on)} disabled={!source} aria-pressed={valueView} title="Show values only (V)">Value</button>
           </div>
         </div>
 
+        {entryOpen && <div className={styles.entryBar}><ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} /></div>}
         {opening && <p className={styles.notice} role="status">Opening picture…</p>}
         {error && <p className={styles.notice} role="alert">{error}</p>}
         {saveError && <p className={styles.notice} role="alert">{saveError}</p>}
