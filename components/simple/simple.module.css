@@ -1376,3 +1376,48 @@
 .welcome .colorEntry .smallNote {
   text-align: center;
 }
+
+/* ---------- Basis: how a result was found ---------- */
+
+.basis {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.basis summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--s-ink-3);
+}
+
+.basisChip {
+  padding: 1px 7px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--s-ink-2);
+}
+
+.basis p {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.basis .basisHead {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--s-ink-3);
+}
+
+.basis ul {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.threadNote {
+  margin: 0 0 10px;
+}

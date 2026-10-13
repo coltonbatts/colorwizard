@@ -396,13 +396,33 @@ async function understandFlow(name, options) {
       assert.equal(await understanding.getByRole('button', { name: new RegExp(`^${label}:`) }).count(), 1, `Missing ${label}`)
     }
     // Technical values stay closed until asked for.
-    const technical = understanding.locator('details')
+    const technical = understanding.locator('details').filter({ hasText: 'Technical values' })
     assert.equal(await technical.evaluate(el => el.open), false)
     await technical.locator('summary').scrollIntoViewIfNeeded()
     await technical.locator('summary').click()
     assert.match(await technical.innerText(), /OKLCH/)
     // Paint and thread still arrive for a typed color, and a relationship opens as a color of its own.
     await waitForRecipe(page, '#4F7A3A')
+    // Every result says how it was found; thread never claims an exact match.
+    const thread = page.getByRole('region', { name: 'Thread', exact: true })
+    await thread.locator('details[data-topic="thread"]').waitFor()
+    assert.doesNotMatch(await thread.innerText(), /exact/i)
+    assert.match(await thread.innerText(), /in catalog/)
+    await page.locator('details[data-topic="name"]').waitFor()
+    const chips = { name: 'Catalog match', relationships: 'Calculated', paint: 'Calculated', thread: 'Catalog match' }
+    for (const [topic, chip] of Object.entries(chips)) {
+      const note = page.locator(`details[data-topic="${topic}"]`)
+      assert.equal(await note.count(), 1, `Missing basis note for ${topic}`)
+      assert.equal(await note.evaluate(el => el.open), false)
+      await note.locator('summary').scrollIntoViewIfNeeded()
+      await note.locator('summary').click()
+      const text = await note.innerText()
+      assert.ok(text.includes(chip), `${topic} should say ${chip}`)
+      assert.ok(text.includes('No physical check has been done.'), `${topic} should say it is not physically verified`)
+    }
+    assert.match(await page.locator('details[data-topic="paint"]').innerText(), /Nothing was mixed or measured/)
+    assert.match(await page.locator('details[data-topic="thread"]').innerText(), /DMC does not publish color values/)
+    await page.screenshot({ path: path.join(artifacts, `${name}-basis.png`), fullPage: true })
     const opposite = understanding.getByRole('button', { name: /^Opposite:/ })
     const target = (await opposite.getAttribute('aria-label')).match(/#[0-9A-F]{6}/)[0]
     await tap(page, opposite, touch)

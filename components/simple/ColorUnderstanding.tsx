@@ -7,6 +7,7 @@
 
 import { useMemo } from 'react'
 import { describeColor, type Relationship } from '@/lib/color/profile'
+import BasisNote from './BasisNote'
 import { originOf, type PourOrigin } from './pour'
 import styles from './simple.module.css'
 
@@ -77,8 +78,9 @@ export default function ColorUnderstanding({ hex, onOpenColor }: ColorUnderstand
         )
       })}
       <p className={styles.smallNote}>
-        Calculated from this color on a screen color wheel. These are relationships between screen colors, not paint or thread matches.
+        Relationships between screen colors, not paint or thread matches.
       </p>
+      <BasisNote topic="relationships" />
 
       <details className={styles.technical}>
         <summary>Technical values</summary>

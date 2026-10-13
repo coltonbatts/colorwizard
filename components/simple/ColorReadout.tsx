@@ -13,9 +13,11 @@ import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { SavedPaintColor } from '@/lib/simpleSavedColors'
 import type { SpectralRecipe } from '@/lib/spectral/types'
 import { getSolverWorker } from '@/lib/workers'
+import BasisNote from './BasisNote'
 import ColorUnderstanding from './ColorUnderstanding'
 import FlossImage from './FlossImage'
 import PaintPalette, { usePaintPalette } from './PaintPalette'
+import { describeThreadFit } from '@/lib/dmc/threadFit'
 import { describePaintFit, formatAmount, MODEL_CAVEAT, roundingNote } from '@/lib/paint/paintFit'
 import { originOf, pour, type PourOrigin } from './pour'
 import type { PickedColor } from './SimpleCanvas'
@@ -40,13 +42,6 @@ interface ColorReadoutProps {
 export { originOf }
 
 const SETTLE_MS = 120 // let a drag come to rest before running the solvers
-
-function threadFit(deltaE00: number) {
-  if (deltaE00 < 1) return 'Exact'
-  if (deltaE00 < 2.5) return 'Very close'
-  if (deltaE00 < 5) return 'Close'
-  return 'Nearest'
-}
 
 function useSettled<T>(value: T, delay: number) {
   const [settled, setSettled] = useState(value)
@@ -150,6 +145,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
   const ladder = threads?.familyLadder ?? []
   const ingredients = recipe?.ingredients.filter((ingredient) => ingredient.weight >= 0.005) ?? []
   const fit = recipe ? describePaintFit(recipe, paletteName) : null
+  const threadFit = primary ? describeThreadFit(primary.deltaE00, primary.colorConfidence) : null
 
   return (
     <div className={styles.readout}>
@@ -163,7 +159,9 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
           <button type="button" className={styles.code} onClick={() => void copy(color.hex)} title="Copy hex">
             {copied === color.hex ? 'Copied' : color.hex}
           </button>
+          {isCurrent && name && <span>Closest name</span>}
         </div>
+        {isCurrent && name && <BasisNote topic="name" />}
       </header>
 
       <ColorUnderstanding hex={color.hex} onOpenColor={onOpenColor} />
@@ -212,6 +210,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
             {' '}<button type="button" className={styles.linkButton} onClick={onRecalculate}>Make a new recipe</button>
           </p>
         ) : <PaintPalette palette={palette} />}
+        <BasisNote topic="paint" />
         <button type="button" className={styles.saveButton} onClick={() => recipe && onSave({ recipe, name, paletteName })} disabled={!canSave || !!snapshot || !recipe || ingredients.length === 0}>
           {snapshot ? 'Saved on this device' : 'Save Color & Recipe'}
         </button>
@@ -221,12 +220,13 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
       <section className={styles.section} aria-labelledby="thread-heading" aria-busy={!threads && !threadFailed}>
         <div className={styles.sectionHead}>
           <h3 id="thread-heading">Thread</h3>
-          {primary && <span>{threadFit(primary.deltaE00)}</span>}
+          {threadFit && <span>{threadFit.label}</span>}
         </div>
         {primary ? (
           <div className={`${styles.threadBody} ${isCurrent ? '' : styles.stale}`}>
             <FlossImage hex={primary.hex} className={styles.floss} />
             <div className={styles.threadDetails}>
+              {threadFit && <p className={`${styles.fitNote} ${styles.threadNote}`}>{threadFit.detail}</p>}
               <button type="button" className={styles.threadPrimary} onClick={() => void copy(primary.number)} title="Copy DMC number">
                 <span>
                   <strong>DMC {primary.number}</strong>
@@ -275,6 +275,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, onSa
         ) : (
           <p className={styles.pending}>{threadFailed ? "Thread matches are unavailable. Your paint recipe is still usable." : "Matching…"}</p>
         )}
+        {primary && <BasisNote topic="thread" />}
       </section>
 
     </div>
