@@ -7,7 +7,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getColorName } from '@/lib/colorNaming'
-import { getThreadMatchContext, type ThreadMatchResult } from '@/lib/dmcFloss'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { Collection, SaveInput, SavedColor } from '@/lib/colorLibrary'
@@ -19,9 +18,10 @@ import ColorUnderstanding from './ColorUnderstanding'
 import FlossImage from './FlossImage'
 import PaintPalette, { usePaintPalette } from './PaintPalette'
 import SavedNote from './SavedNote'
-import { describeThreadFit } from '@/lib/dmc/threadFit'
+import { closeThreads, describeThreadFit } from '@/lib/dmc/threadFit'
 import { describePaintFit, formatAmount, MODEL_CAVEAT, roundingNote } from '@/lib/paint/paintFit'
 import { originOf, pour, type PourOrigin } from './pour'
+import { SETTLE_MS, useCopy, useSettled, useThreadMatch } from './readoutHooks'
 import type { PickedColor } from './SimpleCanvas'
 import styles from './simple.module.css'
 
@@ -50,17 +50,6 @@ interface ColorReadoutProps {
 
 export { originOf }
 
-const SETTLE_MS = 120 // let a drag come to rest before running the solvers
-
-function useSettled<T>(value: T, delay: number) {
-  const [settled, setSettled] = useState(value)
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSettled(value), delay)
-    return () => window.clearTimeout(timer)
-  }, [value, delay])
-  return settled
-}
-
 async function solvePaint(hex: string, options?: SolveOptions): Promise<SpectralRecipe> {
   let timer: number | undefined
   try {
@@ -73,27 +62,13 @@ async function solvePaint(hex: string, options?: SolveOptions): Promise<Spectral
   }
 }
 
-function useCopy() {
-  const [copied, setCopied] = useState<string | null>(null)
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(text)
-      window.setTimeout(() => setCopied((current) => (current === text ? null : current)), 1200)
-    } catch {
-      /* clipboard can be unavailable in insecure contexts; the text is still on screen */
-    }
-  }
-  return { copied, copy }
-}
-
 export default function ColorReadout({ color, arrival, canSave, savedColor, existing, onSave, onNote, collections, onToggleCollection, onCreateCollection, onRecalculate, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
   const palette = usePaintPalette()
   const solveOptions = useMemo(() => getPaletteSolveOptions(palette), [palette])
   const [named, setNamed] = useState<{ hex: string; name: string } | null>(null)
   const [paint, setPaint] = useState<{ key: string; recipe: SpectralRecipe | null; failed: boolean } | null>(null)
-  const [threadResult, setThreadResult] = useState<{ hex: string; result: ThreadMatchResult | null } | null>(null)
+  const { threads, failed: threadFailed } = useThreadMatch(color.hex, settledHex)
   const [retry, setRetry] = useState(0)
   const paletteKey = JSON.stringify(solveOptions)
   const requestKey = `${settledHex}:${paletteKey}:${retry}`
@@ -102,8 +77,6 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
   const recipe = snapshot ?? (paint?.key === currentKey ? paint.recipe : null)
   const paintFailed = !snapshot && paint?.key === currentKey && paint.failed
   const name = savedColor?.nameSnapshot || (named?.hex === color.hex ? named.name : '')
-  const threads = threadResult?.hex === color.hex ? threadResult.result : null
-  const threadFailed = threadResult?.hex === color.hex && !threadResult.result
   const paletteName = snapshot ? savedColor.attachments.paint!.paletteName : palette.isDefault ? 'Core six' : palette.name
   const { copied, copy } = useCopy()
   const [kept, setKept] = useState<'created' | 'updated' | null>(null)
@@ -124,15 +97,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
 
   useEffect(() => {
     let cancelled = false
-    const rgb = {
-      r: parseInt(settledHex.slice(1, 3), 16),
-      g: parseInt(settledHex.slice(3, 5), 16),
-      b: parseInt(settledHex.slice(5, 7), 16),
-    }
     getColorName(settledHex).then((result) => { if (!cancelled) setNamed({ hex: settledHex, name: result.name }) }).catch(() => { if (!cancelled) setNamed({ hex: settledHex, name: '' }) })
-    getThreadMatchContext(rgb, { alternativeCount: 3, topMatchCount: 4 })
-      .then((result) => { if (!cancelled) setThreadResult({ hex: settledHex, result }) })
-      .catch(() => { if (!cancelled) setThreadResult({ hex: settledHex, result: null }) })
     return () => { cancelled = true }
   }, [settledHex])
 
@@ -148,11 +113,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
   const isCurrent = settledHex === color.hex
 
   const primary = threads?.primary
-  const nearby = threads
-    ? [...threads.topMatches, ...threads.alternatives]
-        .filter((thread, index, all) => thread.id !== threads.primary.id && all.findIndex((t) => t.id === thread.id) === index)
-        .slice(0, 4)
-    : []
+  const nearby = threads ? closeThreads(threads) : []
   const ladder = threads?.familyLadder ?? []
   const ingredients = recipe?.ingredients.filter((ingredient) => ingredient.weight >= 0.005) ?? []
   const fit = recipe ? describePaintFit(recipe, paletteName) : null
@@ -197,10 +158,10 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
           {!keptEntry ? '' : kept === 'updated' ? 'Updated the saved color.' : kept === 'created' ? 'Saved. Find it under Saved on this device.' : ''}
         </p>
         <p className={styles.smallNote}>Keeps this color with the paint recipe and thread match shown here, in this browser. The picture is not saved.</p>
-        {keptEntry && <SavedNote key={keptEntry.id} note={keptEntry.note ?? ''} onCommit={(note) => onNote(keptEntry.id, note)} />}
+        {keptEntry && <SavedNote key={`note-${keptEntry.id}`} note={keptEntry.note ?? ''} onCommit={(note) => onNote(keptEntry.id, note)} />}
         {keptEntry && (
           <CollectionPicker
-            key={keptEntry.id}
+            key={`collections-${keptEntry.id}`}
             color={keptEntry}
             collections={collections}
             onToggle={(collectionId, member) => onToggleCollection(keptEntry.id, collectionId, member)}

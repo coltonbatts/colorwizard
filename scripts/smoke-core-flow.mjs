@@ -770,6 +770,55 @@ async function backupFlow(name, options) {
   } finally { await second.context.close() }
 }
 
+// One-handed thread: no scrolling, and the picture stays put between samples.
+async function threadFlow(name, options) {
+  const context = await browser.newContext(options)
+  const page = await context.newPage(); const issues = watch(page)
+  const card = page.getByRole('region', { name: 'Thread', exact: true })
+  const number = card.getByRole('strong')
+  try {
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    await page.setInputFiles('input[type=file][accept="image/*"]', fixture)
+    await canvas(page).waitFor({ state: 'visible' })
+    const allDetails = await canvas(page).boundingBox()
+    await page.getByRole('button', { name: 'Thread', exact: true }).tap()
+    await page.getByText('Tap the picture to find a thread.').waitFor()
+    // The picture gets the room the full readout was using.
+    await page.waitForFunction(height => document.querySelector('canvas[aria-label^="Your picture."]').getBoundingClientRect().height > height, allDetails.height)
+    const before = await canvas(page).boundingBox()
+    const settle = () => page.waitForFunction(() => document.querySelector('section[aria-label="Thread"]')?.getAttribute('aria-busy') === 'false')
+    const seen = []
+    for (const fraction of [.25, .75]) {
+      await page.touchscreen.tap(before.x + before.width * fraction, before.y + before.height / 2)
+      await settle()
+      seen.push(await number.innerText())
+      const box = await number.boundingBox()
+      assert.ok(box.y + box.height <= options.viewport.height, 'The thread number is off screen')
+      assert.deepEqual(await canvas(page).boundingBox(), before, 'The picture moved between samples')
+    }
+    assert.notEqual(seen[0], seen[1], 'Two different colors gave one thread')
+
+    // Trying another thread keeps the sampled color beside it, and Save keeps the one shown.
+    const compare = card.getByRole('img')
+    const sampled = (await compare.getAttribute('aria-label')).split(',')[0]
+    await card.getByRole('group', { name: 'Also close' }).getByRole('button').nth(1).tap()
+    assert.ok((await compare.getAttribute('aria-label')).startsWith(`${sampled},`))
+    const tried = await number.innerText()
+    assert.notEqual(tried, seen[1])
+    await card.getByRole('button', { name: 'Save', exact: true }).tap()
+    await card.getByRole('button', { name: 'Saved', exact: true }).waitFor()
+    const [entry] = await page.evaluate(key => JSON.parse(localStorage.getItem(key)).colors, savedKey)
+    assert.equal(`DMC ${entry.attachments.thread.number}`, tried)
+
+    // The choice is remembered, and the saved color comes back with the thread that was kept.
+    await page.reload({ waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: `Open saved color ${entry.hex}` }), true)
+    assert.equal(await card.getByRole('strong').innerText(), tried)
+    assert.deepEqual(issues, [])
+    results.push({ name: `thread-${name}`, status: 'passed', seen, tried })
+  } finally { await context.close() }
+}
+
 try {
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
@@ -785,6 +834,8 @@ try {
   await collectionsFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   await backupFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
   await backupFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await threadFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await threadFlow('phone-320', { viewport: { width: 320, height: 553 }, isMobile: true, hasTouch: true })
   await storageFailures()
   await imageAndSolverBoundaries()
   await artworkUpload(false)

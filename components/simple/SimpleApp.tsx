@@ -9,10 +9,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { createSolidColorDemoImage } from '@/lib/demoColor'
-import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SavedColor } from '@/lib/colorLibrary'
+import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import ColorEntry from './ColorEntry'
 import ColorReadout, { type Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
@@ -24,10 +25,13 @@ import { pileAt, renderRepaint } from './planRender'
 import { usePicturePlan } from './usePlan'
 import type { PourOrigin } from './pour'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
+import ThreadView from './ThreadView'
 import styles from './simple.module.css'
 
 const BUDGET_KEY = 'colorwizard-simple-plan-budget'
 const DEFAULT_BUDGET: Budget = 8
+const PHONE_VIEW_KEY = 'colorwizard-simple-phone-view'
+type PhoneView = 'all' | 'thread'
 // Keep detail for zooming in: 4096 holds a whole 12 MP phone photo. iOS canvas memory is tighter, so it gets less.
 const MAX_DIMENSION = 4096
 const MAX_DIMENSION_CONSTRAINED = 3072
@@ -46,6 +50,22 @@ function storeBudget(budget: Budget) {
     window.localStorage.setItem(BUDGET_KEY, String(budget))
   } catch {
     /* the budget is a convenience; a blocked store should not break planning */
+  }
+}
+
+function loadPhoneView(): PhoneView {
+  try {
+    return window.localStorage.getItem(PHONE_VIEW_KEY) === 'thread' ? 'thread' : 'all'
+  } catch {
+    return 'all'
+  }
+}
+
+function storePhoneView(view: PhoneView) {
+  try {
+    window.localStorage.setItem(PHONE_VIEW_KEY, view)
+  } catch {
+    /* the view is a convenience; a blocked store only means choosing it again next time */
   }
 }
 
@@ -78,6 +98,9 @@ export default function SimpleApp() {
   const [opening, setOpening] = useState(false)
   const [entryOpen, setEntryOpen] = useState(false)
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
+  const [phoneView, setPhoneView] = useState<PhoneView>('all')
+  const isPhone = useMediaQuery('(max-width: 760px)')
+  const threadView = isPhone && phoneView === 'thread' && !planMode
   const openRequestRef = useRef(0)
 
   useEffect(() => {
@@ -89,6 +112,7 @@ export default function SimpleApp() {
     }
   }, [])
   useEffect(() => setBudget(loadBudget()), [])
+  useEffect(() => setPhoneView(loadPhoneView()), [])
 
   const palette = usePaintPalette()
   const pigments = useMemo(() => resolvePalettePigments(palette.colors), [palette])
@@ -199,6 +223,24 @@ export default function SimpleApp() {
     } catch {
       setSaveError('Couldn’t save changes on this device. Browser storage may be full or blocked. Your recipe is still here; try saving again.')
       return false
+    }
+  }
+
+  const saveCurrent = (result: Pick<SaveInput, 'name' | 'paint' | 'thread'>) => {
+    if (!color) return null
+    const next = saveColor(library, { id: crypto.randomUUID(), hex: color.hex, now: Date.now(), pictureName: point ? pictureName : undefined, ...result })
+    if (!updateLibrary(next.library)) return null
+    setSavedColor(next.color)
+    return next.updated ? 'updated' as const : 'created' as const
+  }
+
+  const changePhoneView = (view: PhoneView) => {
+    setPhoneView(view)
+    storePhoneView(view)
+    if (view === 'thread') {
+      setPeek(false)
+      setPlanMode(false)
+      setValueView(false)
     }
   }
 
@@ -314,6 +356,25 @@ export default function SimpleApp() {
     />
   )
 
+  const notices = (
+    <>
+      {opening && <p className={styles.notice} role="status">Opening picture…</p>}
+      {error && <p className={styles.notice} role="alert">{error}</p>}
+      {saveError && <p className={styles.notice} role="alert">{saveError}</p>}
+    </>
+  )
+
+  // Within reach of the thumb. The full readout and the Thread view are one tap apart, and the choice is remembered.
+  const phoneBar = isPhone && (
+    <div className={styles.phoneBar}>
+      {threadView && <button type="button" className={styles.phoneOpen} onClick={choosePicture}>Open…</button>}
+      <div className={styles.viewSwitch} role="group" aria-label="What to show">
+        <button type="button" aria-pressed={!threadView} onClick={() => changePhoneView('all')}>All details</button>
+        <button type="button" aria-pressed={threadView} onClick={() => changePhoneView('thread')}>Thread</button>
+      </div>
+    </div>
+  )
+
   if (!source && !color) {
     return (
       <main id="main-content" className={`${styles.app} ${styles.welcome} ${isDragging ? styles.dragging : ''}`}>
@@ -353,7 +414,7 @@ export default function SimpleApp() {
   }
 
   return (
-    <main id="main-content" className={`${styles.app} ${styles.workspace} ${isDragging ? styles.dragging : ''}`}>
+    <main id="main-content" className={`${styles.app} ${styles.workspace} ${threadView ? styles.threadWorkspace : ''} ${isDragging ? styles.dragging : ''}`}>
       {fileInput}
       {source ? <SimpleCanvas
         key={pictureId}
@@ -404,6 +465,18 @@ export default function SimpleApp() {
         </div>
       )}
 
+      {threadView ? (
+        <aside className={`${styles.panel} ${styles.threadPanel}`} aria-label="Thread">
+          {notices}
+          <div className={styles.threadScroll}>
+            {color
+              ? <ThreadView hex={color.hex} savedColor={savedColor} existing={findByHex(library, color.hex) ?? null} canSave={savedReadable} onSave={saveCurrent} />
+              : <p className={styles.threadEmpty}>Tap the picture to find a thread.<small>Hold and slide to aim with the loupe.</small></p>}
+            {savedList}
+          </div>
+          {phoneBar}
+        </aside>
+      ) : (
       <aside className={styles.panel} aria-label={planMode ? 'Plan' : 'Color'}>
         <div className={styles.toolbar}>
           <span className={styles.wordmarkSmall}>ColorWizard</span>
@@ -416,9 +489,7 @@ export default function SimpleApp() {
         </div>
 
         {entryOpen && <div className={styles.entryBar}><ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} /></div>}
-        {opening && <p className={styles.notice} role="status">Opening picture…</p>}
-        {error && <p className={styles.notice} role="alert">{error}</p>}
-        {saveError && <p className={styles.notice} role="alert">{saveError}</p>}
+        {notices}
         <div className={styles.panelBody}>
           {planMode ? (
             <PlanPanel
@@ -440,12 +511,7 @@ export default function SimpleApp() {
               canSave={savedReadable}
               savedColor={savedColor}
               existing={findByHex(library, color.hex) ?? null}
-              onSave={(result) => {
-                const next = saveColor(library, { id: crypto.randomUUID(), hex: color.hex, now: Date.now(), pictureName: point ? pictureName : undefined, ...result })
-                if (!updateLibrary(next.library)) return null
-                setSavedColor(next.color)
-                return next.updated ? 'updated' : 'created'
-              }}
+              onSave={saveCurrent}
               onNote={(id, note) => {
                 const next = setNote(library, id, note, Date.now())
                 if (!updateLibrary(next)) return false
@@ -477,7 +543,9 @@ export default function SimpleApp() {
         </div>
 
         {!planMode && <>{savedList}{libraryTools}</>}
+        {phoneBar}
       </aside>
+      )}
     </main>
   )
 }

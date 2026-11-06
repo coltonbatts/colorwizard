@@ -1684,3 +1684,243 @@
 .importPreview .linkButton {
   margin-top: 0;
 }
+
+/* ---------- Phone: the thread on its own, one-handed ---------- */
+
+.phoneBar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--s-rule);
+  background: var(--s-paper);
+}
+
+.phoneOpen {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.viewSwitch {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  min-height: 44px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+  overflow: hidden;
+}
+
+.viewSwitch button {
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.viewSwitch button[aria-pressed='true'] {
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+/* A fixed card: if it changed height, the stage would resize and the picture would jump under the thumb. */
+.threadWorkspace {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.threadPanel {
+  min-width: 0;
+  height: min(calc(292px + env(safe-area-inset-bottom, 0px)), 52dvh);
+}
+
+.threadWorkspace .zoomControls {
+  left: 12px;
+  bottom: 12px;
+}
+
+.threadWorkspace .zoomControls button {
+  min-width: 44px;
+  height: 44px;
+}
+
+.threadScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.threadScroll .saved {
+  max-height: none;
+}
+
+.threadEmpty {
+  margin: 0;
+  padding: 20px 16px;
+  font-family: var(--s-serif);
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.threadEmpty small {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--s-sans);
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.threadWaiting {
+  margin: 0;
+  padding: 20px 16px;
+  font-size: 14px;
+  color: var(--s-ink-2);
+}
+
+.threadCard {
+  padding: 10px 12px 12px;
+}
+
+.threadTop {
+  display: flex;
+  gap: 8px;
+}
+
+.threadCopy {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+  text-align: left;
+}
+
+.threadCompare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 56px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.threadCompare i {
+  display: block;
+  min-width: 0;
+}
+
+/* The bare fibers of the 109×834 skein, between its two paper labels. */
+.threadSkein {
+  display: block;
+  width: 100%;
+  height: 56px;
+  object-fit: cover;
+  object-position: 50% 46%;
+}
+
+.threadName {
+  min-width: 0;
+}
+
+.threadName strong {
+  display: block;
+  font-family: var(--s-mono);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.threadName small {
+  display: block;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--s-ink-2);
+}
+
+.threadCopy em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--s-ink-2);
+}
+
+.threadSave {
+  flex: 0 0 64px;
+  border: 1.5px solid var(--s-ink);
+  border-radius: 8px;
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.threadSave:disabled {
+  border-color: var(--s-rule);
+  background: transparent;
+  color: var(--s-ink-2) !important;
+  cursor: default;
+}
+
+.threadFit {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--s-ink-2);
+}
+
+.threadFit b {
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.threadChoices {
+  display: flex;
+  gap: 6px;
+  margin: 0 -12px;
+  padding: 0 12px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.threadChoices .chip {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 11px 0 8px;
+  border-radius: 8px;
+  font-size: 13px !important;
+}
+
+.threadChoices .chip[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+
+.threadLadder {
+  display: flex;
+  gap: 2px;
+}
+
+.threadLadder button {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+}
+
+.threadLadder button[aria-pressed='true'] {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+}

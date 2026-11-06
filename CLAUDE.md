@@ -137,6 +137,17 @@ The web home (`components/simple/`) reads one color from top to bottom: swatch a
 - **Verified**: a save made by the previous build (`e6475ffe`) in a persistent browser profile restored with the identical recipe in this build, v1 stayed byte-identical, and v2 appeared only on the first change; axe-core (WCAG 2 A/AA, best practices) found no violations on the welcome and the typed/saved/collection views at desktop and phone width. **Not verified, do not claim**: real iOS/Android/Safari, the installed Tauri app, any physical paint or thread match, and that people can use it unaided (plan: `Studio Ops/plans/colorwizard-unassisted-sessions.md`).
 - **Not built**: a color-question mechanism (any future answerer should return text plus `{hex, role}` swatches that open in this view with basis labels), a compare view, name search, collection rename, desktop adoption, a way to download unreadable saved data as it is for rescue, saving Plan piles.
 
+### Phone Thread view (web `/`, ≤760 px)
+
+A bar at the bottom of the phone panel switches between "All details" (the unified color view) and "Thread" (`ThreadView.tsx`, `threadWorkspace` in `simple.module.css`). The choice is stored under `colorwizard-simple-phone-view`; the default is All details. It exists so a stitcher can sample with one hand without scrolling to the last section.
+
+- **The card has one fixed height on purpose.** The stage follows the panel's size, so a card that grew would move the picture under the thumb between samples. Extras (how it was found, saved colors) scroll inside the card.
+- **The last result is held dimmed until the next arrives** (`useThreadMatch().latest`), so the card never blanks; copy and save are off while it is dim.
+- **Trying another thread does not open it as a color** (unlike the chips in the full readout): the sampled color stays in the comparison, and Save keeps the thread shown. So a color can be saved with a thread other than the nearest; the full readout then says "Saved with DMC x; the catalog now matches DMC y".
+- Saving here passes no paint, and `saveColor` keeps any recipe already attached. Wording comes from `describeThreadFit` and `BasisNote`, as elsewhere; the "never exact" rule holds (`ThreadView.test.ts`).
+- The light-to-dark row appears only when the thread's family has more than one shade: 68 of 344 families do. That is the catalog, not a bug.
+- **Browser check**: `threadFlow` in `scripts/smoke-core-flow.mjs` (390×844 and 320×553 with touch). **Not verified**: real iOS/Android/Safari, reach on a physical phone.
+
 ### Working in this repo
 
 - Ignore `.claude/worktrees/` (stale copies pollute grep). Stage files by path, never `git add -A`.
