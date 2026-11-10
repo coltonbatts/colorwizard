@@ -917,6 +917,11 @@ html[data-runtime='desktop']:not([data-react-mounted='true']) .desktop-boot-spla
 .system-page-kicker { color: #38b8d4; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; }
 .system-page-panel h1 { margin-top: 12px; font-size: clamp(42px, 8vw, 84px); line-height: 0.9; letter-spacing: -0.07em; }
 .system-page-action { display: inline-flex; min-height: 48px; align-items: center; margin-top: 24px; border: 1px solid var(--paper-elevated); padding: 0 16px; color: var(--ink); background: #f2c943; font-weight: 700; }
+.system-page-confirm { margin-top: 24px; border-top: 1px solid rgba(239, 238, 231, 0.28); padding-top: 14px; font-size: 14px; line-height: 1.5; }
+.system-page-confirm-title { margin-bottom: 6px; font-weight: 700; }
+.system-page-confirm .system-page-action { margin-top: 16px; }
+.system-page-confirm .system-page-action--quiet { color: var(--paper-elevated); background: transparent; }
+.system-page-confirm .system-page-action--danger { color: #fff; background: #b3261e; margin-left: 8px; }
 .system-page-details { margin-top: 24px; border-top: 1px solid rgba(239, 238, 231, 0.28); padding-top: 14px; font-family: var(--font-mono); font-size: 12px; }
 
 @media (max-width: 1280px) {

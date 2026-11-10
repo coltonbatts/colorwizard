@@ -5,7 +5,7 @@
  * Catches unhandled client-side errors and provides recovery
  */
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type AppError = Error & { digest?: string }
 
@@ -45,6 +45,8 @@ export default function Error({
   reset: () => void
 }) {
   const chunkLoad = useMemo(() => isChunkLoadFailure(error), [error])
+  // Clearing storage erases the saved color library, so it takes a second, deliberate press.
+  const [confirmingClear, setConfirmingClear] = useState(false)
 
   useEffect(() => {
     const payload = getErrorLogPayload(error)
@@ -106,23 +108,43 @@ export default function Error({
             Home
           </button>
 
-          <button
-            onClick={() => {
-              // Clear localStorage to reset state
-              try {
-                if (typeof window !== 'undefined') {
-                  window.localStorage.clear()
-                  window.location.reload()
-                }
-              } catch {
-                window.location.reload()
-              }
-            }}
-            className="system-page-action system-page-action--danger"
-          >
-            Clear data
-          </button>
+          {!confirmingClear && (
+            <button
+              onClick={() => setConfirmingClear(true)}
+              className="system-page-action system-page-action--danger"
+            >
+              Clear data…
+            </button>
+          )}
         </div>
+
+        {confirmingClear && (
+          <div className="system-page-confirm" role="alertdialog" aria-labelledby="clear-data-title" aria-describedby="clear-data-detail">
+            <p id="clear-data-title" className="system-page-confirm-title">Erase everything ColorWizard has saved here?</p>
+            <p id="clear-data-detail">
+              Saved colors, notes, collections, palettes and settings will be gone for good.
+              Backup files you have downloaded are not affected. Try {chunkLoad ? 'Reload' : 'Retry'} first.
+            </p>
+            <div className="system-page-actions">
+              <button autoFocus onClick={() => setConfirmingClear(false)} className="system-page-action system-page-action--quiet">
+                Keep my data
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    window.localStorage.clear()
+                  } catch {
+                    /* storage is blocked; reloading is all that is left */
+                  }
+                  window.location.reload()
+                }}
+                className="system-page-action system-page-action--danger"
+              >
+                Erase everything
+              </button>
+            </div>
+          </div>
+        )}
 
         <p className="system-page-id">ID / {error.digest || 'unknown'}</p>
       </section>
