@@ -32,9 +32,9 @@ npm run generate:data    # Generate static DMC floss + color names JSON to publi
 
 ### Web vs. Desktop Split
 
-The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The `postbuild` script (`scripts/clean-desktop-export.mjs`) strips web-only routes (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`) from `out/` before Tauri bundles it. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
+The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The routes are `/` (`HomeSwitch`: simple app on the web, workbench in Tauri), `/simple` and `/workbench`. The `postbuild` script (`scripts/clean-desktop-export.mjs`) runs after every `npm run build`, web and desktop alike; the pages it would strip from `out/` (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`, `/support`) no longer exist, so today it removes nothing. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
 
-Cloud features (Firebase auth, Stripe) are conditionally loaded when `OPEN_SOURCE_MODE` is not set — import them lazily via `lib/auth/` to avoid dead code in offline builds.
+There is no cloud code: accounts, Supabase, Stripe and email were removed (2026-11-10) because nothing used them. The app needs no environment variables. Tiers are local only (`lib/hooks/useUserTier.ts`: desktop is Pro, web is free). `supabase/migrations/` is kept as a record of the old `user_profiles` table.
 
 ### State Management
 

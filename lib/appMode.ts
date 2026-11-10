@@ -1,10 +1,9 @@
 /**
  * Product mode switches.
- * Keep this centralized so desktop licensing and cloud integrations stay coherent.
+ * Keep this centralized so desktop licensing stays coherent.
  */
 
 export const PAID_STANDALONE_DESKTOP = true
-export const SERVER_INTEGRATIONS_ENABLED = true
 
 export const APP_MODE_LABEL = 'Desktop License'
 export const APP_MODE_DESCRIPTION =

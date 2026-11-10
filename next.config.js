@@ -18,7 +18,6 @@ const nextConfig = {
     optimizePackageImports: [
       'framer-motion',
       'culori',
-      '@supabase/supabase-js',
     ],
   },
 

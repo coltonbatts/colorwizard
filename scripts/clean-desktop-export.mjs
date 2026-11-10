@@ -19,7 +19,7 @@
  *   /data/       — static color name and DMC floss JSON data
  *
  * Removed:
- *   pricing, support, dashboard, settings, trace, color-theory, auth
+ *   pricing, support, dashboard, settings, trace, color-theory
  */
 
 import { readdirSync, rmSync, statSync } from 'node:fs'
@@ -34,7 +34,6 @@ const REMOVE_PAGES = [
   'settings',
   'trace',
   'color-theory',
-  'auth',
 ]
 
 let removed = 0

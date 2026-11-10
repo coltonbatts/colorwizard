@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
-import { AuthProvider } from '@/lib/auth/useAuth'
 import StoreBootstrap from '@/components/StoreBootstrap'
 import CanvasPersistenceNotice from '@/components/CanvasPersistenceNotice'
 import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
@@ -60,7 +59,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ColorWizard',
     description: 'Open a picture and click any color. See what it is, how to mix it in paint, and which DMC thread matches.',
-    creator: '@coltonbatts',
+    creator: '@theColtonBatts',
   },
   icons: {
     icon: '/favicon.png',
@@ -121,7 +120,7 @@ export default function RootLayout({
           <StoreBootstrap />
           <CanvasPersistenceNotice />
           <TauriAppShell>
-            <AuthProvider>{children}</AuthProvider>
+            {children}
           </TauriAppShell>
         </div>
       </body>

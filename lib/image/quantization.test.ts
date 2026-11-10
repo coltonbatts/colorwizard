@@ -19,6 +19,7 @@ const mockThreads: DMCThread[] = [
     oklab: { L: 0, a: 0, b: 0 },
     hueBucket: 'neutral',
     warmth: 'neutral',
+    colorConfidence: 'measured',
   },
   {
     id: 'dmc:blanc',
@@ -36,6 +37,7 @@ const mockThreads: DMCThread[] = [
     oklab: { L: 1, a: 0, b: 0 },
     hueBucket: 'neutral',
     warmth: 'neutral',
+    colorConfidence: 'measured',
   },
   {
     id: 'dmc:666',
@@ -53,6 +55,7 @@ const mockThreads: DMCThread[] = [
     oklab: { L: 0.5, a: 0.5, b: 0 },
     hueBucket: 'red',
     warmth: 'warm',
+    colorConfidence: 'measured',
   },
 ]
 

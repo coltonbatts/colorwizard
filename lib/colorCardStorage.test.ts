@@ -19,7 +19,6 @@ describe('colorCardStorage', () => {
 
         globalThis.window = windowMock
 
-        // @ts-expect-error test shim
         globalThis.localStorage = globalThis.window.localStorage
         vi.resetModules()
     })
