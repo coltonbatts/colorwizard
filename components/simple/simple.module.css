@@ -1924,3 +1924,81 @@
   outline: 2px solid var(--s-ink);
   outline-offset: 1px;
 }
+
+/* Painting-process view (ProcessPanel) */
+.processSlider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+.processLabel {
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+.processSlider input[type='range'] {
+  width: 100%;
+  accent-color: var(--s-ink);
+}
+.processStops {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.processStops button {
+  padding: 6px 2px;
+  border: 1px solid var(--s-rule);
+  border-radius: 4px;
+  background: var(--s-white);
+  color: var(--s-ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+.processStops button[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white);
+}
+.processSubhead {
+  margin: 14px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-ink-2);
+}
+.processText {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.processNote {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--s-ink-2);
+}
+.processValues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin: 6px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.processValues li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--s-mono);
+  font-size: 12px;
+}
+.processSwatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--s-rule);
+  border-radius: 3px;
+}
+.processShare {
+  color: var(--s-ink-2);
+}

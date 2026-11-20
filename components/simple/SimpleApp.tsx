@@ -20,6 +20,7 @@ import ColorReadout, { type Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
 import LibraryTools from './LibraryTools'
 import PlanPanel from './PlanPanel'
+import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPanel'
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
@@ -85,6 +86,8 @@ export default function SimpleApp() {
   const [arrival, setArrival] = useState<Arrival | null>(null)
   const [valueView, setValueView] = useState(false)
   const [planMode, setPlanMode] = useState(false)
+  const [processMode, setProcessMode] = useState(false)
+  const [processPosition, setProcessPosition] = useState(0)
   const [budget, setBudget] = useState<Budget>(DEFAULT_BUDGET)
   const [selectedPile, setSelectedPile] = useState<number | null>(null)
   const [markMisses, setMarkMisses] = useState(true)
@@ -101,7 +104,7 @@ export default function SimpleApp() {
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
   const [phoneView, setPhoneView] = useState<PhoneView>('all')
   const isPhone = useMediaQuery('(max-width: 760px)')
-  const threadView = isPhone && phoneView === 'thread' && !planMode
+  const threadView = isPhone && phoneView === 'thread' && !planMode && !processMode
   const openRequestRef = useRef(0)
 
   useEffect(() => {
@@ -128,8 +131,11 @@ export default function SimpleApp() {
     storeBudget(next)
   }, [])
 
+  const processStages = useProcessStages(source, processMode)
+  const processDisplay = useProcessDisplay(processStages, processPosition)
+
   // The repaint the stage shows in Plan view; the original while the peek button is held.
-  const display = useMemo(() => {
+  const planDisplay = useMemo(() => {
     if (!planMode || peek || !plan) return null
     const canvas = document.createElement('canvas')
     canvas.width = plan.width
@@ -141,6 +147,7 @@ export default function SimpleApp() {
     ctx.putImageData(image, 0, 0)
     return canvas
   }, [planMode, peek, plan, selectedPile, markMisses])
+  const display = planMode ? planDisplay : processMode && !peek ? processDisplay : null
 
   const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string) => {
     const request = ++openRequestRef.current
@@ -158,6 +165,8 @@ export default function SimpleApp() {
       setSavedColor(null)
       setValueView(false)
       setPlanMode(false)
+      setProcessMode(false)
+      setProcessPosition(0)
       setSelectedPile(null)
     } catch {
       if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
@@ -186,6 +195,8 @@ export default function SimpleApp() {
   }, [])
 
   const handleSample = useCallback((nextPoint: SamplePoint, picked: PickedColor, origin?: PourOrigin) => {
+    // The process view shows a calculated stage, not the picture: there is no color to read on it.
+    if (processMode) return
     if (planMode) {
       // In the Plan view a click picks the pile that paints that spot; a deliberate click on the same pile lets go.
       if (!plan || !source) return
@@ -197,7 +208,7 @@ export default function SimpleApp() {
     setPoint(nextPoint)
     setColor(picked)
     arrive(origin)
-  }, [arrive, plan, planMode, source])
+  }, [arrive, plan, planMode, processMode, source])
 
   const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
@@ -211,6 +222,7 @@ export default function SimpleApp() {
   const openTyped = useCallback((hex: string) => {
     setEntryOpen(false)
     setPlanMode(false)
+    setProcessMode(false)
     openColor(hex)
   }, [openColor])
 
@@ -241,6 +253,7 @@ export default function SimpleApp() {
     if (view === 'thread') {
       setPeek(false)
       setPlanMode(false)
+      setProcessMode(false)
       setValueView(false)
     }
   }
@@ -271,6 +284,7 @@ export default function SimpleApp() {
         openColor(entry.hex, origin)
         setSavedColor(entry)
         setPlanMode(false)
+        setProcessMode(false)
       }}
       onRemove={(entry) => {
         if (updateLibrary(removeColor(library, entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
@@ -315,6 +329,7 @@ export default function SimpleApp() {
         setValueView((on) => !on)
       } else if (event.key.toLowerCase() === 'p' && source) {
         setPeek(false)
+        setProcessMode(false)
         setPlanMode((on) => !on)
       } else if (event.key.toLowerCase() === 'b') {
         setPeek(true)
@@ -421,12 +436,12 @@ export default function SimpleApp() {
         key={pictureId}
         source={source}
         display={display}
-        label={planMode ? `Your picture repainted with ${plan?.plan.piles.length ?? budget} piles. Click a part to see its pile, drag to move, scroll or pinch to zoom.` : undefined}
+        label={planMode ? `Your picture repainted with ${plan?.plan.piles.length ?? budget} piles. Click a part to see its pile, drag to move, scroll or pinch to zoom.` : processMode ? 'A calculated stage of painting your picture. Drag to move, scroll or pinch to zoom.' : undefined}
         valueView={valueView}
-        point={planMode ? null : point}
+        point={planMode || processMode ? null : point}
         onSample={handleSample}
       >
-        {planMode && plan && (
+        {((planMode && plan) || (processMode && processStages)) && (
           <div className={styles.stageOverlay}>
             <button
               type="button"
@@ -478,13 +493,14 @@ export default function SimpleApp() {
           {phoneBar}
         </aside>
       ) : (
-      <aside className={styles.panel} aria-label={planMode ? 'Plan' : 'Color'}>
+      <aside className={styles.panel} aria-label={planMode ? 'Plan' : processMode ? 'Painting process' : 'Color'}>
         <div className={styles.toolbar}>
           <span className={styles.wordmarkSmall}>ColorWizard</span>
           <div className={styles.toolbarButtons}>
             <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
             <button type="button" onClick={() => setEntryOpen((on) => !on)} aria-pressed={entryOpen} title="Type an exact color">Color…</button>
-            <button type="button" onClick={() => { setPeek(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
+            <button type="button" onClick={() => { setPeek(false); setProcessMode(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
+            <button type="button" onClick={() => { setPeek(false); setPlanMode(false); setProcessMode((on) => !on) }} disabled={!source} aria-pressed={processMode} title="Step through painting this picture, from toned canvas to underpainting">Process</button>
             <button type="button" onClick={() => setValueView((on) => !on)} disabled={!source} aria-pressed={valueView} title="Show values only (V)">Value</button>
           </div>
         </div>
@@ -492,7 +508,9 @@ export default function SimpleApp() {
         {entryOpen && <div className={styles.entryBar}><ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} /></div>}
         {notices}
         <div className={styles.panelBody}>
-          {planMode ? (
+          {processMode ? (
+            <ProcessPanel stages={processStages} position={processPosition} onPosition={setProcessPosition} />
+          ) : planMode ? (
             <PlanPanel
               state={planState}
               budget={budget}
@@ -543,7 +561,7 @@ export default function SimpleApp() {
           )}
         </div>
 
-        {!planMode && <>{savedList}{libraryTools}</>}
+        {!planMode && !processMode && <>{savedList}{libraryTools}</>}
         {phoneBar}
       </aside>
       )}

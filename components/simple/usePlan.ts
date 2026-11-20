@@ -32,7 +32,7 @@ interface Copy {
 }
 
 /** A copy of the picture small enough to plan quickly. */
-function planningCopy(source: HTMLCanvasElement): Copy | null {
+export function planningCopy(source: HTMLCanvasElement): Copy | null {
   const scale = Math.min(1, PLAN_MAX_SIDE / Math.max(source.width, source.height))
   const width = Math.max(1, Math.round(source.width * scale))
   const height = Math.max(1, Math.round(source.height * scale))
