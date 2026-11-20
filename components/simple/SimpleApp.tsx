@@ -11,6 +11,7 @@ import Image from 'next/image'
 import { createSolidColorDemoImage } from '@/lib/demoColor'
 import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
+import { newId } from '@/lib/newId'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -228,7 +229,7 @@ export default function SimpleApp() {
 
   const saveCurrent = (result: Pick<SaveInput, 'name' | 'paint' | 'thread'>) => {
     if (!color) return null
-    const next = saveColor(library, { id: crypto.randomUUID(), hex: color.hex, now: Date.now(), pictureName: point ? pictureName : undefined, ...result })
+    const next = saveColor(library, { id: newId(), hex: color.hex, now: Date.now(), pictureName: point ? pictureName : undefined, ...result })
     if (!updateLibrary(next.library)) return null
     setSavedColor(next.color)
     return next.updated ? 'updated' as const : 'created' as const
@@ -528,7 +529,7 @@ export default function SimpleApp() {
               onCreateCollection={(colorId, name) => {
                 const problem = collectionNameProblem(library, name)
                 if (problem) return problem
-                const made = createCollection(library, { id: crypto.randomUUID(), name, now: Date.now() })
+                const made = createCollection(library, { id: newId(), name, now: Date.now() })
                 const next = setMembership(made.library, colorId, made.collection!.id, true, Date.now())
                 if (!updateLibrary(next)) return 'Couldn’t save the collection on this device. Try again.'
                 refreshSaved(next)

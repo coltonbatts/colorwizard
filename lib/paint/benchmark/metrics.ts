@@ -24,10 +24,11 @@ import {
 } from '../../spectral/adapter';
 import type { MixInput } from '../../spectral/types';
 import { seededRandom, type BenchmarkTarget } from './targets';
+import { CORE_SIX_PIGMENT_IDS } from '../../spectral/palette';
 
 const de00 = differenceCiede2000();
 
-export const CORE_SIX = ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red', 'phthalo-blue', 'phthalo-green'];
+export const CORE_SIX: string[] = [...CORE_SIX_PIGMENT_IDS];
 
 /** Thresholds used to call a recipe unpaintable. */
 export const PAINTABLE = {

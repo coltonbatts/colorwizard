@@ -20,6 +20,7 @@ npm test -- --watch      # Watch mode (tests are `lib/**/*.test.ts` and `compone
 
 # Quality
 npm run lint             # ESLint
+npm run typecheck        # tsc for the app, then tsconfig.test.json for the test files too (CI runs this)
 npm run validate:paints  # Validate paint palette data integrity
 npm run benchmark:paint  # Per-color recipe accuracy (see docs/paint-accuracy-audit.md)
 npm run benchmark:plan   # Whole-picture plans (see docs/paint-plan-audit.md); --algo naive|library, --palette core6|zorn, --reference, --photos

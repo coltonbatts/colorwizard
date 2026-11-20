@@ -17,6 +17,7 @@ import {
     createColor,
     registerPigments,
 } from '../spectral/adapter';
+import { CORE_SIX_PIGMENT_IDS } from '../spectral/palette';
 import { nelderMeadRefine } from './nelderMead';
 import { differenceCiede2000 } from 'culori';
 import { SpectralRecipe, MixInput, getMatchQuality00, Pigment } from '../spectral/types';
@@ -46,14 +47,7 @@ const CONFIG = {
     VALUE_DEVIATION_THRESHOLD: 0.1,
 };
 
-const CORE_SIX_PIGMENT_IDS = new Set([
-    'titanium-white',
-    'ivory-black',
-    'yellow-ochre',
-    'cadmium-red',
-    'phthalo-blue',
-    'phthalo-green',
-]);
+const CORE_SIX = new Set<string>(CORE_SIX_PIGMENT_IDS);
 
 /**
  * Generate all combinations of n items from array.
@@ -284,7 +278,7 @@ export async function solveRecipe(
         filteredPalette = PALETTE.filter(p => options.paletteColorIds!.includes(p.id));
     } else {
         // Default: stay on the current six-color palette only.
-        filteredPalette = PALETTE.filter(p => CORE_SIX_PIGMENT_IDS.has(p.id));
+        filteredPalette = PALETTE.filter(p => CORE_SIX.has(p.id));
     }
 
     if (filteredPalette.length === 0) {

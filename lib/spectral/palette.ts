@@ -71,3 +71,16 @@ export const VALUE_ADJUSTERS = PALETTE.filter((p) => p.isValueAdjuster);
  * Get chromatic pigments (not white or black).
  */
 export const CHROMATIC_PIGMENTS = PALETTE.filter((p) => !p.isValueAdjuster);
+
+/**
+ * The default "Core six" the solver uses when no palette is given, in this order (the
+ * benchmarks iterate it, so the order is part of their reproducibility).
+ */
+export const CORE_SIX_PIGMENT_IDS = [
+    'titanium-white',
+    'ivory-black',
+    'yellow-ochre',
+    'cadmium-red',
+    'phthalo-blue',
+    'phthalo-green',
+] as const;

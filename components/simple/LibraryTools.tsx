@@ -4,6 +4,7 @@
 
 import { useRef, useState } from 'react'
 import type { ColorLibrary } from '@/lib/colorLibrary'
+import { newId } from '@/lib/newId'
 import {
   BACKUP_PROBLEM_TEXT, backupFileName, buildBackup, describeMerge, MAX_BACKUP_BYTES, mergeLibraries, nothingToImport, parseBackup,
   type MergeReport,
@@ -55,7 +56,7 @@ export default function LibraryTools({ library, canWrite, onImport }: LibraryToo
     try { text = await file.text() } catch { return setProblem('Couldn’t read that file.') }
     const parsed = parseBackup(text)
     if (!parsed.ok) return setProblem(BACKUP_PROBLEM_TEXT[parsed.problem])
-    const { library: merged, report } = mergeLibraries(library, parsed.library, () => crypto.randomUUID())
+    const { library: merged, report } = mergeLibraries(library, parsed.library, () => newId())
     if (nothingToImport(report)) return setStatus('Everything in that file is already saved here. Nothing changed.')
     setPending({ merged, report, fileCounts: { colors: parsed.library.colors.length, collections: parsed.library.collections.length } })
   }

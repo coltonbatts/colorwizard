@@ -11,7 +11,7 @@ import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
 import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { Collection, SaveInput, SavedColor } from '@/lib/colorLibrary'
 import type { SpectralRecipe } from '@/lib/spectral/types'
-import { getSolverWorker } from '@/lib/workers'
+import { getSolverWorker, resetSolverWorker, withTimeout, WorkerTimeoutError } from '@/lib/workers'
 import BasisNote from './BasisNote'
 import CollectionPicker from './CollectionPicker'
 import ColorUnderstanding from './ColorUnderstanding'
@@ -51,14 +51,12 @@ interface ColorReadoutProps {
 export { originOf }
 
 async function solvePaint(hex: string, options?: SolveOptions): Promise<SpectralRecipe> {
-  let timer: number | undefined
   try {
-    const timeout = new Promise<never>((_, reject) => { timer = window.setTimeout(() => reject(new Error('Solver worker timed out')), 5000) })
-    return await Promise.race([getSolverWorker().solveRecipe(hex, options), timeout])
-  } catch {
+    return await withTimeout(getSolverWorker().solveRecipe(hex, options), 5000, 'Solver worker')
+  } catch (error) {
+    // A stuck worker would hold every later solve behind it; the next solve starts a fresh one.
+    if (error instanceof WorkerTimeoutError) resetSolverWorker()
     return solveRecipe(hex, options)
-  } finally {
-    window.clearTimeout(timer)
   }
 }
 

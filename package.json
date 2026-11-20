@@ -14,6 +14,7 @@
     "pretest": "npm run generate:data",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest",
     "smoke:core": "node scripts/smoke-core-flow.mjs",
     "unreachable": "node scripts/find-unreachable.mjs",

@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PicturePlan } from '@/lib/paint/plan/picture'
 import type { Pigment } from '@/lib/spectral/types'
-import { getPlanWorker } from '@/lib/workers'
+import { getPlanWorker, resetPlanWorker, withTimeout, WorkerTimeoutError } from '@/lib/workers'
 
 export const PLAN_MAX_SIDE = 512
 const WORKER_TIMEOUT_MS = 20000
@@ -48,10 +48,12 @@ function planningCopy(source: HTMLCanvasElement): Copy | null {
 
 async function plan(copy: Copy, budget: number, pigments: Pigment[]): Promise<PicturePlan> {
   try {
-    const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Plan worker timed out')), WORKER_TIMEOUT_MS))
     // The worker gets its own copy of the pixels; ours stays for a fallback or the next budget.
-    return await Promise.race([getPlanWorker().planPicture(new Uint8ClampedArray(copy.data), copy.width, copy.height, budget, pigments), timeout])
-  } catch {
+    return await withTimeout(getPlanWorker().planPicture(new Uint8ClampedArray(copy.data), copy.width, copy.height, budget, pigments), WORKER_TIMEOUT_MS, 'Plan worker')
+  } catch (error) {
+    // A worker that never answered (often one whose script failed to load) would hold every
+    // later plan behind it, so it is thrown away; the next plan starts a fresh one.
+    if (error instanceof WorkerTimeoutError) resetPlanWorker()
     const { planPicture } = await import('@/lib/paint/plan/picture')
     return planPicture(copy.data, copy.width, copy.height, budget, pigments)
   }

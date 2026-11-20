@@ -2,29 +2,36 @@
  * Comlink wrapper utilities for Web Workers.
  * Provides type-safe, RPC-style communication with workers.
  */
-import { wrap, type Remote } from 'comlink';
+import type { Remote } from 'comlink';
 import type { SolverWorkerAPI } from '../paint/solver.worker';
 import type { ImageProcessorWorker } from './imageProcessor.worker';
 import type { PlanWorkerAPI } from '../paint/plan/plan.worker';
+import { createWorkerSlot } from './slot';
+
+export { withTimeout, WorkerTimeoutError } from './slot';
 
 // Singleton worker instances
-let solverWorker: Remote<SolverWorkerAPI> | null = null;
-let imageProcessorWorker: Remote<ImageProcessorWorker> | null = null;
-let planWorker: Remote<PlanWorkerAPI> | null = null;
+const solverSlot = createWorkerSlot<SolverWorkerAPI>(
+    () => new Worker(new URL('../paint/solver.worker.ts', import.meta.url), { type: 'module' })
+);
+const planSlot = createWorkerSlot<PlanWorkerAPI>(
+    () => new Worker(new URL('../paint/plan/plan.worker.ts', import.meta.url), { type: 'module' })
+);
+const imageProcessorSlot = createWorkerSlot<ImageProcessorWorker>(
+    () => new Worker(new URL('./imageProcessor.worker.ts', import.meta.url), { type: 'module' })
+);
 
 /**
  * Get the solver worker instance.
  * Creates worker on first call, reuses on subsequent calls.
  */
 export function getSolverWorker(): Remote<SolverWorkerAPI> {
-    if (!solverWorker) {
-        const worker = new Worker(
-            new URL('../paint/solver.worker.ts', import.meta.url),
-            { type: 'module' }
-        );
-        solverWorker = wrap<SolverWorkerAPI>(worker);
-    }
-    return solverWorker;
+    return solverSlot.get();
+}
+
+/** Terminate the solver worker (e.g. after it timed out); the next call starts a new one. */
+export function resetSolverWorker(): void {
+    solverSlot.reset();
 }
 
 /**
@@ -32,14 +39,12 @@ export function getSolverWorker(): Remote<SolverWorkerAPI> {
  * Creates worker on first call, reuses on subsequent calls.
  */
 export function getPlanWorker(): Remote<PlanWorkerAPI> {
-    if (!planWorker) {
-        const worker = new Worker(
-            new URL('../paint/plan/plan.worker.ts', import.meta.url),
-            { type: 'module' }
-        );
-        planWorker = wrap<PlanWorkerAPI>(worker);
-    }
-    return planWorker;
+    return planSlot.get();
+}
+
+/** Terminate the plan worker (e.g. after it timed out); the next call starts a new one. */
+export function resetPlanWorker(): void {
+    planSlot.reset();
 }
 
 /**
@@ -47,23 +52,16 @@ export function getPlanWorker(): Remote<PlanWorkerAPI> {
  * Creates worker on first call, reuses on subsequent calls.
  */
 export function getImageProcessorWorker(): Remote<ImageProcessorWorker> {
-    if (!imageProcessorWorker) {
-        const worker = new Worker(
-            new URL('./imageProcessor.worker.ts', import.meta.url),
-            { type: 'module' }
-        );
-        imageProcessorWorker = wrap<ImageProcessorWorker>(worker);
-    }
-    return imageProcessorWorker;
+    return imageProcessorSlot.get();
 }
 
 /**
  * Terminate all workers (for cleanup).
  */
 export function terminateWorkers(): void {
-    solverWorker = null;
-    imageProcessorWorker = null;
-    planWorker = null;
+    solverSlot.reset();
+    imageProcessorSlot.reset();
+    planSlot.reset();
 }
 
 /**
