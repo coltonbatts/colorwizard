@@ -12,6 +12,7 @@ import { createSolidColorDemoImage } from '@/lib/demoColor'
 import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
+import { computeImageValueContextFromCanvas } from '@/lib/dmc/studio'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -27,13 +28,15 @@ import { pileAt, renderRepaint } from './planRender'
 import { usePicturePlan } from './usePlan'
 import type { PourOrigin } from './pour'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
+import ThreadStudio, { type StudioTab, type ThreadSavePayload } from './ThreadStudio'
 import ThreadView from './ThreadView'
 import styles from './simple.module.css'
+import threadStyles from './threadStudio.module.css'
 
 const BUDGET_KEY = 'colorwizard-simple-plan-budget'
 const DEFAULT_BUDGET: Budget = 8
 const PHONE_VIEW_KEY = 'colorwizard-simple-phone-view'
-type PhoneView = 'all' | 'thread'
+export type AppSection = 'color' | 'thread'
 // Keep detail for zooming in: 4096 holds a whole 12 MP phone photo. iOS canvas memory is tighter, so it gets less.
 const MAX_DIMENSION = 4096
 const MAX_DIMENSION_CONSTRAINED = 3072
@@ -55,17 +58,17 @@ function storeBudget(budget: Budget) {
   }
 }
 
-function loadPhoneView(): PhoneView {
+function loadSection(): AppSection {
   try {
-    return window.localStorage.getItem(PHONE_VIEW_KEY) === 'thread' ? 'thread' : 'all'
+    return window.localStorage.getItem(PHONE_VIEW_KEY) === 'thread' ? 'thread' : 'color'
   } catch {
-    return 'all'
+    return 'color'
   }
 }
 
-function storePhoneView(view: PhoneView) {
+function storeSection(section: AppSection) {
   try {
-    window.localStorage.setItem(PHONE_VIEW_KEY, view)
+    window.localStorage.setItem(PHONE_VIEW_KEY, section === 'thread' ? 'thread' : 'all')
   } catch {
     /* the view is a convenience; a blocked store only means choosing it again next time */
   }
@@ -76,7 +79,12 @@ function colorFromHex(hex: string): PickedColor | null {
   return rgb ? { hex: hex.toUpperCase(), rgb } : null
 }
 
-export default function SimpleApp() {
+export interface SimpleAppProps {
+  /** Opens directly in Color or Thread mode (used by `/thread`). */
+  initialSection?: AppSection
+}
+
+export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [source, setSource] = useState<HTMLCanvasElement | null>(null)
   const [pictureId, setPictureId] = useState(0)
@@ -102,9 +110,11 @@ export default function SimpleApp() {
   const [opening, setOpening] = useState(false)
   const [entryOpen, setEntryOpen] = useState(false)
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
-  const [phoneView, setPhoneView] = useState<PhoneView>('all')
+  const [section, setSection] = useState<AppSection>(initialSection ?? 'color')
+  const [phoneThreadTab, setPhoneThreadTab] = useState<StudioTab>('match')
   const isPhone = useMediaQuery('(max-width: 760px)')
-  const threadView = isPhone && phoneView === 'thread' && !planMode && !processMode
+  const isThreadSection = section === 'thread' && !planMode && !processMode
+  const phoneThreadView = isPhone && isThreadSection
   const openRequestRef = useRef(0)
 
   useEffect(() => {
@@ -116,8 +126,11 @@ export default function SimpleApp() {
     }
   }, [])
   useEffect(() => setBudget(loadBudget()), [])
-  useEffect(() => setPhoneView(loadPhoneView()), [])
+  useEffect(() => {
+    if (!initialSection) setSection(loadSection())
+  }, [initialSection])
 
+  const imageValue = useMemo(() => computeImageValueContextFromCanvas(source), [source])
   const palette = usePaintPalette()
   const pigments = useMemo(() => resolvePalettePigments(palette.colors), [palette])
   const planState = usePicturePlan(source, planMode, budget, pigments)
@@ -207,6 +220,7 @@ export default function SimpleApp() {
     setSavedColor(null)
     setPoint(nextPoint)
     setColor(picked)
+    setPhoneThreadTab('match')
     arrive(origin)
   }, [arrive, plan, planMode, processMode, source])
 
@@ -247,14 +261,70 @@ export default function SimpleApp() {
     return next.updated ? 'updated' as const : 'created' as const
   }
 
-  const changePhoneView = (view: PhoneView) => {
-    setPhoneView(view)
-    storePhoneView(view)
-    if (view === 'thread') {
+  const saveThreadDirect = (
+    thread: ThreadSavePayload,
+    options?: { sampleHex?: string; colorName?: string; collectionId?: string | null },
+  ) => {
+    const hex = (options?.sampleHex ?? thread.hex).toUpperCase()
+    const now = Date.now()
+    const saved = saveColor(library, {
+      id: newId(),
+      hex,
+      name: options?.colorName || thread.name,
+      now,
+      pictureName: point && options?.sampleHex ? pictureName : undefined,
+      thread,
+    })
+    const finalLibrary = options?.collectionId
+      ? setMembership(saved.library, saved.color.id, options.collectionId, true, now)
+      : saved.library
+    if (!updateLibrary(finalLibrary)) return null
+    if (color?.hex === hex) setSavedColor(finalLibrary.colors.find((entry) => entry.id === saved.color.id) ?? saved.color)
+    return saved.updated ? 'updated' as const : 'created' as const
+  }
+
+  const saveThreadsBatch = (
+    threadsToSave: ThreadSavePayload[],
+    options?: { collectionId?: string | null },
+  ) => {
+    if (threadsToSave.length === 0) return 0
+    const now = Date.now()
+    let working = library
+    let count = 0
+    for (const thread of threadsToSave) {
+      const saved = saveColor(working, {
+        id: newId(),
+        hex: thread.hex.toUpperCase(),
+        name: thread.name,
+        now,
+        thread,
+      })
+      working = options?.collectionId
+        ? setMembership(saved.library, saved.color.id, options.collectionId, true, now)
+        : saved.library
+      count++
+    }
+    if (!updateLibrary(working)) return 0
+    refreshSaved(working)
+    return count
+  }
+
+  const createNamedCollection = (name: string) => {
+    const problem = collectionNameProblem(library, name)
+    if (problem) return problem
+    const made = createCollection(library, { id: newId(), name, now: Date.now() })
+    if (!made.collection || !updateLibrary(made.library)) return 'Couldn’t save the pull on this device. Try again.'
+    return { id: made.collection.id }
+  }
+
+  const changeSection = (next: AppSection) => {
+    setSection(next)
+    storeSection(next)
+    if (next === 'thread') {
       setPeek(false)
       setPlanMode(false)
       setProcessMode(false)
-      setValueView(false)
+      setEntryOpen(false)
     }
   }
 
@@ -372,6 +442,61 @@ export default function SimpleApp() {
     />
   )
 
+  const handleNote = (id: string, note: string) => {
+    const next = setNote(library, id, note, Date.now())
+    if (!updateLibrary(next)) return false
+    setSavedColor((current) => current?.id === id ? next.colors.find((entry) => entry.id === id) ?? current : current)
+    return true
+  }
+
+  const handleRemoveColor = (entry: SavedColor) => {
+    if (updateLibrary(removeColor(library, entry.id)) && savedColor?.id === entry.id) setSavedColor(null)
+  }
+
+  const handleDeleteCollection = (collectionId: string) => {
+    const next = deleteCollection(library, collectionId)
+    if (!updateLibrary(next)) return
+    setCollectionFilter(null)
+    refreshSaved(next)
+  }
+
+  const handleOpenSaved = (entry: SavedColor, origin?: PourOrigin) => {
+    openColor(entry.hex, origin)
+    setSavedColor(entry)
+    setPlanMode(false)
+    setProcessMode(false)
+    setPhoneThreadTab('match')
+  }
+
+  const modeSwitch = (
+    <div className={threadStyles.modeSwitch} role="group" aria-label="Section">
+      <button type="button" aria-pressed={!isThreadSection} onClick={() => changeSection('color')}>Color</button>
+      <button type="button" aria-pressed={isThreadSection} onClick={() => changeSection('thread')}>Thread</button>
+    </div>
+  )
+
+  const threadStudioProps = {
+    source,
+    imageValue,
+    color,
+    savedColor,
+    library,
+    canSave: savedReadable,
+    collectionFilter,
+    onFilterCollection: setCollectionFilter,
+    onSaveThread: saveThreadDirect,
+    onSaveThreadsBatch: saveThreadsBatch,
+    onRemoveColor: handleRemoveColor,
+    onNote: handleNote,
+    onCreateCollection: createNamedCollection,
+    onDeleteCollection: handleDeleteCollection,
+    onOpenSaved: (entry: SavedColor) => handleOpenSaved(entry),
+    onChoosePicture: choosePicture,
+    valueView,
+    onToggleValueView: () => setValueView((on) => !on),
+    libraryTools,
+  }
+
   const notices = (
     <>
       {opening && <p className={styles.notice} role="status">Opening picture…</p>}
@@ -383,15 +508,36 @@ export default function SimpleApp() {
   // Within reach of the thumb. The full readout and the Thread view are one tap apart, and the choice is remembered.
   const phoneBar = isPhone && (
     <div className={styles.phoneBar}>
-      {threadView && <button type="button" className={styles.phoneOpen} onClick={choosePicture}>Open…</button>}
+      {phoneThreadView && <button type="button" className={styles.phoneOpen} onClick={choosePicture}>Open…</button>}
       <div className={styles.viewSwitch} role="group" aria-label="What to show">
-        <button type="button" aria-pressed={!threadView} onClick={() => changePhoneView('all')}>All details</button>
-        <button type="button" aria-pressed={threadView} onClick={() => changePhoneView('thread')}>Thread</button>
+        <button type="button" aria-pressed={!phoneThreadView} onClick={() => changeSection('color')}>All details</button>
+        <button type="button" aria-pressed={phoneThreadView} onClick={() => changeSection('thread')}>Thread</button>
       </div>
     </div>
   )
 
   if (!source && !color) {
+    if (isThreadSection) {
+      return (
+        <main id="main-content" className={`${styles.app} ${threadStyles.standaloneApp} ${isDragging ? styles.dragging : ''}`}>
+          {fileInput}
+          <header className={threadStyles.standaloneHeader}>
+            <div className={threadStyles.standaloneBrand}>
+              <span className={styles.wordmarkSmall}>ColorWizard</span>
+              {modeSwitch}
+            </div>
+            <div className={threadStyles.standaloneActions}>
+              <button type="button" className={threadStyles.btnSecondary} onClick={choosePicture}>
+                {opening ? 'Opening…' : 'Open photo…'}
+              </button>
+            </div>
+          </header>
+          {notices}
+          <ThreadStudio {...threadStudioProps} standalone />
+        </main>
+      )
+    }
+
     return (
       <main id="main-content" className={`${styles.app} ${styles.welcome} ${isDragging ? styles.dragging : ''}`}>
         {fileInput}
@@ -413,6 +559,9 @@ export default function SimpleApp() {
           <button type="button" className={styles.primaryButton} onClick={choosePicture}>
             {opening ? 'Opening…' : 'Open picture'} <span aria-hidden="true">↗</span>
           </button>
+          <button type="button" className={styles.linkButton} onClick={() => changeSection('thread')}>
+            Open DMC Thread Studio →
+          </button>
           <button type="button" className={styles.linkButton} onClick={() => void openDemo()}>Try demo color Terracotta</button>
           {entryOpen
             ? <ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} />
@@ -430,7 +579,7 @@ export default function SimpleApp() {
   }
 
   return (
-    <main id="main-content" className={`${styles.app} ${styles.workspace} ${threadView ? styles.threadWorkspace : ''} ${isDragging ? styles.dragging : ''}`}>
+    <main id="main-content" className={`${styles.app} ${styles.workspace} ${phoneThreadView ? styles.threadWorkspace : ''} ${isDragging ? styles.dragging : ''}`}>
       {fileInput}
       {source ? <SimpleCanvas
         key={pictureId}
@@ -475,27 +624,58 @@ export default function SimpleApp() {
         )}
       </SimpleCanvas> : (
         <div className={styles.recoveredStage}>
-          <p>{savedColor ? 'Saved color & recipe' : 'No picture open'}</p>
+          <p>{savedColor ? (isThreadSection ? 'Saved DMC thread' : 'Saved color & recipe') : 'No picture open'}</p>
           <p className={styles.smallNote}>Open a picture to sample more colors.</p>
           <button type="button" className={styles.primaryButton} onClick={choosePicture}>Open picture</button>
         </div>
       )}
 
-      {threadView ? (
+      {phoneThreadView ? (
         <aside className={`${styles.panel} ${styles.threadPanel}`} aria-label="Thread">
+          <div className={threadStyles.phoneSubBar} role="tablist" aria-label="Thread studio views">
+            <button type="button" role="tab" aria-selected={phoneThreadTab === 'match'} onClick={() => setPhoneThreadTab('match')}>Match</button>
+            <button type="button" role="tab" aria-selected={phoneThreadTab === 'browse'} onClick={() => setPhoneThreadTab('browse')}>Browse</button>
+            <button type="button" role="tab" aria-selected={phoneThreadTab === 'tray'} onClick={() => setPhoneThreadTab('tray')}>Tray</button>
+            <span className={threadStyles.phoneSubSpacer} />
+            {source && (
+              <button type="button" aria-pressed={valueView} onClick={() => setValueView((on) => !on)} title="Show values only">
+                Value
+              </button>
+            )}
+          </div>
           {notices}
           <div className={styles.threadScroll}>
-            {color
-              ? <ThreadView hex={color.hex} savedColor={savedColor} existing={findByHex(library, color.hex) ?? null} canSave={savedReadable} onSave={saveCurrent} />
-              : <p className={styles.threadEmpty}>Tap the picture to find a thread.<small>Hold and slide to aim with the loupe.</small></p>}
-            {savedList}
+            {phoneThreadTab === 'match' ? (
+              <>
+                {color
+                  ? <ThreadView hex={color.hex} savedColor={savedColor} existing={findByHex(library, color.hex) ?? null} canSave={savedReadable} onSave={saveCurrent} />
+                  : <p className={styles.threadEmpty}>Tap the picture to find a thread.<small>Hold and slide to aim with the loupe.</small></p>}
+                {savedList}
+              </>
+            ) : (
+              <ThreadStudio {...threadStudioProps} activeTab={phoneThreadTab} onTabChange={setPhoneThreadTab} />
+            )}
           </div>
           {phoneBar}
+        </aside>
+      ) : isThreadSection ? (
+        <aside className={styles.panel} aria-label="Thread">
+          <div className={styles.toolbar}>
+            <span className={styles.wordmarkSmall}>ColorWizard</span>
+            {modeSwitch}
+            <div className={styles.toolbarButtons}>
+              <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
+              <button type="button" onClick={() => setValueView((on) => !on)} disabled={!source} aria-pressed={valueView} title="Show values only (V)">Value</button>
+            </div>
+          </div>
+          {notices}
+          <ThreadStudio {...threadStudioProps} />
         </aside>
       ) : (
       <aside className={styles.panel} aria-label={planMode ? 'Plan' : processMode ? 'Painting process' : 'Color'}>
         <div className={styles.toolbar}>
           <span className={styles.wordmarkSmall}>ColorWizard</span>
+          {!isPhone && modeSwitch}
           <div className={styles.toolbarButtons}>
             <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
             <button type="button" onClick={() => setEntryOpen((on) => !on)} aria-pressed={entryOpen} title="Type an exact color">Color…</button>
@@ -531,12 +711,7 @@ export default function SimpleApp() {
               savedColor={savedColor}
               existing={findByHex(library, color.hex) ?? null}
               onSave={saveCurrent}
-              onNote={(id, note) => {
-                const next = setNote(library, id, note, Date.now())
-                if (!updateLibrary(next)) return false
-                setSavedColor((current) => current?.id === id ? next.colors.find((entry) => entry.id === id) ?? current : current)
-                return true
-              }}
+              onNote={handleNote}
               collections={library.collections}
               onToggleCollection={(colorId, collectionId, member) => {
                 const next = setMembership(library, colorId, collectionId, member, Date.now())

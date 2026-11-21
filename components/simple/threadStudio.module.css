@@ -1,0 +1,1173 @@
+/*
+ * Dedicated DMC Thread Studio — built for needle painters.
+ * Shares SimpleApp's cotton-paper & charcoal-ink tokens (--s-*).
+ */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.studio {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Full-width studio when opened without a photo (e.g. /thread or Browse/Tray first). */
+.standaloneApp {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.standaloneHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--s-rule);
+  background: var(--s-paper);
+}
+
+.standaloneBrand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.standaloneActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.standaloneMain {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.standaloneInner {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.standaloneHero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--s-rule);
+}
+
+.standaloneTitle {
+  margin: 0;
+  font-family: var(--s-serif);
+  font-size: clamp(30px, 4vw, 40px);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.standaloneLead {
+  margin: 6px 0 0;
+  max-width: 56ch;
+  font-size: 14px;
+  color: var(--s-ink-2);
+}
+
+.standaloneGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+/* Segmented Color | Thread mode switch used across desktop, tablet, and standalone. */
+.modeSwitch {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  overflow: hidden;
+}
+
+.modeSwitch button {
+  min-height: 30px;
+  padding: 4px 12px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.modeSwitch button:hover {
+  color: var(--s-ink);
+}
+
+.modeSwitch button[aria-pressed='true'] {
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+/* Inner Thread Studio tabs: Match | Browse | Tray */
+.subTabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--s-rule);
+  background: var(--s-paper);
+  flex-shrink: 0;
+}
+
+.subTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.subTab:hover {
+  color: var(--s-ink);
+  background: rgba(17, 17, 17, 0.04);
+}
+
+.subTab[aria-selected='true'] {
+  border-color: var(--s-rule);
+  background: var(--s-white);
+  color: var(--s-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.08);
+  font-family: var(--s-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ---------- Hero Skein Match Card ---------- */
+
+.heroCard {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--s-rule);
+  border-radius: 10px;
+  background: var(--s-white);
+}
+
+.heroCardSingle {
+  grid-template-columns: 56px minmax(0, 1fr);
+}
+
+.heroCompare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 112px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.heroCompare > span {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroCompareLabel {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(252, 250, 245, 0.88);
+  color: var(--s-ink);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.heroSkein {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+  transform: scale(1.22);
+}
+
+.heroSkeinFull {
+  display: block;
+  width: 52px;
+  height: 132px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.heroMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.heroTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dmcNumber {
+  margin: 0;
+  font-family: var(--s-mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.dmcName {
+  margin: 0;
+  font-family: var(--s-serif);
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--s-ink);
+}
+
+.metaPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-paper);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.pillWarn {
+  border-color: rgba(145, 76, 20, 0.35);
+  background: rgba(180, 96, 24, 0.08);
+  color: #6b340a;
+}
+
+.heroFit {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.38;
+  color: var(--s-ink-2);
+}
+
+.heroFit b {
+  color: var(--s-ink);
+  font-weight: 600;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--s-ink);
+  border-radius: 6px;
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btnPrimary:disabled {
+  border-color: var(--s-rule);
+  background: transparent;
+  color: var(--s-ink-2) !important;
+  cursor: default;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  color: var(--s-ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.btnSecondary:hover {
+  border-color: var(--s-ink-2);
+}
+
+.btnSecondary[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: rgba(17, 17, 17, 0.06);
+  font-weight: 600;
+}
+
+.btnSmall {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+/* ---------- Value warnings & owned callout ---------- */
+
+.warningList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.warningItem {
+  padding: 9px 11px;
+  border-left: 3px solid #9a5418;
+  border-radius: 0 6px 6px 0;
+  background: rgba(180, 96, 24, 0.07);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--s-ink);
+}
+
+.boxCallout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+}
+
+.boxCalloutInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.swatchDot {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.boxCalloutText {
+  min-width: 0;
+}
+
+.boxCalloutText strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.boxCalloutText small {
+  display: block;
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+/* ---------- Sections inside Studio ---------- */
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--s-ink-2);
+}
+
+.blockHint {
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.linkBtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--s-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Shading run: Lighter -> Base -> Darker */
+.shadingRun {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.shadingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+  text-align: left;
+}
+
+.shadingCard[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+
+.shadingSwatch {
+  display: block;
+  width: 100%;
+  height: 30px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.shadingRole {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--s-ink-2);
+}
+
+.shadingNum {
+  font-family: var(--s-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.shadingName {
+  font-size: 11px;
+  color: var(--s-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Shade ladder */
+.ladderStrip {
+  display: flex;
+  gap: 3px;
+}
+
+.ladderStep {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ladderBar {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.ladderStep[aria-pressed='true'] .ladderBar {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 2px;
+}
+
+.ladderCode {
+  font-family: var(--s-mono);
+  font-size: 10.5px;
+  color: var(--s-ink-2);
+}
+
+.ladderStep[aria-pressed='true'] .ladderCode {
+  color: var(--s-ink);
+  font-weight: 700;
+}
+
+/* Choice chips (Also close / Substitutes) */
+.chipGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.threadChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid var(--s-rule);
+  border-radius: 7px;
+  background: var(--s-white);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.threadChip:hover {
+  border-color: var(--s-ink-2);
+}
+
+.threadChip[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+
+.threadChip i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.threadChip code {
+  font-family: var(--s-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.threadChip small {
+  font-size: 11px;
+  color: var(--s-ink-2);
+}
+
+/* ---------- Browse & Search ---------- */
+
+.searchForm {
+  position: relative;
+  display: flex;
+  gap: 6px;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 32px 6px 12px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+  font: inherit;
+  font-size: 14px;
+  color: var(--s-ink);
+}
+
+.searchInput:focus {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+}
+
+.searchClear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 16px;
+  color: var(--s-ink-2);
+}
+
+.groupPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.groupPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 10px 3px 7px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.groupPill i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.groupPill[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+.toneFilters {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tonePill {
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.tonePill[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: rgba(17, 17, 17, 0.08);
+  color: var(--s-ink);
+  font-weight: 600;
+}
+
+.catalogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.standaloneMain .catalogGrid {
+  max-height: 460px;
+}
+
+.catalogItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 7px;
+  border: 1px solid var(--s-rule);
+  border-radius: 7px;
+  background: var(--s-white);
+  text-align: left;
+  min-width: 0;
+}
+
+.catalogItem:hover {
+  border-color: var(--s-ink-2);
+}
+
+.catalogItem[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+
+.catalogSwatch {
+  display: block;
+  width: 22px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.catalogMeta {
+  min-width: 0;
+  flex: 1;
+}
+
+.catalogMeta strong {
+  display: block;
+  font-family: var(--s-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.catalogMeta small {
+  display: block;
+  font-size: 11px;
+  color: var(--s-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Skein Tray (Needle Painting Pull) ---------- */
+
+.trayControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trayToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pullStrip {
+  display: flex;
+  gap: 2px;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+}
+
+.pullStripCell {
+  flex: 1;
+  min-width: 14px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 3px;
+  font-family: var(--s-mono);
+  font-size: 9px;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.trayList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trayRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+}
+
+.trayRowActive {
+  border-color: var(--s-ink);
+}
+
+.trayMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.traySwatch {
+  display: block;
+  width: 28px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.trayText {
+  min-width: 0;
+  flex: 1;
+}
+
+.trayText strong {
+  display: inline-block;
+  font-family: var(--s-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.trayText span {
+  font-size: 13px;
+  color: var(--s-ink);
+}
+
+.trayText small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--s-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trayRowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.boxBtn {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 5px;
+  background: var(--s-paper);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.boxBtn[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+.removeBtn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 16px;
+  color: var(--s-ink-2);
+}
+
+.removeBtn:hover {
+  background: rgba(17, 17, 17, 0.06);
+  color: var(--s-ink);
+}
+
+/* Value gap row between two sorted skeins */
+.gapRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: var(--s-ink-2);
+}
+
+.gapJump {
+  border: 1px dashed rgba(145, 76, 20, 0.45);
+  background: rgba(180, 96, 24, 0.06);
+  color: #6b340a;
+}
+
+.gapClose {
+  background: rgba(17, 17, 17, 0.03);
+}
+
+/* Bridge / Blend Finder panel */
+.bridgePanel {
+  padding: 12px;
+  border: 1px solid var(--s-ink);
+  border-radius: 10px;
+  background: var(--s-white);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bridgeEndpoints {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.bridgeEndpoint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-paper);
+  min-width: 0;
+}
+
+.bridgeEndpoint i {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.bridgeEndpoint strong {
+  font-family: var(--s-mono);
+  font-size: 12px;
+}
+
+.bridgeArrow {
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.bridgeStrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 7px;
+  background: var(--s-paper);
+}
+
+.bridgeTrio {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 1fr;
+  width: 72px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.bridgeTrio i {
+  display: block;
+}
+
+.bridgeCandidateInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bridgeCandidateInfo strong {
+  font-family: var(--s-mono);
+  font-size: 12.5px;
+  margin-right: 6px;
+}
+
+.bridgeCandidateInfo small {
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.noteEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+}
+
+.noteInput {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-paper);
+  font: inherit;
+  font-size: 13px;
+  color: var(--s-ink);
+}
+
+.newPullForm {
+  display: flex;
+  gap: 6px;
+}
+
+.emptyPrompt {
+  padding: 18px 16px;
+  border: 1px dashed var(--s-rule);
+  border-radius: 10px;
+  background: rgba(252, 250, 245, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emptyPrompt h3 {
+  margin: 0;
+  font-family: var(--s-serif);
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.emptyPrompt p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--s-ink-2);
+}
+
+.statusText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.stale {
+  opacity: 0.58;
+  transition: opacity 120ms;
+}
+
+/* Compact phone sub-bar for switching Match / Browse / Tray inside the one-handed panel. */
+.phoneSubBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px 0;
+  flex-shrink: 0;
+}
+
+.phoneSubBar button {
+  min-height: 30px;
+  padding: 2px 10px;
+  border: 1px solid var(--s-rule);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.phoneSubBar button[aria-selected='true'],
+.phoneSubBar button[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+}
+
+.phoneSubSpacer {
+  flex: 1;
+}
+
+@media (max-width: 860px) {
+  .standaloneGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .standaloneHeader {
+    padding: 10px 14px;
+  }
+
+  .standaloneMain {
+    padding: 16px 14px 28px;
+  }
+}
