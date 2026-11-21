@@ -202,6 +202,7 @@ describe('ThreadMapPanel', () => {
     state: {
       status: 'ready' as const,
       result: sampleMap,
+      sourcePixels: null,
       hasSwaps: false,
       error: null,
       swapThread: () => undefined,

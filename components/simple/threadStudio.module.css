@@ -1634,6 +1634,126 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* On-stage floating Stitch Focus Bar when isolating a DMC thread */
+.stitchFocusBar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 7px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 18px rgba(17, 17, 17, 0.11);
+  z-index: 4;
+}
+
+.stitchFocusSwatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+  font-family: var(--s-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stitchFocusInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.stitchFocusInfo strong {
+  font-family: var(--s-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111111;
+  white-space: nowrap;
+}
+
+.stitchFocusInfo span {
+  font-size: 11.5px;
+  color: var(--s-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.stitchFocusNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.stitchFocusBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 7px;
+  background: #ffffff;
+  color: #111111 !important;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stitchFocusBtn:hover {
+  border-color: #111111;
+  background: #f5f3ee;
+}
+
+.stitchFocusBtnPrimary {
+  border-color: #111111;
+  background: #111111;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.stitchFocusBtnPrimary:hover {
+  background: #2b2a28;
+}
+
+.brightToolbar {
+  background: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .stitchFocusBar {
+    top: 8px;
+    gap: 6px;
+    padding: 5px 6px;
+  }
+
+  .stitchFocusInfo span {
+    max-width: 96px;
+  }
+
+  .stitchFocusBtn {
+    min-height: 26px;
+    min-width: 26px;
+    padding: 0 7px;
+    font-size: 11.5px;
+  }
+}
+
 @media (max-width: 860px) {
   .standaloneGrid {
     grid-template-columns: 1fr;

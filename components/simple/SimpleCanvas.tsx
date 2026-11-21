@@ -26,6 +26,16 @@ export interface PickedColor {
   rgb: { r: number; g: number; b: number }
 }
 
+export interface FocusRegion {
+  /** Normalized 0..1 bounding box in the picture. */
+  x: number
+  y: number
+  width: number
+  height: number
+  /** Increment to re-trigger framing the same region. */
+  id: number
+}
+
 interface SimpleCanvasProps {
   source: HTMLCanvasElement
   /**
@@ -40,6 +50,10 @@ interface SimpleCanvasProps {
   children?: ReactNode
   valueView: boolean
   point: SamplePoint | null
+  /** Optional bright studio stage (used by Thread Studio) with light controls and soft frame shadow. */
+  lightStage?: boolean
+  /** Optional normalized region to frame when the user asks to zoom to a thread's stitching area. */
+  focusRegion?: FocusRegion | null
   /** `origin` (client px) is set for deliberate clicks and taps, not drags, so the pick can pour in. */
   onSample: (point: SamplePoint, color: PickedColor, origin?: { x: number; y: number }) => void
 }
@@ -110,7 +124,17 @@ function valueCanvasOf(canvas: HTMLCanvasElement) {
 
 const PICTURE_LABEL = 'Your picture. Click to read a color, drag to move, scroll or pinch to zoom.'
 
-export default function SimpleCanvas({ source, display = null, label = PICTURE_LABEL, children, valueView, point, onSample }: SimpleCanvasProps) {
+export default function SimpleCanvas({
+  source,
+  display = null,
+  label = PICTURE_LABEL,
+  children,
+  valueView,
+  point,
+  lightStage = false,
+  focusRegion = null,
+  onSample,
+}: SimpleCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loupeRef = useRef<HTMLCanvasElement>(null)
@@ -196,6 +220,34 @@ export default function SimpleCanvas({ source, display = null, label = PICTURE_L
     }))
   }, [clampView, fitView.scale, size])
 
+  // Frame a requested normalized region cleanly inside the stage (e.g. "Zoom to area" on an isolated thread).
+  const lastFocusIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!focusRegion || focusRegion.id === lastFocusIdRef.current) return
+    if (size.width === 0 || size.height === 0) return
+    lastFocusIdRef.current = focusRegion.id
+
+    const rw = Math.max(0.06, focusRegion.width) * source.width
+    const rh = Math.max(0.06, focusRegion.height) * source.height
+    const padX = Math.max(40, size.width * 0.16)
+    const padY = Math.max(56, size.height * 0.18)
+    const targetScale = Math.min(
+      Math.max(1, size.width - padX * 2) / rw,
+      Math.max(1, size.height - padY * 2) / rh,
+    )
+    const maxFocusScale = Math.min(MAX_SCALE, fitView.scale * 7)
+    const minFocusScale = fitView.scale * 1.15
+    const scale = Math.min(maxFocusScale, Math.max(minFocusScale, targetScale))
+
+    const cx = (focusRegion.x + focusRegion.width / 2) * source.width
+    const cy = (focusRegion.y + focusRegion.height / 2) * source.height
+    setUserView(clampView({
+      scale,
+      x: size.width / 2 - cx * scale,
+      y: size.height / 2 - cy * scale,
+    }))
+  }, [clampView, fitView.scale, focusRegion, size, source])
+
   // Draw.
   useEffect(() => {
     const canvas = canvasRef.current
@@ -207,9 +259,20 @@ export default function SimpleCanvas({ source, display = null, label = PICTURE_L
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, size.width, size.height)
+    const drawW = source.width * view.scale
+    const drawH = source.height * view.scale
+    if (lightStage) {
+      ctx.save()
+      ctx.shadowColor = 'rgba(17, 17, 17, 0.12)'
+      ctx.shadowBlur = 18
+      ctx.shadowOffsetY = 4
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(view.x, view.y, drawW, drawH)
+      ctx.restore()
+    }
     ctx.imageSmoothingEnabled = view.scale < CRISP_SCALE
     ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(drawable, view.x, view.y, source.width * view.scale, source.height * view.scale)
+    ctx.drawImage(drawable, view.x, view.y, drawW, drawH)
 
     if (point) {
       const cx = view.x + (point.x + 0.5) * view.scale
@@ -229,7 +292,7 @@ export default function SimpleCanvas({ source, display = null, label = PICTURE_L
       ctx.strokeStyle = '#ffffff'
       ctx.stroke()
     }
-  }, [drawable, point, size, source, view])
+  }, [drawable, lightStage, point, size, source, view])
 
   const toLocal = useCallback((clientX: number, clientY: number) => {
     const bounds = canvasRef.current?.getBoundingClientRect()
@@ -496,10 +559,10 @@ export default function SimpleCanvas({ source, display = null, label = PICTURE_L
     }
   }, [hover, showLoupe, size])
 
-  const zoomPercent = Math.round(view.scale * 100)
+  const zoomPercent = fitView.scale > 0 ? Math.round((view.scale / fitView.scale) * 100) : 100
 
   return (
-    <div ref={frameRef} className={styles.stage}>
+    <div ref={frameRef} className={`${styles.stage} ${lightStage ? styles.stageLight : ''}`}>
       <canvas
         ref={canvasRef}
         className={`${styles.stageCanvas} ${isPanning ? styles.panning : ''}`}

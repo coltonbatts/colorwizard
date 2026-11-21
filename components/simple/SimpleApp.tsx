@@ -34,11 +34,12 @@ import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPane
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
-import { renderThreadMap, threadSlotAt } from './threadMapRender'
+import { renderThreadMap, slotBounds, threadSlotAt } from './threadMapRender'
+import { formatThreadShare } from '@/lib/dmc/map/mapFit'
 import { usePicturePlan } from './usePlan'
 import { useThreadMap } from './useThreadMap'
 import type { PourOrigin } from './pour'
-import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
+import SimpleCanvas, { type FocusRegion, type PickedColor, type SamplePoint } from './SimpleCanvas'
 import ThreadStudio, { type StudioTab, type ThreadSavePayload } from './ThreadStudio'
 import ThreadView from './ThreadView'
 import styles from './simple.module.css'
@@ -130,6 +131,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [threadPreferBox, setThreadPreferBox] = useState(false)
   const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
   const [markThreadMisses, setMarkThreadMisses] = useState(false)
+  const [focusRegion, setFocusRegion] = useState<FocusRegion | null>(null)
+  const focusIdRef = useRef(0)
   const dmcStash = useDmcStore((s) => s.stash)
   const isPhone = useMediaQuery('(max-width: 760px)')
   const isThreadSection = section === 'thread' && !planMode && !processMode
@@ -206,10 +209,14 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
     const image = ctx.createImageData(threadMap.width, threadMap.height)
-    image.data.set(renderThreadMap(threadMap, { selected: selectedThreadSlot, markMisses: markThreadMisses }))
+    image.data.set(renderThreadMap(threadMap, {
+      selected: selectedThreadSlot,
+      markMisses: markThreadMisses,
+      sourcePixels: threadMapState.sourcePixels,
+    }))
     ctx.putImageData(image, 0, 0)
     return canvas
-  }, [isThreadMapActive, peek, threadMap, selectedThreadSlot, markThreadMisses])
+  }, [isThreadMapActive, peek, threadMap, selectedThreadSlot, markThreadMisses, threadMapState.sourcePixels])
 
   const display = planMode
     ? planDisplay
@@ -239,6 +246,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setProcessPosition(0)
       setSelectedPile(null)
       setSelectedThreadSlot(null)
+      setFocusRegion(null)
     } catch {
       if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
     } finally {
@@ -496,6 +504,14 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       } else if (event.key === 'Escape') {
         setSelectedPile(null)
         setSelectedThreadSlot(null)
+      } else if (isThreadMapActive && threadMap && threadMap.slots.length > 0 && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+        event.preventDefault()
+        const count = threadMap.slots.length
+        const delta = event.key === 'ArrowRight' ? 1 : -1
+        setSelectedThreadSlot((current) => {
+          if (current === null) return delta > 0 ? 0 : count - 1
+          return (current + delta + count) % count
+        })
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
@@ -518,7 +534,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
     }
-  }, [choosePicture, openFile, source])
+  }, [choosePicture, isThreadMapActive, openFile, source, threadMap])
 
   const fileInput = (
     <input
@@ -707,9 +723,74 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                 : undefined
         }
         valueView={valueView}
+        lightStage={isThreadSection}
+        focusRegion={focusRegion}
         point={planMode || processMode || isThreadMapActive ? null : point}
         onSample={handleSample}
       >
+        {isThreadMapActive && threadMap && selectedThreadSlot !== null && threadMap.slots[selectedThreadSlot] && (() => {
+          const activeSlot = threadMap.slots[selectedThreadSlot]
+          const count = threadMap.slots.length
+          const hex = activeSlot.thread.hex
+          const r = parseInt(hex.slice(1, 3), 16)
+          const g = parseInt(hex.slice(3, 5), 16)
+          const b = parseInt(hex.slice(5, 7), 16)
+          const ink = (r * 299 + g * 587 + b * 114) / 1000 > 135 ? '#111111' : '#ffffff'
+          return (
+            <div className={threadStyles.stitchFocusBar} role="region" aria-label="Isolated thread">
+              <span
+                className={threadStyles.stitchFocusSwatch}
+                style={{ backgroundColor: hex, color: ink }}
+                aria-hidden="true"
+              >
+                {activeSlot.index + 1}
+              </span>
+              <div className={threadStyles.stitchFocusInfo}>
+                <strong>DMC {activeSlot.thread.number} · {formatThreadShare(activeSlot.area)}</strong>
+                <span>{activeSlot.thread.name}</span>
+              </div>
+              <div className={threadStyles.stitchFocusNav}>
+                <button
+                  type="button"
+                  className={threadStyles.stitchFocusBtn}
+                  aria-label="Previous thread"
+                  title="Previous thread (←)"
+                  onClick={() => setSelectedThreadSlot((selectedThreadSlot - 1 + count) % count)}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={threadStyles.stitchFocusBtn}
+                  aria-label="Next thread"
+                  title="Next thread (→)"
+                  onClick={() => setSelectedThreadSlot((selectedThreadSlot + 1) % count)}
+                >
+                  ›
+                </button>
+                <button
+                  type="button"
+                  className={`${threadStyles.stitchFocusBtn} ${threadStyles.stitchFocusBtnPrimary}`}
+                  title="Zoom in on where this thread goes"
+                  onClick={() => {
+                    const rect = slotBounds(threadMap, selectedThreadSlot)
+                    if (rect) setFocusRegion({ ...rect, id: ++focusIdRef.current })
+                  }}
+                >
+                  Zoom in
+                </button>
+                <button
+                  type="button"
+                  className={threadStyles.stitchFocusBtn}
+                  title="Show all threads (Esc)"
+                  onClick={() => setSelectedThreadSlot(null)}
+                >
+                  All
+                </button>
+              </div>
+            </div>
+          )
+        })()}
         {((planMode && plan) || (processMode && processStages) || (isThreadMapActive && threadMap)) && (
           <div className={styles.stageOverlay}>
             <button
@@ -781,7 +862,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         </aside>
       ) : isThreadSection ? (
         <aside className={styles.panel} aria-label="Thread">
-          <div className={styles.toolbar}>
+          <div className={`${styles.toolbar} ${threadStyles.brightToolbar}`}>
             <span className={styles.wordmarkSmall}>ColorWizard</span>
             {modeSwitch}
             <div className={styles.toolbarButtons}>

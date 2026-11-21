@@ -20,6 +20,8 @@ export interface ThreadMapState {
   status: 'idle' | 'building' | 'ready' | 'error'
   /** Active Thread Map (includes any live swaps). */
   result: ThreadMapResult | null
+  /** Working-copy RGBA pixels (same width × height as `result`) for tracing-paper isolation context. */
+  sourcePixels: Uint8ClampedArray | null
   /** True when the user has swapped at least one thread from the computed map. */
   hasSwaps: boolean
   error: string | null
@@ -179,11 +181,15 @@ export function useThreadMap(
 
   const current = state.source === source
   const result = current ? state.result : null
+  const sourcePixels = current && copyRef.current?.source === source
+    ? copyRef.current.copy?.data ?? null
+    : null
   const hasSwaps = Boolean(result && result.slots.some((s) => s.swapped))
 
   return {
     status: current ? state.status : 'idle',
     result,
+    sourcePixels,
     hasSwaps,
     error: current ? state.error : null,
     swapThread,
