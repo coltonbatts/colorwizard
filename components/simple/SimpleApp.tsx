@@ -40,6 +40,12 @@ import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPane
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
+import {
+  compileThreadMapPaths,
+  createThreadMapCanvasRenderer,
+  createThreadMapNavigatorRenderer,
+  type VellumMode,
+} from './threadMapCanvas'
 import { renderThreadMap, renderThreadMapOutline, slotBounds, threadSlotAt } from './threadMapRender'
 import { formatThreadShare } from '@/lib/dmc/map/mapFit'
 import { usePicturePlan } from './usePlan'
@@ -136,6 +142,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [threadMapOutlineNumbers, setThreadMapOutlineNumbers] = useState(true)
   const [threadMapOutlineMirror, setThreadMapOutlineMirror] = useState(false)
   const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
+  const [hoveredThreadSlot, setHoveredThreadSlot] = useState<number | null>(null)
+  const [compareSplit, setCompareSplit] = useState<number | null>(null)
+  const [vellumMode, setVellumMode] = useState<VellumMode>('tracing')
   const [markThreadMisses, setMarkThreadMisses] = useState(false)
   const [focusRegion, setFocusRegion] = useState<FocusRegion | null>(null)
   const focusIdRef = useRef(0)
@@ -276,72 +285,100 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     }
   }, [isThreadMapActive, threadMapOutline, threadMapOutlineNumbers, threadMap])
 
-  const threadMapDisplay = useMemo(() => {
-    if (!isThreadMapActive || peek || !threadMap) return null
+  const compiledThreadMap = useMemo(() => {
+    if (!isThreadMapActive || !threadMap) return null
+    return compileThreadMapPaths(threadMap)
+  }, [isThreadMapActive, threadMap])
+
+  const threadMapRenderer = useMemo(() => {
+    if (!isThreadMapActive || peek || !threadMap || !compiledThreadMap) return null
+    return createThreadMapCanvasRenderer(threadMap, compiledThreadMap, {
+      outline: threadMapOutline,
+      mirror: threadMapOutlineMirror,
+      showNumbers: threadMapOutlineNumbers,
+      outlineLabels,
+      selected: selectedThreadSlot,
+      hovered: hoveredThreadSlot,
+      vellumMode,
+      markMisses: markThreadMisses,
+    })
+  }, [
+    isThreadMapActive,
+    peek,
+    threadMap,
+    compiledThreadMap,
+    threadMapOutline,
+    threadMapOutlineMirror,
+    threadMapOutlineNumbers,
+    outlineLabels,
+    selectedThreadSlot,
+    hoveredThreadSlot,
+    vellumMode,
+    markThreadMisses,
+  ])
+
+  const threadMapNavigator = useMemo(() => {
+    if (!isThreadMapActive || peek || !threadMap || !compiledThreadMap) return null
+    return createThreadMapNavigatorRenderer(threadMap, compiledThreadMap, {
+      outline: threadMapOutline,
+      mirror: threadMapOutlineMirror,
+      selected: selectedThreadSlot,
+    })
+  }, [isThreadMapActive, peek, threadMap, compiledThreadMap, threadMapOutline, threadMapOutlineMirror, selectedThreadSlot])
+
+  const threadMapFallbackDisplay = useMemo(() => {
+    if (!isThreadMapActive || peek || !threadMap || compiledThreadMap) return null
     const canvas = document.createElement('canvas')
     canvas.width = threadMap.width
     canvas.height = threadMap.height
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
     const image = ctx.createImageData(threadMap.width, threadMap.height)
-    if (threadMapOutline) {
-      image.data.set(renderThreadMapOutline(threadMap, {
-        selected: selectedThreadSlot,
-        mirror: threadMapOutlineMirror,
-      }))
-      ctx.putImageData(image, 0, 0)
-      if (threadMapOutlineNumbers && outlineLabels) {
-        const r = outlineLabels.radius
-        const fontSize = Math.max(8, Math.round(r * 1.15))
-        ctx.save()
-        ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        for (const label of outlineLabels.placed.labels) {
-          const isFocus = selectedThreadSlot === null || label.pile === selectedThreadSlot
-          const cx = threadMapOutlineMirror ? threadMap.width - (label.x + 0.5) : label.x + 0.5
-          const cy = label.y + 0.5
-          ctx.beginPath()
-          ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2)
-          ctx.fillStyle = isFocus ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.72)'
-          ctx.fill()
-          ctx.lineWidth = Math.max(1, r * 0.14)
-          ctx.strokeStyle = isFocus ? 'rgba(27, 26, 24, 0.72)' : 'rgba(150, 147, 140, 0.45)'
-          ctx.stroke()
-          ctx.fillStyle = isFocus ? '#1b1a18' : 'rgba(120, 118, 112, 0.55)'
-          ctx.fillText(String(label.pile + 1), cx, cy + 0.5)
-        }
-        ctx.restore()
-      }
-    } else {
-      image.data.set(renderThreadMap(threadMap, {
-        selected: selectedThreadSlot,
-        markMisses: markThreadMisses,
-        sourcePixels: threadMapState.sourcePixels,
-      }))
-      ctx.putImageData(image, 0, 0)
-    }
+    image.data.set(
+      threadMapOutline
+        ? renderThreadMapOutline(threadMap, { selected: selectedThreadSlot, mirror: threadMapOutlineMirror })
+        : renderThreadMap(threadMap, {
+          selected: selectedThreadSlot,
+          markMisses: markThreadMisses,
+          sourcePixels: threadMapState.sourcePixels,
+        }),
+    )
+    ctx.putImageData(image, 0, 0)
     return canvas
   }, [
     isThreadMapActive,
     peek,
     threadMap,
+    compiledThreadMap,
     threadMapOutline,
     threadMapOutlineMirror,
-    threadMapOutlineNumbers,
-    outlineLabels,
     selectedThreadSlot,
     markThreadMisses,
     threadMapState.sourcePixels,
   ])
 
+  const renderDisplay = !planMode && !processMode && isThreadMapActive ? threadMapRenderer : null
   const display = planMode
     ? planDisplay
     : processMode && !peek
       ? processDisplay
       : isThreadMapActive
-        ? threadMapDisplay
+        ? threadMapFallbackDisplay
         : null
+
+  const handleHoverPixel = useCallback((pixel: { x: number; y: number } | null) => {
+    if (!isThreadMapActive || peek || !threadMap || !source || !pixel) {
+      setHoveredThreadSlot(null)
+      return
+    }
+    const sampleX = threadMapOutline && threadMapOutlineMirror ? source.width - 1 - pixel.x : pixel.x
+    const slot = threadSlotAt(threadMap, sampleX, pixel.y, source.width, source.height)
+    setHoveredThreadSlot(slot)
+  }, [isThreadMapActive, peek, source, threadMap, threadMapOutline, threadMapOutlineMirror])
+
+  useEffect(() => {
+    if (!isThreadMapActive) setHoveredThreadSlot(null)
+  }, [isThreadMapActive])
 
   const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string) => {
     const request = ++openRequestRef.current
@@ -363,6 +400,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setProcessPosition(0)
       setSelectedPile(null)
       setSelectedThreadSlot(null)
+      setHoveredThreadSlot(null)
+      setCompareSplit(null)
+      setVellumMode('tracing')
       setLockedThreadNumbers([])
       setThreadMapOutline(false)
       setThreadMapOutlineMirror(false)
@@ -608,7 +648,12 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     }
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+      if (
+        target.tagName === 'INPUT'
+        || target.tagName === 'TEXTAREA'
+        || target.isContentEditable
+        || target.getAttribute('role') === 'slider'
+      ) return
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') {
         event.preventDefault()
         choosePicture()
@@ -620,11 +665,16 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         setPeek(false)
         setProcessMode(false)
         setPlanMode((on) => !on)
+      } else if (event.key.toLowerCase() === 's' && (isThreadMapActive || planMode)) {
+        setCompareSplit((cur) => (cur === null ? 0.5 : null))
       } else if (event.key.toLowerCase() === 'b') {
         setPeek(true)
       } else if (event.key === 'Escape') {
         setSelectedPile(null)
-        setSelectedThreadSlot(null)
+        setSelectedThreadSlot((cur) => {
+          if (cur === null) setCompareSplit(null)
+          return null
+        })
       } else if (isThreadMapActive && threadMap && threadMap.slots.length > 0 && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
         event.preventDefault()
         const count = threadMap.slots.length
@@ -655,7 +705,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
     }
-  }, [choosePicture, isThreadMapActive, openFile, source, threadMap])
+  }, [choosePicture, isThreadMapActive, openFile, planMode, source, threadMap])
 
   const fileInput = (
     <input
@@ -843,6 +893,12 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         key={pictureId}
         source={source}
         display={display}
+        renderDisplay={renderDisplay}
+        renderNavigator={threadMapNavigator}
+        showNavigator
+        compareSplit={!peek && (isThreadMapActive || planMode) ? compareSplit : null}
+        onCompareSplitChange={setCompareSplit}
+        compareLabels={isThreadMapActive ? ['Original', threadMapOutline ? 'Outline' : 'Map'] : ['Original', 'Plan']}
         label={
           planMode
             ? `Your picture repainted with ${plan?.plan.piles.length ?? budget} piles. Click a part to see its pile, drag to move, scroll or pinch to zoom.`
@@ -857,6 +913,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         focusRegion={focusRegion}
         point={planMode || processMode || isThreadMapActive ? null : point}
         onSample={handleSample}
+        onHoverPixel={isThreadMapActive ? handleHoverPixel : undefined}
       >
         {isThreadMapActive && threadMap && selectedThreadSlot !== null && threadMap.slots[selectedThreadSlot] && (() => {
           const activeSlot = threadMap.slots[selectedThreadSlot]
@@ -866,6 +923,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           const g = parseInt(hex.slice(3, 5), 16)
           const b = parseInt(hex.slice(5, 7), 16)
           const ink = (r * 299 + g * 587 + b * 114) / 1000 > 135 ? '#111111' : '#ffffff'
+          const nextVellum: VellumMode = vellumMode === 'tracing' ? 'photo' : vellumMode === 'photo' ? 'paper' : 'tracing'
+          const vellumLabel = vellumMode === 'tracing' ? 'Tracing' : vellumMode === 'photo' ? 'Photo' : 'Paper'
           return (
             <div className={threadStyles.stitchFocusBar} role="region" aria-label="Isolated thread">
               <span
@@ -898,6 +957,16 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                 >
                   ›
                 </button>
+                {!threadMapOutline && (
+                  <button
+                    type="button"
+                    className={threadStyles.stitchFocusBtn}
+                    title={`Background reference: ${vellumLabel}. Click to cycle Tracing / Photo / Paper.`}
+                    onClick={() => setVellumMode(nextVellum)}
+                  >
+                    {vellumLabel}
+                  </button>
+                )}
                 <button
                   type="button"
                   className={`${threadStyles.stitchFocusBtn} ${threadStyles.stitchFocusBtnPrimary}`}
@@ -923,6 +992,27 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                   All
                 </button>
               </div>
+            </div>
+          )
+        })()}
+        {isThreadMapActive && !peek && threadMap && hoveredThreadSlot !== null && hoveredThreadSlot !== selectedThreadSlot && threadMap.slots[hoveredThreadSlot] && (() => {
+          const hoveredSlot = threadMap.slots[hoveredThreadSlot]
+          const hex = hoveredSlot.thread.hex
+          const r = parseInt(hex.slice(1, 3), 16)
+          const g = parseInt(hex.slice(3, 5), 16)
+          const b = parseInt(hex.slice(5, 7), 16)
+          const ink = (r * 299 + g * 587 + b * 114) / 1000 > 135 ? '#111111' : '#ffffff'
+          return (
+            <div className={threadStyles.hoverThreadPill} aria-hidden="true">
+              <span
+                className={threadStyles.hoverThreadDot}
+                style={{ backgroundColor: hex, color: ink }}
+              >
+                {hoveredSlot.index + 1}
+              </span>
+              <strong>DMC {hoveredSlot.thread.number}</strong>
+              <span className={threadStyles.hoverThreadName}>{hoveredSlot.thread.name}</span>
+              <span className={threadStyles.hoverThreadShare}>{formatThreadShare(hoveredSlot.area)}</span>
             </div>
           )
         })()}
@@ -963,13 +1053,36 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                       type="button"
                       className={threadStyles.stagePillBtn}
                       aria-pressed={threadMapOutlineMirror}
-                      onClick={() => setThreadMapOutlineMirror((on) => !on)}
+                      onClick={() => {
+                        setThreadMapOutlineMirror((on) => {
+                          if (!on) setCompareSplit(null)
+                          return !on
+                        })
+                      }}
                       title="Mirror outline horizontally for iron-on or back-of-fabric transfer"
                     >
                       Mirror
                     </button>
                   </>
                 )}
+                <span className={threadStyles.stageDivider} aria-hidden="true" />
+                <button
+                  type="button"
+                  className={threadStyles.stagePillBtn}
+                  aria-pressed={compareSplit !== null}
+                  onClick={() => {
+                    setCompareSplit((cur) => {
+                      if (cur === null) {
+                        setThreadMapOutlineMirror(false)
+                        return 0.5
+                      }
+                      return null
+                    })
+                  }}
+                  title="Drag a split curtain between original photo and map (S)"
+                >
+                  Split
+                </button>
               </div>
             )}
             <button
