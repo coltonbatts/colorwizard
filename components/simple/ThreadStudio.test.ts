@@ -174,6 +174,7 @@ describe('ThreadMapPanel', () => {
     mode: 'full-color',
     budget: 10,
     monochromeTone: null,
+    detail: 'painterly',
     preferBox: false,
     width: 4,
     height: 4,
@@ -216,8 +217,17 @@ describe('ThreadMapPanel', () => {
     onMonochromeBudgetChange: () => undefined,
     monochromeTone: 'warm-grays' as const,
     onMonochromeToneChange: () => undefined,
+    detail: 'painterly' as const,
+    onDetailChange: () => undefined,
     preferBox: false,
     onPreferBoxChange: () => undefined,
+    lockedNumbers: [] as string[],
+    onToggleLock: () => undefined,
+    onReplaceLock: () => undefined,
+    onClearLocks: () => undefined,
+    outlineMirror: false,
+    onOutlineMirrorChange: () => undefined,
+    outlineNumbers: true,
     selectedSlot: null,
     onSelectSlot: () => undefined,
     markMisses: true,
@@ -252,6 +262,13 @@ describe('ThreadMapPanel', () => {
     expect(html).toContain('Approx color')
     expect(html).toContain('Save to Tray')
     expect(html).toContain('Print map')
+    expect(html).toContain('Print outline')
+    expect(html).toContain('Shape detail')
+    expect(html).toContain('>Crisp<')
+    expect(html).toContain('>Painterly<')
+    expect(html).toContain('>Broad<')
+    expect(html).toContain('>Lock<')
+    expect(html).toContain('>Mirror<')
     expect(html).toContain('data-topic="thread"')
     expect(html).not.toMatch(/\bexact\b/i)
     expect(html).not.toMatch(/\bverified\b/i)

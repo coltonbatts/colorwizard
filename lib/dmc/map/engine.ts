@@ -10,7 +10,9 @@ import { ciede2000 } from '@/lib/paint/plan/deltaE'
 import { buildHistogram, coarsenHistogram, type Histogram } from '@/lib/paint/plan/histogram'
 import type { DMCThread, ImageOklabLRange } from '../types'
 import { getMonochromePool, selectMonochromeRamp } from './monochrome'
+import { smoothSlotMap } from './smooth'
 import {
+  DEFAULT_THREAD_MAP_DETAIL,
   NO_THREAD,
   VISIBLE_THREAD_MISS,
   type ThreadMapOptions,
@@ -111,31 +113,16 @@ export function computeHistogramOklabLRange(hist: Histogram, clipPercent = 0.02)
   return { min, max }
 }
 
-function weightedQuantile(values: Float64Array, weights: Float64Array, q: number): number {
-  if (values.length === 0) return 0
-  const order = Array.from({ length: values.length }, (_, i) => i)
-    .sort((a, b) => values[a] - values[b])
-  let total = 0
-  for (let i = 0; i < weights.length; i++) total += weights[i]
-  if (total <= 0) return 0
-  const target = q * total
-  let seen = 0
-  for (const idx of order) {
-    seen += weights[idx]
-    if (seen >= target) return values[idx]
-  }
-  return values[order[order.length - 1]]
-}
-
 /**
  * Deterministic k-medoids over DMC catalog threads:
- * weighted greedy forward medoid init + Voronoi/medoid swap refinement.
+ * optional locked seed medoids + weighted greedy forward medoid init + Voronoi/medoid swap refinement.
  */
 function selectFullColorThreads(
   fitHist: Histogram,
   allThreads: readonly DMCThread[],
   budget: number,
   ownedSet: Set<string> | null,
+  lockedNumbers?: readonly string[],
 ): DMCThread[] {
   const n = fitHist.size
   const m = allThreads.length
@@ -168,7 +155,7 @@ function selectFullColorThreads(
     }
   }
 
-  // Cost matrix [i * m + c]: value-prioritized CIEDE2000 (kL = 0.65) with gentle owned-thread preference.
+  // Cost matrix [i * m + c]: value-prioritized CIEDE2000 with gentle owned-thread preference.
   // Adding the bonus as a small offset on unowned threads keeps every cost >= 0 so close ties
   // cleanly favor owned skeins without clamping or spawning duplicate slots.
   const cost = new Float32Array(n * m)
@@ -183,11 +170,31 @@ function selectFullColorThreads(
     }
   }
 
-  // 1. Weighted greedy forward medoid initialization.
+  // 1. Seed fixed medoids for any stitcher-locked DMC threads, then weighted greedy forward init.
   const chosen: number[] = []
   const chosenFlag = new Uint8Array(m)
+  const lockedFlag = new Uint8Array(m)
   const currentBest = new Float64Array(n).fill(Infinity)
   const gain = new Float64Array(m)
+
+  if (lockedNumbers && lockedNumbers.length > 0) {
+    const idxByNumber = new Map<string, number>()
+    for (let c = 0; c < m; c++) {
+      idxByNumber.set(allThreads[c].number.toLowerCase(), c)
+    }
+    for (const raw of lockedNumbers) {
+      if (chosen.length >= effectiveBudget) break
+      const idx = idxByNumber.get(raw.trim().toLowerCase())
+      if (idx === undefined || chosenFlag[idx]) continue
+      chosen.push(idx)
+      chosenFlag[idx] = 1
+      lockedFlag[idx] = 1
+      for (let i = 0; i < n; i++) {
+        const d = cost[i * m + idx]
+        if (d < currentBest[i]) currentBest[i] = d
+      }
+    }
+  }
 
   while (chosen.length < effectiveBudget) {
     gain.fill(0)
@@ -229,7 +236,7 @@ function selectFullColorThreads(
     }
   }
 
-  // 2. Deterministic medoid swap refinement.
+  // 2. Deterministic medoid swap refinement (locked medoids are never replaced).
   const assignment = new Uint16Array(n)
   const assign = (): boolean => {
     let changed = false
@@ -256,6 +263,9 @@ function selectFullColorThreads(
   for (let iter = 0; iter < MAX_SWAP_ITERATIONS; iter++) {
     let replaced = false
     for (let p = 0; p < chosen.length; p++) {
+      const prevC = chosen[p]
+      if (lockedFlag[prevC]) continue
+
       clusterCost.fill(0)
       let clusterWeight = 0
       for (let i = 0; i < n; i++) {
@@ -267,7 +277,6 @@ function selectFullColorThreads(
       }
       if (clusterWeight <= 0) continue
 
-      const prevC = chosen[p]
       let bestC = prevC
       let bestVal = clusterCost[prevC]
       for (let c = 0; c < m; c++) {
@@ -301,25 +310,100 @@ interface ScoredAssignment {
   score: ThreadMapScore
 }
 
+function buildPixelHistIndex(
+  rgba: ArrayLike<number>,
+  pixelCount: number,
+  hist: Histogram,
+): Int32Array {
+  const entryOf = new Map<number, number>()
+  for (let i = 0; i < hist.size; i++) {
+    entryOf.set(
+      (hist.rgb[i * 3] << 16) | (hist.rgb[i * 3 + 1] << 8) | hist.rgb[i * 3 + 2],
+      i,
+    )
+  }
+  const pixelHistIdx = new Int32Array(pixelCount).fill(-1)
+  for (let p = 0; p < pixelCount; p++) {
+    if (rgba[p * 4 + 3] < 128) continue
+    const hi = entryOf.get((rgba[p * 4] << 16) | (rgba[p * 4 + 1] << 8) | rgba[p * 4 + 2])
+    if (hi !== undefined) pixelHistIdx[p] = hi
+  }
+  return pixelHistIdx
+}
+
 /**
- * Assigns every opaque pixel to one of `threads` and computes all per-slot and overall metrics.
+ * Assigns every opaque pixel to its nearest thread in `threads` (unsmoothed):
  * - `full-color`: nearest thread in CIEDE2000 (kL = 1).
  * - `monochrome`: nearest thread strictly by OKLab L.
  */
-function assignAndScore(
-  rgba: ArrayLike<number>,
-  width: number,
-  height: number,
+function assignInitialSlots(
+  pixelCount: number,
+  pixelHistIdx: Int32Array,
   hist: Histogram,
+  histLabs: Float64Array,
   threads: readonly DMCThread[],
+  threadLabs: readonly LabTuple[],
+  mode: 'full-color' | 'monochrome',
+): Uint8Array {
+  const k = threads.length
+  const histSlot = new Uint8Array(hist.size)
+
+  for (let i = 0; i < hist.size; i++) {
+    const l = histLabs[i * 3]
+    const a = histLabs[i * 3 + 1]
+    const b = histLabs[i * 3 + 2]
+    const okL = hist.oklab[i * 3]
+    let best = 0
+    let bestDist = Infinity
+
+    if (mode === 'monochrome') {
+      for (let s = 0; s < k; s++) {
+        const d = Math.abs(okL - threads[s].oklab.L)
+        if (d < bestDist - 1e-12) {
+          bestDist = d
+          best = s
+        }
+      }
+    } else {
+      for (let s = 0; s < k; s++) {
+        const [tl, ta, tb] = threadLabs[s]
+        const d = ciede2000(l, a, b, tl, ta, tb, 1)
+        if (d < bestDist - 1e-12) {
+          bestDist = d
+          best = s
+        }
+      }
+    }
+    histSlot[i] = best
+  }
+
+  const slot = new Uint8Array(pixelCount).fill(NO_THREAD)
+  for (let p = 0; p < pixelCount; p++) {
+    const hi = pixelHistIdx[p]
+    if (hi >= 0) slot[p] = histSlot[hi]
+  }
+  return slot
+}
+
+/**
+ * Honestly scores a final `slot` map against the ORIGINAL unsmoothed `rgba` pixels.
+ * Every metric (`meanDeltaE00`, `p95DeltaE00`, `meanDeltaL`, `visiblyOffArea`, per-slot
+ * `area`, `targetHex`, and per-pixel `visiblyOff`) is measured against the true photo pixels
+ * so spatial smoothing never fakes accuracy.
+ */
+function scoreSlotMap(
+  rgba: ArrayLike<number>,
+  pixelCount: number,
+  pixelHistIdx: Int32Array,
+  hist: Histogram,
+  histLabs: Float64Array,
+  threads: readonly DMCThread[],
+  threadLabs: readonly LabTuple[],
+  slot: Uint8Array,
   mode: 'full-color' | 'monochrome',
   swappedFlags?: readonly boolean[],
-  preservedSlotMap?: Uint8Array,
 ): ScoredAssignment {
   const k = threads.length
-  const threadLabs = threads.map(getThreadLab)
-  const histLabs = computeHistogramLab(hist)
-
   const areaCount = new Float64Array(k)
   const deltaESum = new Float64Array(k)
   const deltaLSum = new Float64Array(k)
@@ -331,122 +415,61 @@ function assignAndScore(
   let totalDeltaL = 0
   let offCount = 0
 
-  const pixelCount = width * height
-  const slot = new Uint8Array(pixelCount).fill(NO_THREAD)
   const visiblyOff = new Uint8Array(pixelCount)
+  const pixelDeltaE = new Float32Array(hist.total)
+  let opaqueIdx = 0
 
-  // Map packed RGB -> histogram index for O(1) pixel lookup.
-  const entryOf = new Map<number, number>()
-  for (let i = 0; i < hist.size; i++) {
-    entryOf.set(
-      (hist.rgb[i * 3] << 16) | (hist.rgb[i * 3 + 1] << 8) | hist.rgb[i * 3 + 2],
-      i,
-    )
-  }
+  // Lazy cache for CIEDE2000 per (histogramColor, slot) pair so 512x512 images stay fast.
+  const useCache = hist.size * k <= 2_500_000
+  const deCache = useCache ? new Float32Array(hist.size * k).fill(-1) : null
 
-  let entryDeltaE: Float64Array
-  let entryWeights: Float64Array
+  for (let p = 0; p < pixelCount; p++) {
+    const s = slot[p]
+    if (s === NO_THREAD || s >= k) continue
+    const hi = pixelHistIdx[p]
+    if (hi < 0) continue
+    const o = p * 4
 
-  if (preservedSlotMap) {
-    // Monochrome swap path: keep every pixel's exact region assignment, re-score against updated thread colors.
-    slot.set(preservedSlotMap)
-    const pixelDeltaE = new Float64Array(hist.total)
-    let opaqueIdx = 0
-    for (let p = 0; p < pixelCount; p++) {
-      const s = slot[p]
-      if (s === NO_THREAD || s >= k) continue
-      const o = p * 4
-      const r = rgba[o]
-      const g = rgba[o + 1]
-      const b = rgba[o + 2]
-      const hi = entryOf.get((r << 16) | (g << 8) | b)
-      if (hi === undefined) continue
-
-      const l = histLabs[hi * 3]
-      const a = histLabs[hi * 3 + 1]
-      const bLab = histLabs[hi * 3 + 2]
-      const [tl, ta, tb] = threadLabs[s]
-      const dE = ciede2000(l, a, bLab, tl, ta, tb, 1)
-      const dL = Math.abs(hist.oklab[hi * 3] - threads[s].oklab.L)
-
-      areaCount[s] += 1
-      deltaESum[s] += dE
-      deltaLSum[s] += dL
-      rgbSumR[s] += r
-      rgbSumG[s] += g
-      rgbSumB[s] += b
-      totalDeltaE += dE
-      totalDeltaL += dL
-      if (mode === 'full-color' && dE > VISIBLE_THREAD_MISS) {
-        visiblyOff[p] = 1
-        offCount += 1
-      }
-      if (opaqueIdx < pixelDeltaE.length) pixelDeltaE[opaqueIdx++] = dE
-    }
-    entryDeltaE = opaqueIdx === pixelDeltaE.length ? pixelDeltaE : pixelDeltaE.subarray(0, opaqueIdx)
-    entryWeights = new Float64Array(entryDeltaE.length).fill(1)
-  } else {
-    // Standard path: assign each distinct histogram color once, then broadcast to pixels.
-    const histSlot = new Uint8Array(hist.size)
-    entryDeltaE = new Float64Array(hist.size)
-    entryWeights = hist.count
-
-    for (let i = 0; i < hist.size; i++) {
-      const l = histLabs[i * 3]
-      const a = histLabs[i * 3 + 1]
-      const b = histLabs[i * 3 + 2]
-      const okL = hist.oklab[i * 3]
-      let best = 0
-      let bestDist = Infinity
-
-      if (mode === 'monochrome') {
-        for (let s = 0; s < k; s++) {
-          const d = Math.abs(okL - threads[s].oklab.L)
-          if (d < bestDist - 1e-12) {
-            bestDist = d
-            best = s
-          }
-        }
+    let dE: number
+    if (deCache) {
+      const cacheIdx = hi * k + s
+      const cached = deCache[cacheIdx]
+      if (cached >= 0) {
+        dE = cached
       } else {
-        for (let s = 0; s < k; s++) {
-          const [tl, ta, tb] = threadLabs[s]
-          const d = ciede2000(l, a, b, tl, ta, tb, 1)
-          if (d < bestDist - 1e-12) {
-            bestDist = d
-            best = s
-          }
-        }
+        const [tl, ta, tb] = threadLabs[s]
+        dE = ciede2000(histLabs[hi * 3], histLabs[hi * 3 + 1], histLabs[hi * 3 + 2], tl, ta, tb, 1)
+        deCache[cacheIdx] = dE
       }
-
-      const [tl, ta, tb] = threadLabs[best]
-      const dE = mode === 'full-color' ? bestDist : ciede2000(l, a, b, tl, ta, tb, 1)
-      const dL = Math.abs(okL - threads[best].oklab.L)
-      const count = hist.count[i]
-
-      histSlot[i] = best
-      entryDeltaE[i] = dE
-      areaCount[best] += count
-      deltaESum[best] += count * dE
-      deltaLSum[best] += count * dL
-      rgbSumR[best] += count * hist.rgb[i * 3]
-      rgbSumG[best] += count * hist.rgb[i * 3 + 1]
-      rgbSumB[best] += count * hist.rgb[i * 3 + 2]
-      totalDeltaE += count * dE
-      totalDeltaL += count * dL
-      if (mode === 'full-color' && dE > VISIBLE_THREAD_MISS) offCount += count
+    } else {
+      const [tl, ta, tb] = threadLabs[s]
+      dE = ciede2000(histLabs[hi * 3], histLabs[hi * 3 + 1], histLabs[hi * 3 + 2], tl, ta, tb, 1)
     }
 
-    for (let p = 0; p < pixelCount; p++) {
-      if (rgba[p * 4 + 3] < 128) continue
-      const hi = entryOf.get((rgba[p * 4] << 16) | (rgba[p * 4 + 1] << 8) | rgba[p * 4 + 2])!
-      slot[p] = histSlot[hi]
-      if (mode === 'full-color' && entryDeltaE[hi] > VISIBLE_THREAD_MISS) {
-        visiblyOff[p] = 1
-      }
+    const dL = Math.abs(hist.oklab[hi * 3] - threads[s].oklab.L)
+
+    areaCount[s] += 1
+    deltaESum[s] += dE
+    deltaLSum[s] += dL
+    rgbSumR[s] += rgba[o]
+    rgbSumG[s] += rgba[o + 1]
+    rgbSumB[s] += rgba[o + 2]
+    totalDeltaE += dE
+    totalDeltaL += dL
+    if (mode === 'full-color' && dE > VISIBLE_THREAD_MISS) {
+      visiblyOff[p] = 1
+      offCount += 1
     }
+    if (opaqueIdx < pixelDeltaE.length) pixelDeltaE[opaqueIdx++] = dE
   }
 
-  const totalOpaque = hist.total > 0 ? hist.total : 1
+  const activeDeltaE = opaqueIdx === pixelDeltaE.length ? pixelDeltaE : pixelDeltaE.subarray(0, opaqueIdx)
+  activeDeltaE.sort()
+  const p95DeltaE00 = activeDeltaE.length > 0
+    ? activeDeltaE[Math.min(activeDeltaE.length - 1, Math.max(0, Math.ceil(0.95 * activeDeltaE.length) - 1))]
+    : 0
+
+  const totalOpaque = opaqueIdx > 0 ? opaqueIdx : 1
   const slots: ThreadMapSlot[] = threads.map((thread, index) => {
     const n = areaCount[index]
     const targetHex = n > 0
@@ -470,7 +493,7 @@ function assignAndScore(
   const score: ThreadMapScore = {
     threadCount: slots.length,
     meanDeltaE00: totalDeltaE / totalOpaque,
-    p95DeltaE00: weightedQuantile(entryDeltaE, entryWeights, 0.95),
+    p95DeltaE00,
     meanDeltaL: totalDeltaL / totalOpaque,
     visiblyOffArea: mode === 'full-color' ? offCount / totalOpaque : 0,
     approximateThreads: slots.filter((s) => s.thread.colorConfidence === 'approximate').length,
@@ -494,11 +517,13 @@ export function buildThreadMap(
   if (hist.size === 0) throw new Error('The picture has no visible pixels')
   if (allThreads.length === 0) throw new Error('The DMC catalog is empty')
 
+  const detail = options.detail ?? DEFAULT_THREAD_MAP_DETAIL
   const imageOklabLRange = computeHistogramOklabLRange(hist, 0.02)
   const preferBox = Boolean(options.preferBox && options.ownedNumbers && options.ownedNumbers.length > 0)
   const ownedSet = preferBox
     ? new Set(options.ownedNumbers!.map((n) => n.trim().toLowerCase()))
     : null
+  const lockedSet = new Set((options.lockedNumbers ?? []).map((n) => n.trim().toLowerCase()).filter(Boolean))
 
   let chosenThreads: DMCThread[]
   const monochromeTone = options.mode === 'monochrome' ? (options.monochromeTone ?? 'warm-grays') : null
@@ -511,25 +536,69 @@ export function buildThreadMap(
     })
   } else {
     const fitHist = coarsenHistogram(hist, FIT_MAX_COLORS)
-    chosenThreads = selectFullColorThreads(fitHist, allThreads, options.budget, ownedSet)
+    chosenThreads = selectFullColorThreads(fitHist, allThreads, options.budget, ownedSet, options.lockedNumbers)
   }
 
-  let assigned = assignAndScore(rgba, width, height, hist, chosenThreads, options.mode)
+  const pixelCount = width * height
+  const histLabs = computeHistogramLab(hist)
+  const pixelHistIdx = buildPixelHistIndex(rgba, pixelCount, hist)
+  let threadLabs = chosenThreads.map(getThreadLab)
 
-  // In Full Color mode, drop any thread that ended up covering 0 pixels on the full histogram
-  // (never drop all threads; keep Monochrome ramps intact so every tonal step stays visible).
-  if (options.mode === 'full-color' && assigned.slots.length > 1) {
-    const usedThreads = assigned.slots.filter((s) => s.area > 0).map((s) => s.thread)
-    if (usedThreads.length > 0 && usedThreads.length < assigned.slots.length) {
-      assigned = assignAndScore(rgba, width, height, hist, usedThreads, options.mode)
+  const initialSlot = assignInitialSlots(
+    pixelCount,
+    pixelHistIdx,
+    hist,
+    histLabs,
+    chosenThreads,
+    threadLabs,
+    options.mode,
+  )
+  const cleanedSlot = smoothSlotMap(initialSlot, rgba, width, height, chosenThreads, detail)
+
+  // In Full Color mode, drop any unlocked slot that ended up at 0 pixels after smoothing
+  // (never drop all slots; keep Monochrome ramps and explicitly locked threads intact).
+  if (options.mode === 'full-color' && chosenThreads.length > 1) {
+    const counts = new Int32Array(chosenThreads.length)
+    for (let i = 0; i < cleanedSlot.length; i++) {
+      const s = cleanedSlot[i]
+      if (s !== NO_THREAD && s < chosenThreads.length) counts[s]++
+    }
+    const keptIndices: number[] = []
+    for (let s = 0; s < chosenThreads.length; s++) {
+      if (counts[s] > 0 || lockedSet.has(chosenThreads[s].number.toLowerCase())) {
+        keptIndices.push(s)
+      }
+    }
+    if (keptIndices.length > 0 && keptIndices.length < chosenThreads.length) {
+      const remap = new Uint8Array(chosenThreads.length).fill(NO_THREAD)
+      keptIndices.forEach((oldIdx, newIdx) => { remap[oldIdx] = newIdx })
+      for (let i = 0; i < cleanedSlot.length; i++) {
+        const s = cleanedSlot[i]
+        if (s !== NO_THREAD && s < chosenThreads.length) cleanedSlot[i] = remap[s]
+      }
+      chosenThreads = keptIndices.map((idx) => chosenThreads[idx])
+      threadLabs = keptIndices.map((idx) => threadLabs[idx])
     }
   }
+
+  const assigned = scoreSlotMap(
+    rgba,
+    pixelCount,
+    pixelHistIdx,
+    hist,
+    histLabs,
+    chosenThreads,
+    threadLabs,
+    cleanedSlot,
+    options.mode,
+  )
 
   const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
   return {
     mode: options.mode,
     budget: options.budget,
     monochromeTone,
+    detail,
     preferBox,
     width,
     height,
@@ -545,7 +614,7 @@ export function buildThreadMap(
 /**
  * Live-swaps a single thread in an existing Thread Map.
  * - Full Color mode: replaces the thread at `slotIndex`, re-assigns pixels by nearest CIEDE2000,
- *   and recomputes area shares, ΔE00, visibly-off mask, and scores.
+ *   applies the active spatial cleanup detail level, and honestly re-scores against original pixels.
  * - Monochrome mode: replaces the thread at `slotIndex` while preserving every slot's exact region
  *   so sculptural portrait planes stay steady while the stitcher tests a warmer/cooler or owned skein.
  */
@@ -562,18 +631,40 @@ export function swapMapThread(
   const hist = buildHistogram(rgba)
   if (hist.size === 0) return map
 
+  const pixelCount = map.width * map.height
   const updatedThreads = map.slots.map((s, idx) => (idx === slotIndex ? nextThread : s.thread))
   const swappedFlags = map.slots.map((s, idx) => (idx === slotIndex ? true : s.swapped))
+  const histLabs = computeHistogramLab(hist)
+  const pixelHistIdx = buildPixelHistIndex(rgba, pixelCount, hist)
+  const threadLabs = updatedThreads.map(getThreadLab)
 
-  const assigned = assignAndScore(
+  let finalSlot: Uint8Array
+  if (map.mode === 'monochrome') {
+    finalSlot = new Uint8Array(map.slot)
+  } else {
+    const initialSlot = assignInitialSlots(
+      pixelCount,
+      pixelHistIdx,
+      hist,
+      histLabs,
+      updatedThreads,
+      threadLabs,
+      'full-color',
+    )
+    finalSlot = smoothSlotMap(initialSlot, rgba, map.width, map.height, updatedThreads, map.detail)
+  }
+
+  const assigned = scoreSlotMap(
     rgba,
-    map.width,
-    map.height,
+    pixelCount,
+    pixelHistIdx,
     hist,
+    histLabs,
     updatedThreads,
+    threadLabs,
+    finalSlot,
     map.mode,
     swappedFlags,
-    map.mode === 'monochrome' ? map.slot : undefined,
   )
 
   const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0

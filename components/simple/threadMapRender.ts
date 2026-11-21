@@ -135,6 +135,105 @@ export function threadSlotAt(
   return owner === NO_THREAD || owner >= map.slots.length ? null : owner
 }
 
+export interface ThreadMapOutlineOptions {
+  /** Slot index to emphasize (bold dark contour; other boundaries softened), or null for all regions. */
+  selected: number | null
+  /** Flip horizontally for iron-on / back-of-fabric transfer. */
+  mirror?: boolean
+}
+
+const OUTLINE_BG_R = 255
+const OUTLINE_BG_G = 255
+const OUTLINE_BG_B = 255
+const OUTLINE_INK_R = 27
+const OUTLINE_INK_G = 26
+const OUTLINE_INK_B = 24
+const OUTLINE_MUTED_R = 204
+const OUTLINE_MUTED_G = 201
+const OUTLINE_MUTED_B = 195
+const OUTLINE_SELECTED_TINT_R = 242
+const OUTLINE_SELECTED_TINT_G = 240
+const OUTLINE_SELECTED_TINT_B = 234
+
+/**
+ * Renders a crisp B&W Fabric Transfer Outline of region boundaries on pure white paper.
+ * Uses single-pixel right/bottom edge detection (plus transparent silhouette closure) so
+ * lines stay razor-thin and clean for lightbox, window, or iron-on transfer.
+ */
+export function renderThreadMapOutline(
+  map: ThreadMapResult,
+  options: ThreadMapOutlineOptions = { selected: null, mirror: false },
+): Uint8ClampedArray {
+  const { width, height, slot, slots } = map
+  const out = new Uint8ClampedArray(width * height * 4)
+  const selected = options.selected
+  const mirror = Boolean(options.mirror)
+
+  for (let y = 0; y < height; y++) {
+    const rowOffset = y * width
+    for (let x = 0; x < width; x++) {
+      const p = rowOffset + x
+      const owner = slot[p]
+      const outX = mirror ? width - 1 - x : x
+      const o = (rowOffset + outX) * 4
+
+      if (owner === NO_THREAD || owner >= slots.length) {
+        out[o] = OUTLINE_BG_R
+        out[o + 1] = OUTLINE_BG_G
+        out[o + 2] = OUTLINE_BG_B
+        out[o + 3] = 255
+        continue
+      }
+
+      const rightDiff = x + 1 < width && slot[p + 1] !== owner
+      const downDiff = y + 1 < height && slot[p + width] !== owner
+      const leftVoid = x > 0 && slot[p - 1] === NO_THREAD
+      const upVoid = y > 0 && slot[p - width] === NO_THREAD
+      const isBoundary = rightDiff || downDiff || leftVoid || upVoid
+
+      if (selected !== null) {
+        const isSelectedPixel = owner === selected
+        const onSelectedEdge =
+          isSelectedPixel && (
+            (x > 0 && slot[p - 1] !== selected)
+            || (x + 1 < width && slot[p + 1] !== selected)
+            || (y > 0 && slot[p - width] !== selected)
+            || (y + 1 < height && slot[p + width] !== selected)
+          )
+
+        if (onSelectedEdge) {
+          out[o] = 17
+          out[o + 1] = 17
+          out[o + 2] = 17
+        } else if (isSelectedPixel) {
+          out[o] = OUTLINE_SELECTED_TINT_R
+          out[o + 1] = OUTLINE_SELECTED_TINT_G
+          out[o + 2] = OUTLINE_SELECTED_TINT_B
+        } else if (isBoundary) {
+          out[o] = OUTLINE_MUTED_R
+          out[o + 1] = OUTLINE_MUTED_G
+          out[o + 2] = OUTLINE_MUTED_B
+        } else {
+          out[o] = OUTLINE_BG_R
+          out[o + 1] = OUTLINE_BG_G
+          out[o + 2] = OUTLINE_BG_B
+        }
+      } else if (isBoundary) {
+        out[o] = OUTLINE_INK_R
+        out[o + 1] = OUTLINE_INK_G
+        out[o + 2] = OUTLINE_INK_B
+      } else {
+        out[o] = OUTLINE_BG_R
+        out[o + 1] = OUTLINE_BG_G
+        out[o + 2] = OUTLINE_BG_B
+      }
+      out[o + 3] = 255
+    }
+  }
+
+  return out
+}
+
 export interface NormalizedRect {
   x: number
   y: number
@@ -142,30 +241,134 @@ export interface NormalizedRect {
   height: number
 }
 
+interface ComponentBox {
+  count: number
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+
+function percentileIndex(counts: Int32Array, total: number, q: number): number {
+  const target = q * total
+  let seen = 0
+  for (let i = 0; i < counts.length; i++) {
+    seen += counts[i]
+    if (seen >= target) return i
+  }
+  return counts.length - 1
+}
+
 /**
- * Computes the tight normalized (0..1) bounding box of all pixels assigned to `slotIndex`,
- * for "Zoom to area" stitch focusing. Returns null if the thread has no pixels.
+ * Computes a cluster-aware, outlier-resistant normalized (0..1) bounding box for `slotIndex`
+ * so a tiny stray speckle on the opposite side of the photo cannot hijack "Zoom in".
+ *
+ * - Focuses on the dominant connected component when one region holds ≥ 65% of the thread.
+ * - Combines significant regions (ignoring tiny <5% outlier specks) for multi-region threads.
+ * - Falls back to trimmed 5th–95th percentile bounds for finely scattered accent threads,
+ *   and exact tight bounds for genuinely tiny accent highlights.
  */
 export function slotBounds(map: ThreadMapResult, slotIndex: number): NormalizedRect | null {
   const { width, height, slot } = map
-  let minX = width
-  let minY = height
-  let maxX = -1
-  let maxY = -1
+  const n = width * height
+  if (n === 0) return null
+
+  const colCounts = new Int32Array(width)
+  const rowCounts = new Int32Array(height)
+  let totalPixels = 0
 
   for (let y = 0; y < height; y++) {
     const row = y * width
     for (let x = 0; x < width; x++) {
       if (slot[row + x] === slotIndex) {
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
+        totalPixels++
+        colCounts[x]++
+        rowCounts[y]++
       }
     }
   }
 
-  if (maxX < minX || maxY < minY) return null
+  if (totalPixels === 0) return null
+
+  // Extract 8-connected components for `slotIndex`.
+  const visited = new Uint8Array(n)
+  const queue = new Int32Array(totalPixels)
+  const components: ComponentBox[] = []
+
+  for (let start = 0; start < n; start++) {
+    if (slot[start] !== slotIndex || visited[start]) continue
+    let head = 0
+    let tail = 0
+    queue[tail++] = start
+    visited[start] = 1
+
+    const sx = start % width
+    const sy = (start - sx) / width
+    let minX = sx
+    let maxX = sx
+    let minY = sy
+    let maxY = sy
+
+    while (head < tail) {
+      const p = queue[head++]
+      const x = p % width
+      const y = (p - x) / width
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+
+      const yMin = y > 0 ? y - 1 : 0
+      const yMax = y + 1 < height ? y + 1 : height - 1
+      const xMin = x > 0 ? x - 1 : 0
+      const xMax = x + 1 < width ? x + 1 : width - 1
+      for (let ny = yMin; ny <= yMax; ny++) {
+        const nRow = ny * width
+        for (let nx = xMin; nx <= xMax; nx++) {
+          const q = nRow + nx
+          if (!visited[q] && slot[q] === slotIndex) {
+            visited[q] = 1
+            queue[tail++] = q
+          }
+        }
+      }
+    }
+
+    components.push({ count: tail, minX, maxX, minY, maxY })
+  }
+
+  components.sort((a, b) => b.count - a.count || a.minY - b.minY || a.minX - b.minX)
+
+  const largest = components[0]
+  let minX = largest.minX
+  let maxX = largest.maxX
+  let minY = largest.minY
+  let maxY = largest.maxY
+
+  if (largest.count >= totalPixels * 0.65) {
+    // Dominant primary region: zoom straight onto it, ignoring stray speckles.
+  } else if (largest.count >= totalPixels * 0.25 || totalPixels < 20) {
+    // Multi-region thread (e.g. pair of eyes or petals): include significant components up to 75% bulk,
+    // excluding tiny outlier specks (< 5% of thread pixels and < 4px).
+    let covered = largest.count
+    const minSignificant = totalPixels >= 20 ? Math.max(4, totalPixels * 0.05) : 1
+    for (let i = 1; i < components.length && covered < totalPixels * 0.75; i++) {
+      const comp = components[i]
+      if (comp.count < minSignificant) break
+      if (comp.minX < minX) minX = comp.minX
+      if (comp.maxX > maxX) maxX = comp.maxX
+      if (comp.minY < minY) minY = comp.minY
+      if (comp.maxY > maxY) maxY = comp.maxY
+      covered += comp.count
+    }
+  } else {
+    // Finely scattered dots/texture: use trimmed 5th–95th percentile bounds so far outliers can't hijack zoom.
+    minX = percentileIndex(colCounts, totalPixels, 0.05)
+    maxX = percentileIndex(colCounts, totalPixels, 0.95)
+    minY = percentileIndex(rowCounts, totalPixels, 0.05)
+    maxY = percentileIndex(rowCounts, totalPixels, 0.95)
+  }
+
   return {
     x: minX / width,
     y: minY / height,

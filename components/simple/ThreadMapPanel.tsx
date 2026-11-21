@@ -26,16 +26,22 @@ import {
   MONOCHROME_MAX,
   MONOCHROME_MIN,
   MONOCHROME_TONES,
+  THREAD_MAP_DETAILS,
   type FullColorBudget,
   type MonochromeBudget,
   type MonochromeTone,
+  type ThreadMapDetail,
   type ThreadMapMode,
 } from '@/lib/dmc/map/types'
-import { formatThreadTone, threadTone } from '@/lib/dmc/studio'
+import { formatThreadTone, searchDmcThreads, threadTone } from '@/lib/dmc/studio'
 import type { DMCThread } from '@/lib/dmc/types'
 import BasisNote from './BasisNote'
 import ThreadMapCard from './ThreadMapCard'
-import { renderThreadMapImages, type ThreadMapImages } from './threadMapImages'
+import {
+  renderThreadMapImages,
+  renderThreadMapOutlineImages,
+  type ThreadMapImages,
+} from './threadMapImages'
 import type { ThreadMapState } from './useThreadMap'
 import styles from './threadStudio.module.css'
 
@@ -58,8 +64,17 @@ export interface ThreadMapPanelProps {
   onMonochromeBudgetChange: (budget: MonochromeBudget) => void
   monochromeTone: MonochromeTone
   onMonochromeToneChange: (tone: MonochromeTone) => void
+  detail: ThreadMapDetail
+  onDetailChange: (detail: ThreadMapDetail) => void
   preferBox: boolean
   onPreferBoxChange: (prefer: boolean) => void
+  lockedNumbers: readonly string[]
+  onToggleLock: (number: string) => void
+  onReplaceLock: (oldNumber: string, newNumber: string) => void
+  onClearLocks: () => void
+  outlineMirror: boolean
+  onOutlineMirrorChange: (mirror: boolean) => void
+  outlineNumbers: boolean
   selectedSlot: number | null
   onSelectSlot: (slot: number | null) => void
   markMisses: boolean
@@ -84,8 +99,17 @@ export default function ThreadMapPanel({
   onMonochromeBudgetChange,
   monochromeTone,
   onMonochromeToneChange,
+  detail,
+  onDetailChange,
   preferBox,
   onPreferBoxChange,
+  lockedNumbers,
+  onToggleLock,
+  onReplaceLock,
+  onClearLocks,
+  outlineMirror,
+  onOutlineMirrorChange,
+  outlineNumbers,
   selectedSlot,
   onSelectSlot,
   markMisses,
@@ -101,15 +125,24 @@ export default function ThreadMapPanel({
   const building = status === 'building'
   const rowRefs = useRef<Array<HTMLLIElement | null>>([])
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null)
+  const [swapQuery, setSwapQuery] = useState('')
   const [actionStatus, setActionStatus] = useState<{ ok: boolean; text: string } | null>(null)
   const [printJob, setPrintJob] = useState<{ card: ThreadMapCardModel; images: ThreadMapImages } | null>(null)
 
   const summary = useMemo(() => (result ? describeThreadMap(result) : null), [result])
+  const lockedSet = useMemo(
+    () => new Set(lockedNumbers.map((n) => n.trim().toLowerCase())),
+    [lockedNumbers],
+  )
 
   useEffect(() => {
     setPrintJob(null)
     setActionStatus(null)
   }, [result])
+
+  useEffect(() => {
+    setSwapQuery('')
+  }, [swappingIndex])
 
   useEffect(() => {
     if (selectedSlot !== null) {
@@ -145,11 +178,13 @@ export default function ThreadMapPanel({
     else onFullColorBudgetChange(clamped)
   }
 
-  const handlePrint = () => {
-    // Keep the Print button enabled while a print job is active so keyboard focus never drops to <body>.
+  const startPrint = (variant: 'color-map' | 'transfer-outline') => {
+    // Keep print buttons enabled while a print job is active so keyboard focus never drops to <body>.
     if (!result || !source || printJob) return
     try {
-      const images = renderThreadMapImages(result, source)
+      const images = variant === 'transfer-outline'
+        ? renderThreadMapOutlineImages(result, outlineMirror)
+        : renderThreadMapImages(result, source)
       if (!images) throw new Error('No canvas available for thread map print')
       const dateText = new Date().toLocaleDateString(undefined, {
         year: 'numeric',
@@ -157,6 +192,9 @@ export default function ThreadMapPanel({
         day: 'numeric',
       })
       const card = buildThreadMapCard(result, {
+        variant,
+        mirror: variant === 'transfer-outline' ? outlineMirror : false,
+        showNumbers: variant === 'transfer-outline' ? outlineNumbers : true,
         pictureName,
         modeLabel: formatThreadMapModeLabel(result),
         dateText,
@@ -167,6 +205,15 @@ export default function ThreadMapPanel({
       console.error('Building Thread Map card failed', err)
       setActionStatus({ ok: false, text: 'Couldn’t prepare the printable Thread Map.' })
     }
+  }
+
+  const applySwap = (slotIndex: number, currentNumber: string, nextThread: DMCThread) => {
+    if (lockedSet.has(currentNumber.toLowerCase())) {
+      onReplaceLock(currentNumber, nextThread.number)
+    }
+    swapThread(slotIndex, nextThread)
+    setSwappingIndex(null)
+    setSwapQuery('')
   }
 
   const handleSendToTray = () => {
@@ -260,6 +307,25 @@ export default function ThreadMapPanel({
           />
         </div>
 
+        {/* Shape detail: spatial region cleanup level */}
+        <div className={styles.mapDetailBlock}>
+          <span className={styles.mapSliderLabel}>Shape detail</span>
+          <div className={styles.mapDetailRow} role="group" aria-label="Shape detail">
+            {THREAD_MAP_DETAILS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={styles.mapToneBtn}
+                aria-pressed={detail === preset.id}
+                onClick={() => onDetailChange(preset.id)}
+                title={preset.description}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {stash.length > 0 && (
           <label className={styles.mapCheck}>
             <input
@@ -311,9 +377,30 @@ export default function ThreadMapPanel({
               type="button"
               className={styles.btnSecondary}
               disabled={building || !source}
-              onClick={handlePrint}
+              onClick={() => startPrint('color-map')}
             >
               Print map
+            </button>
+          </div>
+
+          <div className={styles.mapTransferRow}>
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              disabled={building || !source}
+              onClick={() => startPrint('transfer-outline')}
+              title="Print a clean 1-page black-and-white outline for fabric transfer"
+            >
+              {outlineMirror ? 'Print outline (mirrored)' : 'Print outline'}
+            </button>
+            <button
+              type="button"
+              className={styles.boxBtn}
+              aria-pressed={outlineMirror}
+              onClick={() => onOutlineMirrorChange(!outlineMirror)}
+              title="Flip the transfer outline horizontally for iron-on or back-of-fabric tracing"
+            >
+              Mirror
             </button>
             {hasSwaps && (
               <button
@@ -325,6 +412,15 @@ export default function ThreadMapPanel({
                 }}
               >
                 Reset swaps
+              </button>
+            )}
+            {!isMono && lockedNumbers.length > 0 && (
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={onClearLocks}
+              >
+                Unlock all ({lockedNumbers.length})
               </button>
             )}
           </div>
@@ -385,12 +481,22 @@ export default function ThreadMapPanel({
             {result.slots.map((slot) => {
               const isolated = selectedSlot === slot.index
               const owned = stash.includes(slot.thread.number)
+              const locked = !isMono && lockedSet.has(slot.thread.number.toLowerCase())
               const swapOpen = swappingIndex === slot.index
               const tone = formatThreadTone(threadTone(slot.thread))
               const otherNumbers = result.slots
                 .filter((other) => other.index !== slot.index)
                 .map((other) => other.thread.number)
-              const swapOptions = swapOpen
+              const otherSet = swapOpen
+                ? new Set(otherNumbers.map((n) => n.toLowerCase()))
+                : null
+              const trimmedQuery = swapOpen ? swapQuery.trim() : ''
+              const searchHits = swapOpen && trimmedQuery
+                ? searchDmcThreads(allThreads, trimmedQuery, 16).filter(
+                  (cand) => cand.number.toLowerCase() !== slot.thread.number.toLowerCase(),
+                )
+                : null
+              const swapOptions = swapOpen && !trimmedQuery
                 ? getSwapOptions(slot.thread, allThreads, stash, otherNumbers)
                 : null
 
@@ -423,12 +529,26 @@ export default function ThreadMapPanel({
                         <small className={styles.mapRowMeta}>
                           {tone}
                           {slot.thread.colorConfidence === 'approximate' ? ' · Approx color' : ''}
+                          {locked ? ' · Locked' : ''}
                           {slot.swapped ? ' · Swapped' : ''}
                         </small>
                       </span>
                     </button>
 
                     <div className={styles.mapRowActions}>
+                      {!isMono && (
+                        <button
+                          type="button"
+                          className={styles.boxBtn}
+                          aria-pressed={locked}
+                          onClick={() => onToggleLock(slot.thread.number)}
+                          title={locked
+                            ? `Unlock DMC ${slot.thread.number} so thread-count changes can replace it`
+                            : `Lock DMC ${slot.thread.number} so thread-count changes keep it`}
+                        >
+                          {locked ? 'Locked' : 'Lock'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className={styles.boxBtn}
@@ -450,7 +570,7 @@ export default function ThreadMapPanel({
                     </div>
                   </div>
 
-                  {swapOpen && swapOptions && (
+                  {swapOpen && (
                     <div className={styles.swapPicker} aria-label={`Swap options for thread ${slot.index + 1}`}>
                       <div className={styles.swapHeader}>
                         <span>
@@ -465,89 +585,133 @@ export default function ThreadMapPanel({
                         </button>
                       </div>
 
-                      {(swapOptions.lighter.length > 0 || swapOptions.darker.length > 0) && (
-                        <div className={styles.swapGroup}>
-                          <span className={styles.swapGroupLabel}>Family ladder ({slot.thread.familyLabel})</span>
-                          <div className={styles.chipGrid}>
-                            {swapOptions.lighter.map((cand) => (
-                              <button
-                                key={cand.id}
-                                type="button"
-                                className={styles.threadChip}
-                                onClick={() => {
-                                  swapThread(slot.index, cand)
-                                  setSwappingIndex(null)
-                                }}
-                              >
-                                <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
-                                <code>{cand.number}</code>
-                                <small>Lighter</small>
-                              </button>
-                            ))}
-                            {swapOptions.darker.map((cand) => (
-                              <button
-                                key={cand.id}
-                                type="button"
-                                className={styles.threadChip}
-                                onClick={() => {
-                                  swapThread(slot.index, cand)
-                                  setSwappingIndex(null)
-                                }}
-                              >
-                                <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
-                                <code>{cand.number}</code>
-                                <small>Darker</small>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div className={styles.swapSearchRow}>
+                        <input
+                          type="search"
+                          className={styles.swapSearchInput}
+                          value={swapQuery}
+                          onChange={(event) => setSwapQuery(event.target.value)}
+                          placeholder="Search all 488 DMC by # or name…"
+                          aria-label={`Search all 488 DMC threads to replace slot ${slot.index + 1}`}
+                          spellCheck={false}
+                        />
+                        {swapQuery && (
+                          <button
+                            type="button"
+                            className={styles.swapSearchClear}
+                            aria-label="Clear swap search"
+                            onClick={() => setSwapQuery('')}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
 
-                      {swapOptions.closestOwned && (
+                      {searchHits ? (
                         <div className={styles.swapGroup}>
-                          <span className={styles.swapGroupLabel}>Closest in your box</span>
-                          <div className={styles.chipGrid}>
-                            <button
-                              type="button"
-                              className={styles.threadChip}
-                              onClick={() => {
-                                swapThread(slot.index, swapOptions.closestOwned!)
-                                setSwappingIndex(null)
-                              }}
-                            >
-                              <i style={{ backgroundColor: swapOptions.closestOwned.hex }} aria-hidden="true" />
-                              <code>{swapOptions.closestOwned.number}</code>
-                              <small>
-                                {swapOptions.closestOwned.name} · {formatCatalogDeltaE00(swapOptions.closestOwned.deltaE00)}
-                              </small>
-                            </button>
-                          </div>
+                          <span className={styles.swapGroupLabel}>
+                            {searchHits.length > 0
+                              ? `${searchHits.length} ${searchHits.length === 1 ? 'match' : 'matches'} across 488 DMC`
+                              : 'Catalog search'}
+                          </span>
+                          {searchHits.length === 0 ? (
+                            <p className={styles.statusText}>No DMC threads match “{trimmedQuery}.”</p>
+                          ) : (
+                            <div className={styles.chipGrid}>
+                              {searchHits.map((cand) => {
+                                const alreadyInMap = Boolean(otherSet?.has(cand.number.toLowerCase()))
+                                return (
+                                  <button
+                                    key={cand.id}
+                                    type="button"
+                                    className={styles.threadChip}
+                                    disabled={alreadyInMap}
+                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                  >
+                                    <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
+                                    <code>{cand.number}</code>
+                                    <small>{alreadyInMap ? `${cand.name} · In map` : cand.name}</small>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ) : swapOptions && (
+                        <>
+                          {(swapOptions.lighter.length > 0 || swapOptions.darker.length > 0) && (
+                            <div className={styles.swapGroup}>
+                              <span className={styles.swapGroupLabel}>Family ladder ({slot.thread.familyLabel})</span>
+                              <div className={styles.chipGrid}>
+                                {swapOptions.lighter.map((cand) => (
+                                  <button
+                                    key={cand.id}
+                                    type="button"
+                                    className={styles.threadChip}
+                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                  >
+                                    <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
+                                    <code>{cand.number}</code>
+                                    <small>Lighter</small>
+                                  </button>
+                                ))}
+                                {swapOptions.darker.map((cand) => (
+                                  <button
+                                    key={cand.id}
+                                    type="button"
+                                    className={styles.threadChip}
+                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                  >
+                                    <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
+                                    <code>{cand.number}</code>
+                                    <small>Darker</small>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
-                      {swapOptions.substitutes.length > 0 && (
-                        <div className={styles.swapGroup}>
-                          <span className={styles.swapGroupLabel}>Closest DMC substitutes</span>
-                          <div className={styles.chipGrid}>
-                            {swapOptions.substitutes.map((sub) => (
-                              <button
-                                key={sub.id}
-                                type="button"
-                                className={styles.threadChip}
-                                onClick={() => {
-                                  swapThread(slot.index, sub)
-                                  setSwappingIndex(null)
-                                }}
-                              >
-                                <i style={{ backgroundColor: sub.hex }} aria-hidden="true" />
-                                <code>{sub.number}</code>
-                                <small>
-                                  {formatThreadTone(threadTone(sub))} · {formatCatalogDeltaE00(sub.deltaE00)}
-                                </small>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                          {swapOptions.closestOwned && (
+                            <div className={styles.swapGroup}>
+                              <span className={styles.swapGroupLabel}>Closest in your box</span>
+                              <div className={styles.chipGrid}>
+                                <button
+                                  type="button"
+                                  className={styles.threadChip}
+                                  onClick={() => applySwap(slot.index, slot.thread.number, swapOptions.closestOwned!)}
+                                >
+                                  <i style={{ backgroundColor: swapOptions.closestOwned.hex }} aria-hidden="true" />
+                                  <code>{swapOptions.closestOwned.number}</code>
+                                  <small>
+                                    {swapOptions.closestOwned.name} · {formatCatalogDeltaE00(swapOptions.closestOwned.deltaE00)}
+                                  </small>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {swapOptions.substitutes.length > 0 && (
+                            <div className={styles.swapGroup}>
+                              <span className={styles.swapGroupLabel}>Closest DMC substitutes</span>
+                              <div className={styles.chipGrid}>
+                                {swapOptions.substitutes.map((sub) => (
+                                  <button
+                                    key={sub.id}
+                                    type="button"
+                                    className={styles.threadChip}
+                                    onClick={() => applySwap(slot.index, slot.thread.number, sub)}
+                                  >
+                                    <i style={{ backgroundColor: sub.hex }} aria-hidden="true" />
+                                    <code>{sub.number}</code>
+                                    <small>
+                                      {formatThreadTone(threadTone(sub))} · {formatCatalogDeltaE00(sub.deltaE00)}
+                                    </small>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

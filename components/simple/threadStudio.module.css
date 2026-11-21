@@ -1731,6 +1731,116 @@
   background: #2b2a28;
 }
 
+.mapDetailBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mapDetailRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.mapTransferRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.mapTransferRow .btnSecondary {
+  flex: 1 1 auto;
+  border-radius: 8px;
+}
+
+.swapSearchRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.swapSearchInput {
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 28px 4px 9px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  border-radius: 7px;
+  background: var(--s-paper);
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--s-ink);
+}
+
+.swapSearchInput:focus {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+  background: #ffffff;
+}
+
+.swapSearchClear {
+  position: absolute;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--s-ink-2);
+}
+
+.swapSearchClear:hover {
+  background: rgba(17, 17, 17, 0.06);
+  color: var(--s-ink);
+}
+
+/* Stage floating Map / Outline / Numbers / Mirror pill bar */
+.stageViewBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 3px 12px rgba(17, 17, 17, 0.1);
+}
+
+.stagePillBtn {
+  min-height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--s-ink-2) !important;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stagePillBtn:hover {
+  color: #111111 !important;
+  background: rgba(17, 17, 17, 0.05);
+}
+
+.stagePillBtn[aria-pressed='true'] {
+  background: #111111;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.stageDivider {
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: rgba(17, 17, 17, 0.14);
+}
+
 .brightToolbar {
   background: #ffffff;
 }

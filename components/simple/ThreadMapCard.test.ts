@@ -99,4 +99,45 @@ describe('ThreadMapCard markup', () => {
     expect(html).toContain('body &gt; *:not([data-thread-map-card]) { display: none !important; }')
     expect(html).toContain('@page { margin: 10mm; }')
   })
+
+  it('renders a grayscale-safe 1-page B&W Transfer Outline card with mirror note, single outline <img>, and caveats', () => {
+    const image = CORPUS.find((img) => img.name === 'landscape')!
+    const map = buildThreadMap(image.data, image.width, image.height, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 10,
+    })
+    const card = buildThreadMapCard(map, {
+      variant: 'transfer-outline',
+      mirror: true,
+      showNumbers: true,
+      pictureName: 'landscape',
+      dateText: 'November 20, 2026',
+      ownedNumbers: [map.slots[0].thread.number],
+    })
+    const html = renderToStaticMarkup(
+      createElement(ThreadMapCard, {
+        card,
+        images: {
+          original: '',
+          repaint: 'data:image/png;base64,BBBB',
+          outline: 'data:image/png;base64,BBBB',
+        },
+        onDone: () => undefined,
+        autoPrint: false,
+      }),
+    )
+
+    expect(html).toContain('data-variant="transfer-outline"')
+    expect(html).toContain('Mirrored fabric transfer outline')
+    expect((html.match(/<img /g) ?? []).length).toBe(1)
+    expect((html.match(/<li /g) ?? []).length).toBe(map.slots.length)
+    expect(html).toContain('[x]')
+    expect(html).toContain('[ ]')
+    const body = stripHtml(html)
+    for (const line of card.caveats) {
+      expect(body).toContain(stripHtml(line))
+    }
+    expect(body).not.toMatch(/\bexact\b/i)
+    expect(body).not.toMatch(/\bverified\b/i)
+  })
 })

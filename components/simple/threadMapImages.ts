@@ -1,16 +1,18 @@
 /**
- * Generates the two data URL images for the printable 1-page Studio Thread Map card.
+ * Generates data URL images for the printable 1-page Studio Thread Map card
+ * (standard Color Map + Original, or clean B&W Fabric Transfer Outline).
  * Browser only (canvas); nothing leaves the device.
  */
 
 import type { ThreadMapResult } from '@/lib/dmc/map/types'
-import { renderThreadMap } from './threadMapRender'
+import { renderThreadMap, renderThreadMapOutline } from './threadMapRender'
 
 const CARD_ORIGINAL_MAX = 1200
 
 export interface ThreadMapImages {
   original: string
   repaint: string
+  outline?: string
 }
 
 export function renderThreadMapImages(
@@ -40,5 +42,25 @@ export function renderThreadMapImages(
   return {
     original: originalCanvas.toDataURL('image/jpeg', 0.9),
     repaint: repaintCanvas.toDataURL('image/png'),
+  }
+}
+
+export function renderThreadMapOutlineImages(
+  map: ThreadMapResult,
+  mirror: boolean,
+): ThreadMapImages | null {
+  const outlineCanvas = document.createElement('canvas')
+  outlineCanvas.width = map.width
+  outlineCanvas.height = map.height
+  const outlineCtx = outlineCanvas.getContext('2d')
+  if (!outlineCtx) return null
+  const image = outlineCtx.createImageData(map.width, map.height)
+  image.data.set(renderThreadMapOutline(map, { selected: null, mirror }))
+  outlineCtx.putImageData(image, 0, 0)
+  const outline = outlineCanvas.toDataURL('image/png')
+  return {
+    original: '',
+    repaint: outline,
+    outline,
   }
 }

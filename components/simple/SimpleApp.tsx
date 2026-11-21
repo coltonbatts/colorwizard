@@ -14,13 +14,19 @@ import { hexToRgb } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
 import { computeImageValueContextFromCanvas } from '@/lib/dmc/studio'
 import {
-  DEFAULT_FULL_COLOR_BUDGET,
-  DEFAULT_MONOCHROME_BUDGET,
-  type FullColorBudget,
-  type MonochromeBudget,
-  type MonochromeTone,
-  type ThreadMapMode,
+  DEFAULT_THREAD_MAP_PREFS,
+  loadThreadMapPrefs,
+  storeThreadMapPrefs,
+  type ThreadMapPrefs,
+} from '@/lib/dmc/map/prefs'
+import type {
+  FullColorBudget,
+  MonochromeBudget,
+  MonochromeTone,
+  ThreadMapDetail,
+  ThreadMapMode,
 } from '@/lib/dmc/map/types'
+import { placeLabels } from '@/lib/paint/plan/labels'
 import { useDmcStore } from '@/lib/store/useDmcStore'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
@@ -34,7 +40,7 @@ import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPane
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
-import { renderThreadMap, slotBounds, threadSlotAt } from './threadMapRender'
+import { renderThreadMap, renderThreadMapOutline, slotBounds, threadSlotAt } from './threadMapRender'
 import { formatThreadShare } from '@/lib/dmc/map/mapFit'
 import { usePicturePlan } from './usePlan'
 import { useThreadMap } from './useThreadMap'
@@ -124,11 +130,11 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
   const [section, setSection] = useState<AppSection>(initialSection ?? 'color')
   const [threadTab, setThreadTab] = useState<StudioTab>('match')
-  const [threadMapMode, setThreadMapMode] = useState<ThreadMapMode>('full-color')
-  const [threadFullBudget, setThreadFullBudget] = useState<FullColorBudget>(DEFAULT_FULL_COLOR_BUDGET)
-  const [threadMonoBudget, setThreadMonoBudget] = useState<MonochromeBudget>(DEFAULT_MONOCHROME_BUDGET)
-  const [threadMonoTone, setThreadMonoTone] = useState<MonochromeTone>('warm-grays')
-  const [threadPreferBox, setThreadPreferBox] = useState(false)
+  const [threadMapPrefs, setThreadMapPrefs] = useState<ThreadMapPrefs>(DEFAULT_THREAD_MAP_PREFS)
+  const [lockedThreadNumbers, setLockedThreadNumbers] = useState<string[]>([])
+  const [threadMapOutline, setThreadMapOutline] = useState(false)
+  const [threadMapOutlineNumbers, setThreadMapOutlineNumbers] = useState(true)
+  const [threadMapOutlineMirror, setThreadMapOutlineMirror] = useState(false)
   const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
   const [markThreadMisses, setMarkThreadMisses] = useState(false)
   const [focusRegion, setFocusRegion] = useState<FocusRegion | null>(null)
@@ -140,6 +146,59 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const phoneThreadView = isPhone && isThreadSection
   const openRequestRef = useRef(0)
 
+  const {
+    mode: threadMapMode,
+    fullColorBudget: threadFullBudget,
+    monochromeBudget: threadMonoBudget,
+    monochromeTone: threadMonoTone,
+    detail: threadMapDetail,
+    preferBox: threadPreferBox,
+  } = threadMapPrefs
+
+  const updateThreadMapPrefs = useCallback((patch: Partial<ThreadMapPrefs>) => {
+    setThreadMapPrefs((prev) => {
+      const next = { ...prev, ...patch }
+      storeThreadMapPrefs(next)
+      return next
+    })
+  }, [])
+
+  const setThreadMapMode = useCallback((mode: ThreadMapMode) => updateThreadMapPrefs({ mode }), [updateThreadMapPrefs])
+  const setThreadFullBudget = useCallback((fullColorBudget: FullColorBudget) => updateThreadMapPrefs({ fullColorBudget }), [updateThreadMapPrefs])
+  const setThreadMonoBudget = useCallback((monochromeBudget: MonochromeBudget) => updateThreadMapPrefs({ monochromeBudget }), [updateThreadMapPrefs])
+  const setThreadMonoTone = useCallback((monochromeTone: MonochromeTone) => updateThreadMapPrefs({ monochromeTone }), [updateThreadMapPrefs])
+  const setThreadMapDetail = useCallback((detail: ThreadMapDetail) => updateThreadMapPrefs({ detail }), [updateThreadMapPrefs])
+  const setThreadPreferBox = useCallback((preferBox: boolean) => updateThreadMapPrefs({ preferBox }), [updateThreadMapPrefs])
+
+  const toggleLockedThread = useCallback((number: string) => {
+    const key = number.trim().toLowerCase()
+    setLockedThreadNumbers((prev) =>
+      prev.some((n) => n.toLowerCase() === key)
+        ? prev.filter((n) => n.toLowerCase() !== key)
+        : [...prev, number],
+    )
+  }, [])
+
+  const replaceLockedThread = useCallback((oldNumber: string, newNumber: string) => {
+    const oldKey = oldNumber.trim().toLowerCase()
+    const newKey = newNumber.trim().toLowerCase()
+    setLockedThreadNumbers((prev) => {
+      if (!prev.some((n) => n.toLowerCase() === oldKey)) return prev
+      const replaced = prev.map((n) => (n.toLowerCase() === oldKey ? newNumber : n))
+      // Deduplicate in case `newNumber` was already locked.
+      const seen = new Set<string>()
+      return replaced.filter((n) => {
+        const k = n.toLowerCase()
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+    })
+    void newKey
+  }, [])
+
+  const clearLockedThreads = useCallback(() => setLockedThreadNumbers([]), [])
+
   useEffect(() => {
     try {
       setLibrary(loadLibrary(window.localStorage))
@@ -149,6 +208,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     }
   }, [])
   useEffect(() => setBudget(loadBudget()), [])
+  useEffect(() => setThreadMapPrefs(loadThreadMapPrefs()), [])
   useEffect(() => {
     if (!initialSection) setSection(loadSection())
   }, [initialSection])
@@ -169,15 +229,17 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     threadMapMode,
     threadMapBudget,
     threadMonoTone,
+    threadMapDetail,
     threadPreferBox,
     dmcStash,
+    lockedThreadNumbers,
   )
   const threadMap = threadMapState.result
 
-  // Reset thread isolation when switching photo, mode, tone, or budget (preserving isolation during live swaps).
+  // Reset thread isolation when switching photo, mode, tone, detail, or budget (preserving isolation during live swaps).
   useEffect(() => {
     setSelectedThreadSlot(null)
-  }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadPreferBox])
+  }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadMapDetail, threadPreferBox])
 
   const changeBudget = useCallback((next: Budget) => {
     setBudget(next)
@@ -201,6 +263,19 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     return canvas
   }, [planMode, peek, plan, selectedPile, markMisses])
 
+  const outlineLabels = useMemo(() => {
+    if (!isThreadMapActive || !threadMapOutline || !threadMapOutlineNumbers || !threadMap) return null
+    const radius = Math.max(7, Math.round(Math.min(threadMap.width, threadMap.height) * 0.022))
+    return {
+      radius,
+      placed: placeLabels(threadMap.slot, threadMap.width, threadMap.height, threadMap.slots.length, {
+        radius,
+        minPurity: 0.6,
+        surround: 1.4,
+      }),
+    }
+  }, [isThreadMapActive, threadMapOutline, threadMapOutlineNumbers, threadMap])
+
   const threadMapDisplay = useMemo(() => {
     if (!isThreadMapActive || peek || !threadMap) return null
     const canvas = document.createElement('canvas')
@@ -209,14 +284,56 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
     const image = ctx.createImageData(threadMap.width, threadMap.height)
-    image.data.set(renderThreadMap(threadMap, {
-      selected: selectedThreadSlot,
-      markMisses: markThreadMisses,
-      sourcePixels: threadMapState.sourcePixels,
-    }))
-    ctx.putImageData(image, 0, 0)
+    if (threadMapOutline) {
+      image.data.set(renderThreadMapOutline(threadMap, {
+        selected: selectedThreadSlot,
+        mirror: threadMapOutlineMirror,
+      }))
+      ctx.putImageData(image, 0, 0)
+      if (threadMapOutlineNumbers && outlineLabels) {
+        const r = outlineLabels.radius
+        const fontSize = Math.max(8, Math.round(r * 1.15))
+        ctx.save()
+        ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        for (const label of outlineLabels.placed.labels) {
+          const isFocus = selectedThreadSlot === null || label.pile === selectedThreadSlot
+          const cx = threadMapOutlineMirror ? threadMap.width - (label.x + 0.5) : label.x + 0.5
+          const cy = label.y + 0.5
+          ctx.beginPath()
+          ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2)
+          ctx.fillStyle = isFocus ? 'rgba(255, 255, 255, 0.92)' : 'rgba(255, 255, 255, 0.72)'
+          ctx.fill()
+          ctx.lineWidth = Math.max(1, r * 0.14)
+          ctx.strokeStyle = isFocus ? 'rgba(27, 26, 24, 0.72)' : 'rgba(150, 147, 140, 0.45)'
+          ctx.stroke()
+          ctx.fillStyle = isFocus ? '#1b1a18' : 'rgba(120, 118, 112, 0.55)'
+          ctx.fillText(String(label.pile + 1), cx, cy + 0.5)
+        }
+        ctx.restore()
+      }
+    } else {
+      image.data.set(renderThreadMap(threadMap, {
+        selected: selectedThreadSlot,
+        markMisses: markThreadMisses,
+        sourcePixels: threadMapState.sourcePixels,
+      }))
+      ctx.putImageData(image, 0, 0)
+    }
     return canvas
-  }, [isThreadMapActive, peek, threadMap, selectedThreadSlot, markThreadMisses, threadMapState.sourcePixels])
+  }, [
+    isThreadMapActive,
+    peek,
+    threadMap,
+    threadMapOutline,
+    threadMapOutlineMirror,
+    threadMapOutlineNumbers,
+    outlineLabels,
+    selectedThreadSlot,
+    markThreadMisses,
+    threadMapState.sourcePixels,
+  ])
 
   const display = planMode
     ? planDisplay
@@ -246,6 +363,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setProcessPosition(0)
       setSelectedPile(null)
       setSelectedThreadSlot(null)
+      setLockedThreadNumbers([])
+      setThreadMapOutline(false)
+      setThreadMapOutlineMirror(false)
       setFocusRegion(null)
     } catch {
       if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
@@ -286,7 +406,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     if (isThreadMapActive) {
       // In Thread Map a click isolates that DMC thread on the canvas; clicking it again shows all threads.
       if (!threadMap || !source) return
-      const slot = threadSlotAt(threadMap, nextPoint.x, nextPoint.y, source.width, source.height)
+      const sampleX = threadMapOutline && threadMapOutlineMirror ? source.width - 1 - nextPoint.x : nextPoint.x
+      const slot = threadSlotAt(threadMap, sampleX, nextPoint.y, source.width, source.height)
       setSelectedThreadSlot((current) => (origin && current === slot ? null : slot))
       return
     }
@@ -295,7 +416,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     setColor(picked)
     setThreadTab('match')
     arrive(origin)
-  }, [arrive, isThreadMapActive, plan, planMode, processMode, source, threadMap])
+  }, [arrive, isThreadMapActive, plan, planMode, processMode, source, threadMap, threadMapOutline, threadMapOutlineMirror])
 
   const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
@@ -592,8 +713,17 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     onMonochromeBudgetChange: setThreadMonoBudget,
     monochromeTone: threadMonoTone,
     onMonochromeToneChange: setThreadMonoTone,
+    detail: threadMapDetail,
+    onDetailChange: setThreadMapDetail,
     preferBox: threadPreferBox,
     onPreferBoxChange: setThreadPreferBox,
+    lockedNumbers: lockedThreadNumbers,
+    onToggleLock: toggleLockedThread,
+    onReplaceLock: replaceLockedThread,
+    onClearLocks: clearLockedThreads,
+    outlineMirror: threadMapOutlineMirror,
+    onOutlineMirrorChange: setThreadMapOutlineMirror,
+    outlineNumbers: threadMapOutlineNumbers,
     selectedSlot: threadMap && selectedThreadSlot !== null && selectedThreadSlot < threadMap.slots.length ? selectedThreadSlot : null,
     onSelectSlot: setSelectedThreadSlot,
     markMisses: markThreadMisses,
@@ -774,7 +904,12 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                   title="Zoom in on where this thread goes"
                   onClick={() => {
                     const rect = slotBounds(threadMap, selectedThreadSlot)
-                    if (rect) setFocusRegion({ ...rect, id: ++focusIdRef.current })
+                    if (rect) {
+                      const aligned = threadMapOutline && threadMapOutlineMirror
+                        ? { ...rect, x: 1 - rect.x - rect.width }
+                        : rect
+                      setFocusRegion({ ...aligned, id: ++focusIdRef.current })
+                    }
                   }}
                 >
                   Zoom in
@@ -793,6 +928,50 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         })()}
         {((planMode && plan) || (processMode && processStages) || (isThreadMapActive && threadMap)) && (
           <div className={styles.stageOverlay}>
+            {isThreadMapActive && threadMap && (
+              <div className={threadStyles.stageViewBar} role="group" aria-label="Thread map display">
+                <button
+                  type="button"
+                  className={threadStyles.stagePillBtn}
+                  aria-pressed={!threadMapOutline}
+                  onClick={() => setThreadMapOutline(false)}
+                >
+                  Map
+                </button>
+                <button
+                  type="button"
+                  className={threadStyles.stagePillBtn}
+                  aria-pressed={threadMapOutline}
+                  onClick={() => setThreadMapOutline(true)}
+                  title="Clean black-and-white region outline for fabric transfer"
+                >
+                  Outline
+                </button>
+                {threadMapOutline && (
+                  <>
+                    <span className={threadStyles.stageDivider} aria-hidden="true" />
+                    <button
+                      type="button"
+                      className={threadStyles.stagePillBtn}
+                      aria-pressed={threadMapOutlineNumbers}
+                      onClick={() => setThreadMapOutlineNumbers((on) => !on)}
+                      title="Show subtle thread slot numbers inside regions"
+                    >
+                      Numbers
+                    </button>
+                    <button
+                      type="button"
+                      className={threadStyles.stagePillBtn}
+                      aria-pressed={threadMapOutlineMirror}
+                      onClick={() => setThreadMapOutlineMirror((on) => !on)}
+                      title="Mirror outline horizontally for iron-on or back-of-fabric transfer"
+                    >
+                      Mirror
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <button
               type="button"
               className={styles.peekButton}

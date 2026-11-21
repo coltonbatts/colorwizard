@@ -104,4 +104,47 @@ describe('buildThreadMapCard', () => {
     expect(allCopy).not.toMatch(/exact/i)
     expect(allCopy).not.toMatch(/verified/i)
   })
+
+  it('builds a 1-page B&W Transfer Outline card with optional mirroring and mirrored badge coordinates', () => {
+    const map = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 10,
+      detail: 'painterly',
+    })
+    const normal = buildThreadMapCard(map, {
+      variant: 'transfer-outline',
+      mirror: false,
+      showNumbers: true,
+      pictureName: 'landscape.png',
+      dateText: 'November 20, 2026',
+    })
+    const mirrored = buildThreadMapCard(map, {
+      variant: 'transfer-outline',
+      mirror: true,
+      showNumbers: true,
+      pictureName: 'landscape.png',
+      dateText: 'November 20, 2026',
+    })
+    const noNums = buildThreadMapCard(map, {
+      variant: 'transfer-outline',
+      mirror: false,
+      showNumbers: false,
+      pictureName: 'landscape.png',
+      dateText: 'November 20, 2026',
+    })
+
+    expect(normal.variant).toBe('transfer-outline')
+    expect(normal.image.width).toBeLessThanOrEqual(THREAD_MAP_CARD.pageWidth - 2)
+    expect(normal.image.width).toBeGreaterThan(THREAD_MAP_CARD.imageMaxWidth)
+    expect(normal.metaLine).toContain('Transfer outline')
+    expect(mirrored.metaLine).toContain('Transfer outline (mirrored)')
+    expect(mirrored.badges.length).toBe(normal.badges.length)
+    for (let i = 0; i < normal.badges.length; i++) {
+      expect(mirrored.badges[i].number).toBe(normal.badges[i].number)
+      expect(mirrored.badges[i].x).toBeCloseTo(map.width - normal.badges[i].x, 5)
+      expect(mirrored.badges[i].y).toBeCloseTo(normal.badges[i].y, 5)
+    }
+    expect(noNums.badges.length).toBe(0)
+    expect(noNums.unlabeledNote).toBeNull()
+  })
 })

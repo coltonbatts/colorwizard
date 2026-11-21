@@ -221,3 +221,57 @@
 .caveats p + p {
   margin-top: 1px;
 }
+
+/* ---------- B&W Fabric Transfer Outline sheet ---------- */
+
+.outlineFigure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.outlineCaption {
+  margin-top: 4px;
+  font-size: 9px;
+  color: #333;
+  text-align: center;
+}
+
+.compactThreads2,
+.compactThreads3 {
+  display: grid;
+  column-gap: 12px;
+  margin-top: 2px;
+}
+
+.compactThreads2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compactThreads3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.compactThreads2 ol,
+.compactThreads3 ol {
+  list-style: none;
+}
+
+.compactCell {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 0;
+  border-bottom: 0.75px solid #aaa;
+  font-size: 9.5px;
+  break-inside: avoid;
+}
+
+.compactText {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

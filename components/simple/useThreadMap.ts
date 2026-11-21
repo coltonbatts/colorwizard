@@ -9,7 +9,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { loadDmcCatalog } from '@/lib/dmc/catalog'
 import { swapMapThread } from '@/lib/dmc/map/engine'
-import type { MonochromeTone, ThreadMapMode, ThreadMapOptions, ThreadMapResult } from '@/lib/dmc/map/types'
+import type {
+  MonochromeTone,
+  ThreadMapDetail,
+  ThreadMapMode,
+  ThreadMapOptions,
+  ThreadMapResult,
+} from '@/lib/dmc/map/types'
 import type { DMCThread } from '@/lib/dmc/types'
 import { getThreadMapWorker, resetThreadMapWorker, withTimeout, WorkerTimeoutError } from '@/lib/workers'
 import { planningCopy } from './usePlan'
@@ -65,8 +71,10 @@ export function useThreadMap(
   mode: ThreadMapMode,
   budget: number,
   monochromeTone: MonochromeTone,
+  detail: ThreadMapDetail,
   preferBox: boolean,
   ownedNumbers: readonly string[],
+  lockedNumbers: readonly string[] = [],
 ): ThreadMapState {
   const [state, setState] = useState<{
     status: 'idle' | 'building' | 'ready' | 'error'
@@ -83,6 +91,9 @@ export function useThreadMap(
   })
 
   const copyRef = useRef<{ source: HTMLCanvasElement; copy: Copy | null } | null>(null)
+  const lockedRef = useRef<readonly string[]>(lockedNumbers)
+  lockedRef.current = lockedNumbers
+
   // Only re-run when owned numbers change if `preferBox` is actually turned on.
   const activeOwnedKey = preferBox ? ownedNumbers.join('\u0000') : ''
   const activeOwned = useMemo(
@@ -117,14 +128,16 @@ export function useThreadMap(
       result: prev.source === source ? prev.result : null,
     }))
 
-    // Brief settle window ONLY when scrubbing the thread-count slider (mode/tone switches stay instant).
-    const sameModeAndTone =
+    // Brief settle window ONLY when scrubbing the thread-count slider (mode/tone/detail switches stay instant).
+    const sameNonBudgetOptions =
       state.source === source
       && state.result !== null
       && state.result.mode === mode
+      && state.result.detail === detail
       && (mode !== 'monochrome' || state.result.monochromeTone === monochromeTone)
       && state.result.preferBox === (preferBox && activeOwned.length > 0)
-    const delayMs = sameModeAndTone ? 65 : 0
+    const delayMs = sameNonBudgetOptions ? 65 : 0
+    const activeLocked = mode === 'full-color' ? [...lockedRef.current] : []
     const timer = window.setTimeout(() => {
       loadDmcCatalog()
         .then((catalog) =>
@@ -132,8 +145,10 @@ export function useThreadMap(
             mode,
             budget,
             monochromeTone: mode === 'monochrome' ? monochromeTone : undefined,
+            detail,
             preferBox: preferBox && activeOwned.length > 0,
             ownedNumbers: activeOwned,
+            lockedNumbers: activeLocked,
           }),
         )
         .then((next) => {
@@ -163,7 +178,7 @@ export function useThreadMap(
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [source, enabled, mode, budget, monochromeTone, preferBox, activeOwned]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [source, enabled, mode, budget, monochromeTone, detail, preferBox, activeOwned]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const swapThread = useCallback((slotIndex: number, nextThread: DMCThread) => {
     setState((prev) => {

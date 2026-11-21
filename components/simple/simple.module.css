@@ -886,6 +886,12 @@
   position: absolute;
   right: 16px;
   bottom: 16px;
+  max-width: calc(100% - 32px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .peekButton {

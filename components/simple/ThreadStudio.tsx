@@ -41,6 +41,7 @@ import type {
   FullColorBudget,
   MonochromeBudget,
   MonochromeTone,
+  ThreadMapDetail,
   ThreadMapMode,
 } from '@/lib/dmc/map/types'
 import { useDmcStore } from '@/lib/store/useDmcStore'
@@ -583,8 +584,17 @@ export interface ThreadMapBindings {
   onMonochromeBudgetChange: (budget: MonochromeBudget) => void
   monochromeTone: MonochromeTone
   onMonochromeToneChange: (tone: MonochromeTone) => void
+  detail: ThreadMapDetail
+  onDetailChange: (detail: ThreadMapDetail) => void
   preferBox: boolean
   onPreferBoxChange: (prefer: boolean) => void
+  lockedNumbers: readonly string[]
+  onToggleLock: (number: string) => void
+  onReplaceLock: (oldNumber: string, newNumber: string) => void
+  onClearLocks: () => void
+  outlineMirror: boolean
+  onOutlineMirrorChange: (mirror: boolean) => void
+  outlineNumbers: boolean
   selectedSlot: number | null
   onSelectSlot: (slot: number | null) => void
   markMisses: boolean
@@ -1415,8 +1425,17 @@ export default function ThreadStudio({
         onMonochromeBudgetChange={threadMap.onMonochromeBudgetChange}
         monochromeTone={threadMap.monochromeTone}
         onMonochromeToneChange={threadMap.onMonochromeToneChange}
+        detail={threadMap.detail}
+        onDetailChange={threadMap.onDetailChange}
         preferBox={threadMap.preferBox}
         onPreferBoxChange={threadMap.onPreferBoxChange}
+        lockedNumbers={threadMap.lockedNumbers}
+        onToggleLock={threadMap.onToggleLock}
+        onReplaceLock={threadMap.onReplaceLock}
+        onClearLocks={threadMap.onClearLocks}
+        outlineMirror={threadMap.outlineMirror}
+        onOutlineMirrorChange={threadMap.onOutlineMirrorChange}
+        outlineNumbers={threadMap.outlineNumbers}
         selectedSlot={threadMap.selectedSlot}
         onSelectSlot={threadMap.onSelectSlot}
         markMisses={threadMap.markMisses}

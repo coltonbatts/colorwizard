@@ -103,6 +103,22 @@ function Cell({ cell }: { cell: ThreadMapCardCell }) {
   )
 }
 
+function CompactCell({ cell }: { cell: ThreadMapCardCell }) {
+  return (
+    <li className={styles.compactCell}>
+      <CellBadge number={cell.number} />
+      <span className={styles.compactText}>
+        <strong className={styles.dmcCode}>DMC {cell.dmcNumber}</strong>{' '}
+        <span className={styles.threadName}>{cell.name}</span>
+      </span>
+      <span className={styles.share}>{cell.share}</span>
+      <span className={styles.checkBox} aria-label={cell.owned ? 'Have' : 'Need'}>
+        {cell.owned ? '[x]' : '[ ]'}
+      </span>
+    </li>
+  )
+}
+
 export interface ThreadMapCardProps {
   card: ThreadMapCardModel
   images: ThreadMapImages
@@ -142,11 +158,78 @@ export default function ThreadMapCard({
     }
   }, [autoPrint, onDone])
 
-  const unit = card.badgeRadius / THREAD_MAP_CARD.badgeRadius
+  const unit = card.badgeRadius / (card.variant === 'transfer-outline' ? 7 : THREAD_MAP_CARD.badgeRadius)
   const { width, height } = card.image
 
+  if (card.variant === 'transfer-outline') {
+    const outlineSrc = images.outline || images.repaint
+    return (
+      <div ref={root} className={styles.card} data-thread-map-card data-variant="transfer-outline">
+        <style>{PAGE_CSS}</style>
+        <header className={styles.head}>
+          <h1>{card.title}</h1>
+          <p className={styles.meta}>{card.metaLine}</p>
+        </header>
+
+        <figure className={styles.outlineFigure}>
+          <div className={styles.frame} style={{ width, height }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- local browser data URL for print */}
+            <img
+              src={outlineSrc}
+              alt={card.mirror ? 'Mirrored fabric transfer outline' : 'Fabric transfer outline'}
+              width={width}
+              height={height}
+            />
+            {card.showNumbers && card.badges.length > 0 && (
+              <svg
+                className={styles.badges}
+                viewBox={`0 0 ${card.map.width} ${card.map.height}`}
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                {card.badges.map((badge) => (
+                  <Badge
+                    key={`${badge.number}-${badge.x}-${badge.y}`}
+                    number={badge.number}
+                    cx={badge.x}
+                    cy={badge.y}
+                    r={card.badgeRadius}
+                    font={card.badgeFont}
+                    unit={unit}
+                  />
+                ))}
+              </svg>
+            )}
+          </div>
+          <figcaption className={styles.outlineCaption}>
+            {card.mirror
+              ? 'Mirrored B&W fabric transfer outline (ready for back-side or iron-on transfer).'
+              : 'B&W fabric transfer outline (ready for lightbox, window, or water-soluble stabilizer tracing).'}
+            {card.unlabeledNote && <span className={styles.unlabeled}>{card.unlabeledNote}</span>}
+          </figcaption>
+        </figure>
+
+        <p className={styles.orderBar}>{card.orderNote}</p>
+
+        <div
+          className={card.keyColumns.length === 3 ? styles.compactThreads3 : styles.compactThreads2}
+        >
+          {card.keyColumns.map((column, colIdx) => (
+            <ol key={colIdx}>
+              {column.map((cell) => <CompactCell key={cell.number} cell={cell} />)}
+            </ol>
+          ))}
+        </div>
+
+        <footer className={styles.caveats}>
+          {card.caveats.map((line) => <p key={line}>{line}</p>)}
+        </footer>
+      </div>
+    )
+  }
+
   return (
-    <div ref={root} className={styles.card} data-thread-map-card>
+    <div ref={root} className={styles.card} data-thread-map-card data-variant="color-map">
       <style>{PAGE_CSS}</style>
       <header className={styles.head}>
         <h1>{card.title}</h1>

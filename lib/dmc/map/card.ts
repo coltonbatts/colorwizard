@@ -43,7 +43,12 @@ export interface ThreadMapCardCell {
   approximate: boolean
 }
 
+export type ThreadMapCardVariant = 'color-map' | 'transfer-outline'
+
 export interface ThreadMapCardModel {
+  variant: ThreadMapCardVariant
+  mirror: boolean
+  showNumbers: boolean
   title: string
   metaLine: string
   headline: string
@@ -58,15 +63,24 @@ export interface ThreadMapCardModel {
   unlabeledNote: string | null
   orderNote: string
   columns: [ThreadMapCardCell[], ThreadMapCardCell[]]
+  /** 2 columns for Color Map, 3 compact columns for B&W Transfer Outline. */
+  keyColumns: ThreadMapCardCell[][]
   caveats: string[]
 }
 
 export interface BuildThreadMapCardOptions {
+  variant?: ThreadMapCardVariant
+  mirror?: boolean
+  showNumbers?: boolean
   pictureName?: string
   modeLabel?: string
   dateText: string
   ownedNumbers?: readonly string[]
 }
+
+const OUTLINE_MAX_WIDTH = CARD.pageWidth - 2 // 716px inside 1px border
+const OUTLINE_MAX_HEIGHT = 560
+const OUTLINE_MIN_HEIGHT = 380
 
 function cleanTitle(pictureName: string | undefined): string {
   const cleaned = (pictureName ?? '')
@@ -80,25 +94,47 @@ export function buildThreadMapCard(
   map: ThreadMapResult,
   options: BuildThreadMapCardOptions,
 ): ThreadMapCardModel {
-  const aspect = map.width / map.height
-  const width = Math.min(CARD.imageMaxWidth, CARD.imageMaxHeight * aspect)
-  const image = {
-    width: Math.round(width * 100) / 100,
-    height: Math.round((width / aspect) * 100) / 100,
-  }
-  const scale = map.width / image.width
+  const variant: ThreadMapCardVariant = options.variant ?? 'color-map'
+  const mirror = variant === 'transfer-outline' && Boolean(options.mirror)
+  const showNumbers = variant === 'transfer-outline' ? (options.showNumbers ?? true) : true
 
-  const placed = placeLabels(map.slot, map.width, map.height, map.slots.length, {
-    radius: CARD.badgeRadius * scale,
-    minPurity: 0.6,
-    surround: 1.4,
-  })
-  const badges: ThreadMapBadge[] = placed.labels.map((label) => ({
-    number: label.pile + 1,
-    x: label.x + 0.5,
-    y: label.y + 0.5,
-  }))
-  const unlabeled = placed.unlabeled.map((slotIndex) => slotIndex + 1)
+  const aspect = map.width / map.height
+  let image: { width: number; height: number }
+  if (variant === 'transfer-outline') {
+    const keyRows = Math.ceil(map.slots.length / 3)
+    const maxHeight = Math.max(OUTLINE_MIN_HEIGHT, Math.min(OUTLINE_MAX_HEIGHT, 760 - keyRows * 20))
+    const width = Math.min(OUTLINE_MAX_WIDTH, maxHeight * aspect)
+    image = {
+      width: Math.round(width * 100) / 100,
+      height: Math.round((width / aspect) * 100) / 100,
+    }
+  } else {
+    const width = Math.min(CARD.imageMaxWidth, CARD.imageMaxHeight * aspect)
+    image = {
+      width: Math.round(width * 100) / 100,
+      height: Math.round((width / aspect) * 100) / 100,
+    }
+  }
+
+  const scale = map.width / image.width
+  const badgeRadiusCss = variant === 'transfer-outline' ? 7 : CARD.badgeRadius
+  const badgeFontCss = variant === 'transfer-outline' ? 8.5 : CARD.badgeFont
+
+  let badges: ThreadMapBadge[] = []
+  let unlabeled: number[] = []
+  if (showNumbers) {
+    const placed = placeLabels(map.slot, map.width, map.height, map.slots.length, {
+      radius: badgeRadiusCss * scale,
+      minPurity: 0.6,
+      surround: 1.4,
+    })
+    badges = placed.labels.map((label) => ({
+      number: label.pile + 1,
+      x: mirror ? map.width - (label.x + 0.5) : label.x + 0.5,
+      y: label.y + 0.5,
+    }))
+    unlabeled = placed.unlabeled.map((slotIndex) => slotIndex + 1)
+  }
 
   const summary = describeThreadMap(map)
   const ownedSet = new Set((options.ownedNumbers ?? []).map((n) => n.trim().toLowerCase()))
@@ -116,25 +152,48 @@ export function buildThreadMapCard(
   }))
 
   const split = Math.ceil(cells.length / 2)
+  const columns: [ThreadMapCardCell[], ThreadMapCardCell[]] = [cells.slice(0, split), cells.slice(split)]
+  let keyColumns: ThreadMapCardCell[][]
+  if (variant === 'transfer-outline') {
+    const colCount = cells.length > 8 ? 3 : 2
+    const perCol = Math.ceil(cells.length / colCount)
+    keyColumns = Array.from({ length: colCount }, (_, idx) =>
+      cells.slice(idx * perCol, (idx + 1) * perCol),
+    ).filter((col) => col.length > 0)
+  } else {
+    keyColumns = columns
+  }
+
   const modeLabel = options.modeLabel ?? formatThreadMapModeLabel(map)
+  const metaParts = variant === 'transfer-outline'
+    ? ['DMC Mouliné Spécial', mirror ? 'Transfer outline (mirrored)' : 'Transfer outline', modeLabel, options.dateText]
+    : ['DMC Mouliné Spécial', modeLabel, options.dateText]
 
   return {
+    variant,
+    mirror,
+    showNumbers,
     title: cleanTitle(options.pictureName),
-    metaLine: ['DMC Mouliné Spécial', modeLabel, options.dateText].join(' · '),
+    metaLine: metaParts.join(' · '),
     headline: summary.headline,
     notes: summary.notes,
     facts: summary.facts,
     image,
     map: { width: map.width, height: map.height },
     badges,
-    badgeRadius: CARD.badgeRadius * scale,
-    badgeFont: CARD.badgeFont * scale,
+    badgeRadius: badgeRadiusCss * scale,
+    badgeFont: badgeFontCss * scale,
     unlabeled,
     unlabeledNote: unlabeled.length > 0
       ? `Thread ${unlabeled.join(', ')} ${unlabeled.length === 1 ? 'has' : 'have'} no room for a number on the picture.`
       : null,
-    orderNote: 'Ordered lightest to darkest · [x] in your floss box · [ ] needed',
-    columns: [cells.slice(0, split), cells.slice(split)],
+    orderNote: variant === 'transfer-outline'
+      ? (mirror
+        ? 'Mirrored horizontally for back-of-fabric or iron-on transfer · Ordered lightest to darkest · [x] have · [ ] need'
+        : 'Ordered lightest to darkest · Numbers match the outline above · [x] in your floss box · [ ] needed')
+      : 'Ordered lightest to darkest · [x] in your floss box · [ ] needed',
+    columns,
+    keyColumns,
     caveats: [
       THREAD_MAP_CAVEAT_CATALOG,
       THREAD_MAP_CAVEAT_REAL,

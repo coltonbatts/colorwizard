@@ -61,13 +61,45 @@ export const MONOCHROME_TONES: readonly MonochromeTonePreset[] = [
   },
 ] as const
 
+export type ThreadMapDetail = 'crisp' | 'painterly' | 'broad'
+
+export interface ThreadMapDetailPreset {
+  id: ThreadMapDetail
+  label: string
+  description: string
+}
+
+export const DEFAULT_THREAD_MAP_DETAIL: ThreadMapDetail = 'painterly'
+
+export const THREAD_MAP_DETAILS: readonly ThreadMapDetailPreset[] = [
+  {
+    id: 'crisp',
+    label: 'Crisp',
+    description: 'Light speck removal while preserving fine stitch detail.',
+  },
+  {
+    id: 'painterly',
+    label: 'Painterly',
+    description: 'Merges isolated confetti into smooth stitch shapes while keeping crisp edges.',
+  },
+  {
+    id: 'broad',
+    label: 'Broad',
+    description: 'Simplifies busy textures into bold, sweeping color planes.',
+  },
+] as const
+
 export interface ThreadMapOptions {
   mode: ThreadMapMode
   budget: number
   monochromeTone?: MonochromeTone
+  /** Spatial region cleanup level (defaults to 'painterly'). */
+  detail?: ThreadMapDetail
   /** Apply a gentle CIEDE2000 preference for owned DMC numbers so stash threads win close ties. */
   preferBox?: boolean
   ownedNumbers?: readonly string[]
+  /** DMC thread numbers locked/pinned by the stitcher (preserved as fixed medoids in Full Color mode). */
+  lockedNumbers?: readonly string[]
 }
 
 export interface ThreadMapSlot {
@@ -104,6 +136,7 @@ export interface ThreadMapResult {
   mode: ThreadMapMode
   budget: number
   monochromeTone: MonochromeTone | null
+  detail: ThreadMapDetail
   preferBox: boolean
   width: number
   height: number
