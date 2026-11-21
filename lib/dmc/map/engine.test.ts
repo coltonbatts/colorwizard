@@ -45,17 +45,16 @@ describe('buildThreadMap — Full Color mode', () => {
     expect(areaSum).toBeCloseTo(1, 5)
   })
 
-  it('improves or holds mean ΔE00 as thread budget increases (6 -> 10 -> 14 -> 18)', () => {
-    const m6 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 6 })
-    const m10 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 10 })
-    const m14 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 14 })
-    const m18 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 18 })
+  it('supports any custom thread count (e.g. 3, 11, 22) and improves mean ΔE00 as count increases', () => {
+    const m3 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 3 })
+    const m11 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 11 })
+    const m22 = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, { mode: 'full-color', budget: 22 })
 
-    expect(m6.slots.length).toBeLessThanOrEqual(6)
-    expect(m10.slots.length).toBeLessThanOrEqual(10)
-    expect(m14.slots.length).toBeLessThanOrEqual(14)
-    expect(m18.slots.length).toBeLessThanOrEqual(18)
-    expect(m18.score.meanDeltaE00).toBeLessThan(m6.score.meanDeltaE00)
+    expect(m3.slots.length).toBe(3)
+    expect(m11.slots.length).toBe(11)
+    expect(m22.slots.length).toBe(22)
+    expect(m22.score.meanDeltaE00).toBeLessThan(m11.score.meanDeltaE00)
+    expect(m11.score.meanDeltaE00).toBeLessThan(m3.score.meanDeltaE00)
   })
 
   it('nudges close ties toward owned threads when preferBox is enabled without forcing poor matches', () => {

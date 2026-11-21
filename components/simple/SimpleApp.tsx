@@ -129,7 +129,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [threadMonoTone, setThreadMonoTone] = useState<MonochromeTone>('warm-grays')
   const [threadPreferBox, setThreadPreferBox] = useState(false)
   const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
-  const [markThreadMisses, setMarkThreadMisses] = useState(true)
+  const [markThreadMisses, setMarkThreadMisses] = useState(false)
   const dmcStash = useDmcStore((s) => s.stash)
   const isPhone = useMediaQuery('(max-width: 760px)')
   const isThreadSection = section === 'thread' && !planMode && !processMode

@@ -20,6 +20,7 @@
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  background: #faf9f6;
 }
 
 /* Full-width studio when opened without a photo (e.g. /thread or Browse/Tray first). */
@@ -27,6 +28,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #faf9f6;
 }
 
 .standaloneHeader {
@@ -136,7 +138,7 @@
   gap: 4px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--s-rule);
-  background: var(--s-paper);
+  background: #ffffff;
   flex-shrink: 0;
 }
 
@@ -144,11 +146,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   min-height: 34px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   font-size: 13px;
   font-weight: 500;
@@ -161,11 +163,10 @@
 }
 
 .subTab[aria-selected='true'] {
-  border-color: var(--s-rule);
-  background: var(--s-white);
+  border-color: rgba(17, 17, 17, 0.12);
+  background: #f5f3ee;
   color: var(--s-ink);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
 }
 
 .tabBadge {
@@ -1165,32 +1166,39 @@
 .mapPanel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
-.mapControlGroup {
+.mapCard {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(17, 17, 17, 0.04);
 }
 
 .mapModeSwitch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border: 1px solid var(--s-rule);
-  border-radius: 7px;
-  background: var(--s-white);
-  overflow: hidden;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #f1efe9;
 }
 
 .mapModeSwitch button {
-  min-height: 34px;
-  padding: 5px 10px;
+  min-height: 32px;
+  padding: 4px 10px;
   border: 0;
+  border-radius: 7px;
   background: transparent;
   font-size: 13px;
   font-weight: 500;
   color: var(--s-ink-2);
+  transition: background-color 120ms, color 120ms, box-shadow 120ms;
 }
 
 .mapModeSwitch button:hover {
@@ -1198,73 +1206,121 @@
 }
 
 .mapModeSwitch button[aria-pressed='true'] {
-  background: var(--s-ink);
-  color: var(--s-white) !important;
+  background: #ffffff;
+  color: var(--s-ink);
   font-weight: 600;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.1);
 }
 
-.mapMonoControls {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.mapToneRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
 }
 
-.mapFieldset {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.mapFieldset legend {
-  padding: 0;
-  margin-bottom: 2px;
-}
-
-.mapPillRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.mapStepBtn {
-  min-height: 32px;
-  min-width: 46px;
-  padding: 4px 12px;
-  border: 1px solid var(--s-rule);
-  border-radius: 6px;
-  background: var(--s-white);
-  font-family: var(--s-mono);
-  font-size: 13px;
+.mapToneBtn {
+  min-height: 30px;
+  padding: 3px 6px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
   font-weight: 500;
   color: var(--s-ink-2);
 }
 
-.mapStepBtn:hover {
-  border-color: var(--s-ink);
+.mapToneBtn:hover {
+  border-color: var(--s-ink-2);
   color: var(--s-ink);
 }
 
-.mapStepBtn[aria-pressed='true'] {
+.mapToneBtn[aria-pressed='true'] {
   border-color: var(--s-ink);
   background: var(--s-ink);
-  color: var(--s-white) !important;
+  color: #ffffff !important;
   font-weight: 600;
+}
+
+.mapSliderBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapSliderHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mapSliderLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.mapStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mapStepTiny {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--s-ink);
+}
+
+.mapStepTiny:hover:not(:disabled) {
+  border-color: var(--s-ink);
+  background: #f5f3ee;
+}
+
+.mapStepTiny:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mapCountReadout {
+  min-width: 28px;
+  text-align: center;
+  font-family: var(--s-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--s-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mapRange {
+  width: 100%;
+  height: 6px;
+  margin: 4px 0;
+  accent-color: var(--s-ink);
+  cursor: pointer;
 }
 
 .mapCheck {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--s-ink-2);
   cursor: pointer;
 }
 
 .mapCheck input {
   margin: 0;
+  accent-color: var(--s-ink);
 }
 
 .mapHatchKey {
@@ -1276,84 +1332,95 @@
   box-shadow: inset 0 0 0 1px var(--s-rule);
 }
 
-.mapSummary {
-  padding-top: 12px;
-  border-top: 1px solid var(--s-rule);
+.mapPaletteBar {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.mapHeadline {
-  margin: 0 0 4px;
-  font-family: var(--s-serif);
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1.15;
-  color: var(--s-ink);
+.mapColorStrip {
+  display: flex;
+  gap: 2px;
+  height: 36px;
+  padding: 3px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
 }
 
-.mapNote {
-  margin: 0 0 4px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--s-ink-2);
-}
-
-.mapFacts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 14px;
-  margin: 8px 0 6px;
-}
-
-.mapFacts div {
-  min-width: 0;
-}
-
-.mapFacts dt {
-  font-size: 11px;
-  color: var(--s-ink-2);
-}
-
-.mapFacts dd {
-  margin: 1px 0 0;
-  font-family: var(--s-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--s-ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.mapStripBtn {
+.mapStripCell {
+  flex: 1;
+  min-width: 6px;
   border: 0;
-  padding: 0 0 3px;
+  border-radius: 6px;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--s-mono);
+  font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .mapStripActive {
   outline: 2px solid var(--s-ink);
   outline-offset: 1px;
+  z-index: 1;
 }
 
-.mapActions {
+.mapActionRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.mapActionRow .btnPrimary,
+.mapActionRow .btnSecondary {
+  flex: 1 1 auto;
+  border-radius: 8px;
 }
 
 .mapActionStatus,
 .mapActionError {
-  flex-basis: 100%;
   margin: 0;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--s-ink-2);
 }
 
 .mapActionError {
   color: var(--s-ink);
   font-weight: 600;
+}
+
+.mapStatusRow {
+  padding: 2px 2px 0;
+}
+
+.mapStatusInner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mapStatusHeading {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.mapStatusMetric {
+  font-family: var(--s-mono);
+  font-size: 12px;
+  color: var(--s-ink-2);
+  font-variant-numeric: tabular-nums;
 }
 
 .mapList {
@@ -1375,14 +1442,15 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 8px;
-  border: 1px solid var(--s-rule);
-  border-radius: 8px;
-  background: var(--s-white);
+  padding: 7px 9px;
+  border: 1px solid rgba(17, 17, 17, 0.09);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.03);
 }
 
 .mapRow:hover {
-  border-color: var(--s-ink-2);
+  border-color: rgba(17, 17, 17, 0.24);
 }
 
 .mapRowActive {
@@ -1393,7 +1461,7 @@
 .mapRowMain {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   min-width: 0;
   border: 0;
@@ -1402,29 +1470,18 @@
   text-align: left;
 }
 
-.mapBadge {
+.mapSwatchTile {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  border: 1.25px solid var(--s-ink);
-  border-radius: 999px;
-  background: var(--s-white);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   font-family: var(--s-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--s-ink);
-}
-
-.mapSwatch {
-  display: block;
-  width: 24px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
 }
 
 .mapRowText {
@@ -1452,7 +1509,7 @@
 }
 
 .mapThreadName {
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.25;
   color: var(--s-ink);
   white-space: nowrap;
@@ -1486,9 +1543,10 @@
 
 .swapPicker {
   padding: 10px 11px;
-  border: 1px solid var(--s-ink);
-  border-radius: 8px;
-  background: var(--s-paper);
+  border: 1px solid rgba(17, 17, 17, 0.22);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.06);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1520,6 +1578,60 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--s-ink-2);
+}
+
+.mapDetails {
+  padding: 9px 12px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 12.5px;
+  color: var(--s-ink-2);
+}
+
+.mapDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--s-ink);
+}
+
+.mapDetailsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mapNote {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--s-ink-2);
+}
+
+.mapFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 2px 0;
+}
+
+.mapFacts div {
+  min-width: 0;
+}
+
+.mapFacts dt {
+  font-size: 11px;
+  color: var(--s-ink-2);
+}
+
+.mapFacts dd {
+  margin: 1px 0 0;
+  font-family: var(--s-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--s-ink);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 860px) {

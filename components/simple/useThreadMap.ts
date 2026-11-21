@@ -115,42 +115,53 @@ export function useThreadMap(
       result: prev.source === source ? prev.result : null,
     }))
 
-    loadDmcCatalog()
-      .then((catalog) =>
-        computeThreadMap(copy, catalog.threads, {
-          mode,
-          budget,
-          monochromeTone: mode === 'monochrome' ? monochromeTone : undefined,
-          preferBox: preferBox && activeOwned.length > 0,
-          ownedNumbers: activeOwned,
-        }),
-      )
-      .then((next) => {
-        if (!cancelled) {
-          setState({
-            status: 'ready',
-            baseResult: next,
-            result: next,
-            error: null,
-            source,
-          })
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setState((prev) => ({
-            ...prev,
-            status: 'error',
-            error: 'Couldn’t build a thread map for this photo right now.',
-            source,
-          }))
-        }
-      })
+    // Brief settle window ONLY when scrubbing the thread-count slider (mode/tone switches stay instant).
+    const sameModeAndTone =
+      state.source === source
+      && state.result !== null
+      && state.result.mode === mode
+      && (mode !== 'monochrome' || state.result.monochromeTone === monochromeTone)
+      && state.result.preferBox === (preferBox && activeOwned.length > 0)
+    const delayMs = sameModeAndTone ? 65 : 0
+    const timer = window.setTimeout(() => {
+      loadDmcCatalog()
+        .then((catalog) =>
+          computeThreadMap(copy, catalog.threads, {
+            mode,
+            budget,
+            monochromeTone: mode === 'monochrome' ? monochromeTone : undefined,
+            preferBox: preferBox && activeOwned.length > 0,
+            ownedNumbers: activeOwned,
+          }),
+        )
+        .then((next) => {
+          if (!cancelled) {
+            setState({
+              status: 'ready',
+              baseResult: next,
+              result: next,
+              error: null,
+              source,
+            })
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setState((prev) => ({
+              ...prev,
+              status: 'error',
+              error: 'Couldn’t build a thread map for this photo right now.',
+              source,
+            }))
+          }
+        })
+    }, delayMs)
 
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
-  }, [source, enabled, mode, budget, monochromeTone, preferBox, activeOwned])
+  }, [source, enabled, mode, budget, monochromeTone, preferBox, activeOwned]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const swapThread = useCallback((slotIndex: number, nextThread: DMCThread) => {
     setState((prev) => {

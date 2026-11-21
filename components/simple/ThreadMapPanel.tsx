@@ -2,9 +2,8 @@
 
 /**
  * Interactive Painterly Thread Map & Monochrome Value Ramp panel inside DMC Thread Studio.
- * Lets needle painters map a whole photo into curated DMC skeins (Full Color or Monochrome),
- * click any thread (or canvas region) to isolate it, swap threads live, send the pull to
- * Skein Tray, or print a 1-page studio reference sheet.
+ * Designed to feel easy, bright, and clean: one continuous thread-count slider, vibrant
+ * DMC swatch strip, immediate thread list, live swaps, Skein Tray export, and 1-page print sheet.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -12,17 +11,20 @@ import { createPortal } from 'react-dom'
 import { formatCatalogDeltaE00 } from '@/lib/colorSemantics'
 import { buildThreadMapCard, type ThreadMapCardModel } from '@/lib/dmc/map/card'
 import {
-  describeSlotMeta,
   describeThreadMap,
+  formatThreadDeltaE,
   formatThreadMapModeLabel,
   formatThreadShare,
+  formatValueStep,
   getSwapOptions,
   THREAD_MAP_CAVEAT_COPY,
   THREAD_MAP_PRINT_NOTE,
 } from '@/lib/dmc/map/mapFit'
 import {
-  FULL_COLOR_BUDGETS,
-  MONOCHROME_BUDGETS,
+  FULL_COLOR_MAX,
+  FULL_COLOR_MIN,
+  MONOCHROME_MAX,
+  MONOCHROME_MIN,
   MONOCHROME_TONES,
   type FullColorBudget,
   type MonochromeBudget,
@@ -41,7 +43,7 @@ function contrastInk(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-  return (r * 299 + g * 587 + b * 114) / 1000 > 135 ? '#111111' : '#fcfaf5'
+  return (r * 299 + g * 587 + b * 114) / 1000 > 135 ? '#111111' : '#ffffff'
 }
 
 export interface ThreadMapPanelProps {
@@ -104,13 +106,11 @@ export default function ThreadMapPanel({
 
   const summary = useMemo(() => (result ? describeThreadMap(result) : null), [result])
 
-  // Clear stale print jobs and open swap pickers when a fresh map arrives.
   useEffect(() => {
     setPrintJob(null)
     setActionStatus(null)
   }, [result])
 
-  // Bring the isolated row into view when the stitcher clicks directly on the stage photo.
   useEffect(() => {
     if (selectedSlot !== null) {
       rowRefs.current[selectedSlot]?.scrollIntoView({ block: 'nearest' })
@@ -124,15 +124,25 @@ export default function ThreadMapPanel({
       <div className={styles.emptyPrompt}>
         <h3>Build a painterly Thread Map</h3>
         <p>
-          Open a reference photo to map smooth color planes into curated DMC skeins, or create a warm, neutral, cool, or sepia monochrome value ramp for tonal portraiture.
+          Open a reference photo to pull a bright, balanced DMC palette or a smooth warm, neutral, cool, or sepia monochrome value ramp.
         </p>
         <div className={styles.heroActions}>
           <button type="button" className={styles.btnPrimary} onClick={onChoosePicture}>
-            Open reference photo…
+            Open photo…
           </button>
         </div>
       </div>
     )
+  }
+
+  const isMono = mode === 'monochrome'
+  const minCount = isMono ? MONOCHROME_MIN : FULL_COLOR_MIN
+  const maxCount = isMono ? MONOCHROME_MAX : FULL_COLOR_MAX
+  const activeCount = isMono ? monochromeBudget : fullColorBudget
+  const setCount = (next: number) => {
+    const clamped = Math.min(maxCount, Math.max(minCount, Math.round(next)))
+    if (isMono) onMonochromeBudgetChange(clamped)
+    else onFullColorBudgetChange(clamped)
   }
 
   const handlePrint = () => {
@@ -166,203 +176,159 @@ export default function ThreadMapPanel({
       formatThreadMapModeLabel(result),
     )
     if (pullName) {
-      setActionStatus({ ok: true, text: `Sent ${result.slots.length} threads to “${pullName}” in Tray.` })
+      setActionStatus({ ok: true, text: `Saved ${result.slots.length} threads to “${pullName}” in Tray.` })
     } else {
       setActionStatus({ ok: false, text: 'Couldn’t save this pull to your Skein Tray.' })
     }
   }
 
-  const activeToneInfo = MONOCHROME_TONES.find((t) => t.id === monochromeTone)
-
   return (
     <div className={styles.mapPanel}>
-      {/* Mode switch: Full color | Monochrome */}
-      <div className={styles.mapControlGroup}>
+      {/* Clean top control card */}
+      <div className={styles.mapCard}>
         <div className={styles.mapModeSwitch} role="group" aria-label="Thread map mode">
           <button
             type="button"
-            aria-pressed={mode === 'full-color'}
+            aria-pressed={!isMono}
             onClick={() => onModeChange('full-color')}
           >
             Full color
           </button>
           <button
             type="button"
-            aria-pressed={mode === 'monochrome'}
+            aria-pressed={isMono}
             onClick={() => onModeChange('monochrome')}
           >
             Monochrome
           </button>
         </div>
-      </div>
 
-      {/* Budget & tone controls */}
-      {mode === 'full-color' ? (
-        <fieldset className={styles.mapFieldset}>
-          <legend className={styles.blockTitle}>DMC threads</legend>
-          <div className={styles.mapPillRow}>
-            {FULL_COLOR_BUDGETS.map((count) => (
+        {isMono && (
+          <div className={styles.mapToneRow} role="group" aria-label="Monochrome tone preset">
+            {MONOCHROME_TONES.map((preset) => (
               <button
-                key={count}
+                key={preset.id}
                 type="button"
-                className={styles.mapStepBtn}
-                aria-pressed={fullColorBudget === count}
-                onClick={() => onFullColorBudgetChange(count)}
+                className={styles.mapToneBtn}
+                aria-pressed={monochromeTone === preset.id}
+                onClick={() => onMonochromeToneChange(preset.id)}
+                title={preset.description}
               >
-                {count}
+                {preset.shortLabel}
               </button>
             ))}
-          </div>
-        </fieldset>
-      ) : (
-        <div className={styles.mapMonoControls}>
-          <fieldset className={styles.mapFieldset}>
-            <legend className={styles.blockTitle}>Monochrome tone</legend>
-            <div className={styles.groupPills} role="group" aria-label="Monochrome tone preset">
-              {MONOCHROME_TONES.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  className={styles.tonePill}
-                  aria-pressed={monochromeTone === preset.id}
-                  onClick={() => onMonochromeToneChange(preset.id)}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            {activeToneInfo && <p className={styles.statusText}>{activeToneInfo.description}</p>}
-          </fieldset>
-
-          <fieldset className={styles.mapFieldset}>
-            <legend className={styles.blockTitle}>Value steps</legend>
-            <div className={styles.mapPillRow}>
-              {MONOCHROME_BUDGETS.map((count) => (
-                <button
-                  key={count}
-                  type="button"
-                  className={styles.mapStepBtn}
-                  aria-pressed={monochromeBudget === count}
-                  onClick={() => onMonochromeBudgetChange(count)}
-                >
-                  {count} skeins
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-      )}
-
-      {stash.length > 0 && (
-        <label className={styles.mapCheck}>
-          <input
-            type="checkbox"
-            checked={preferBox}
-            onChange={(event) => onPreferBoxChange(event.target.checked)}
-          />
-          <span>Prefer my box ({stash.length} owned)</span>
-        </label>
-      )}
-
-      {/* Summary & stats */}
-      <section
-        className={styles.mapSummary}
-        aria-labelledby="thread-map-heading"
-        aria-busy={building}
-        aria-live="polite"
-      >
-        {status === 'error' && !result ? (
-          <p role="alert" className={styles.statusText}>{error}</p>
-        ) : !result || !summary ? (
-          <h2 id="thread-map-heading" className={styles.mapHeadline}>Mapping DMC threads…</h2>
-        ) : (
-          <div className={building ? styles.stale : undefined}>
-            <h2 id="thread-map-heading" className={styles.mapHeadline} data-verdict={summary.verdict}>
-              {summary.headline}
-            </h2>
-            {summary.notes.map((note) => (
-              <p key={note} className={styles.mapNote}>{note}</p>
-            ))}
-            <dl className={styles.mapFacts}>
-              {summary.facts.map((fact) => (
-                <div key={fact.label}>
-                  <dt>{fact.label}</dt>
-                  <dd>{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-            {result.mode === 'full-color' && (
-              <label className={styles.mapCheck}>
-                <input
-                  type="checkbox"
-                  checked={markMisses}
-                  onChange={(event) => onMarkMissesChange(event.target.checked)}
-                />
-                <i className={styles.mapHatchKey} aria-hidden="true" />
-                <span>Hatch what’s visibly off (&gt; ΔE 5)</span>
-              </label>
-            )}
           </div>
         )}
-      </section>
 
-      {/* Light -> Dark value strip */}
-      {result && result.slots.length > 0 && (
-        <div
-          className={`${styles.pullStrip} ${building ? styles.stale : ''}`}
-          role="group"
-          aria-label="Thread map palette lightest to darkest"
-        >
-          {result.slots.map((slot) => {
-            const isolated = selectedSlot === slot.index
-            return (
+        {/* Free, continuous thread-count slider with - / + steppers */}
+        <div className={styles.mapSliderBlock}>
+          <div className={styles.mapSliderHead}>
+            <label htmlFor="thread-map-count-slider" className={styles.mapSliderLabel}>
+              {isMono ? 'Value steps' : 'Threads'}
+            </label>
+            <div className={styles.mapStepper}>
               <button
-                key={`${slot.index}-${slot.thread.id}`}
                 type="button"
-                className={`${styles.pullStripCell} ${styles.mapStripBtn} ${isolated ? styles.mapStripActive : ''}`}
-                style={{ backgroundColor: slot.thread.hex, color: contrastInk(slot.thread.hex) }}
-                aria-pressed={isolated}
-                onClick={() => onSelectSlot(isolated ? null : slot.index)}
-                title={`#${slot.index + 1} · DMC ${slot.thread.number} ${slot.thread.name}`}
+                className={styles.mapStepTiny}
+                aria-label={isMono ? 'Fewer value steps' : 'Fewer threads'}
+                disabled={activeCount <= minCount}
+                onClick={() => setCount(activeCount - 1)}
               >
-                {slot.index + 1}
+                −
               </button>
-            )
-          })}
+              <span className={styles.mapCountReadout}>{activeCount}</span>
+              <button
+                type="button"
+                className={styles.mapStepTiny}
+                aria-label={isMono ? 'More value steps' : 'More threads'}
+                disabled={activeCount >= maxCount}
+                onClick={() => setCount(activeCount + 1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <input
+            id="thread-map-count-slider"
+            type="range"
+            className={styles.mapRange}
+            min={minCount}
+            max={maxCount}
+            step={1}
+            value={activeCount}
+            onChange={(event) => setCount(Number(event.target.value))}
+          />
         </div>
-      )}
 
-      {/* Action bar */}
-      {result && (
-        <section className={styles.mapActions} aria-label="Thread map actions">
-          <button
-            type="button"
-            className={styles.btnPrimary}
-            disabled={building || !canSave}
-            onClick={handleSendToTray}
+        {stash.length > 0 && (
+          <label className={styles.mapCheck}>
+            <input
+              type="checkbox"
+              checked={preferBox}
+              onChange={(event) => onPreferBoxChange(event.target.checked)}
+            />
+            <span>Prefer threads in my box ({stash.length})</span>
+          </label>
+        )}
+      </div>
+
+      {/* Interactive color bar + quick actions */}
+      {result && result.slots.length > 0 && (
+        <div className={`${styles.mapPaletteBar} ${building ? styles.stale : ''}`}>
+          <div
+            className={styles.mapColorStrip}
+            role="group"
+            aria-label="Thread map palette lightest to darkest"
           >
-            Send pull to Skein Tray
-          </button>
-          <button
-            type="button"
-            className={styles.btnSecondary}
-            disabled={building || !source}
-            onClick={handlePrint}
-          >
-            Print Thread Map
-          </button>
-          {hasSwaps && (
+            {result.slots.map((slot) => {
+              const isolated = selectedSlot === slot.index
+              return (
+                <button
+                  key={`${slot.index}-${slot.thread.id}`}
+                  type="button"
+                  className={`${styles.mapStripCell} ${isolated ? styles.mapStripActive : ''}`}
+                  style={{ backgroundColor: slot.thread.hex, color: contrastInk(slot.thread.hex) }}
+                  aria-pressed={isolated}
+                  onClick={() => onSelectSlot(isolated ? null : slot.index)}
+                  title={`#${slot.index + 1} · DMC ${slot.thread.number} ${slot.thread.name}`}
+                >
+                  {result.slots.length <= 16 ? slot.index + 1 : ''}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className={styles.mapActionRow}>
             <button
               type="button"
-              className={styles.linkBtn}
-              onClick={() => {
-                setSwappingIndex(null)
-                resetSwaps()
-              }}
+              className={styles.btnPrimary}
+              disabled={building || !canSave}
+              onClick={handleSendToTray}
             >
-              Reset swaps
+              Save to Tray
             </button>
-          )}
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              disabled={building || !source}
+              onClick={handlePrint}
+            >
+              Print map
+            </button>
+            {hasSwaps && (
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={() => {
+                  setSwappingIndex(null)
+                  resetSwaps()
+                }}
+              >
+                Reset swaps
+              </button>
+            )}
+          </div>
+
           {actionStatus && (
             <p
               role="status"
@@ -372,11 +338,35 @@ export default function ThreadMapPanel({
               {actionStatus.text}
             </p>
           )}
-          <p className={styles.statusText}>{THREAD_MAP_PRINT_NOTE}</p>
-        </section>
+        </div>
       )}
 
-      {/* Ordered 1..N Thread Key */}
+      {/* Compact single-line status (keeps the DMC list immediately visible above the fold) */}
+      <section
+        className={styles.mapStatusRow}
+        aria-labelledby="thread-map-heading"
+        aria-busy={building}
+        aria-live="polite"
+      >
+        {status === 'error' && !result ? (
+          <p id="thread-map-heading" role="alert" className={styles.statusText}>{error}</p>
+        ) : !result || !summary ? (
+          <h2 id="thread-map-heading" className={styles.mapStatusHeading}>Mapping DMC threads…</h2>
+        ) : (
+          <div className={`${styles.mapStatusInner} ${building ? styles.stale : ''}`}>
+            <h2 id="thread-map-heading" className={styles.mapStatusHeading} data-verdict={summary.verdict}>
+              {summary.headline}
+            </h2>
+            <span className={styles.mapStatusMetric}>
+              {result.mode === 'monochrome'
+                ? `${result.slots.length} steps · ${formatValueStep(result.score.meanDeltaL)}`
+                : `${result.slots.length} threads · avg ΔE ${formatThreadDeltaE(result.score.meanDeltaE00)}`}
+            </span>
+          </div>
+        )}
+      </section>
+
+      {/* Primary hero: bright, scannable DMC Thread List */}
       {result && (
         <section
           className={`${styles.block} ${building ? styles.stale : ''}`}
@@ -384,10 +374,10 @@ export default function ThreadMapPanel({
         >
           <div className={styles.blockHead}>
             <h3 id="thread-map-key-heading" className={styles.blockTitle}>
-              Thread key · light to dark
+              Light to dark
             </h3>
             <span className={styles.blockHint}>
-              {selectedSlot === null ? 'Click a row or photo area to isolate' : 'Click again to show all'}
+              {selectedSlot === null ? 'Tap a thread or photo area to isolate' : 'Tap again to show all'}
             </span>
           </div>
 
@@ -417,12 +407,13 @@ export default function ThreadMapPanel({
                       aria-pressed={isolated}
                       onClick={() => onSelectSlot(isolated ? null : slot.index)}
                     >
-                      <span className={styles.mapBadge} aria-hidden="true">{slot.index + 1}</span>
                       <span
-                        className={styles.mapSwatch}
-                        style={{ backgroundColor: slot.thread.hex }}
+                        className={styles.mapSwatchTile}
+                        style={{ backgroundColor: slot.thread.hex, color: contrastInk(slot.thread.hex) }}
                         aria-hidden="true"
-                      />
+                      >
+                        {slot.index + 1}
+                      </span>
                       <span className={styles.mapRowText}>
                         <span className={styles.mapRowHead}>
                           <strong>DMC {slot.thread.number}</strong>
@@ -430,21 +421,14 @@ export default function ThreadMapPanel({
                         </span>
                         <span className={styles.mapThreadName}>{slot.thread.name}</span>
                         <small className={styles.mapRowMeta}>
-                          {describeSlotMeta(slot, result.mode)}
+                          {tone}
+                          {slot.thread.colorConfidence === 'approximate' ? ' · Approx color' : ''}
                           {slot.swapped ? ' · Swapped' : ''}
                         </small>
                       </span>
                     </button>
 
                     <div className={styles.mapRowActions}>
-                      {slot.thread.colorConfidence === 'approximate' && (
-                        <span
-                          className={`${styles.pill} ${styles.pillWarn}`}
-                          title="DMC’s catalog photo for this thread was unreliable, so this color may be visibly off."
-                        >
-                          Approx
-                        </span>
-                      )}
                       <button
                         type="button"
                         className={styles.boxBtn}
@@ -574,8 +558,40 @@ export default function ThreadMapPanel({
         </section>
       )}
 
+      {/* Honest accuracy details, miss-hatching toggle & catalog caveats neatly tucked at bottom */}
+      {result && summary && (
+        <details className={styles.mapDetails}>
+          <summary>Match details &amp; print info</summary>
+          <div className={styles.mapDetailsBody}>
+            {summary.notes.map((note) => (
+              <p key={note} className={styles.mapNote}>{note}</p>
+            ))}
+            <dl className={styles.mapFacts}>
+              {summary.facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {result.mode === 'full-color' && (
+              <label className={styles.mapCheck}>
+                <input
+                  type="checkbox"
+                  checked={markMisses}
+                  onChange={(event) => onMarkMissesChange(event.target.checked)}
+                />
+                <i className={styles.mapHatchKey} aria-hidden="true" />
+                <span>Hatch what’s visibly off (&gt; ΔE 5)</span>
+              </label>
+            )}
+            <p className={styles.statusText}>{THREAD_MAP_PRINT_NOTE}</p>
+            <p className={styles.statusText}>{THREAD_MAP_CAVEAT_COPY}</p>
+          </div>
+        </details>
+      )}
+
       <BasisNote topic="thread" />
-      <p className={styles.statusText}>{THREAD_MAP_CAVEAT_COPY}</p>
 
       {printJob && typeof document !== 'undefined' && createPortal(
         <ThreadMapCard card={printJob.card} images={printJob.images} onDone={printDone} />,

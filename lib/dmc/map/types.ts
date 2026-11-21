@@ -13,13 +13,17 @@ export const VISIBLE_THREAD_MISS = 5
 
 export type ThreadMapMode = 'full-color' | 'monochrome'
 
+export const FULL_COLOR_MIN = 2
+export const FULL_COLOR_MAX = 30
 export const FULL_COLOR_BUDGETS = [6, 10, 14, 18] as const
-export type FullColorBudget = (typeof FULL_COLOR_BUDGETS)[number]
-export const DEFAULT_FULL_COLOR_BUDGET: FullColorBudget = 10
+export type FullColorBudget = number
+export const DEFAULT_FULL_COLOR_BUDGET = 12
 
+export const MONOCHROME_MIN = 2
+export const MONOCHROME_MAX = 12
 export const MONOCHROME_BUDGETS = [5, 7, 9] as const
-export type MonochromeBudget = (typeof MONOCHROME_BUDGETS)[number]
-export const DEFAULT_MONOCHROME_BUDGET: MonochromeBudget = 7
+export type MonochromeBudget = number
+export const DEFAULT_MONOCHROME_BUDGET = 7
 
 export type MonochromeTone = 'warm-grays' | 'neutral-grays' | 'cool-grays' | 'sepia-browns'
 

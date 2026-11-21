@@ -21,8 +21,8 @@ import {
 
 const toLab65 = converter('lab65')
 
-/** Value-first CIEDE2000 lightness weight (matches Paint Plan's value priority). */
-export const VALUE_PRIORITY_KL = 0.65
+/** Perceptual CIEDE2000 lightness weight — respects value without desaturating colorful areas. */
+export const VALUE_PRIORITY_KL = 0.9
 
 /** Gentle CIEDE2000 preference bonus for owned DMC threads when "Prefer my box" is active. */
 export const PREFER_BOX_DELTA_E_BONUS = 1.75
@@ -30,8 +30,12 @@ export const PREFER_BOX_DELTA_E_BONUS = 1.75
 /** Maximum coarsened colors for Full Color k-medoids fitting (scores always use full histogram). */
 const FIT_MAX_COLORS = 400
 
-/** Stop adding Full Color threads when an extra skein lowers weighted cost by less than this. */
-const MIN_MEDOID_GAIN = 0.08
+/** Stop adding Full Color threads only when an extra skein offers virtually no improvement (e.g. solid patch). */
+const MIN_MEDOID_GAIN = 0.004
+
+/** Chroma salience factor so vibrant accents (lips, petals, bright details) keep their color instead of washing into muted backgrounds. */
+const CHROMA_SALIENCE = 4.5
+const AREA_COMPRESSION = 0.82
 
 const MAX_SWAP_ITERATIONS = 25
 
@@ -141,7 +145,18 @@ function selectFullColorThreads(
   const fitLabs = computeHistogramLab(fitHist)
   const threadLabs = allThreads.map(getThreadLab)
   const weight = new Float64Array(n)
-  for (let i = 0; i < n; i++) weight[i] = fitHist.count[i] / fitHist.total
+  let weightSum = 0
+  for (let i = 0; i < n; i++) {
+    const a = fitHist.oklab[i * 3 + 1]
+    const b = fitHist.oklab[i * 3 + 2]
+    const chroma = Math.hypot(a, b)
+    const w = Math.pow(fitHist.count[i], AREA_COMPRESSION) * (1 + CHROMA_SALIENCE * chroma)
+    weight[i] = w
+    weightSum += w
+  }
+  if (weightSum > 0) {
+    for (let i = 0; i < n; i++) weight[i] /= weightSum
+  }
 
   const hasBoxPreference = Boolean(ownedSet && ownedSet.size > 0)
   const unownedPenalty = new Float32Array(m)

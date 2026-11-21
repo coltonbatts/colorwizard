@@ -9,12 +9,12 @@
 
 import { NO_THREAD, type ThreadMapResult } from '@/lib/dmc/map/types'
 
-/** Stage gray (matching simple.module.css and planRender.ts). */
-const STAGE: [number, number, number] = [0x77, 0x77, 0x77]
-const DIM = 0.72
+/** Bright soft neutral that non-isolated regions fade into so the active thread stands out cleanly. */
+const FADE_TO: [number, number, number] = [0xd8, 0xd5, 0xce]
+const DIM = 0.78
 const HATCH_PERIOD = 8
 const HATCH_WIDTH = 1
-const HATCH_INK = 0.5
+const HATCH_INK = 0.55
 
 export interface ThreadMapRenderOptions {
   /** Slot index to isolate, or null for all threads. */
@@ -44,9 +44,9 @@ export function renderThreadMap(
 
       const dimmed = options.selected !== null && owner !== options.selected
       if (dimmed) {
-        r = r * (1 - DIM) + STAGE[0] * DIM
-        g = g * (1 - DIM) + STAGE[1] * DIM
-        b = b * (1 - DIM) + STAGE[2] * DIM
+        r = r * (1 - DIM) + FADE_TO[0] * DIM
+        g = g * (1 - DIM) + FADE_TO[1] * DIM
+        b = b * (1 - DIM) + FADE_TO[2] * DIM
       } else if (hatch && visiblyOff[p] && (x + y) % HATCH_PERIOD < HATCH_WIDTH) {
         r *= HATCH_INK
         g *= HATCH_INK

@@ -232,28 +232,31 @@ describe('ThreadMapPanel', () => {
   it('invites opening a photo when no source is open', () => {
     const html = renderToStaticMarkup(createElement(ThreadMapPanel, { ...baseProps, source: null }))
     expect(html).toContain('Build a painterly Thread Map')
-    expect(html).toContain('Open reference photo')
+    expect(html).toContain('Open photo')
     expect(html).not.toMatch(/exact/i)
   })
 
-  it('renders Full Color controls, thread key, approximate badge, actions, and thread basis note without saying exact', () => {
+  it('renders Full Color slider, thread key, approximate note, actions, and thread basis note without saying exact', () => {
     const html = renderToStaticMarkup(createElement(ThreadMapPanel, baseProps))
     expect(html).toContain('Full color')
     expect(html).toContain('Monochrome')
-    expect(html).toContain('Prefer my box')
+    expect(html).toContain('type="range"')
+    expect(html).toContain('min="2"')
+    expect(html).toContain('max="30"')
+    expect(html).toContain('Prefer threads in my box')
     expect(html).toContain('Hatch what’s visibly off')
     expect(html).toContain('DMC 648')
     expect(html).toContain('DMC 647')
     expect(html).toContain('DMC 646')
-    expect(html).toContain('Approx')
-    expect(html).toContain('Send pull to Skein Tray')
-    expect(html).toContain('Print Thread Map')
+    expect(html).toContain('Approx color')
+    expect(html).toContain('Save to Tray')
+    expect(html).toContain('Print map')
     expect(html).toContain('data-topic="thread"')
     expect(html).not.toMatch(/\bexact\b/i)
     expect(html).not.toMatch(/\bverified\b/i)
   })
 
-  it('renders Monochrome tone presets and step budgets cleanly', () => {
+  it('renders Monochrome tone presets and continuous step slider cleanly', () => {
     const monoMap: ThreadMapResult = {
       ...sampleMap,
       mode: 'monochrome',
@@ -266,13 +269,12 @@ describe('ThreadMapPanel', () => {
       mode: 'monochrome',
       state: { ...baseProps.state, result: monoMap },
     }))
-    expect(html).toContain('Warm grays')
-    expect(html).toContain('Neutral grays')
-    expect(html).toContain('Cool grays')
-    expect(html).toContain('Sepia &amp; browns')
-    expect(html).toContain('5 skeins')
-    expect(html).toContain('7 skeins')
-    expect(html).toContain('9 skeins')
+    expect(html).toContain('>Warm<')
+    expect(html).toContain('>Neutral<')
+    expect(html).toContain('>Cool<')
+    expect(html).toContain('>Sepia<')
+    expect(html).toContain('min="2"')
+    expect(html).toContain('max="12"')
     expect(html).not.toContain('Hatch what’s visibly off')
     expect(html).toContain('data-topic="thread"')
     expect(html).not.toMatch(/\bexact\b/i)
