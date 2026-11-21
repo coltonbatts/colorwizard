@@ -36,15 +36,24 @@ import type {
   ScoredDMCThread,
   ThreadMatchResult,
 } from '@/lib/dmc/types'
+import { buildPullName } from '@/lib/dmc/map/mapFit'
+import type {
+  FullColorBudget,
+  MonochromeBudget,
+  MonochromeTone,
+  ThreadMapMode,
+} from '@/lib/dmc/map/types'
 import { useDmcStore } from '@/lib/store/useDmcStore'
 import BasisNote from './BasisNote'
 import FlossImage from './FlossImage'
 import { SETTLE_MS, useCopy, useDmcCatalog, useSettled, useThreadMatch } from './readoutHooks'
 import type { PickedColor } from './SimpleCanvas'
+import ThreadMapPanel from './ThreadMapPanel'
 import type { ShownThread } from './ThreadView'
+import type { ThreadMapState } from './useThreadMap'
 import styles from './threadStudio.module.css'
 
-export type StudioTab = 'match' | 'browse' | 'tray'
+export type StudioTab = 'match' | 'map' | 'browse' | 'tray'
 
 export interface ThreadSavePayload {
   number: string
@@ -564,8 +573,28 @@ export function BridgeFinderCard({
 
 /* ---------- Main Thread Studio ---------- */
 
+export interface ThreadMapBindings {
+  state: ThreadMapState
+  mode: ThreadMapMode
+  onModeChange: (mode: ThreadMapMode) => void
+  fullColorBudget: FullColorBudget
+  onFullColorBudgetChange: (budget: FullColorBudget) => void
+  monochromeBudget: MonochromeBudget
+  onMonochromeBudgetChange: (budget: MonochromeBudget) => void
+  monochromeTone: MonochromeTone
+  onMonochromeToneChange: (tone: MonochromeTone) => void
+  preferBox: boolean
+  onPreferBoxChange: (prefer: boolean) => void
+  selectedSlot: number | null
+  onSelectSlot: (slot: number | null) => void
+  markMisses: boolean
+  onMarkMissesChange: (on: boolean) => void
+  onSaveMapPull: (threads: ThreadSavePayload[], pullName: string) => string | null
+}
+
 interface ThreadStudioProps {
   source: HTMLCanvasElement | null
+  pictureName?: string
   imageValue: ImageValueContext | null
   color: PickedColor | null
   savedColor: SavedColor | null
@@ -590,14 +619,18 @@ interface ThreadStudioProps {
   valueView: boolean
   onToggleValueView: () => void
   libraryTools: ReactNode
+  threadMap?: ThreadMapBindings
   standalone?: boolean
-  /** Controlled tab for phone compact mode; uncontrolled on desktop/iPad. */
+  /** Controlled tab across desktop, iPad, and phone. */
   activeTab?: StudioTab
   onTabChange?: (tab: StudioTab) => void
+  /** Hide the internal tab strip when the host renders its own (phone sub-bar). */
+  hideSubTabs?: boolean
 }
 
 export default function ThreadStudio({
   source,
+  pictureName,
   imageValue,
   color,
   savedColor,
@@ -616,9 +649,11 @@ export default function ThreadStudio({
   valueView,
   onToggleValueView,
   libraryTools,
+  threadMap,
   standalone = false,
   activeTab: controlledTab,
   onTabChange,
+  hideSubTabs = false,
 }: ThreadStudioProps) {
   const { catalog, failed: catalogFailed } = useDmcCatalog()
   const stash = useDmcStore((s) => s.stash)
@@ -1335,7 +1370,7 @@ export default function ThreadStudio({
             <div>
               <h1 className={styles.standaloneTitle}>DMC Thread Studio</h1>
               <p className={styles.standaloneLead}>
-                Match skeins from a reference photo, browse all 488 DMC shades by warmth and value, check grayscale steps, and find smooth bridge threads.
+                Match skeins from a reference photo, build painterly Full Color or Monochrome Thread Maps, browse all 488 DMC shades by warmth and value, check grayscale steps, and find smooth bridge threads.
               </p>
             </div>
             <button type="button" className={styles.btnPrimary} onClick={onChoosePicture}>
@@ -1352,9 +1387,67 @@ export default function ThreadStudio({
     )
   }
 
+  const renderMapSection = () => {
+    if (!threadMap) {
+      return (
+        <div className={styles.emptyPrompt}>
+          <h3>Build a painterly Thread Map</h3>
+          <p>Open a reference photo to map smooth color planes or monochrome value ramps into curated DMC skeins.</p>
+          <div className={styles.heroActions}>
+            <button type="button" className={styles.btnPrimary} onClick={onChoosePicture}>
+              Open reference photo…
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <ThreadMapPanel
+        source={source}
+        pictureName={pictureName}
+        state={threadMap.state}
+        mode={threadMap.mode}
+        onModeChange={threadMap.onModeChange}
+        fullColorBudget={threadMap.fullColorBudget}
+        onFullColorBudgetChange={threadMap.onFullColorBudgetChange}
+        monochromeBudget={threadMap.monochromeBudget}
+        onMonochromeBudgetChange={threadMap.onMonochromeBudgetChange}
+        monochromeTone={threadMap.monochromeTone}
+        onMonochromeToneChange={threadMap.onMonochromeToneChange}
+        preferBox={threadMap.preferBox}
+        onPreferBoxChange={threadMap.onPreferBoxChange}
+        selectedSlot={threadMap.selectedSlot}
+        onSelectSlot={threadMap.onSelectSlot}
+        markMisses={threadMap.markMisses}
+        onMarkMissesChange={threadMap.onMarkMissesChange}
+        allThreads={catalog?.threads ?? []}
+        stash={stash}
+        onToggleStash={toggleStash}
+        canSave={canSave}
+        onSendPullToTray={(threadsToSave) => {
+          const currentMap = threadMap.state.result
+          if (!currentMap) return null
+          const pullName = buildPullName(
+            pictureName,
+            currentMap,
+            library.collections.map((c) => c.name),
+          )
+          const savedName = threadMap.onSaveMapPull(
+            threadsToSave.map((t) => toSavePayload(t, 0)),
+            pullName,
+          )
+          if (savedName) setTab('tray')
+          return savedName
+        }}
+        onChoosePicture={onChoosePicture}
+      />
+    )
+  }
+
   return (
     <div className={styles.studio}>
-      {controlledTab === undefined && (
+      {!hideSubTabs && (
         <div className={styles.subTabs} role="tablist" aria-label="Thread studio views">
           <button
             type="button"
@@ -1364,6 +1457,15 @@ export default function ThreadStudio({
             onClick={() => setTab('match')}
           >
             Match
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={styles.subTab}
+            aria-selected={tab === 'map'}
+            onClick={() => setTab('map')}
+          >
+            Map
           </button>
           <button
             type="button"
@@ -1389,6 +1491,7 @@ export default function ThreadStudio({
 
       <div className={styles.body}>
         {tab === 'match' && renderMatchSection()}
+        {tab === 'map' && renderMapSection()}
         {tab === 'browse' && renderBrowseSection()}
         {tab === 'tray' && renderTraySection()}
       </div>

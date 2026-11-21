@@ -129,12 +129,12 @@
   color: var(--s-white) !important;
 }
 
-/* Inner Thread Studio tabs: Match | Browse | Tray */
+/* Inner Thread Studio tabs: Match | Map | Browse | Tray */
 .subTabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--s-rule);
   background: var(--s-paper);
   flex-shrink: 0;
@@ -1127,24 +1127,25 @@
   transition: opacity 120ms;
 }
 
-/* Compact phone sub-bar for switching Match / Browse / Tray inside the one-handed panel. */
+/* Compact phone sub-bar for switching Match / Map / Browse / Tray inside the one-handed panel. */
 .phoneSubBar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px 0;
+  gap: 3px;
+  padding: 6px 8px 0;
   flex-shrink: 0;
 }
 
 .phoneSubBar button {
   min-height: 30px;
-  padding: 2px 10px;
+  padding: 2px 8px;
   border: 1px solid var(--s-rule);
   border-radius: 999px;
   background: var(--s-white);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--s-ink-2);
+  white-space: nowrap;
 }
 
 .phoneSubBar button[aria-selected='true'],
@@ -1156,6 +1157,369 @@
 
 .phoneSubSpacer {
   flex: 1;
+  min-width: 2px;
+}
+
+/* ---------- Painterly Thread Map & Monochrome Value Ramp ---------- */
+
+.mapPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mapControlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapModeSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--s-rule);
+  border-radius: 7px;
+  background: var(--s-white);
+  overflow: hidden;
+}
+
+.mapModeSwitch button {
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.mapModeSwitch button:hover {
+  color: var(--s-ink);
+}
+
+.mapModeSwitch button[aria-pressed='true'] {
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-weight: 600;
+}
+
+.mapMonoControls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mapFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapFieldset legend {
+  padding: 0;
+  margin-bottom: 2px;
+}
+
+.mapPillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mapStepBtn {
+  min-height: 32px;
+  min-width: 46px;
+  padding: 4px 12px;
+  border: 1px solid var(--s-rule);
+  border-radius: 6px;
+  background: var(--s-white);
+  font-family: var(--s-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.mapStepBtn:hover {
+  border-color: var(--s-ink);
+  color: var(--s-ink);
+}
+
+.mapStepBtn[aria-pressed='true'] {
+  border-color: var(--s-ink);
+  background: var(--s-ink);
+  color: var(--s-white) !important;
+  font-weight: 600;
+}
+
+.mapCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--s-ink-2);
+  cursor: pointer;
+}
+
+.mapCheck input {
+  margin: 0;
+}
+
+.mapHatchKey {
+  display: inline-block;
+  width: 20px;
+  height: 13px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(135deg, var(--s-ink) 0 1px, transparent 1px 5px);
+  box-shadow: inset 0 0 0 1px var(--s-rule);
+}
+
+.mapSummary {
+  padding-top: 12px;
+  border-top: 1px solid var(--s-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapHeadline {
+  margin: 0 0 4px;
+  font-family: var(--s-serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--s-ink);
+}
+
+.mapNote {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--s-ink-2);
+}
+
+.mapFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  margin: 8px 0 6px;
+}
+
+.mapFacts div {
+  min-width: 0;
+}
+
+.mapFacts dt {
+  font-size: 11px;
+  color: var(--s-ink-2);
+}
+
+.mapFacts dd {
+  margin: 1px 0 0;
+  font-family: var(--s-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--s-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mapStripBtn {
+  border: 0;
+  padding: 0 0 3px;
+  cursor: pointer;
+}
+
+.mapStripActive {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 1px;
+}
+
+.mapActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mapActionStatus,
+.mapActionError {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--s-ink-2);
+}
+
+.mapActionError {
+  color: var(--s-ink);
+  font-weight: 600;
+}
+
+.mapList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--s-rule);
+  border-radius: 8px;
+  background: var(--s-white);
+}
+
+.mapRow:hover {
+  border-color: var(--s-ink-2);
+}
+
+.mapRowActive {
+  border-color: var(--s-ink);
+  box-shadow: inset 0 0 0 1px var(--s-ink);
+}
+
+.mapRowMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.mapBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1.25px solid var(--s-ink);
+  border-radius: 999px;
+  background: var(--s-white);
+  font-family: var(--s-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--s-ink);
+}
+
+.mapSwatch {
+  display: block;
+  width: 24px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.16);
+}
+
+.mapRowText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.mapRowHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mapRowHead strong {
+  font-family: var(--s-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--s-ink);
+  flex-shrink: 0;
+}
+
+.mapThreadName {
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--s-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapRowMeta {
+  font-size: 11px;
+  color: var(--s-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapShare {
+  font-family: var(--s-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--s-ink-2);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.mapRowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.swapPicker {
+  padding: 10px 11px;
+  border: 1px solid var(--s-ink);
+  border-radius: 8px;
+  background: var(--s-paper);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.swapHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--s-ink-2);
+}
+
+.swapHeader strong {
+  color: var(--s-ink);
+  font-family: var(--s-mono);
+}
+
+.swapGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.swapGroupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--s-ink-2);
 }
 
 @media (max-width: 860px) {

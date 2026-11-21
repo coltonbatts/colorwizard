@@ -13,6 +13,15 @@ import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary
 import { hexToRgb } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
 import { computeImageValueContextFromCanvas } from '@/lib/dmc/studio'
+import {
+  DEFAULT_FULL_COLOR_BUDGET,
+  DEFAULT_MONOCHROME_BUDGET,
+  type FullColorBudget,
+  type MonochromeBudget,
+  type MonochromeTone,
+  type ThreadMapMode,
+} from '@/lib/dmc/map/types'
+import { useDmcStore } from '@/lib/store/useDmcStore'
 import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -25,7 +34,9 @@ import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPane
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
+import { renderThreadMap, threadSlotAt } from './threadMapRender'
 import { usePicturePlan } from './usePlan'
+import { useThreadMap } from './useThreadMap'
 import type { PourOrigin } from './pour'
 import SimpleCanvas, { type PickedColor, type SamplePoint } from './SimpleCanvas'
 import ThreadStudio, { type StudioTab, type ThreadSavePayload } from './ThreadStudio'
@@ -111,9 +122,18 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [entryOpen, setEntryOpen] = useState(false)
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
   const [section, setSection] = useState<AppSection>(initialSection ?? 'color')
-  const [phoneThreadTab, setPhoneThreadTab] = useState<StudioTab>('match')
+  const [threadTab, setThreadTab] = useState<StudioTab>('match')
+  const [threadMapMode, setThreadMapMode] = useState<ThreadMapMode>('full-color')
+  const [threadFullBudget, setThreadFullBudget] = useState<FullColorBudget>(DEFAULT_FULL_COLOR_BUDGET)
+  const [threadMonoBudget, setThreadMonoBudget] = useState<MonochromeBudget>(DEFAULT_MONOCHROME_BUDGET)
+  const [threadMonoTone, setThreadMonoTone] = useState<MonochromeTone>('warm-grays')
+  const [threadPreferBox, setThreadPreferBox] = useState(false)
+  const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
+  const [markThreadMisses, setMarkThreadMisses] = useState(true)
+  const dmcStash = useDmcStore((s) => s.stash)
   const isPhone = useMediaQuery('(max-width: 760px)')
   const isThreadSection = section === 'thread' && !planMode && !processMode
+  const isThreadMapActive = isThreadSection && threadTab === 'map' && Boolean(source)
   const phoneThreadView = isPhone && isThreadSection
   const openRequestRef = useRef(0)
 
@@ -139,6 +159,23 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   // A new plan (another budget, palette or picture) starts with every pile showing.
   useEffect(() => setSelectedPile(null), [plan])
 
+  const threadMapBudget = threadMapMode === 'monochrome' ? threadMonoBudget : threadFullBudget
+  const threadMapState = useThreadMap(
+    source,
+    isThreadMapActive,
+    threadMapMode,
+    threadMapBudget,
+    threadMonoTone,
+    threadPreferBox,
+    dmcStash,
+  )
+  const threadMap = threadMapState.result
+
+  // Reset thread isolation when switching photo, mode, tone, or budget (preserving isolation during live swaps).
+  useEffect(() => {
+    setSelectedThreadSlot(null)
+  }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadPreferBox])
+
   const changeBudget = useCallback((next: Budget) => {
     setBudget(next)
     storeBudget(next)
@@ -160,7 +197,27 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     ctx.putImageData(image, 0, 0)
     return canvas
   }, [planMode, peek, plan, selectedPile, markMisses])
-  const display = planMode ? planDisplay : processMode && !peek ? processDisplay : null
+
+  const threadMapDisplay = useMemo(() => {
+    if (!isThreadMapActive || peek || !threadMap) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = threadMap.width
+    canvas.height = threadMap.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    const image = ctx.createImageData(threadMap.width, threadMap.height)
+    image.data.set(renderThreadMap(threadMap, { selected: selectedThreadSlot, markMisses: markThreadMisses }))
+    ctx.putImageData(image, 0, 0)
+    return canvas
+  }, [isThreadMapActive, peek, threadMap, selectedThreadSlot, markThreadMisses])
+
+  const display = planMode
+    ? planDisplay
+    : processMode && !peek
+      ? processDisplay
+      : isThreadMapActive
+        ? threadMapDisplay
+        : null
 
   const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string) => {
     const request = ++openRequestRef.current
@@ -181,6 +238,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setProcessMode(false)
       setProcessPosition(0)
       setSelectedPile(null)
+      setSelectedThreadSlot(null)
     } catch {
       if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
     } finally {
@@ -217,12 +275,19 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setSelectedPile((current) => (origin && current === pile ? null : pile))
       return
     }
+    if (isThreadMapActive) {
+      // In Thread Map a click isolates that DMC thread on the canvas; clicking it again shows all threads.
+      if (!threadMap || !source) return
+      const slot = threadSlotAt(threadMap, nextPoint.x, nextPoint.y, source.width, source.height)
+      setSelectedThreadSlot((current) => (origin && current === slot ? null : slot))
+      return
+    }
     setSavedColor(null)
     setPoint(nextPoint)
     setColor(picked)
-    setPhoneThreadTab('match')
+    setThreadTab('match')
     arrive(origin)
-  }, [arrive, plan, planMode, processMode, source])
+  }, [arrive, isThreadMapActive, plan, planMode, processMode, source, threadMap])
 
   const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
@@ -307,6 +372,31 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     if (!updateLibrary(working)) return 0
     refreshSaved(working)
     return count
+  }
+
+  const saveThreadMapPull = (threadsToSave: ThreadSavePayload[], requestedName: string) => {
+    if (threadsToSave.length === 0) return null
+    const now = Date.now()
+    const made = createCollection(library, { id: newId(), name: requestedName, now })
+    let working = made.library
+    const collectionId = made.collection?.id ?? null
+    for (const thread of threadsToSave) {
+      const saved = saveColor(working, {
+        id: newId(),
+        hex: thread.hex.toUpperCase(),
+        name: thread.name,
+        now,
+        pictureName,
+        thread,
+      })
+      working = collectionId
+        ? setMembership(saved.library, saved.color.id, collectionId, true, now)
+        : saved.library
+    }
+    if (!updateLibrary(working)) return null
+    refreshSaved(working)
+    if (collectionId) setCollectionFilter(collectionId)
+    return made.collection?.name ?? 'All'
   }
 
   const createNamedCollection = (name: string) => {
@@ -405,6 +495,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         setPeek(true)
       } else if (event.key === 'Escape') {
         setSelectedPile(null)
+        setSelectedThreadSlot(null)
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
@@ -465,7 +556,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     setSavedColor(entry)
     setPlanMode(false)
     setProcessMode(false)
-    setPhoneThreadTab('match')
+    setThreadTab('match')
   }
 
   const modeSwitch = (
@@ -475,8 +566,28 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     </div>
   )
 
+  const threadMapBindings = {
+    state: threadMapState,
+    mode: threadMapMode,
+    onModeChange: setThreadMapMode,
+    fullColorBudget: threadFullBudget,
+    onFullColorBudgetChange: setThreadFullBudget,
+    monochromeBudget: threadMonoBudget,
+    onMonochromeBudgetChange: setThreadMonoBudget,
+    monochromeTone: threadMonoTone,
+    onMonochromeToneChange: setThreadMonoTone,
+    preferBox: threadPreferBox,
+    onPreferBoxChange: setThreadPreferBox,
+    selectedSlot: threadMap && selectedThreadSlot !== null && selectedThreadSlot < threadMap.slots.length ? selectedThreadSlot : null,
+    onSelectSlot: setSelectedThreadSlot,
+    markMisses: markThreadMisses,
+    onMarkMissesChange: setMarkThreadMisses,
+    onSaveMapPull: saveThreadMapPull,
+  }
+
   const threadStudioProps = {
     source,
+    pictureName,
     imageValue,
     color,
     savedColor,
@@ -495,6 +606,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     valueView,
     onToggleValueView: () => setValueView((on) => !on),
     libraryTools,
+    threadMap: threadMapBindings,
   }
 
   const notices = (
@@ -585,12 +697,20 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         key={pictureId}
         source={source}
         display={display}
-        label={planMode ? `Your picture repainted with ${plan?.plan.piles.length ?? budget} piles. Click a part to see its pile, drag to move, scroll or pinch to zoom.` : processMode ? 'A calculated stage of painting your picture. Drag to move, scroll or pinch to zoom.' : undefined}
+        label={
+          planMode
+            ? `Your picture repainted with ${plan?.plan.piles.length ?? budget} piles. Click a part to see its pile, drag to move, scroll or pinch to zoom.`
+            : processMode
+              ? 'A calculated stage of painting your picture. Drag to move, scroll or pinch to zoom.'
+              : isThreadMapActive
+                ? `Your photo mapped to ${threadMap?.slots.length ?? threadMapBudget} DMC threads. Click a part to isolate its thread, drag to move, scroll or pinch to zoom.`
+                : undefined
+        }
         valueView={valueView}
-        point={planMode || processMode ? null : point}
+        point={planMode || processMode || isThreadMapActive ? null : point}
         onSample={handleSample}
       >
-        {((planMode && plan) || (processMode && processStages)) && (
+        {((planMode && plan) || (processMode && processStages) || (isThreadMapActive && threadMap)) && (
           <div className={styles.stageOverlay}>
             <button
               type="button"
@@ -633,9 +753,10 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       {phoneThreadView ? (
         <aside className={`${styles.panel} ${styles.threadPanel}`} aria-label="Thread">
           <div className={threadStyles.phoneSubBar} role="tablist" aria-label="Thread studio views">
-            <button type="button" role="tab" aria-selected={phoneThreadTab === 'match'} onClick={() => setPhoneThreadTab('match')}>Match</button>
-            <button type="button" role="tab" aria-selected={phoneThreadTab === 'browse'} onClick={() => setPhoneThreadTab('browse')}>Browse</button>
-            <button type="button" role="tab" aria-selected={phoneThreadTab === 'tray'} onClick={() => setPhoneThreadTab('tray')}>Tray</button>
+            <button type="button" role="tab" aria-selected={threadTab === 'match'} onClick={() => setThreadTab('match')}>Match</button>
+            <button type="button" role="tab" aria-selected={threadTab === 'map'} onClick={() => setThreadTab('map')}>Map</button>
+            <button type="button" role="tab" aria-selected={threadTab === 'browse'} onClick={() => setThreadTab('browse')}>Browse</button>
+            <button type="button" role="tab" aria-selected={threadTab === 'tray'} onClick={() => setThreadTab('tray')}>Tray</button>
             <span className={threadStyles.phoneSubSpacer} />
             {source && (
               <button type="button" aria-pressed={valueView} onClick={() => setValueView((on) => !on)} title="Show values only">
@@ -645,7 +766,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           </div>
           {notices}
           <div className={styles.threadScroll}>
-            {phoneThreadTab === 'match' ? (
+            {threadTab === 'match' ? (
               <>
                 {color
                   ? <ThreadView hex={color.hex} savedColor={savedColor} existing={findByHex(library, color.hex) ?? null} canSave={savedReadable} onSave={saveCurrent} />
@@ -653,7 +774,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                 {savedList}
               </>
             ) : (
-              <ThreadStudio {...threadStudioProps} activeTab={phoneThreadTab} onTabChange={setPhoneThreadTab} />
+              <ThreadStudio {...threadStudioProps} activeTab={threadTab} onTabChange={setThreadTab} hideSubTabs />
             )}
           </div>
           {phoneBar}
@@ -669,7 +790,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
             </div>
           </div>
           {notices}
-          <ThreadStudio {...threadStudioProps} />
+          <ThreadStudio {...threadStudioProps} activeTab={threadTab} onTabChange={setThreadTab} />
         </aside>
       ) : (
       <aside className={styles.panel} aria-label={planMode ? 'Plan' : processMode ? 'Painting process' : 'Color'}>

@@ -1,7 +1,9 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import type { ThreadMapResult } from '@/lib/dmc/map/types'
 import type { DMCThread, ScoredDMCThread, ThreadMatchResult } from '@/lib/dmc/types'
+import ThreadMapPanel from './ThreadMapPanel'
 import { BridgeFinderCard, ThreadDetailCard, ThreadMatchCard } from './ThreadStudio'
 
 const makeThread = (
@@ -164,5 +166,115 @@ describe('BridgeFinderCard', () => {
     expect(html).toContain('DMC 647')
     expect(html).toContain('Same tone only')
     expect(html).toContain('aria-pressed="true"')
+  })
+})
+
+describe('ThreadMapPanel', () => {
+  const sampleMap: ThreadMapResult = {
+    mode: 'full-color',
+    budget: 10,
+    monochromeTone: null,
+    preferBox: false,
+    width: 4,
+    height: 4,
+    slots: [
+      { index: 0, thread: light, area: 0.4, meanDeltaE00: 1.8, meanDeltaL: 0.02, targetHex: '#B0A69E', swapped: false },
+      { index: 1, thread: makeThread('647', 'Beaver Gray Med', '#8A8178', 0.59, 2.4, 'approximate'), area: 0.35, meanDeltaE00: 2.4, meanDeltaL: 0.03, targetHex: '#8A8178', swapped: false },
+      { index: 2, thread: dark, area: 0.25, meanDeltaE00: 3.1, meanDeltaL: 0.04, targetHex: '#6B625A', swapped: false },
+    ],
+    slot: new Uint8Array(16),
+    visiblyOff: new Uint8Array(16),
+    score: {
+      threadCount: 3,
+      meanDeltaE00: 2.3,
+      p95DeltaE00: 4.1,
+      meanDeltaL: 0.028,
+      visiblyOffArea: 0.06,
+      approximateThreads: 1,
+    },
+    imageOklabLRange: { min: 0.45, max: 0.74 },
+    ms: 12,
+  }
+
+  const baseProps = {
+    source: {} as HTMLCanvasElement,
+    pictureName: 'portrait.jpg',
+    state: {
+      status: 'ready' as const,
+      result: sampleMap,
+      hasSwaps: false,
+      error: null,
+      swapThread: () => undefined,
+      resetSwaps: () => undefined,
+    },
+    mode: 'full-color' as const,
+    onModeChange: () => undefined,
+    fullColorBudget: 10 as const,
+    onFullColorBudgetChange: () => undefined,
+    monochromeBudget: 7 as const,
+    onMonochromeBudgetChange: () => undefined,
+    monochromeTone: 'warm-grays' as const,
+    onMonochromeToneChange: () => undefined,
+    preferBox: false,
+    onPreferBoxChange: () => undefined,
+    selectedSlot: null,
+    onSelectSlot: () => undefined,
+    markMisses: true,
+    onMarkMissesChange: () => undefined,
+    allThreads: [light, mid, dark, owned],
+    stash: ['648'],
+    onToggleStash: () => undefined,
+    canSave: true,
+    onSendPullToTray: () => 'portrait · Map (3)',
+    onChoosePicture: () => undefined,
+  }
+
+  it('invites opening a photo when no source is open', () => {
+    const html = renderToStaticMarkup(createElement(ThreadMapPanel, { ...baseProps, source: null }))
+    expect(html).toContain('Build a painterly Thread Map')
+    expect(html).toContain('Open reference photo')
+    expect(html).not.toMatch(/exact/i)
+  })
+
+  it('renders Full Color controls, thread key, approximate badge, actions, and thread basis note without saying exact', () => {
+    const html = renderToStaticMarkup(createElement(ThreadMapPanel, baseProps))
+    expect(html).toContain('Full color')
+    expect(html).toContain('Monochrome')
+    expect(html).toContain('Prefer my box')
+    expect(html).toContain('Hatch what’s visibly off')
+    expect(html).toContain('DMC 648')
+    expect(html).toContain('DMC 647')
+    expect(html).toContain('DMC 646')
+    expect(html).toContain('Approx')
+    expect(html).toContain('Send pull to Skein Tray')
+    expect(html).toContain('Print Thread Map')
+    expect(html).toContain('data-topic="thread"')
+    expect(html).not.toMatch(/\bexact\b/i)
+    expect(html).not.toMatch(/\bverified\b/i)
+  })
+
+  it('renders Monochrome tone presets and step budgets cleanly', () => {
+    const monoMap: ThreadMapResult = {
+      ...sampleMap,
+      mode: 'monochrome',
+      budget: 7,
+      monochromeTone: 'warm-grays',
+      score: { ...sampleMap.score, visiblyOffArea: 0 },
+    }
+    const html = renderToStaticMarkup(createElement(ThreadMapPanel, {
+      ...baseProps,
+      mode: 'monochrome',
+      state: { ...baseProps.state, result: monoMap },
+    }))
+    expect(html).toContain('Warm grays')
+    expect(html).toContain('Neutral grays')
+    expect(html).toContain('Cool grays')
+    expect(html).toContain('Sepia &amp; browns')
+    expect(html).toContain('5 skeins')
+    expect(html).toContain('7 skeins')
+    expect(html).toContain('9 skeins')
+    expect(html).not.toContain('Hatch what’s visibly off')
+    expect(html).toContain('data-topic="thread"')
+    expect(html).not.toMatch(/\bexact\b/i)
   })
 })
