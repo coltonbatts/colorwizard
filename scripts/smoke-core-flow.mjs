@@ -16,6 +16,10 @@ await sharp(Buffer.from('<svg width="600" height="400"><path fill="#C65D3B" d="M
 const results = []
 const browser = await chromium.launch({ headless: true })
 const paint = page => page.getByRole('region', { name: 'Paint', exact: true })
+// A flat terracotta picture: every pixel is #C45C3E, so any click reads the same color.
+// (The welcome's demo used to be this color; it is now a real picture, checked in demoFlow.)
+const terracottaFixture = path.join(artifacts, 'terracotta.png')
+await sharp({ create: { width: 512, height: 512, channels: 3, background: '#C45C3E' } }).png().toFile(terracottaFixture)
 const canvas = page => page.locator('canvas[aria-label^="Your picture."]')
 const hexReadout = page => page.locator('button[title="Copy hex"]')
 const saveButton = page => page.getByRole('button', { name: /^(Save color|Update saved color)$/ })
@@ -62,6 +66,11 @@ async function pick(page, fraction, touch, expected, verifyPixel = true) {
   const box = await canvas(page).boundingBox()
   if (touch) await page.touchscreen.tap(box.x + box.width * fraction, box.y + box.height / 2)
   else await page.mouse.click(box.x + box.width * fraction, box.y + box.height / 2)
+}
+
+async function openTerracotta(page) {
+  await page.setInputFiles('input[type=file][accept="image/*"]', terracottaFixture)
+  await canvas(page).waitFor({ state: 'visible' })
 }
 
 async function upload(page, file, touch) {
@@ -136,7 +145,7 @@ async function runViewport(name, options) {
       Worker.prototype.postMessage = function (...args) { setTimeout(() => post.apply(this, args), 350) }
     })
     await page.goto(origin, { waitUntil: 'networkidle' })
-    await tap(page, page.getByRole('button', { name: 'Try demo color Terracotta', exact: true }), options.hasTouch)
+    await openTerracotta(page)
     await pick(page, .5, options.hasTouch, '#C45C3E')
     await waitForRecipe(page, '#C45C3E')
     await saveAndRead(page, options.hasTouch, '#C45C3E')
@@ -204,6 +213,29 @@ async function runViewport(name, options) {
   } finally { await context.close() }
 }
 
+// The welcome's demo opens a real picture (lib/demoPicture.ts) with a first sample already taken.
+async function demoFlow(name, options) {
+  const context = await browser.newContext(options)
+  const page = await context.newPage()
+  const issues = watch(page)
+  try {
+    await page.goto(origin, { waitUntil: 'networkidle' })
+    await tap(page, page.getByRole('button', { name: 'Try a demo picture', exact: true }), options.hasTouch)
+    await canvas(page).waitFor({ state: 'visible' })
+    await hexReadout(page).waitFor()
+    const hex = await hexReadout(page).innerText()
+    assert.equal(hex, '#DAC49F', 'The demo’s first sample moved; re-check lib/demoPicture.ts')
+    await waitForRecipe(page, hex)
+    await page.getByText('Close in catalog').first().waitFor()
+    // Plan is one click away and the demo was chosen because it reads as a fair repaint at the default 8 piles.
+    await tap(page, page.getByRole('button', { name: 'Plan', exact: true }), options.hasTouch)
+    await page.getByRole('heading', { name: 'A fair repaint' }).waitFor({ timeout: 30000 })
+    await page.screenshot({ path: path.join(artifacts, `demo-${name}.png`) })
+    assert.deepEqual(issues, [])
+    results.push({ name: `demo-${name}`, status: 'passed', hex })
+  } finally { await context.close() }
+}
+
 async function storageFailures() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const page = await context.newPage()
@@ -236,7 +268,7 @@ async function storageFailures() {
   await page.evaluate(key => localStorage.setItem(key, '{damaged'), savedKey)
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('alert').filter({ hasText: 'Saved colors couldn’t be read' }).waitFor()
-  await page.getByRole('button', { name: 'Try demo color Terracotta' }).click()
+  await openTerracotta(page)
   await pick(page, .5, false, '#C45C3E')
   await waitForRecipe(page, '#C45C3E')
   assert.ok(await saveButton(page).isDisabled(), 'Save must be disabled when existing data cannot be read')
@@ -271,7 +303,7 @@ async function imageAndSolverBoundaries() {
   await input.setInputFiles({ name: 'slow.png', mimeType: 'image/png', buffer: await readFile(fixture) })
   await page.getByRole('status').filter({ hasText: 'Opening picture…' }).waitFor()
   // A newer choice wins even when the older image finishes decoding last.
-  await page.getByRole('button', { name: 'Try demo color Terracotta' }).click()
+  await openTerracotta(page)
   await pick(page, .5, false, '#C45C3E')
   await waitForRecipe(page, '#C45C3E')
   await page.waitForTimeout(700)
@@ -281,7 +313,7 @@ async function imageAndSolverBoundaries() {
     id: 'empty', name: 'Empty test palette', colors: [], isActive: true, isDefault: false, createdAt: 0,
   }] }, version: 0 })))
   await page.reload({ waitUntil: 'networkidle' })
-  await page.getByRole('button', { name: 'Try demo color Terracotta' }).click()
+  await openTerracotta(page)
   await pick(page, .5, false, '#C45C3E')
   await page.getByRole('alert').filter({ hasText: 'Couldn’t calculate a paint recipe.' }).waitFor()
   assert.equal(await paint(page).getAttribute('aria-busy'), 'false', 'Failed solver must not show endless loading')
@@ -820,6 +852,8 @@ async function threadFlow(name, options) {
 }
 
 try {
+  await demoFlow('desktop-1440', { viewport: { width: 1440, height: 900 } })
+  await demoFlow('phone-390', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   for (const [name, options] of [
     ['desktop-1440', { viewport: { width: 1440, height: 900 } }],
     ['desktop-1366', { viewport: { width: 1366, height: 768 } }],

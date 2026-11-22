@@ -8,9 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { createSolidColorDemoImage } from '@/lib/demoColor'
+import { averageColorAt, DEMO_PICTURE, firstSamplePixel } from '@/lib/demoPicture'
 import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
-import { hexToRgb } from '@/lib/color/conversions'
+import { hexToRgb, rgbToHex } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
 import { computeImageValueContextFromCanvas } from '@/lib/dmc/studio'
 import {
@@ -37,7 +37,7 @@ import type {
 } from '@/lib/dmc/map/types'
 import { placeLabels } from '@/lib/paint/plan/labels'
 import { useDmcStore } from '@/lib/store/useDmcStore'
-import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
+import { createSourceBuffer, decodeImage, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import ColorEntry from './ColorEntry'
@@ -565,14 +565,15 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     if (!isThreadMapActive) setHoveredThreadSlot(null)
   }, [isThreadMapActive])
 
-  const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string) => {
+  /** Opens a picture; resolves to its pixel buffer, or null if it failed or a newer choice won. */
+  const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string): Promise<HTMLCanvasElement | null> => {
     const request = ++openRequestRef.current
     setOpening(true)
     setError(null)
     try {
       const image = await decode()
       const buffer = await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION)
-      if (request !== openRequestRef.current) return
+      if (request !== openRequestRef.current) return null
       setSource(buffer)
       setPictureId((id) => id + 1)
       setPictureName(name)
@@ -593,8 +594,10 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setThreadMapOutline(false)
       setThreadMapOutlineMirror(false)
       setFocusRegion(null)
+      return buffer
     } catch {
       if (request === openRequestRef.current) setError('Couldn’t open that picture. Try a JPEG or PNG.')
+      return null
     } finally {
       if (request === openRequestRef.current) setOpening(false)
     }
@@ -611,7 +614,20 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     await openPicture(() => decodeImageFile(file), file.name)
   }, [openPicture])
 
-  const openDemo = () => openPicture(() => createSolidColorDemoImage('#C45C3E'), 'Terracotta demo')
+  // The demo opens a real picture with a first sample already taken, as if it had been clicked.
+  const openDemo = async () => {
+    const buffer = await openPicture(() => decodeImage(DEMO_PICTURE.src), DEMO_PICTURE.name)
+    const ctx = buffer?.getContext('2d', { willReadFrequently: true })
+    if (!buffer || !ctx) return
+    const { x, y } = firstSamplePixel(buffer.width, buffer.height)
+    const radius = DEMO_PICTURE.sampleRadius
+    const left = Math.max(0, x - radius), top = Math.max(0, y - radius)
+    const area = ctx.getImageData(left, top, Math.min(buffer.width - left, 2 * radius + 1), Math.min(buffer.height - top, 2 * radius + 1))
+    const rgb = averageColorAt(area.data, area.width, area.height, x - left, y - top, radius)
+    setPoint({ x, y, radius })
+    setColor({ rgb, hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase() })
+    setThreadTab('match')
+  }
 
   const choosePicture = useCallback(() => fileInputRef.current?.click(), [])
 
@@ -1078,7 +1094,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           <button type="button" className={styles.linkButton} onClick={() => changeSection('thread')}>
             Open DMC Thread Studio →
           </button>
-          <button type="button" className={styles.linkButton} onClick={() => void openDemo()}>Try demo color Terracotta</button>
+          <button type="button" className={styles.linkButton} onClick={() => void openDemo()}>Try a demo picture</button>
           {entryOpen
             ? <ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} />
             : <button type="button" className={styles.linkButton} onClick={() => setEntryOpen(true)}>Type a color</button>}
