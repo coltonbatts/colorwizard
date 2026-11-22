@@ -6,7 +6,7 @@
     "generate:data": "node scripts/generate-static-data.mjs",
     "predev": "npm run generate:data",
     "dev": "next dev",
-    "dev:tauri": "next dev -p 3000",
+    "dev:tauri": "COLORWIZARD_DESKTOP=1 next dev -p 3000",
     "prebuild": "npm run generate:data",
     "build": "next build",
     "build:desktop": "node scripts/build-desktop.mjs",

@@ -3,7 +3,6 @@
  * Generates Procreate-compatible palette files for iPad import
  */
 
-import JSZip from 'jszip';
 import { hexToHsb, hexToRgb, rgbToHsb, validateHex, validateRgb } from './colorConversion';
 import type { ProcreateColor, ProcreateSwatch, ProcreateSwatchesFile, ProcreateExportOptions } from './types/procreate';
 
@@ -108,7 +107,8 @@ export async function createSwatchesFile(
     // Generate JSON structure
     const swatchesData = generateSwatchesJson(colors, options);
 
-    // Create ZIP archive
+    // Create ZIP archive. jszip is loaded here, on first export, so it stays out of the first page load.
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip();
     zip.file('Swatches.json', JSON.stringify(swatchesData, null, 2));
 

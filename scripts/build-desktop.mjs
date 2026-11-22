@@ -8,6 +8,8 @@ const child = spawn(npmCommand, ['run', 'build'], {
   env: {
     ...process.env,
     COLORWIZARD_DESKTOP_BUILD: '1',
+    // app/page.tsx keeps the desktop home (HomeSwitch -> workbench) only when this is set.
+    COLORWIZARD_DESKTOP: '1',
   },
 })
 

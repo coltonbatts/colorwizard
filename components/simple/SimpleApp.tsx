@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { createSolidColorDemoImage } from '@/lib/demoColor'
 import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb } from '@/lib/color/conversions'
@@ -41,11 +41,10 @@ import { createSourceBuffer, decodeImageFile, isMemoryConstrained } from '@/lib/
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import ColorEntry from './ColorEntry'
-import ColorReadout, { type Arrival } from './ColorReadout'
+import type { Arrival } from './ColorReadout'
 import { usePaintPalette } from './PaintPalette'
 import LibraryTools from './LibraryTools'
-import PlanPanel from './PlanPanel'
-import ProcessPanel, { useProcessDisplay, useProcessStages } from './ProcessPanel'
+import { useProcessDisplay, useProcessStages } from './useProcess'
 import SavedStrip from './SavedStrip'
 import { BUDGETS, type Budget } from '@/lib/paint/plan/planFit'
 import { pileAt, renderRepaint } from './planRender'
@@ -62,11 +61,21 @@ import { formatThreadShare } from '@/lib/dmc/map/mapFit'
 import { usePicturePlan } from './usePlan'
 import { useThreadMap } from './useThreadMap'
 import type { PourOrigin } from './pour'
-import SimpleCanvas, { type FocusRegion, type PickedColor, type SamplePoint } from './SimpleCanvas'
-import ThreadStudio, { type StudioTab, type ThreadSavePayload } from './ThreadStudio'
-import ThreadView from './ThreadView'
+import type { FocusRegion, PickedColor, SamplePoint } from './SimpleCanvas'
+import type { StudioTab, ThreadSavePayload } from './ThreadStudio'
 import styles from './simple.module.css'
 import threadStyles from './threadStudio.module.css'
+
+// Views that are not on the first screen load on first use, so the welcome paints sooner.
+// `loadCanvas` and `loadReadout` are also warmed up once the page is idle (see SimpleApp).
+const loadCanvas = () => import('./SimpleCanvas')
+const loadReadout = () => import('./ColorReadout')
+const SimpleCanvas = dynamic(loadCanvas)
+const ColorReadout = dynamic(loadReadout)
+const PlanPanel = dynamic(() => import('./PlanPanel'))
+const ProcessPanel = dynamic(() => import('./ProcessPanel'))
+const ThreadStudio = dynamic(() => import('./ThreadStudio'))
+const ThreadView = dynamic(() => import('./ThreadView'))
 
 const BUDGET_KEY = 'colorwizard-simple-plan-budget'
 const DEFAULT_BUDGET: Budget = 8
@@ -335,6 +344,25 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   useEffect(() => {
     if (!initialSection) setSection(loadSection())
   }, [initialSection])
+  // Fetch the canvas and the color readout once the page has loaded and is idle, so the
+  // first picture and the first click do not wait on a download, and the welcome image
+  // does not share the network with them.
+  useEffect(() => {
+    let idleId: number | undefined
+    let timerId: number | undefined
+    const warm = () => { void loadCanvas(); void loadReadout() }
+    const schedule = () => {
+      if (typeof window.requestIdleCallback === 'function') idleId = window.requestIdleCallback(warm, { timeout: 3000 })
+      else timerId = window.setTimeout(warm, 500)
+    }
+    if (document.readyState === 'complete') schedule()
+    else window.addEventListener('load', schedule, { once: true })
+    return () => {
+      window.removeEventListener('load', schedule)
+      if (idleId !== undefined) window.cancelIdleCallback(idleId)
+      if (timerId !== undefined) window.clearTimeout(timerId)
+    }
+  }, [])
 
   const imageValue = useMemo(() => computeImageValueContextFromCanvas(source), [source])
   const palette = usePaintPalette()
@@ -1027,13 +1055,17 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         {fileInput}
         <div className={styles.welcomeBody}>
           <figure className={styles.pigmentStudy} aria-hidden="true">
-            <Image
+            {/* A plain <img> so phones get the 768 px file: next/image writes no srcset with `images.unoptimized`. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/images/welcome-pigment-cutout.webp"
+              srcSet="/images/welcome-pigment-cutout-768.webp 768w, /images/welcome-pigment-cutout.webp 1536w"
+              sizes="(max-width: 760px) 100vw, 740px"
               alt=""
               width={1536}
               height={512}
-              priority
-              sizes="(max-width: 760px) 100vw, 740px"
+              fetchPriority="high"
+              decoding="async"
               className={styles.pigmentImage}
             />
             <figcaption className={styles.studyCaption}>A study in color</figcaption>

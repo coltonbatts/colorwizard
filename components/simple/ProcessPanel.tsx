@@ -6,39 +6,11 @@
  * `lib/paint/process/stages.ts`; the words from `stageCopy.ts`.
  */
 
-import { useMemo } from 'react'
-import { buildStages, frameAt, GROUND_VALUE, STAGE_IDS, valueNumber, type ProcessStages } from '@/lib/paint/process/stages'
+import { GROUND_VALUE, valueNumber, type ProcessStages } from '@/lib/paint/process/stages'
 import { brownForValue } from '@/lib/paint/process/brown'
 import { BROWN_NOTE, NEXT_STAGES_NOTE, PROCESS_CAVEAT, PROCESS_SIZE_NOTE, STAGE_COPY } from '@/lib/paint/process/stageCopy'
-import { planningCopy } from './usePlan'
+import { LAST_STAGE } from './useProcess'
 import styles from './simple.module.css'
-
-export const LAST_STAGE = STAGE_IDS.length - 1
-
-/** The stages of the open picture, worked out once per picture while the view is open. */
-export function useProcessStages(source: HTMLCanvasElement | null, enabled: boolean): ProcessStages | null {
-  return useMemo(() => {
-    if (!source || !enabled) return null
-    const copy = planningCopy(source)
-    return copy ? buildStages(copy.data, copy.width, copy.height) : null
-  }, [source, enabled])
-}
-
-/** The canvas the stage shows at slider position `t`. */
-export function useProcessDisplay(stages: ProcessStages | null, t: number): HTMLCanvasElement | null {
-  return useMemo(() => {
-    if (!stages) return null
-    const canvas = document.createElement('canvas')
-    canvas.width = stages.width
-    canvas.height = stages.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-    const image = ctx.createImageData(stages.width, stages.height)
-    image.data.set(frameAt(stages.frames, t))
-    ctx.putImageData(image, 0, 0)
-    return canvas
-  }, [stages, t])
-}
 
 const hexOf = ([r, g, b]: [number, number, number]) => `#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`.toUpperCase()
 

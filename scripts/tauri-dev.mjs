@@ -46,6 +46,8 @@ const child = spawn(tauriBin, ['dev', '--config', mergedConfig], {
   env: {
     ...process.env,
     TAURI_DEV_PORT: String(port),
+    // app/page.tsx keeps the desktop home (HomeSwitch -> workbench) only when this is set.
+    COLORWIZARD_DESKTOP: '1',
   },
 })
 
