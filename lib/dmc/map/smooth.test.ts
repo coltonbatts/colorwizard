@@ -298,6 +298,7 @@ describe('Thread Map localStorage preferences (prefs.ts)', () => {
       monochromeBudget: 9,
       monochromeTone: 'sepia-browns' as const,
       detail: 'broad' as const,
+      fidelity: 'balanced' as const,
       preferBox: true,
     }
     storeThreadMapPrefs(custom, fakeStorage)

@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { converter } from 'culori'
 import { loadCorpus } from '@/lib/paint/plan/fixtures/corpus'
 import type { DMCThread } from '../types'
-import { buildThreadMap, swapMapThread } from './engine'
+import { buildThreadLadder, buildThreadMap, srgb8ToLab65, swapMapThread } from './engine'
 import { buildPullName, describeThreadMap, getSwapOptions, THREAD_MAP_CAVEAT_CATALOG, THREAD_MAP_CAVEAT_COPY, THREAD_MAP_CAVEAT_REAL, THREAD_MAP_PRINT_CAVEAT } from './mapFit'
 import { getMonochromePool } from './monochrome'
 import { MONOCHROME_TONES, NO_THREAD, type MonochromeTone } from './types'
@@ -55,6 +56,90 @@ describe('buildThreadMap — Full Color mode', () => {
     expect(m22.slots.length).toBe(22)
     expect(m22.score.meanDeltaE00).toBeLessThan(m11.score.meanDeltaE00)
     expect(m11.score.meanDeltaE00).toBeLessThan(m3.score.meanDeltaE00)
+  })
+
+  it('keeps the thread-count slider strictly monotonic: +1 step adds at most one thread without reshuffling existing ones', () => {
+    const ladder = buildThreadLadder(PORTRAIT.data, ALL_THREADS, {
+      maxBudget: 20,
+      fidelity: 'faithful',
+    })
+    expect(ladder.length).toBeGreaterThanOrEqual(16)
+
+    let prevSet = new Set<string>()
+    for (let k = 2; k <= 16; k++) {
+      const m = buildThreadMap(PORTRAIT.data, PORTRAIT.width, PORTRAIT.height, ALL_THREADS, {
+        mode: 'full-color',
+        budget: k,
+        detail: 'crisp',
+        fidelity: 'faithful',
+      })
+      const curSet = new Set(m.slots.map((s) => s.thread.number))
+      // Every previous thread that had pixels remains in the palette; at most 1 new thread enters.
+      let added = 0
+      for (const num of curSet) {
+        if (!prevSet.has(num)) added++
+      }
+      if (prevSet.size > 0) {
+        expect(added).toBeLessThanOrEqual(1)
+        for (const oldNum of prevSet) {
+          expect(curSet.has(oldNum)).toBe(true)
+        }
+      }
+      // Matches explicit ladder slice identically.
+      const sliced = buildThreadMap(PORTRAIT.data, PORTRAIT.width, PORTRAIT.height, ALL_THREADS, {
+        mode: 'full-color',
+        budget: k,
+        detail: 'crisp',
+        fidelity: 'faithful',
+        paletteNumbers: ladder.slice(0, k),
+      })
+      expect(sliced.slots.map((s) => s.thread.number)).toEqual(m.slots.map((s) => s.thread.number))
+      prevSet = curSet
+    }
+  })
+
+  it('preserves exact palette & manual swap flags when passing paletteNumbers across detail presets', () => {
+    const ladder = buildThreadLadder(LANDSCAPE.data, ALL_THREADS, { maxBudget: 12 })
+    const customPalette = [...ladder.slice(0, 7), '666']
+    const crisp = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 8,
+      detail: 'crisp',
+      paletteNumbers: customPalette,
+      swappedNumbers: ['666'],
+    })
+    const broad = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 8,
+      detail: 'broad',
+      paletteNumbers: customPalette,
+      swappedNumbers: ['666'],
+    })
+    const swappedCrisp = crisp.slots.find((s) => s.thread.number === '666')
+    const swappedBroad = broad.slots.find((s) => s.thread.number === '666')
+    expect(swappedCrisp?.swapped).toBe(true)
+    expect(swappedBroad?.swapped).toBe(true)
+  })
+
+  it('matches culori lab65 conversion to < 1e-4 across representative colors', () => {
+    const toLab65 = converter('lab65')
+    const samples: Array<[number, number, number]> = [
+      [0, 0, 0],
+      [255, 255, 255],
+      [255, 0, 0],
+      [0, 255, 0],
+      [0, 0, 255],
+      [182, 134, 108],
+      [42, 95, 148],
+      [214, 198, 175],
+    ]
+    for (const [r, g, b] of samples) {
+      const fast = srgb8ToLab65(r, g, b)
+      const ref = toLab65({ mode: 'rgb', r: r / 255, g: g / 255, b: b / 255 })!
+      expect(fast[0]).toBeCloseTo(ref.l, 3)
+      expect(fast[1]).toBeCloseTo(ref.a, 3)
+      expect(fast[2]).toBeCloseTo(ref.b, 3)
+    }
   })
 
   it('nudges close ties toward owned threads when preferBox is enabled without forcing poor matches', () => {

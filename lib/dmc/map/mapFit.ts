@@ -18,7 +18,7 @@ export const THREAD_MAP_CAVEAT_REAL =
   'Real thread shifts with dye lot, sheen, stitch direction, strand count, fabric color, and lighting.'
 
 export const THREAD_MAP_CAVEAT_COPY =
-  'Measured on a copy of your photo at most 512 px on its long side, in this browser. Nothing is uploaded.'
+  'Measured in this browser on a scaled copy of your photo (up to 1024 px in Crisp). Nothing is uploaded.'
 
 export const THREAD_MAP_PRINT_CAVEAT =
   'Colors on paper and screens are approximate. Check real skeins in your stitching light before starting.'

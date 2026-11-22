@@ -75,7 +75,7 @@ export const THREAD_MAP_DETAILS: readonly ThreadMapDetailPreset[] = [
   {
     id: 'crisp',
     label: 'Crisp',
-    description: 'Light speck removal while preserving fine stitch detail.',
+    description: 'High-resolution 1024 px detail that preserves fine contours, highlights, and delicate shapes.',
   },
   {
     id: 'painterly',
@@ -89,17 +89,58 @@ export const THREAD_MAP_DETAILS: readonly ThreadMapDetailPreset[] = [
   },
 ] as const
 
+/** Working-copy resolution (long side, px) per detail preset. */
+export const THREAD_MAP_MAX_SIDE: Record<ThreadMapDetail, number> = {
+  crisp: 1024,
+  painterly: 640,
+  broad: 512,
+}
+
+/** Canonical long-side resolution used for deterministic palette fitting across all detail presets. */
+export const THREAD_MAP_FIT_MAX_SIDE = 512
+
+export type ThreadMapFidelity = 'faithful' | 'balanced'
+
+export interface ThreadMapFidelityPreset {
+  id: ThreadMapFidelity
+  label: string
+  description: string
+}
+
+export const DEFAULT_THREAD_MAP_FIDELITY: ThreadMapFidelity = 'faithful'
+
+export const THREAD_MAP_FIDELITIES: readonly ThreadMapFidelityPreset[] = [
+  {
+    id: 'faithful',
+    label: 'True to photo',
+    description: 'Prioritizes accurate midtones, skin, and natural color balance close to the original.',
+  },
+  {
+    id: 'balanced',
+    label: 'Vibrant accents',
+    description: 'Gives extra palette weight to small, vivid highlights and colorful details.',
+  },
+] as const
+
 export interface ThreadMapOptions {
   mode: ThreadMapMode
   budget: number
   monochromeTone?: MonochromeTone
   /** Spatial region cleanup level (defaults to 'painterly'). */
   detail?: ThreadMapDetail
+  /** Color fitting balance in Full Color mode (defaults to 'faithful'). */
+  fidelity?: ThreadMapFidelity
   /** Apply a gentle CIEDE2000 preference for owned DMC numbers so stash threads win close ties. */
   preferBox?: boolean
   ownedNumbers?: readonly string[]
   /** DMC thread numbers locked/pinned by the stitcher (preserved as fixed medoids in Full Color mode). */
   lockedNumbers?: readonly string[]
+  /** Optional explicit palette of DMC numbers (used for monotonic slider steps & detail switches). */
+  paletteNumbers?: readonly string[]
+  /** DMC numbers that were manually swapped in by the stitcher (sets `slot.swapped = true`). */
+  swappedNumbers?: readonly string[]
+  /** Global k-medoids anchor count for the monotonic progressive ladder (defaults to 12). */
+  anchorBudget?: number
 }
 
 export interface ThreadMapSlot {
@@ -137,6 +178,7 @@ export interface ThreadMapResult {
   budget: number
   monochromeTone: MonochromeTone | null
   detail: ThreadMapDetail
+  fidelity: ThreadMapFidelity
   preferBox: boolean
   width: number
   height: number
@@ -149,6 +191,8 @@ export interface ThreadMapResult {
   score: ThreadMapScore
   /** 2% clipped OKLab L range of the photo. */
   imageOklabLRange: ImageOklabLRange
+  /** Optional progressive ordered DMC numbers (`2..30`) for flicker-free slider refinement. */
+  ladder?: string[]
   /** Computation time in ms. */
   ms: number
 }

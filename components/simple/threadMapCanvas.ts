@@ -112,7 +112,7 @@ function getHatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
 export function compileThreadMapPaths(map: ThreadMapResult): CompiledThreadMapPaths | null {
   if (typeof Path2D === 'undefined') return null
 
-  const geometry = extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length)
+  const geometry = extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length, map.detail)
   const { arcs, slotLoops, slotCount } = geometry
 
   const slotFillPaths: Path2D[] = []

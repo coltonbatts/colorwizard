@@ -7,16 +7,19 @@ import {
   DEFAULT_FULL_COLOR_BUDGET,
   DEFAULT_MONOCHROME_BUDGET,
   DEFAULT_THREAD_MAP_DETAIL,
+  DEFAULT_THREAD_MAP_FIDELITY,
   FULL_COLOR_MAX,
   FULL_COLOR_MIN,
   MONOCHROME_MAX,
   MONOCHROME_MIN,
   MONOCHROME_TONES,
   THREAD_MAP_DETAILS,
+  THREAD_MAP_FIDELITIES,
   type FullColorBudget,
   type MonochromeBudget,
   type MonochromeTone,
   type ThreadMapDetail,
+  type ThreadMapFidelity,
   type ThreadMapMode,
 } from './types'
 
@@ -28,6 +31,7 @@ export interface ThreadMapPrefs {
   monochromeBudget: MonochromeBudget
   monochromeTone: MonochromeTone
   detail: ThreadMapDetail
+  fidelity: ThreadMapFidelity
   preferBox: boolean
 }
 
@@ -37,11 +41,13 @@ export const DEFAULT_THREAD_MAP_PREFS: ThreadMapPrefs = {
   monochromeBudget: DEFAULT_MONOCHROME_BUDGET,
   monochromeTone: 'warm-grays',
   detail: DEFAULT_THREAD_MAP_DETAIL,
+  fidelity: DEFAULT_THREAD_MAP_FIDELITY,
   preferBox: false,
 }
 
 const VALID_TONES = new Set<string>(MONOCHROME_TONES.map((t) => t.id))
 const VALID_DETAILS = new Set<string>(THREAD_MAP_DETAILS.map((d) => d.id))
+const VALID_FIDELITIES = new Set<string>(THREAD_MAP_FIDELITIES.map((f) => f.id))
 
 function parseIntInRange(value: unknown, min: number, max: number, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
@@ -80,6 +86,10 @@ export function loadThreadMapPrefs(storage?: Pick<Storage, 'getItem'> | null): T
         typeof parsed.detail === 'string' && VALID_DETAILS.has(parsed.detail)
           ? (parsed.detail as ThreadMapDetail)
           : DEFAULT_THREAD_MAP_PREFS.detail,
+      fidelity:
+        typeof parsed.fidelity === 'string' && VALID_FIDELITIES.has(parsed.fidelity)
+          ? (parsed.fidelity as ThreadMapFidelity)
+          : DEFAULT_THREAD_MAP_PREFS.fidelity,
       preferBox: typeof parsed.preferBox === 'boolean' ? parsed.preferBox : DEFAULT_THREAD_MAP_PREFS.preferBox,
     }
   } catch {

@@ -42,6 +42,7 @@ import type {
   MonochromeBudget,
   MonochromeTone,
   ThreadMapDetail,
+  ThreadMapFidelity,
   ThreadMapMode,
 } from '@/lib/dmc/map/types'
 import { useDmcStore } from '@/lib/store/useDmcStore'
@@ -586,6 +587,14 @@ export interface ThreadMapBindings {
   onMonochromeToneChange: (tone: MonochromeTone) => void
   detail: ThreadMapDetail
   onDetailChange: (detail: ThreadMapDetail) => void
+  fidelity: ThreadMapFidelity
+  onFidelityChange: (fidelity: ThreadMapFidelity) => void
+  anchorBudget: number
+  onReoptimize: () => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
   preferBox: boolean
   onPreferBoxChange: (prefer: boolean) => void
   lockedNumbers: readonly string[]
@@ -1427,6 +1436,14 @@ export default function ThreadStudio({
         onMonochromeToneChange={threadMap.onMonochromeToneChange}
         detail={threadMap.detail}
         onDetailChange={threadMap.onDetailChange}
+        fidelity={threadMap.fidelity}
+        onFidelityChange={threadMap.onFidelityChange}
+        anchorBudget={threadMap.anchorBudget}
+        onReoptimize={threadMap.onReoptimize}
+        canUndo={threadMap.canUndo}
+        canRedo={threadMap.canRedo}
+        onUndo={threadMap.onUndo}
+        onRedo={threadMap.onRedo}
         preferBox={threadMap.preferBox}
         onPreferBoxChange={threadMap.onPreferBoxChange}
         lockedNumbers={threadMap.lockedNumbers}

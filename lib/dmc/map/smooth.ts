@@ -37,14 +37,14 @@ const REF_AREA = 512 * 512
 const DETAIL_CONFIGS: Record<ThreadMapDetail, DetailConfig> = {
   crisp: {
     bilateralPasses: 1,
-    sigmaColor: 24,
-    centerBias: 1.35,
-    minHardRef: 4,
-    minAreaRef: 18,
+    sigmaColor: 16,
+    centerBias: 1.75,
+    minHardRef: 2,
+    minAreaRef: 8,
     minHardFloor: 2,
     minAreaFloor: 4,
-    preserveContrast: 48,
-    spikeContrast: 55,
+    preserveContrast: 30,
+    spikeContrast: 28,
   },
   painterly: {
     bilateralPasses: 2,

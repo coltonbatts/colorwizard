@@ -11,7 +11,7 @@
  * Zero dependencies, React-free, Canvas-free.
  */
 
-import { NO_THREAD, type ThreadMapResult } from './types'
+import { DEFAULT_THREAD_MAP_DETAIL, NO_THREAD, type ThreadMapDetail, type ThreadMapResult } from './types'
 
 /** Direction indices on the pixel corner lattice (screen coords: +X right, +Y down). */
 const DIR_E = 0
@@ -26,14 +26,41 @@ const POPCOUNT4 = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4] as const
 /** Volume-preserving Taubin smoothing coefficients (kills 1px staircases without shrinking circles). */
 const TAUBIN_LAMBDA = 0.5
 const TAUBIN_MU = -0.53
-const TAUBIN_PASSES = 3
-/** Max displacement from original grid vertex (< 0.5 guarantees 1px-thin regions never self-cross). */
-const MAX_VERTEX_DRIFT = 0.44
-/** Douglas-Peucker simplification tolerance in map pixels. */
-const SIMPLIFY_EPSILON = 0.14
-/** Long simplified segments above this length get symmetric corner anchors so straight runs never bow. */
-const MAX_CURVE_SEGMENT = 4.0
-const CORNER_ANCHOR_OFFSET = 1.5
+
+interface ContourProfile {
+  taubinPasses: number
+  /** Max displacement from original grid vertex (< 0.5 guarantees 1px-thin regions never self-cross). */
+  maxVertexDrift: number
+  /** Douglas-Peucker simplification tolerance in map pixels. */
+  simplifyEpsilon: number
+  /** Long simplified segments above this length get symmetric corner anchors so straight runs never bow. */
+  maxCurveSegment: number
+  cornerAnchorOffset: number
+}
+
+const CONTOUR_PROFILES: Record<ThreadMapDetail, ContourProfile> = {
+  crisp: {
+    taubinPasses: 1,
+    maxVertexDrift: 0.28,
+    simplifyEpsilon: 0.08,
+    maxCurveSegment: 3.0,
+    cornerAnchorOffset: 1.0,
+  },
+  painterly: {
+    taubinPasses: 3,
+    maxVertexDrift: 0.44,
+    simplifyEpsilon: 0.14,
+    maxCurveSegment: 4.0,
+    cornerAnchorOffset: 1.5,
+  },
+  broad: {
+    taubinPasses: 4,
+    maxVertexDrift: 0.46,
+    simplifyEpsilon: 0.24,
+    maxCurveSegment: 5.5,
+    cornerAnchorOffset: 1.8,
+  },
+}
 
 export interface VectorArc {
   /** Interleaved `[x0, y0, x1, y1, ...]` coordinates in map pixel space (`0..width`, `0..height`). */
@@ -93,6 +120,7 @@ function smoothPolyline(
   isClosed: boolean,
   width: number,
   height: number,
+  profile: ContourProfile,
 ): Float32Array {
   const n = raw.length / 2
   const orig = new Float32Array(raw)
@@ -100,7 +128,8 @@ function smoothPolyline(
 
   const cur = new Float32Array(orig)
   const tmp = new Float32Array(orig.length)
-  const passes = isClosed && n <= 6 ? 1 : TAUBIN_PASSES
+  const passes = isClosed && n <= 6 ? 1 : profile.taubinPasses
+  const maxDrift = profile.maxVertexDrift
 
   const step = (src: Float32Array, dst: Float32Array, factor: number) => {
     if (isClosed) {
@@ -114,10 +143,10 @@ function smoothPolyline(
         const oy = orig[idx + 1]
         const nx = ox === 0 || ox === width
           ? ox
-          : clamp(src[idx] + factor * (avgX - src[idx]), Math.max(0, ox - MAX_VERTEX_DRIFT), Math.min(width, ox + MAX_VERTEX_DRIFT))
+          : clamp(src[idx] + factor * (avgX - src[idx]), Math.max(0, ox - maxDrift), Math.min(width, ox + maxDrift))
         const ny = oy === 0 || oy === height
           ? oy
-          : clamp(src[idx + 1] + factor * (avgY - src[idx + 1]), Math.max(0, oy - MAX_VERTEX_DRIFT), Math.min(height, oy + MAX_VERTEX_DRIFT))
+          : clamp(src[idx + 1] + factor * (avgY - src[idx + 1]), Math.max(0, oy - maxDrift), Math.min(height, oy + maxDrift))
         dst[idx] = nx
         dst[idx + 1] = ny
       }
@@ -137,10 +166,10 @@ function smoothPolyline(
         const oy = orig[idx + 1]
         const nx = ox === 0 || ox === width
           ? ox
-          : clamp(src[idx] + factor * (avgX - src[idx]), Math.max(0, ox - MAX_VERTEX_DRIFT), Math.min(width, ox + MAX_VERTEX_DRIFT))
+          : clamp(src[idx] + factor * (avgX - src[idx]), Math.max(0, ox - maxDrift), Math.min(width, ox + maxDrift))
         const ny = oy === 0 || oy === height
           ? oy
-          : clamp(src[idx + 1] + factor * (avgY - src[idx + 1]), Math.max(0, oy - MAX_VERTEX_DRIFT), Math.min(height, oy + MAX_VERTEX_DRIFT))
+          : clamp(src[idx + 1] + factor * (avgY - src[idx + 1]), Math.max(0, oy - maxDrift), Math.min(height, oy + maxDrift))
         dst[idx] = nx
         dst[idx + 1] = ny
       }
@@ -290,12 +319,16 @@ function simplifyClosed(pts: Float32Array, epsilon: number): Float32Array {
  * so quadratic B-spline rendering keeps straight runs dead-straight while preserving tight,
  * reverse-symmetric organic bends at corners.
  */
-function insertCornerAnchors(pts: Float32Array, isClosed: boolean): Float32Array {
+function insertCornerAnchors(
+  pts: Float32Array,
+  isClosed: boolean,
+  profile: ContourProfile,
+): Float32Array {
   const n = pts.length / 2
   if ((!isClosed && n <= 2) || (isClosed && n < 3)) return pts
 
   const segCount = isClosed ? n : n - 1
-  const maxSq = MAX_CURVE_SEGMENT * MAX_CURVE_SEGMENT
+  const maxSq = profile.maxCurveSegment * profile.maxCurveSegment
   let needsAnchors = false
   for (let i = 0; i < segCount; i++) {
     const j = isClosed ? (i + 1) % n : i + 1
@@ -322,7 +355,7 @@ function insertCornerAnchors(pts: Float32Array, isClosed: boolean): Float32Array
     const lenSq = dx * dx + dy * dy
     if (lenSq > maxSq) {
       const len = Math.sqrt(lenSq)
-      const t = CORNER_ANCHOR_OFFSET / len
+      const t = profile.cornerAnchorOffset / len
       out.push(ax + dx * t, ay + dy * t)
       out.push(bx - dx * t, by - dy * t)
     }
@@ -341,7 +374,9 @@ export function extractThreadMapGeometry(
   width: number,
   height: number,
   slotCount: number,
+  detail: ThreadMapDetail = DEFAULT_THREAD_MAP_DETAIL,
 ): ThreadMapVectorGeometry {
+  const profile = CONTOUR_PROFILES[detail] ?? CONTOUR_PROFILES.painterly
   if (width <= 0 || height <= 0 || slotCount <= 0) {
     return { width, height, slotCount, arcs: [], slotLoops: [], hasTransparency: false }
   }
@@ -481,11 +516,11 @@ export function extractThreadMapGeometry(
       const last = rawPts.length - 2
       points = new Float32Array([rawPts[0], rawPts[1], rawPts[last], rawPts[last + 1]])
     } else {
-      const smoothed = smoothPolyline(rawPts, isClosed, width, height)
+      const smoothed = smoothPolyline(rawPts, isClosed, width, height, profile)
       const simplified = isClosed
-        ? simplifyClosed(smoothed, SIMPLIFY_EPSILON)
-        : simplifyOpen(smoothed, SIMPLIFY_EPSILON)
-      points = insertCornerAnchors(simplified, isClosed)
+        ? simplifyClosed(smoothed, profile.simplifyEpsilon)
+        : simplifyOpen(smoothed, profile.simplifyEpsilon)
+      points = insertCornerAnchors(simplified, isClosed, profile)
     }
 
     return {
@@ -876,7 +911,7 @@ export function buildThreadMapOutlineSvg(
   mirror = false,
   geometry?: ThreadMapVectorGeometry,
 ): string {
-  const geom = geometry ?? extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length)
+  const geom = geometry ?? extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length, map.detail)
   const d = interiorOutlineToSvgPath(geom)
   const strokeWidth = fmtCoord(Math.max(0.55, Math.min(1.35, Math.max(map.width, map.height) / 560)))
   const pathEl = d
@@ -898,7 +933,7 @@ export function buildThreadMapColorSvg(
   map: ThreadMapResult,
   geometry?: ThreadMapVectorGeometry,
 ): string {
-  const geom = geometry ?? extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length)
+  const geom = geometry ?? extractThreadMapGeometry(map.slot, map.width, map.height, map.slots.length, map.detail)
   const seamWidth = fmtCoord(Math.max(0.45, Math.min(0.9, Math.max(map.width, map.height) / 700)))
   const paths: string[] = []
   for (let i = 0; i < map.slots.length; i++) {

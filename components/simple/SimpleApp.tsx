@@ -14,6 +14,14 @@ import { hexToRgb } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
 import { computeImageValueContextFromCanvas } from '@/lib/dmc/studio'
 import {
+  createThreadMapHistory,
+  pushThreadMapHistory,
+  redoThreadMapHistory,
+  undoThreadMapHistory,
+  type ThreadMapControlSnapshot,
+  type ThreadMapHistory,
+} from '@/lib/dmc/map/history'
+import {
   DEFAULT_THREAD_MAP_PREFS,
   loadThreadMapPrefs,
   storeThreadMapPrefs,
@@ -24,6 +32,7 @@ import type {
   MonochromeBudget,
   MonochromeTone,
   ThreadMapDetail,
+  ThreadMapFidelity,
   ThreadMapMode,
 } from '@/lib/dmc/map/types'
 import { placeLabels } from '@/lib/paint/plan/labels'
@@ -103,6 +112,34 @@ function colorFromHex(hex: string): PickedColor | null {
   return rgb ? { hex: hex.toUpperCase(), rgb } : null
 }
 
+function snapshotFromPrefs(prefs: ThreadMapPrefs): ThreadMapControlSnapshot {
+  return {
+    mode: prefs.mode,
+    fullColorBudget: prefs.fullColorBudget,
+    monochromeBudget: prefs.monochromeBudget,
+    monochromeTone: prefs.monochromeTone,
+    detail: prefs.detail,
+    fidelity: prefs.fidelity,
+    preferBox: prefs.preferBox,
+    lockedNumbers: [],
+    swapOverrides: {},
+    monoSwaps: {},
+    anchorBudget: prefs.fullColorBudget,
+  }
+}
+
+function prefsFromSnapshot(s: ThreadMapControlSnapshot): ThreadMapPrefs {
+  return {
+    mode: s.mode,
+    fullColorBudget: s.fullColorBudget,
+    monochromeBudget: s.monochromeBudget,
+    monochromeTone: s.monochromeTone,
+    detail: s.detail,
+    fidelity: s.fidelity,
+    preferBox: s.preferBox,
+  }
+}
+
 export interface SimpleAppProps {
   /** Opens directly in Color or Thread mode (used by `/thread`). */
   initialSection?: AppSection
@@ -136,8 +173,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [collectionFilter, setCollectionFilter] = useState<string | null>(null)
   const [section, setSection] = useState<AppSection>(initialSection ?? 'color')
   const [threadTab, setThreadTab] = useState<StudioTab>('match')
-  const [threadMapPrefs, setThreadMapPrefs] = useState<ThreadMapPrefs>(DEFAULT_THREAD_MAP_PREFS)
-  const [lockedThreadNumbers, setLockedThreadNumbers] = useState<string[]>([])
+  const [threadMapHistory, setThreadMapHistory] = useState<ThreadMapHistory>(() =>
+    createThreadMapHistory(snapshotFromPrefs(DEFAULT_THREAD_MAP_PREFS)),
+  )
   const [threadMapOutline, setThreadMapOutline] = useState(false)
   const [threadMapOutlineNumbers, setThreadMapOutlineNumbers] = useState(true)
   const [threadMapOutlineMirror, setThreadMapOutlineMirror] = useState(false)
@@ -155,58 +193,109 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const phoneThreadView = isPhone && isThreadSection
   const openRequestRef = useRef(0)
 
+  const tmControls = threadMapHistory.present
   const {
     mode: threadMapMode,
     fullColorBudget: threadFullBudget,
     monochromeBudget: threadMonoBudget,
     monochromeTone: threadMonoTone,
     detail: threadMapDetail,
+    fidelity: threadMapFidelity,
     preferBox: threadPreferBox,
-  } = threadMapPrefs
+    lockedNumbers: lockedThreadNumbers,
+    swapOverrides: threadSwapOverrides,
+    monoSwaps: threadMonoSwaps,
+    anchorBudget: threadAnchorBudget,
+  } = tmControls
+  const canUndoThreadMap = threadMapHistory.past.length > 0
+  const canRedoThreadMap = threadMapHistory.future.length > 0
 
-  const updateThreadMapPrefs = useCallback((patch: Partial<ThreadMapPrefs>) => {
-    setThreadMapPrefs((prev) => {
-      const next = { ...prev, ...patch }
-      storeThreadMapPrefs(next)
+  const commitThreadMap = useCallback((
+    updater: (cur: ThreadMapControlSnapshot) => ThreadMapControlSnapshot,
+    coalesceTag?: string,
+  ) => {
+    setThreadMapHistory((prev) => {
+      const next = updater(prev.present)
+      storeThreadMapPrefs(prefsFromSnapshot(next))
+      return pushThreadMapHistory(prev, next, coalesceTag ? { coalesceTag } : undefined)
+    })
+  }, [])
+
+  const undoThreadMap = useCallback(() => {
+    setThreadMapHistory((prev) => {
+      const next = undoThreadMapHistory(prev)
+      if (next !== prev) storeThreadMapPrefs(prefsFromSnapshot(next.present))
       return next
     })
   }, [])
 
-  const setThreadMapMode = useCallback((mode: ThreadMapMode) => updateThreadMapPrefs({ mode }), [updateThreadMapPrefs])
-  const setThreadFullBudget = useCallback((fullColorBudget: FullColorBudget) => updateThreadMapPrefs({ fullColorBudget }), [updateThreadMapPrefs])
-  const setThreadMonoBudget = useCallback((monochromeBudget: MonochromeBudget) => updateThreadMapPrefs({ monochromeBudget }), [updateThreadMapPrefs])
-  const setThreadMonoTone = useCallback((monochromeTone: MonochromeTone) => updateThreadMapPrefs({ monochromeTone }), [updateThreadMapPrefs])
-  const setThreadMapDetail = useCallback((detail: ThreadMapDetail) => updateThreadMapPrefs({ detail }), [updateThreadMapPrefs])
-  const setThreadPreferBox = useCallback((preferBox: boolean) => updateThreadMapPrefs({ preferBox }), [updateThreadMapPrefs])
+  const redoThreadMap = useCallback(() => {
+    setThreadMapHistory((prev) => {
+      const next = redoThreadMapHistory(prev)
+      if (next !== prev) storeThreadMapPrefs(prefsFromSnapshot(next.present))
+      return next
+    })
+  }, [])
+
+  const setThreadMapMode = useCallback((mode: ThreadMapMode) => commitThreadMap((c) => ({ ...c, mode })), [commitThreadMap])
+  const setThreadFullBudget = useCallback((fullColorBudget: FullColorBudget) => commitThreadMap((c) => ({ ...c, fullColorBudget }), 'full-budget'), [commitThreadMap])
+  const setThreadMonoBudget = useCallback((monochromeBudget: MonochromeBudget) => commitThreadMap((c) => ({ ...c, monochromeBudget, monoSwaps: {} }), 'mono-budget'), [commitThreadMap])
+  const setThreadMonoTone = useCallback((monochromeTone: MonochromeTone) => commitThreadMap((c) => ({ ...c, monochromeTone, monoSwaps: {} })), [commitThreadMap])
+  const setThreadMapDetail = useCallback((detail: ThreadMapDetail) => commitThreadMap((c) => ({ ...c, detail })), [commitThreadMap])
+  const setThreadMapFidelity = useCallback((fidelity: ThreadMapFidelity) => commitThreadMap((c) => ({ ...c, fidelity, swapOverrides: {} })), [commitThreadMap])
+  const setThreadPreferBox = useCallback((preferBox: boolean) => commitThreadMap((c) => ({ ...c, preferBox })), [commitThreadMap])
+  const reoptimizeThreadMap = useCallback(() => commitThreadMap((c) => ({ ...c, anchorBudget: c.fullColorBudget, swapOverrides: {} })), [commitThreadMap])
+
+  const applyFullThreadSwap = useCallback((baseNumber: string, nextNumber: string) => {
+    const baseKey = baseNumber.trim().toLowerCase()
+    commitThreadMap((c) => {
+      const nextSwaps = { ...c.swapOverrides }
+      if (baseKey === nextNumber.trim().toLowerCase()) delete nextSwaps[baseKey]
+      else nextSwaps[baseKey] = nextNumber
+      return { ...c, swapOverrides: nextSwaps }
+    })
+  }, [commitThreadMap])
+
+  const applyMonoThreadSwap = useCallback((slotIndex: number, nextNumber: string) => {
+    commitThreadMap((c) => ({
+      ...c,
+      monoSwaps: { ...c.monoSwaps, [slotIndex]: nextNumber },
+    }))
+  }, [commitThreadMap])
+
+  const resetThreadSwaps = useCallback(() => {
+    commitThreadMap((c) => ({ ...c, swapOverrides: {}, monoSwaps: {} }))
+  }, [commitThreadMap])
 
   const toggleLockedThread = useCallback((number: string) => {
     const key = number.trim().toLowerCase()
-    setLockedThreadNumbers((prev) =>
-      prev.some((n) => n.toLowerCase() === key)
-        ? prev.filter((n) => n.toLowerCase() !== key)
-        : [...prev, number],
-    )
-  }, [])
+    commitThreadMap((c) => ({
+      ...c,
+      lockedNumbers: c.lockedNumbers.some((n) => n.toLowerCase() === key)
+        ? c.lockedNumbers.filter((n) => n.toLowerCase() !== key)
+        : [...c.lockedNumbers, number],
+    }))
+  }, [commitThreadMap])
 
   const replaceLockedThread = useCallback((oldNumber: string, newNumber: string) => {
     const oldKey = oldNumber.trim().toLowerCase()
-    const newKey = newNumber.trim().toLowerCase()
-    setLockedThreadNumbers((prev) => {
-      if (!prev.some((n) => n.toLowerCase() === oldKey)) return prev
-      const replaced = prev.map((n) => (n.toLowerCase() === oldKey ? newNumber : n))
-      // Deduplicate in case `newNumber` was already locked.
+    commitThreadMap((c) => {
+      if (!c.lockedNumbers.some((n) => n.toLowerCase() === oldKey)) return c
+      const replaced = c.lockedNumbers.map((n) => (n.toLowerCase() === oldKey ? newNumber : n))
       const seen = new Set<string>()
-      return replaced.filter((n) => {
-        const k = n.toLowerCase()
-        if (seen.has(k)) return false
-        seen.add(k)
-        return true
-      })
+      return {
+        ...c,
+        lockedNumbers: replaced.filter((n) => {
+          const k = n.toLowerCase()
+          if (seen.has(k)) return false
+          seen.add(k)
+          return true
+        }),
+      }
     })
-    void newKey
-  }, [])
+  }, [commitThreadMap])
 
-  const clearLockedThreads = useCallback(() => setLockedThreadNumbers([]), [])
+  const clearLockedThreads = useCallback(() => commitThreadMap((c) => ({ ...c, lockedNumbers: [] })), [commitThreadMap])
 
   useEffect(() => {
     try {
@@ -217,7 +306,10 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     }
   }, [])
   useEffect(() => setBudget(loadBudget()), [])
-  useEffect(() => setThreadMapPrefs(loadThreadMapPrefs()), [])
+  useEffect(() => {
+    const loaded = loadThreadMapPrefs()
+    setThreadMapHistory(createThreadMapHistory(snapshotFromPrefs(loaded)))
+  }, [])
   useEffect(() => {
     if (!initialSection) setSection(loadSection())
   }, [initialSection])
@@ -232,23 +324,30 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   useEffect(() => setSelectedPile(null), [plan])
 
   const threadMapBudget = threadMapMode === 'monochrome' ? threadMonoBudget : threadFullBudget
-  const threadMapState = useThreadMap(
+  const threadMapState = useThreadMap({
     source,
-    isThreadMapActive,
-    threadMapMode,
-    threadMapBudget,
-    threadMonoTone,
-    threadMapDetail,
-    threadPreferBox,
-    dmcStash,
-    lockedThreadNumbers,
-  )
+    enabled: isThreadMapActive,
+    mode: threadMapMode,
+    budget: threadMapBudget,
+    monochromeTone: threadMonoTone,
+    detail: threadMapDetail,
+    fidelity: threadMapFidelity,
+    preferBox: threadPreferBox,
+    ownedNumbers: dmcStash,
+    lockedNumbers: lockedThreadNumbers,
+    anchorBudget: threadAnchorBudget,
+    swapOverrides: threadSwapOverrides,
+    monoSwaps: threadMonoSwaps,
+    onApplyFullSwap: applyFullThreadSwap,
+    onApplyMonoSwap: applyMonoThreadSwap,
+    onResetSwaps: resetThreadSwaps,
+  })
   const threadMap = threadMapState.result
 
-  // Reset thread isolation when switching photo, mode, tone, detail, or budget (preserving isolation during live swaps).
+  // Reset thread isolation when switching photo, mode, tone, detail, fidelity, or budget (preserving isolation during live swaps).
   useEffect(() => {
     setSelectedThreadSlot(null)
-  }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadMapDetail, threadPreferBox])
+  }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadMapDetail, threadMapFidelity, threadPreferBox])
 
   const changeBudget = useCallback((next: Budget) => {
     setBudget(next)
@@ -403,7 +502,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setHoveredThreadSlot(null)
       setCompareSplit(null)
       setVellumMode('tracing')
-      setLockedThreadNumbers([])
+      setThreadMapHistory((prev) => createThreadMapHistory(snapshotFromPrefs(prefsFromSnapshot(prev.present))))
       setThreadMapOutline(false)
       setThreadMapOutlineMirror(false)
       setFocusRegion(null)
@@ -657,6 +756,13 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'o') {
         event.preventDefault()
         choosePicture()
+      } else if ((event.metaKey || event.ctrlKey) && isThreadMapActive && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redoThreadMap()
+        else undoThreadMap()
+      } else if ((event.metaKey || event.ctrlKey) && isThreadMapActive && event.key.toLowerCase() === 'y') {
+        event.preventDefault()
+        redoThreadMap()
       } else if (event.metaKey || event.ctrlKey || event.altKey) {
         return
       } else if (event.key.toLowerCase() === 'v') {
@@ -705,7 +811,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
     }
-  }, [choosePicture, isThreadMapActive, openFile, planMode, source, threadMap])
+  }, [choosePicture, isThreadMapActive, openFile, planMode, redoThreadMap, source, threadMap, undoThreadMap])
 
   const fileInput = (
     <input
@@ -765,6 +871,14 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     onMonochromeToneChange: setThreadMonoTone,
     detail: threadMapDetail,
     onDetailChange: setThreadMapDetail,
+    fidelity: threadMapFidelity,
+    onFidelityChange: setThreadMapFidelity,
+    anchorBudget: threadAnchorBudget,
+    onReoptimize: reoptimizeThreadMap,
+    canUndo: canUndoThreadMap,
+    canRedo: canRedoThreadMap,
+    onUndo: undoThreadMap,
+    onRedo: redoThreadMap,
     preferBox: threadPreferBox,
     onPreferBoxChange: setThreadPreferBox,
     lockedNumbers: lockedThreadNumbers,

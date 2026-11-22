@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_THREAD_MAP_DETAIL, NO_THREAD, type ThreadMapResult } from '@/lib/dmc/map/types'
+import { DEFAULT_THREAD_MAP_DETAIL, DEFAULT_THREAD_MAP_FIDELITY, NO_THREAD, type ThreadMapResult } from '@/lib/dmc/map/types'
 import type { DMCThread } from '@/lib/dmc/types'
 import {
   renderThreadMap,
@@ -28,6 +28,7 @@ function makeSyntheticMap(
     budget: threads.length,
     monochromeTone: null,
     detail: DEFAULT_THREAD_MAP_DETAIL,
+    fidelity: DEFAULT_THREAD_MAP_FIDELITY,
     preferBox: false,
     width,
     height,

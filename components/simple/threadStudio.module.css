@@ -1805,6 +1805,66 @@
   background: #2b2a28;
 }
 
+.mapTopRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mapTopRow .mapModeSwitch {
+  flex: 1;
+}
+
+.mapHistoryBtns {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mapIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 30px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 7px;
+  background: #ffffff;
+  color: #111111 !important;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.mapIconBtn:hover:not(:disabled) {
+  border-color: #111111;
+  background: #f5f3ee;
+}
+
+.mapIconBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mapReoptBtn {
+  min-height: 24px;
+  padding: 0 7px;
+  margin-right: 4px;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 6px;
+  background: #faf9f6;
+  color: var(--s-ink-2) !important;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mapReoptBtn:hover {
+  border-color: #111111;
+  color: #111111 !important;
+  background: #ffffff;
+}
+
 .mapDetailBlock {
   display: flex;
   flex-direction: column;
@@ -1814,6 +1874,12 @@
 .mapDetailRow {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.mapFidelityRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 4px;
 }
 

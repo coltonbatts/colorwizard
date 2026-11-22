@@ -27,10 +27,12 @@ import {
   MONOCHROME_MIN,
   MONOCHROME_TONES,
   THREAD_MAP_DETAILS,
+  THREAD_MAP_FIDELITIES,
   type FullColorBudget,
   type MonochromeBudget,
   type MonochromeTone,
   type ThreadMapDetail,
+  type ThreadMapFidelity,
   type ThreadMapMode,
 } from '@/lib/dmc/map/types'
 import { formatThreadTone, searchDmcThreads, threadTone } from '@/lib/dmc/studio'
@@ -66,6 +68,14 @@ export interface ThreadMapPanelProps {
   onMonochromeToneChange: (tone: MonochromeTone) => void
   detail: ThreadMapDetail
   onDetailChange: (detail: ThreadMapDetail) => void
+  fidelity: ThreadMapFidelity
+  onFidelityChange: (fidelity: ThreadMapFidelity) => void
+  anchorBudget: number
+  onReoptimize: () => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
   preferBox: boolean
   onPreferBoxChange: (prefer: boolean) => void
   lockedNumbers: readonly string[]
@@ -101,6 +111,14 @@ export default function ThreadMapPanel({
   onMonochromeToneChange,
   detail,
   onDetailChange,
+  fidelity,
+  onFidelityChange,
+  anchorBudget,
+  onReoptimize,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   preferBox,
   onPreferBoxChange,
   lockedNumbers,
@@ -233,21 +251,45 @@ export default function ThreadMapPanel({
     <div className={styles.mapPanel}>
       {/* Clean top control card */}
       <div className={styles.mapCard}>
-        <div className={styles.mapModeSwitch} role="group" aria-label="Thread map mode">
-          <button
-            type="button"
-            aria-pressed={!isMono}
-            onClick={() => onModeChange('full-color')}
-          >
-            Full color
-          </button>
-          <button
-            type="button"
-            aria-pressed={isMono}
-            onClick={() => onModeChange('monochrome')}
-          >
-            Monochrome
-          </button>
+        <div className={styles.mapTopRow}>
+          <div className={styles.mapModeSwitch} role="group" aria-label="Thread map mode">
+            <button
+              type="button"
+              aria-pressed={!isMono}
+              onClick={() => onModeChange('full-color')}
+            >
+              Full color
+            </button>
+            <button
+              type="button"
+              aria-pressed={isMono}
+              onClick={() => onModeChange('monochrome')}
+            >
+              Monochrome
+            </button>
+          </div>
+          <div className={styles.mapHistoryBtns} role="group" aria-label="Edit history">
+            <button
+              type="button"
+              className={styles.mapIconBtn}
+              disabled={!canUndo}
+              onClick={onUndo}
+              aria-label="Undo (⌘Z)"
+              title="Undo (⌘Z)"
+            >
+              ↩
+            </button>
+            <button
+              type="button"
+              className={styles.mapIconBtn}
+              disabled={!canRedo}
+              onClick={onRedo}
+              aria-label="Redo (⇧⌘Z)"
+              title="Redo (⇧⌘Z)"
+            >
+              ↪
+            </button>
+          </div>
         </div>
 
         {isMono && (
@@ -267,13 +309,23 @@ export default function ThreadMapPanel({
           </div>
         )}
 
-        {/* Free, continuous thread-count slider with - / + steppers */}
+        {/* Free, continuous monotonic thread-count slider with - / + steppers */}
         <div className={styles.mapSliderBlock}>
           <div className={styles.mapSliderHead}>
             <label htmlFor="thread-map-count-slider" className={styles.mapSliderLabel}>
               {isMono ? 'Value steps' : 'Threads'}
             </label>
             <div className={styles.mapStepper}>
+              {!isMono && activeCount !== anchorBudget && (
+                <button
+                  type="button"
+                  className={styles.mapReoptBtn}
+                  onClick={onReoptimize}
+                  title={`Globally re-optimize all ${activeCount} threads for this count`}
+                >
+                  Re-optimize
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.mapStepTiny}
@@ -307,7 +359,7 @@ export default function ThreadMapPanel({
           />
         </div>
 
-        {/* Shape detail: spatial region cleanup level */}
+        {/* Shape detail: spatial resolution & region cleanup level */}
         <div className={styles.mapDetailBlock}>
           <span className={styles.mapSliderLabel}>Shape detail</span>
           <div className={styles.mapDetailRow} role="group" aria-label="Shape detail">
@@ -325,6 +377,27 @@ export default function ThreadMapPanel({
             ))}
           </div>
         </div>
+
+        {/* Color fidelity balance (Full Color mode) */}
+        {!isMono && (
+          <div className={styles.mapDetailBlock}>
+            <span className={styles.mapSliderLabel}>Color fidelity</span>
+            <div className={styles.mapFidelityRow} role="group" aria-label="Color fidelity">
+              {THREAD_MAP_FIDELITIES.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={styles.mapToneBtn}
+                  aria-pressed={fidelity === preset.id}
+                  onClick={() => onFidelityChange(preset.id)}
+                  title={preset.description}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {stash.length > 0 && (
           <label className={styles.mapCheck}>
