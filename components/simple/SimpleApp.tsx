@@ -36,6 +36,13 @@ import type {
   ThreadMapMode,
 } from '@/lib/dmc/map/types'
 import { placeLabels } from '@/lib/paint/plan/labels'
+import {
+  canvasPictureKey, centeredCrop, loadCanvasDraft, newCanvasDraft, referencePoint, storeCanvasDraft, transferMeasurements,
+  type CanvasDraft, type CanvasFace, type CanvasLandmark, type ImageCrop,
+} from '@/lib/paint/canvasSetup'
+import { cropCanvas, drawTransferOverlay } from './canvasTransfer'
+import { useTransferRecipes } from './useTransferRecipes'
+import type { MarkTool } from './CanvasSetupPanel'
 import { useDmcStore } from '@/lib/store/useDmcStore'
 import { createSourceBuffer, decodeImage, decodeImageFile, isMemoryConstrained } from '@/lib/imagePipeline'
 import { resolvePalettePigments } from '@/lib/paint/palettePigments'
@@ -74,6 +81,7 @@ const SimpleCanvas = dynamic(loadCanvas)
 const ColorReadout = dynamic(loadReadout)
 const PlanPanel = dynamic(() => import('./PlanPanel'))
 const ProcessPanel = dynamic(() => import('./ProcessPanel'))
+const CanvasSetupPanel = dynamic(() => import('./CanvasSetupPanel'))
 const ThreadStudio = dynamic(() => import('./ThreadStudio'))
 const ThreadView = dynamic(() => import('./ThreadView'))
 
@@ -158,7 +166,12 @@ export interface SimpleAppProps {
 
 export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [source, setSource] = useState<HTMLCanvasElement | null>(null)
+  const [originalSource, setOriginalSource] = useState<HTMLCanvasElement | null>(null)
+  const [draftKey, setDraftKey] = useState<string | null>(null)
+  const [canvasDraft, setCanvasDraft] = useState<CanvasDraft | null>(null)
+  const [setupOpen, setSetupOpen] = useState(false)
+  const [markTool, setMarkTool] = useState<MarkTool | null>(null)
+  const [draftStatus, setDraftStatus] = useState<string | null>(null)
   const [pictureId, setPictureId] = useState(0)
   const [pictureName, setPictureName] = useState<string | undefined>()
   const [point, setPoint] = useState<SamplePoint | null>(null)
@@ -200,7 +213,11 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const focusIdRef = useRef(0)
   const dmcStash = useDmcStore((s) => s.stash)
   const isPhone = useMediaQuery('(max-width: 760px)')
-  const isThreadSection = section === 'thread' && !planMode && !processMode
+  const isThreadSection = section === 'thread' && !planMode && !processMode && !setupOpen
+  const lockedFace = canvasDraft?.face
+  const crop = useMemo(() => originalSource && lockedFace ? centeredCrop(originalSource, lockedFace) : null, [originalSource, lockedFace])
+  const paintingSource = useMemo(() => originalSource && crop ? cropCanvas(originalSource, crop) : originalSource, [originalSource, crop])
+  const source = isThreadSection ? originalSource : paintingSource
   const isThreadMapActive = isThreadSection && threadTab === 'map' && Boolean(source)
   const phoneThreadView = isPhone && isThreadSection
   const openRequestRef = useRef(0)
@@ -367,7 +384,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const imageValue = useMemo(() => computeImageValueContextFromCanvas(source), [source])
   const palette = usePaintPalette()
   const pigments = useMemo(() => resolvePalettePigments(palette.colors), [palette])
-  const planState = usePicturePlan(source, planMode, budget, pigments)
+  const trialRecipes = useTransferRecipes(canvasDraft?.landmarks, palette)
+  const planState = usePicturePlan(paintingSource, planMode, budget, pigments)
   const plan = planState.result
 
   // A new plan (another budget, palette or picture) starts with every pile showing.
@@ -411,7 +429,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     storeBudget(next)
   }, [])
 
-  const processStages = useProcessStages(source, processMode)
+  const processStages = useProcessStages(paintingSource, processMode)
   const processDisplay = useProcessDisplay(processStages, processPosition)
 
   // The repaint the stage shows in Plan view; the original while the peek button is held.
@@ -566,15 +584,30 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   }, [isThreadMapActive])
 
   /** Opens a picture; resolves to its pixel buffer, or null if it failed or a newer choice won. */
-  const openPicture = useCallback(async (decode: () => Promise<HTMLImageElement>, name: string): Promise<HTMLCanvasElement | null> => {
+  const openPicture = useCallback(async (
+    decode: () => Promise<HTMLImageElement>,
+    name: string,
+    key?: () => Promise<string | null>,
+  ): Promise<HTMLCanvasElement | null> => {
     const request = ++openRequestRef.current
     setOpening(true)
     setError(null)
     try {
-      const image = await decode()
+      const [image, pictureKey] = await Promise.all([decode(), key?.() ?? null])
       const buffer = await createSourceBuffer(image, isMemoryConstrained() ? MAX_DIMENSION_CONSTRAINED : MAX_DIMENSION)
       if (request !== openRequestRef.current) return null
-      setSource(buffer)
+      let restoredDraft: CanvasDraft | null = null
+      try {
+        restoredDraft = pictureKey ? loadCanvasDraft(window.localStorage, pictureKey) : null
+      } catch {
+        // The picture can still be opened if local storage is blocked or a draft was damaged.
+      }
+      setOriginalSource(buffer)
+      setDraftKey(pictureKey)
+      setCanvasDraft(restoredDraft)
+      setSetupOpen(restoredDraft !== null)
+      setMarkTool(null)
+      setDraftStatus(restoredDraft ? 'Canvas draft restored.' : null)
       setPictureId((id) => id + 1)
       setPictureName(name)
       setPoint(null)
@@ -611,12 +644,12 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setError('That file isn’t a picture.')
       return
     }
-    await openPicture(() => decodeImageFile(file), file.name)
+    await openPicture(() => decodeImageFile(file), file.name, () => canvasPictureKey(file))
   }, [openPicture])
 
   // The demo opens a real picture with a first sample already taken, as if it had been clicked.
   const openDemo = async () => {
-    const buffer = await openPicture(() => decodeImage(DEMO_PICTURE.src), DEMO_PICTURE.name)
+    const buffer = await openPicture(() => decodeImage(DEMO_PICTURE.src), DEMO_PICTURE.name, async () => DEMO_PICTURE.src)
     const ctx = buffer?.getContext('2d', { willReadFrequently: true })
     if (!buffer || !ctx) return
     const { x, y } = firstSamplePixel(buffer.width, buffer.height)
@@ -635,7 +668,73 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     setArrival(origin ? (current) => ({ id: (current?.id ?? 0) + 1, origin }) : null)
   }, [])
 
+  const updateCanvasDraft = useCallback((draft: CanvasDraft) => {
+    setCanvasDraft(draft)
+    try {
+      if (!draftKey) throw new Error('No reference key')
+      storeCanvasDraft(window.localStorage, draftKey, draft)
+      setDraftStatus('Canvas draft saved on this device.')
+    } catch {
+      setDraftStatus('Couldn’t save this draft on this device. Print the packet to keep a copy.')
+    }
+  }, [draftKey])
+
+  const lockCanvas = (face: CanvasFace) => {
+    updateCanvasDraft(canvasDraft ? { ...canvasDraft, face } : newCanvasDraft(face))
+    setPoint(null)
+    setColor(null)
+    setSelectedPile(null)
+    setCompareSplit(null)
+  }
+
+  const toggleCanvasSetup = () => {
+    setSetupOpen(!setupOpen)
+    setMarkTool(null)
+    setPeek(false)
+    setPlanMode(false)
+    setProcessMode(false)
+    setValueView(false)
+    setEntryOpen(false)
+  }
+
+  const showCanvasPlan = () => {
+    setSetupOpen(false)
+    setMarkTool(null)
+    setProcessMode(false)
+    setPeek(false)
+    setPlanMode(true)
+  }
+
+  const guideMarks = useMemo(() => canvasDraft && originalSource && crop
+    ? transferMeasurements(canvasDraft, originalSource, crop).landmarks.map(({ index, position, mark }) => ({
+      index, position, isTrial: Boolean(mark.trial),
+    }))
+    : [], [canvasDraft, crop, originalSource])
+  const drawGuide = useCallback((ctx: CanvasRenderingContext2D, image: ImageCrop) => {
+    if (canvasDraft) drawTransferOverlay(ctx, image, canvasDraft.face, guideMarks, canvasDraft.grid)
+  }, [canvasDraft, guideMarks])
+
   const handleSample = useCallback((nextPoint: SamplePoint, picked: PickedColor, origin?: PourOrigin) => {
+    if (setupOpen && markTool && canvasDraft && originalSource && crop && source) {
+      if (!origin) return
+      const sourcePoint = referencePoint({ x: (nextPoint.x + 0.5) / source.width, y: (nextPoint.y + 0.5) / source.height }, originalSource, crop)
+      const index = canvasDraft.landmarks.length + 1
+      const landmark: CanvasLandmark = { ...sourcePoint, id: newId(), name: `Mark ${index}` }
+      if (markTool === 'trial') {
+        const ctx = source.getContext('2d')
+        if (!ctx) return
+        const radius = Math.max(1, Math.round(Math.min(source.width, source.height) / 240))
+        const left = Math.max(0, nextPoint.x - radius)
+        const top = Math.max(0, nextPoint.y - radius)
+        const area = ctx.getImageData(left, top, Math.min(source.width - left, nextPoint.x + radius + 1 - left), Math.min(source.height - top, nextPoint.y + radius + 1 - top))
+        const rgb = averageColorAt(area.data, area.width, area.height, nextPoint.x - left, nextPoint.y - top, radius)
+        landmark.trial = { hex: rgbToHex(rgb.r, rgb.g, rgb.b).toUpperCase(), measured: '', correction: '', acceptedPalette: null }
+        landmark.name = `Mix trial ${index}`
+      }
+      updateCanvasDraft({ ...canvasDraft, landmarks: [...canvasDraft.landmarks, landmark] })
+      return
+    }
+
     // The process view shows a calculated stage, not the picture: there is no color to read on it.
     if (processMode) return
     if (planMode) {
@@ -658,7 +757,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     setColor(picked)
     setThreadTab('match')
     arrive(origin)
-  }, [arrive, isThreadMapActive, plan, planMode, processMode, source, threadMap, threadMapOutline, threadMapOutlineMirror])
+  }, [arrive, canvasDraft, crop, isThreadMapActive, markTool, originalSource, plan, planMode, processMode, setupOpen, source, threadMap, threadMapOutline, threadMapOutlineMirror, updateCanvasDraft])
 
   const openColor = useCallback((hex: string, origin?: PourOrigin) => {
     const picked = colorFromHex(hex)
@@ -780,6 +879,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
 
   const changeSection = (next: AppSection) => {
     setSection(next)
+    setSetupOpen(false)
+    setMarkTool(null)
     storeSection(next)
     if (next === 'thread') {
       setPeek(false)
@@ -871,6 +972,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       } else if (event.key.toLowerCase() === 'v') {
         setValueView((on) => !on)
       } else if (event.key.toLowerCase() === 'p' && source) {
+        setSetupOpen(false)
+        setMarkTool(null)
         setPeek(false)
         setProcessMode(false)
         setPlanMode((on) => !on)
@@ -879,6 +982,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       } else if (event.key.toLowerCase() === 'b') {
         setPeek(true)
       } else if (event.key === 'Escape') {
+        setMarkTool(null)
         setSelectedPile(null)
         setSelectedThreadSlot((cur) => {
           if (cur === null) setCompareSplit(null)
@@ -1118,6 +1222,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         source={source}
         display={display}
         renderDisplay={renderDisplay}
+        drawGuide={canvasDraft && !isThreadSection ? drawGuide : undefined}
         renderNavigator={threadMapNavigator}
         showNavigator
         compareSplit={!peek && (isThreadMapActive || planMode) ? compareSplit : null}
@@ -1135,7 +1240,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         valueView={valueView}
         lightStage={isThreadSection}
         focusRegion={focusRegion}
-        point={planMode || processMode || isThreadMapActive ? null : point}
+        point={setupOpen || planMode || processMode || isThreadMapActive ? null : point}
         onSample={handleSample}
         onHoverPixel={isThreadMapActive ? handleHoverPixel : undefined}
       >
@@ -1413,23 +1518,27 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           <ThreadStudio {...threadStudioProps} activeTab={threadTab} onTabChange={setThreadTab} />
         </aside>
       ) : (
-      <aside className={styles.panel} aria-label={planMode ? 'Plan' : processMode ? 'Painting process' : 'Color'}>
+      <aside className={styles.panel} aria-label={setupOpen ? 'Canvas setup' : planMode ? 'Plan' : processMode ? 'Painting process' : 'Color'}>
         <div className={styles.toolbar}>
           <span className={styles.wordmarkSmall}>ColorWizard</span>
           {!isPhone && modeSwitch}
           <div className={styles.toolbarButtons}>
             <button type="button" onClick={choosePicture} title="Open a picture (⌘O)">Open…</button>
-            <button type="button" onClick={() => setEntryOpen((on) => !on)} aria-pressed={entryOpen} title="Type an exact color">Color…</button>
-            <button type="button" onClick={() => { setPeek(false); setProcessMode(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
-            <button type="button" onClick={() => { setPeek(false); setPlanMode(false); setProcessMode((on) => !on) }} disabled={!source} aria-pressed={processMode} title="Step through painting this picture, from toned canvas to underpainting">Process</button>
+            <button type="button" onClick={() => { setSetupOpen(false); setMarkTool(null); setEntryOpen((on) => !on) }} aria-pressed={entryOpen} title="Type an exact color">Color…</button>
+            <button type="button" onClick={() => { setSetupOpen(false); setMarkTool(null); setPeek(false); setProcessMode(false); setPlanMode((on) => !on) }} disabled={!source} aria-pressed={planMode} title="Plan the whole picture: N piles of paint and where each goes (P)">Plan</button>
+            <button type="button" onClick={() => { setSetupOpen(false); setMarkTool(null); setPeek(false); setPlanMode(false); setProcessMode((on) => !on) }} disabled={!source} aria-pressed={processMode} title="Step through painting this picture, from toned canvas to underpainting">Process</button>
             <button type="button" onClick={() => setValueView((on) => !on)} disabled={!source} aria-pressed={valueView} title="Show values only (V)">Value</button>
+            <button type="button" onClick={toggleCanvasSetup} disabled={!source} aria-pressed={setupOpen}>Canvas setup</button>
           </div>
         </div>
 
         {entryOpen && <div className={styles.entryBar}><ColorEntry autoFocus onSubmit={openTyped} onCancel={() => setEntryOpen(false)} /></div>}
         {notices}
         <div className={styles.panelBody}>
-          {processMode ? (
+          {setupOpen && originalSource ? (
+            <CanvasSetupPanel key={pictureId} source={originalSource} draft={canvasDraft} crop={crop} tool={markTool} setTool={setMarkTool}
+              onLock={lockCanvas} onChange={updateCanvasDraft} onPlan={showCanvasPlan} status={draftStatus} palette={palette} trials={trialRecipes} />
+          ) : processMode ? (
             <ProcessPanel stages={processStages} position={processPosition} onPosition={setProcessPosition} />
           ) : planMode ? (
             <PlanPanel
@@ -1442,7 +1551,8 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
               markMisses={markMisses}
               onMarkMisses={setMarkMisses}
               pictureName={pictureName}
-              pictureSource={source}
+              pictureSource={paintingSource}
+              canvasTransfer={canvasDraft && crop && originalSource ? { draft: canvasDraft, crop, source: originalSource, trials: trialRecipes } : undefined}
             />
           ) : color ? (
             <ColorReadout
@@ -1477,7 +1587,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           )}
         </div>
 
-        {!planMode && !processMode && <>{savedList}{libraryTools}</>}
+        {!setupOpen && !planMode && !processMode && <>{savedList}{libraryTools}</>}
         {phoneBar}
       </aside>
       )}

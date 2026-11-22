@@ -15,6 +15,8 @@ import { PROCREATE_NOTE, savePlanAsProcreatePalette } from '@/lib/paint/plan/pro
 import PaintPalette from './PaintPalette'
 import PlanCard from './PlanCard'
 import { renderCardImages, type CardImages } from './planCardImages'
+import CanvasTransferPages, { renderTransferImage, type CanvasTransfer } from './CanvasTransferPages'
+import { paintPaletteKey } from './useTransferRecipes'
 import { BUDGETS, DERIVED_CAVEAT, describePiles, describePlan, describePlanFacts, formatDeltaE, MODEL_CAVEAT, PLAN_CAVEAT_COPY, type Budget } from '@/lib/paint/plan/planFit'
 import type { PlanState } from './usePlan'
 import styles from './simple.module.css'
@@ -32,9 +34,10 @@ interface PlanPanelProps {
   pictureName?: string
   /** The picture that was opened: the card prints it beside the repaint */
   pictureSource?: HTMLCanvasElement | null
+  canvasTransfer?: CanvasTransfer
 }
 
-export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName, pictureSource }: PlanPanelProps) {
+export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName, pictureSource, canvasTransfer }: PlanPanelProps) {
   const paletteName = palette.isDefault ? 'The Core six' : 'Your palette'
   const { result } = state
   const summary = useMemo(() => (result ? describePlan(result, state.resultBudget ?? budget, paletteName) : null), [result, state.resultBudget, budget, paletteName])
@@ -47,7 +50,7 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
   )
   const [saveStatus, setSaveStatus] = useState<{ ok: boolean; text: string } | null>(null)
   // The card being printed, if any: it is drawn off screen and handed to the browser's print.
-  const [printJob, setPrintJob] = useState<{ card: CardModel; images: CardImages } | null>(null)
+  const [printJob, setPrintJob] = useState<{ card: CardModel; images: CardImages; transfer?: { setup: CanvasTransfer; image: string; paletteKey: string } } | null>(null)
   // A message about one plan's file must not outlive that plan.
   useEffect(() => {
     setSaveStatus(null)
@@ -55,14 +58,15 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
   }, [result])
   const printDone = useCallback(() => setPrintJob(null), [])
 
-  const printCard = () => {
+  const printCard = (setup?: CanvasTransfer) => {
     // The button stays enabled while a card is open: disabling a focused button drops keyboard focus to <body>.
-    if (!result || !exportModel || !pictureSource || printJob) return
+    if (state.status !== 'ready' || !result || !exportModel || !pictureSource || printJob || setup?.trials.pending) return
     try {
       const images = renderCardImages(result, pictureSource)
       if (!images) throw new Error('No canvas to draw the card pictures on')
       const dateText = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-      setPrintJob({ card: buildCard(result, exportModel, { dateText }), images })
+      const transfer = setup ? { setup, image: renderTransferImage(setup), paletteKey: paintPaletteKey(palette) } : undefined
+      setPrintJob({ card: buildCard(result, exportModel, { dateText }), images, transfer })
     } catch (error) {
       console.error('Making the card failed', error)
       setSaveStatus({ ok: false, text: 'Couldn’t make the card.' })
@@ -103,7 +107,7 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
       <p className={styles.planHint}>How many separate mixes you’re willing to make. Fewer piles means a rougher repaint.</p>
 
       <section className={styles.planSummary} aria-labelledby="plan-heading" aria-busy={planning} aria-live="polite">
-        {state.status === 'error' && !result ? (
+        {state.status === 'error' ? (
           <p role="alert" className={styles.pending}>{state.error}</p>
         ) : !result || !summary ? (
           <h2 id="plan-heading" className={styles.planHeadline}>Planning…</h2>
@@ -124,7 +128,7 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
       </section>
 
       {result && (
-        <section className={`${styles.section} ${planning ? styles.stale : ''}`} aria-labelledby="piles-heading">
+        <section className={`${styles.section} ${state.status !== 'ready' ? styles.stale : ''}`} aria-labelledby="piles-heading">
           <div className={styles.sectionHead}>
             <h3 id="piles-heading">Piles</h3>
             <span>{selected === null ? 'Click one to see where it goes' : 'Click again to see them all'}</span>
@@ -171,17 +175,27 @@ export default function PlanPanel({ state, budget, onBudget, palette, selected, 
       )}
 
       <section className={styles.planActions} aria-label="Take the plan with you">
-        <button type="button" className={styles.planButton} disabled={planning || !exportModel} onClick={() => void saveProcreate()}>
+        <button type="button" className={styles.planButton} disabled={state.status !== 'ready' || !exportModel} onClick={() => void saveProcreate()}>
           Save Procreate palette
         </button>
-        <button type="button" className={styles.planButton} disabled={planning || !exportModel || !pictureSource} onClick={printCard}>
+        <button type="button" className={styles.planButton} disabled={state.status !== 'ready' || !exportModel || !pictureSource} onClick={() => printCard()}>
           Print card
         </button>
+        {canvasTransfer && <button type="button" className={styles.planButton}
+          disabled={state.status !== 'ready' || !exportModel || !pictureSource || canvasTransfer.trials.pending}
+          onClick={() => printCard(canvasTransfer)}>
+          Print painting packet
+        </button>}
         <p role="status" aria-live="polite" className={saveStatus && !saveStatus.ok ? styles.planStatusFailed : styles.planStatus}>{saveStatus?.text ?? ''}</p>
         <p className={styles.smallNote}>{PROCREATE_NOTE}</p>
         <p className={styles.smallNote}>{PRINT_NOTE}</p>
       </section>
-      {printJob && createPortal(<PlanCard card={printJob.card} images={printJob.images} onDone={printDone} />, document.body)}
+      {printJob && createPortal(
+        <PlanCard card={printJob.card} images={printJob.images} onDone={printDone}
+          supplement={printJob.transfer && <CanvasTransferPages transfer={printJob.transfer.setup} image={printJob.transfer.image}
+            piles={printJob.card.columns.flat()} paletteKey={printJob.transfer.paletteKey} />} />,
+        document.body,
+      )}
 
       <p className={styles.smallNote}>{MODEL_CAVEAT}</p>
       <p className={styles.smallNote}>{PLAN_CAVEAT_COPY}</p>

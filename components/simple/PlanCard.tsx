@@ -12,7 +12,7 @@
  * either: every pile has its number as text, and swatches have a border.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { CARD, type CardCell, type CardModel } from '@/lib/paint/plan/card'
 import type { CardImages } from './planCardImages'
 import styles from './planCard.module.css'
@@ -80,10 +80,12 @@ interface PlanCardProps {
   onDone: () => void
   /** Open the print dialog once the pictures are ready. Off when something else drives printing. */
   autoPrint?: boolean
+  supplement?: ReactNode
 }
 
-export default function PlanCard({ card, images, onDone, autoPrint = true }: PlanCardProps) {
+export default function PlanCard({ card, images, onDone, autoPrint = true, supplement }: PlanCardProps) {
   const root = useRef<HTMLDivElement>(null)
+  const planPage = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!autoPrint) return
@@ -92,7 +94,7 @@ export default function PlanCard({ card, images, onDone, autoPrint = true }: Pla
     const ready = [...pictures.map((img) => img.decode().catch(() => undefined)), document.fonts?.ready]
     Promise.all(ready).then(() => {
       // A plan with many long notes could run past one page: zoom the whole card down until it fits.
-      const card = root.current
+      const card = planPage.current
       if (card && card.scrollHeight > CARD.pageHeight - 4) card.style.zoom = String((CARD.pageHeight - 4) / card.scrollHeight)
       // two frames: let layout settle before the browser takes the page
       requestAnimationFrame(() =>
@@ -115,58 +117,61 @@ export default function PlanCard({ card, images, onDone, autoPrint = true }: Pla
   return (
     <div ref={root} className={styles.card} data-plan-card>
       <style>{PAGE_CSS}</style>
-      <header className={styles.head}>
-        <h1>{card.title}</h1>
-        <p className={styles.meta}>{card.metaLine}</p>
-      </header>
+      <div ref={planPage}>
+        <header className={styles.head}>
+          <h1>{card.title}</h1>
+          <p className={styles.meta}>{card.metaLine}</p>
+        </header>
 
-      <div className={styles.pictures}>
-        <figure>
-          <div className={styles.frame} style={{ width, height }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in this browser, for print: next/image cannot optimize it */}
-            <img src={images.original} alt="The original picture" width={width} height={height} />
-          </div>
-          <figcaption>Original</figcaption>
-        </figure>
-        <figure>
-          <div className={styles.frame} style={{ width, height }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in this browser, for print: next/image cannot optimize it */}
-            <img src={images.repaint} alt="The picture repainted with the piles" width={width} height={height} />
-            <svg className={styles.badges} viewBox={`0 0 ${card.plan.width} ${card.plan.height}`} preserveAspectRatio="none" aria-hidden="true">
-              {card.badges.map((badge) => (
-                <Badge key={`${badge.number}-${badge.x}-${badge.y}`} number={badge.number} cx={badge.x} cy={badge.y} r={card.badgeRadius} font={card.badgeFont} unit={unit} />
-              ))}
-            </svg>
-          </div>
-          <figcaption>
-            Repaint, each part in its pile’s color. The numbers say which pile goes where.
-            {card.unlabeledNote && <span className={styles.unlabeled}>{card.unlabeledNote}</span>}
-          </figcaption>
-        </figure>
+        <div className={styles.pictures}>
+          <figure>
+            <div className={styles.frame} style={{ width, height }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in this browser, for print: next/image cannot optimize it */}
+              <img src={images.original} alt="The original picture" width={width} height={height} />
+            </div>
+            <figcaption>Original</figcaption>
+          </figure>
+          <figure>
+            <div className={styles.frame} style={{ width, height }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in this browser, for print: next/image cannot optimize it */}
+              <img src={images.repaint} alt="The picture repainted with the piles" width={width} height={height} />
+              <svg className={styles.badges} viewBox={`0 0 ${card.plan.width} ${card.plan.height}`} preserveAspectRatio="none" aria-hidden="true">
+                {card.badges.map((badge) => (
+                  <Badge key={`${badge.number}-${badge.x}-${badge.y}`} number={badge.number} cx={badge.x} cy={badge.y} r={card.badgeRadius} font={card.badgeFont} unit={unit} />
+                ))}
+              </svg>
+            </div>
+            <figcaption>
+              Repaint, each part in its pile’s color. The numbers say which pile goes where.
+              {card.unlabeledNote && <span className={styles.unlabeled}>{card.unlabeledNote}</span>}
+            </figcaption>
+          </figure>
+        </div>
+
+        <section className={styles.summary} aria-label="How close">
+          <h2>{card.headline}</h2>
+          {card.notes.map((note) => <p key={note} className={styles.summaryNote}>{note}</p>)}
+          <dl className={styles.facts}>
+            {card.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+          </dl>
+        </section>
+
+        <section className={styles.mix} aria-label="Order and unit">
+          <p><strong>{card.mixOrderLabel}</strong> {card.mixOrder.join(' → ')}</p>
+          <p><strong>{card.partsLabel}</strong> <span className={styles.blank} /></p>
+        </section>
+
+        <div className={styles.piles}>
+          {card.columns.map((column, index) => (
+            <ol key={index}>{column.map((cell) => <Cell key={cell.number} cell={cell} />)}</ol>
+          ))}
+        </div>
+
+        <footer className={styles.caveats}>
+          {card.caveats.map((line) => <p key={line}>{line}</p>)}
+        </footer>
       </div>
-
-      <section className={styles.summary} aria-label="How close">
-        <h2>{card.headline}</h2>
-        {card.notes.map((note) => <p key={note} className={styles.summaryNote}>{note}</p>)}
-        <dl className={styles.facts}>
-          {card.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
-        </dl>
-      </section>
-
-      <section className={styles.mix} aria-label="Order and unit">
-        <p><strong>{card.mixOrderLabel}</strong> {card.mixOrder.join(' → ')}</p>
-        <p><strong>{card.partsLabel}</strong> <span className={styles.blank} /></p>
-      </section>
-
-      <div className={styles.piles}>
-        {card.columns.map((column, index) => (
-          <ol key={index}>{column.map((cell) => <Cell key={cell.number} cell={cell} />)}</ol>
-        ))}
-      </div>
-
-      <footer className={styles.caveats}>
-        {card.caveats.map((line) => <p key={line}>{line}</p>)}
-      </footer>
+      {supplement}
     </div>
   )
 }

@@ -60,10 +60,11 @@ async function plan(copy: Copy, budget: number, pigments: Pigment[]): Promise<Pi
 }
 
 export function usePicturePlan(source: HTMLCanvasElement | null, enabled: boolean, budget: number, pigments: Pigment[]): PlanState {
-  const [state, setState] = useState<PlanState & { source: HTMLCanvasElement | null }>({ status: 'idle', result: null, resultBudget: null, error: null, source: null })
+  const [state, setState] = useState<PlanState & { source: HTMLCanvasElement | null; inputKey: string }>({ status: 'idle', result: null, resultBudget: null, error: null, source: null, inputKey: '' })
   const copyRef = useRef<{ source: HTMLCanvasElement; copy: Copy | null } | null>(null)
   // Only re-plan when the tubes really change, not whenever the palette array is re-created.
   const pigmentsKey = useMemo(() => JSON.stringify(pigments.map((p) => [p.id, p.hex, p.tintingStrength])), [pigments])
+  const inputKey = `${budget}:${pigmentsKey}`
   const stablePigments = useMemo(() => pigments, [pigmentsKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -72,22 +73,28 @@ export function usePicturePlan(source: HTMLCanvasElement | null, enabled: boolea
     if (copyRef.current?.source !== source) copyRef.current = { source, copy: planningCopy(source) }
     const copy = copyRef.current.copy
     if (!copy) {
-      setState((s) => ({ ...s, status: 'error', error: 'Couldn’t read this picture to plan it.', source }))
+      setState((s) => ({ ...s, status: 'error', error: 'Couldn’t read this picture to plan it.', source, inputKey }))
       return
     }
-    setState((s) => ({ ...s, status: 'planning', error: null, source, result: s.source === source ? s.result : null, resultBudget: s.source === source ? s.resultBudget : null }))
+    setState((s) => ({ ...s, status: 'planning', error: null, source, inputKey, result: s.source === source ? s.result : null, resultBudget: s.source === source ? s.resultBudget : null }))
     plan(copy, budget, stablePigments)
       .then((result) => {
-        if (!cancelled) setState({ status: 'ready', result, resultBudget: budget, error: null, source })
+        if (!cancelled) setState({ status: 'ready', result, resultBudget: budget, error: null, source, inputKey })
       })
       .catch(() => {
-        if (!cancelled) setState((s) => ({ ...s, status: 'error', error: 'This paint set can’t make a plan for this picture.', source }))
+        if (!cancelled) setState((s) => ({ ...s, status: 'error', error: 'This paint set can’t make a plan for this picture.', source, inputKey }))
       })
     return () => {
       cancelled = true
     }
-  }, [source, enabled, budget, stablePigments])
+  }, [source, enabled, budget, stablePigments, inputKey])
 
   const current = state.source === source
-  return { status: current ? state.status : 'idle', result: current ? state.result : null, resultBudget: current ? state.resultBudget : null, error: current ? state.error : null }
+  const currentInput = current && state.inputKey === inputKey
+  return {
+    status: currentInput ? state.status : enabled && source ? 'planning' : 'idle',
+    result: current ? state.result : null,
+    resultBudget: current ? state.resultBudget : null,
+    error: currentInput ? state.error : null,
+  }
 }

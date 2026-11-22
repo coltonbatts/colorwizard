@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { rgbToHex } from '@/lib/color/conversions'
 import { linearToSRGB, getRelativeLuminance } from '@/lib/valueScale'
+import type { ImageCrop } from '@/lib/paint/canvasSetup'
 import styles from './simple.module.css'
 
 export interface SamplePoint {
@@ -76,6 +77,7 @@ interface SimpleCanvasProps {
    * Takes precedence over `display` when provided.
    */
   renderDisplay?: CanvasDisplayRenderer | null
+  drawGuide?: (ctx: CanvasRenderingContext2D, image: ImageCrop) => void
   /** Optional custom thumbnail renderer for the zoomed-in Mini-Navigator. */
   renderNavigator?: CanvasNavigatorRenderer | null
   /** Show the auto-hiding Mini-Navigator when zoomed past 165% on desktop/tablet. */
@@ -197,6 +199,7 @@ export default function SimpleCanvas({
   source,
   display = null,
   renderDisplay = null,
+  drawGuide,
   renderNavigator = null,
   showNavigator = false,
   compareSplit = null,
@@ -609,6 +612,8 @@ export default function SimpleCanvas({
       ctx.restore()
     }
 
+    drawGuide?.(ctx, { x: view.x, y: view.y, width: drawW, height: drawH })
+
     if (point) {
       const cx = view.x + (point.x + 0.5) * view.scale
       const cy = view.y + (point.y + 0.5) * view.scale
@@ -629,6 +634,7 @@ export default function SimpleCanvas({
   }, [
     compareSplit,
     drawable,
+    drawGuide,
     getValueCanvas,
     lightStage,
     point,

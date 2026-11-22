@@ -1,0 +1,91 @@
+.setup {
+  display: grid;
+  gap: 14px;
+  padding: 2px 0 16px;
+}
+
+.section {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--s-rule);
+  min-width: 0;
+}
+
+.section:first-child { border-top: 0; }
+.section h2, .section h3, .section p { margin: 0; }
+
+.section h2 {
+  font: 500 29px/1.05 var(--s-serif);
+}
+
+.section h3 {
+  font: 500 21px/1.08 var(--s-serif);
+}
+
+.section form, .section label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.section label:has(input[type='checkbox']) {
+  display: flex;
+}
+
+.section input:not([type='checkbox']), .section textarea, .section select {
+  box-sizing: border-box;
+  padding: 7px 8px;
+  min-height: 34px;
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: var(--s-ink);
+  background: var(--s-white);
+  border: 1px solid rgba(17, 17, 17, .25);
+  border-radius: 4px;
+}
+
+.section textarea { resize: vertical; }
+
+.dimensions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.preview {
+  margin: 5px 0;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px;
+  background: var(--s-white);
+  border: 1px solid var(--s-rule);
+  text-align: center;
+}
+
+.preview canvas { max-width: 100%; height: auto; }
+.preview figcaption, .coordinates { font: 10px/1.5 var(--s-mono); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.section button:not(.remove) { padding: 6px 9px; min-height: 36px; border: 1px solid var(--s-rule); border-radius: 4px; background: var(--s-white); }
+.section button:disabled { opacity: .55; cursor: default; }
+.actions button[aria-pressed='true'] { background: var(--s-ink); color: var(--s-white); }
+.markList { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
+
+.mark {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 255, 255, .45);
+  border: 1px solid var(--s-rule);
+  border-radius: 4px;
+}
+
+.markTitle { display: grid; align-items: center; gap: 6px; grid-template-columns: auto minmax(0, 1fr) auto; }
+.badge { display: grid; place-items: center; min-width: 19px; min-height: 19px; border: 1px solid var(--s-rule); border-radius: 50%; font: 10px var(--s-mono); }
+.remove { align-self: center; border: 0; background: transparent; min-width: 28px; min-height: 30px; }
+.span { display: flex; align-items: center; justify-content: space-between; gap: 8px; overflow-wrap: anywhere; }
+.trial { display: grid; gap: 7px; margin-top: 4px; }
+.swatchLine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 10px var(--s-mono); }
+.swatch { width: 17px; height: 17px; border: 1px solid var(--s-rule); border-radius: 3px; }
