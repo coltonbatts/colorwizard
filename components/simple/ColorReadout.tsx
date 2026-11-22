@@ -8,10 +8,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getColorName } from '@/lib/colorNaming'
 import { getPaletteSolveOptions } from '@/lib/paint/palettePigments'
-import { solveRecipe, type SolveOptions } from '@/lib/paint/solveRecipe'
 import type { Collection, SaveInput, SavedColor } from '@/lib/colorLibrary'
 import type { SpectralRecipe } from '@/lib/spectral/types'
-import { getSolverWorker, resetSolverWorker, withTimeout, WorkerTimeoutError } from '@/lib/workers'
+import { solvePaint } from './solvePaint'
 import BasisNote from './BasisNote'
 import CollectionPicker from './CollectionPicker'
 import ColorUnderstanding from './ColorUnderstanding'
@@ -49,16 +48,6 @@ interface ColorReadoutProps {
 }
 
 export { originOf }
-
-async function solvePaint(hex: string, options?: SolveOptions): Promise<SpectralRecipe> {
-  try {
-    return await withTimeout(getSolverWorker().solveRecipe(hex, options), 5000, 'Solver worker')
-  } catch (error) {
-    // A stuck worker would hold every later solve behind it; the next solve starts a fresh one.
-    if (error instanceof WorkerTimeoutError) resetSolverWorker()
-    return solveRecipe(hex, options)
-  }
-}
 
 export default function ColorReadout({ color, arrival, canSave, savedColor, existing, onSave, onNote, collections, onToggleCollection, onCreateCollection, onRecalculate, onOpenColor }: ColorReadoutProps) {
   const settledHex = useSettled(color.hex, SETTLE_MS)
