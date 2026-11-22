@@ -190,7 +190,7 @@ Where the studio keeps things:
 - No browser smoke covers it: `scripts/smoke-core-flow.mjs` has no Thread Studio or Thread Map scenario.
 - No print run is recorded for the card (page count, Letter/A4, grayscale), and nothing has been checked on paper or fabric.
 - Not checked on real iOS/Android/Safari, against physical skeins, or for performance at Crisp on large photos.
-- Whether these commits are deployed has not been checked; the last verified production deploy is `042fc6f3`.
+- Deployed (checked 2026-11-22): every commit `a2b4f080`..`69aa48e2` has a READY Vercel production deployment, and `colorwizard.app/thread` serves the newest Thread Map code. Nobody has clicked through Thread Studio or the Thread Map on the live site.
 
 ### Working in this repo
 
