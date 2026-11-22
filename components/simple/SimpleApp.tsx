@@ -53,6 +53,8 @@ import {
   compileThreadMapPaths,
   createThreadMapCanvasRenderer,
   createThreadMapNavigatorRenderer,
+  withThreadMapVisiblyOff,
+  type ThreadMapSwapPreview,
   type VellumMode,
 } from './threadMapCanvas'
 import { renderThreadMap, renderThreadMapOutline, slotBounds, threadSlotAt } from './threadMapRender'
@@ -181,6 +183,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   const [threadMapOutlineMirror, setThreadMapOutlineMirror] = useState(false)
   const [selectedThreadSlot, setSelectedThreadSlot] = useState<number | null>(null)
   const [hoveredThreadSlot, setHoveredThreadSlot] = useState<number | null>(null)
+  const [previewThreadSwap, setPreviewThreadSwap] = useState<ThreadMapSwapPreview | null>(null)
   const [compareSplit, setCompareSplit] = useState<number | null>(null)
   const [vellumMode, setVellumMode] = useState<VellumMode>('tracing')
   const [markThreadMisses, setMarkThreadMisses] = useState(false)
@@ -256,11 +259,30 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     })
   }, [commitThreadMap])
 
+  const revertFullThreadSwap = useCallback((baseNumber: string) => {
+    const baseKey = baseNumber.trim().toLowerCase()
+    commitThreadMap((c) => {
+      if (!(baseKey in c.swapOverrides)) return c
+      const nextSwaps = { ...c.swapOverrides }
+      delete nextSwaps[baseKey]
+      return { ...c, swapOverrides: nextSwaps }
+    })
+  }, [commitThreadMap])
+
   const applyMonoThreadSwap = useCallback((slotIndex: number, nextNumber: string) => {
     commitThreadMap((c) => ({
       ...c,
       monoSwaps: { ...c.monoSwaps, [slotIndex]: nextNumber },
     }))
+  }, [commitThreadMap])
+
+  const revertMonoThreadSwap = useCallback((slotIndex: number) => {
+    commitThreadMap((c) => {
+      if (!(slotIndex in c.monoSwaps)) return c
+      const nextMono = { ...c.monoSwaps }
+      delete nextMono[slotIndex]
+      return { ...c, monoSwaps: nextMono }
+    })
   }, [commitThreadMap])
 
   const resetThreadSwaps = useCallback(() => {
@@ -339,15 +361,22 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     swapOverrides: threadSwapOverrides,
     monoSwaps: threadMonoSwaps,
     onApplyFullSwap: applyFullThreadSwap,
+    onRevertFullSwap: revertFullThreadSwap,
     onApplyMonoSwap: applyMonoThreadSwap,
+    onRevertMonoSwap: revertMonoThreadSwap,
     onResetSwaps: resetThreadSwaps,
   })
   const threadMap = threadMapState.result
 
-  // Reset thread isolation when switching photo, mode, tone, detail, fidelity, or budget (preserving isolation during live swaps).
+  // Reset thread isolation & live swap previews when switching photo, mode, tone, detail, fidelity, or budget.
   useEffect(() => {
     setSelectedThreadSlot(null)
+    setPreviewThreadSwap(null)
   }, [source, threadMapMode, threadMapBudget, threadMonoTone, threadMapDetail, threadMapFidelity, threadPreferBox])
+
+  useEffect(() => {
+    if (!isThreadMapActive) setPreviewThreadSwap(null)
+  }, [isThreadMapActive])
 
   const changeBudget = useCallback((next: Budget) => {
     setBudget(next)
@@ -384,10 +413,25 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     }
   }, [isThreadMapActive, threadMapOutline, threadMapOutlineNumbers, threadMap])
 
-  const compiledThreadMap = useMemo(() => {
+  // Compile watertight vector paths strictly from the base slot layout so in-place display
+  // color swaps reuse the exact same Path2D objects with 0 ms geometry re-compilation.
+  const compiledSlotPaths = useMemo(() => {
     if (!isThreadMapActive || !threadMap) return null
     return compileThreadMapPaths(threadMap)
-  }, [isThreadMapActive, threadMap])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `slot` buffer identity changes only when regions change
+  }, [
+    isThreadMapActive,
+    threadMap?.slot,
+    threadMap?.width,
+    threadMap?.height,
+    threadMap?.slots.length,
+    threadMap?.detail,
+  ])
+
+  const compiledThreadMap = useMemo(() => {
+    if (!compiledSlotPaths || !threadMap) return null
+    return withThreadMapVisiblyOff(compiledSlotPaths, threadMap.visiblyOff, threadMap.width, threadMap.height)
+  }, [compiledSlotPaths, threadMap])
 
   const threadMapRenderer = useMemo(() => {
     if (!isThreadMapActive || peek || !threadMap || !compiledThreadMap) return null
@@ -398,6 +442,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       outlineLabels,
       selected: selectedThreadSlot,
       hovered: hoveredThreadSlot,
+      previewSwap: previewThreadSwap,
       vellumMode,
       markMisses: markThreadMisses,
     })
@@ -412,6 +457,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     outlineLabels,
     selectedThreadSlot,
     hoveredThreadSlot,
+    previewThreadSwap,
     vellumMode,
     markThreadMisses,
   ])
@@ -422,8 +468,18 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       outline: threadMapOutline,
       mirror: threadMapOutlineMirror,
       selected: selectedThreadSlot,
+      previewSwap: previewThreadSwap,
     })
-  }, [isThreadMapActive, peek, threadMap, compiledThreadMap, threadMapOutline, threadMapOutlineMirror, selectedThreadSlot])
+  }, [
+    isThreadMapActive,
+    peek,
+    threadMap,
+    compiledThreadMap,
+    threadMapOutline,
+    threadMapOutlineMirror,
+    selectedThreadSlot,
+    previewThreadSwap,
+  ])
 
   const threadMapFallbackDisplay = useMemo(() => {
     if (!isThreadMapActive || peek || !threadMap || compiledThreadMap) return null
@@ -440,6 +496,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
           selected: selectedThreadSlot,
           markMisses: markThreadMisses,
           sourcePixels: threadMapState.sourcePixels,
+          previewSwap: previewThreadSwap,
         }),
     )
     ctx.putImageData(image, 0, 0)
@@ -454,6 +511,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     selectedThreadSlot,
     markThreadMisses,
     threadMapState.sourcePixels,
+    previewThreadSwap,
   ])
 
   const renderDisplay = !planMode && !processMode && isThreadMapActive ? threadMapRenderer : null
@@ -500,6 +558,7 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       setSelectedPile(null)
       setSelectedThreadSlot(null)
       setHoveredThreadSlot(null)
+      setPreviewThreadSwap(null)
       setCompareSplit(null)
       setVellumMode('tracing')
       setThreadMapHistory((prev) => createThreadMapHistory(snapshotFromPrefs(prefsFromSnapshot(prev.present))))
@@ -890,6 +949,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     outlineNumbers: threadMapOutlineNumbers,
     selectedSlot: threadMap && selectedThreadSlot !== null && selectedThreadSlot < threadMap.slots.length ? selectedThreadSlot : null,
     onSelectSlot: setSelectedThreadSlot,
+    geometry: compiledThreadMap?.geometry ?? null,
+    previewSwap: previewThreadSwap,
+    onPreviewSwap: setPreviewThreadSwap,
     markMisses: markThreadMisses,
     onMarkMissesChange: setMarkThreadMisses,
     onSaveMapPull: saveThreadMapPull,
@@ -1031,8 +1093,10 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       >
         {isThreadMapActive && threadMap && selectedThreadSlot !== null && threadMap.slots[selectedThreadSlot] && (() => {
           const activeSlot = threadMap.slots[selectedThreadSlot]
+          const previewingActive = previewThreadSwap?.slotIndex === selectedThreadSlot ? previewThreadSwap.thread : null
+          const shownThread = previewingActive ?? activeSlot.thread
           const count = threadMap.slots.length
-          const hex = activeSlot.thread.hex
+          const hex = shownThread.hex
           const r = parseInt(hex.slice(1, 3), 16)
           const g = parseInt(hex.slice(3, 5), 16)
           const b = parseInt(hex.slice(5, 7), 16)
@@ -1049,8 +1113,11 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
                 {activeSlot.index + 1}
               </span>
               <div className={threadStyles.stitchFocusInfo}>
-                <strong>DMC {activeSlot.thread.number} · {formatThreadShare(activeSlot.area)}</strong>
-                <span>{activeSlot.thread.name}</span>
+                <strong>
+                  DMC {shownThread.number} · {formatThreadShare(activeSlot.area)}
+                  {previewingActive ? ' · Preview' : ''}
+                </strong>
+                <span>{shownThread.name}</span>
               </div>
               <div className={threadStyles.stitchFocusNav}>
                 <button
@@ -1109,7 +1176,25 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
             </div>
           )
         })()}
-        {isThreadMapActive && !peek && threadMap && hoveredThreadSlot !== null && hoveredThreadSlot !== selectedThreadSlot && threadMap.slots[hoveredThreadSlot] && (() => {
+        {isThreadMapActive && !peek && !threadMapOutline && threadMap && previewThreadSwap && threadMap.slots[previewThreadSwap.slotIndex] ? (() => {
+          const slot = threadMap.slots[previewThreadSwap.slotIndex]
+          const prev = previewThreadSwap.thread
+          const isOriginalPeek = Boolean(slot.originalThread && slot.originalThread.id === prev.id)
+          return (
+            <div className={threadStyles.hoverThreadPill} role="status" aria-live="polite">
+              <span className={threadStyles.previewPair} aria-hidden="true">
+                <i style={{ backgroundColor: slot.thread.hex }} />
+                <i style={{ backgroundColor: prev.hex }} />
+              </span>
+              <strong>
+                {isOriginalPeek
+                  ? `Original #${slot.index + 1} · DMC ${prev.number}`
+                  : `Preview #${slot.index + 1} · DMC ${prev.number}`}
+              </strong>
+              <span className={threadStyles.hoverThreadName}>{prev.name}</span>
+            </div>
+          )
+        })() : isThreadMapActive && !peek && threadMap && hoveredThreadSlot !== null && hoveredThreadSlot !== selectedThreadSlot && threadMap.slots[hoveredThreadSlot] && (() => {
           const hoveredSlot = threadMap.slots[hoveredThreadSlot]
           const hex = hoveredSlot.thread.hex
           const r = parseInt(hex.slice(1, 3), 16)

@@ -10,8 +10,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { formatCatalogDeltaE00 } from '@/lib/colorSemantics'
 import { buildThreadMapCard, type ThreadMapCardModel } from '@/lib/dmc/map/card'
+import { getSlotNeighbors, type ThreadMapVectorGeometry } from '@/lib/dmc/map/contours'
 import {
+  countUniqueThreads,
   describeThreadMap,
+  findSharedSlotNumbers,
   formatThreadDeltaE,
   formatThreadMapModeLabel,
   formatThreadShare,
@@ -39,6 +42,7 @@ import { formatThreadTone, searchDmcThreads, threadTone } from '@/lib/dmc/studio
 import type { DMCThread } from '@/lib/dmc/types'
 import BasisNote from './BasisNote'
 import ThreadMapCard from './ThreadMapCard'
+import type { ThreadMapSwapPreview } from './threadMapCanvas'
 import {
   renderThreadMapImages,
   renderThreadMapOutlineImages,
@@ -80,13 +84,16 @@ export interface ThreadMapPanelProps {
   onPreferBoxChange: (prefer: boolean) => void
   lockedNumbers: readonly string[]
   onToggleLock: (number: string) => void
-  onReplaceLock: (oldNumber: string, newNumber: string) => void
+  onReplaceLock?: (oldNumber: string, newNumber: string) => void
   onClearLocks: () => void
   outlineMirror: boolean
   onOutlineMirrorChange: (mirror: boolean) => void
   outlineNumbers: boolean
   selectedSlot: number | null
   onSelectSlot: (slot: number | null) => void
+  geometry?: ThreadMapVectorGeometry | null
+  previewSwap?: ThreadMapSwapPreview | null
+  onPreviewSwap?: (preview: ThreadMapSwapPreview | null) => void
   markMisses: boolean
   onMarkMissesChange: (on: boolean) => void
   allThreads: readonly DMCThread[]
@@ -123,13 +130,15 @@ export default function ThreadMapPanel({
   onPreferBoxChange,
   lockedNumbers,
   onToggleLock,
-  onReplaceLock,
   onClearLocks,
   outlineMirror,
   onOutlineMirrorChange,
   outlineNumbers,
   selectedSlot,
   onSelectSlot,
+  geometry = null,
+  previewSwap = null,
+  onPreviewSwap,
   markMisses,
   onMarkMissesChange,
   allThreads,
@@ -139,11 +148,13 @@ export default function ThreadMapPanel({
   onSendPullToTray,
   onChoosePicture,
 }: ThreadMapPanelProps) {
-  const { result, status, hasSwaps, error, swapThread, resetSwaps } = state
+  const { result, status, hasSwaps, error, swapThread, revertThread, resetSwaps } = state
   const building = status === 'building'
   const rowRefs = useRef<Array<HTMLLIElement | null>>([])
   const [swappingIndex, setSwappingIndex] = useState<number | null>(null)
   const [swapQuery, setSwapQuery] = useState('')
+  const [hoverPreview, setHoverPreview] = useState<ThreadMapSwapPreview | null>(null)
+  const [abCompareSlot, setAbCompareSlot] = useState<number | null>(null)
   const [actionStatus, setActionStatus] = useState<{ ok: boolean; text: string } | null>(null)
   const [printJob, setPrintJob] = useState<{ card: ThreadMapCardModel; images: ThreadMapImages } | null>(null)
 
@@ -156,11 +167,31 @@ export default function ThreadMapPanel({
   useEffect(() => {
     setPrintJob(null)
     setActionStatus(null)
+    setAbCompareSlot((cur) => (cur !== null && result?.slots[cur]?.originalThread ? cur : null))
   }, [result])
 
   useEffect(() => {
     setSwapQuery('')
+    setHoverPreview(null)
   }, [swappingIndex])
+
+  useEffect(() => {
+    if (!onPreviewSwap) return
+    if (hoverPreview) {
+      onPreviewSwap(hoverPreview)
+      return
+    }
+    if (abCompareSlot !== null && result?.slots[abCompareSlot]?.originalThread) {
+      onPreviewSwap({
+        slotIndex: abCompareSlot,
+        thread: result.slots[abCompareSlot].originalThread!,
+      })
+      return
+    }
+    onPreviewSwap(null)
+  }, [hoverPreview, abCompareSlot, result, onPreviewSwap])
+
+  useEffect(() => () => onPreviewSwap?.(null), [onPreviewSwap])
 
   useEffect(() => {
     if (selectedSlot !== null) {
@@ -225,23 +256,42 @@ export default function ThreadMapPanel({
     }
   }
 
-  const applySwap = (slotIndex: number, currentNumber: string, nextThread: DMCThread) => {
-    if (lockedSet.has(currentNumber.toLowerCase())) {
-      onReplaceLock(currentNumber, nextThread.number)
-    }
+  const applySwap = (slotIndex: number, nextThread: DMCThread) => {
+    setHoverPreview(null)
+    if (abCompareSlot === slotIndex) setAbCompareSlot(null)
     swapThread(slotIndex, nextThread)
     setSwappingIndex(null)
     setSwapQuery('')
   }
 
+  const previewHandlers = (slotIndex: number, candidate: DMCThread) => ({
+    onMouseEnter: () => setHoverPreview({ slotIndex, thread: candidate }),
+    onMouseLeave: () =>
+      setHoverPreview((cur) => (cur?.slotIndex === slotIndex && cur.thread.id === candidate.id ? null : cur)),
+    onFocus: () => setHoverPreview({ slotIndex, thread: candidate }),
+    onBlur: () =>
+      setHoverPreview((cur) => (cur?.slotIndex === slotIndex && cur.thread.id === candidate.id ? null : cur)),
+  })
+
   const handleSendToTray = () => {
     if (!result || !canSave) return
+    const uniqueThreads: DMCThread[] = []
+    const seen = new Set<string>()
+    for (const s of result.slots) {
+      const key = s.thread.number.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      uniqueThreads.push(s.thread)
+    }
     const pullName = onSendPullToTray(
-      result.slots.map((s) => s.thread),
+      uniqueThreads,
       formatThreadMapModeLabel(result),
     )
     if (pullName) {
-      setActionStatus({ ok: true, text: `Saved ${result.slots.length} threads to “${pullName}” in Tray.` })
+      setActionStatus({
+        ok: true,
+        text: `Saved ${uniqueThreads.length} ${uniqueThreads.length === 1 ? 'thread' : 'threads'} to “${pullName}” in Tray.`,
+      })
     } else {
       setActionStatus({ ok: false, text: 'Couldn’t save this pull to your Skein Tray.' })
     }
@@ -421,15 +471,17 @@ export default function ThreadMapPanel({
           >
             {result.slots.map((slot) => {
               const isolated = selectedSlot === slot.index
+              const previewed = previewSwap?.slotIndex === slot.index ? previewSwap.thread : null
+              const shown = previewed ?? slot.thread
               return (
                 <button
                   key={`${slot.index}-${slot.thread.id}`}
                   type="button"
                   className={`${styles.mapStripCell} ${isolated ? styles.mapStripActive : ''}`}
-                  style={{ backgroundColor: slot.thread.hex, color: contrastInk(slot.thread.hex) }}
+                  style={{ backgroundColor: shown.hex, color: contrastInk(shown.hex) }}
                   aria-pressed={isolated}
                   onClick={() => onSelectSlot(isolated ? null : slot.index)}
-                  title={`#${slot.index + 1} · DMC ${slot.thread.number} ${slot.thread.name}`}
+                  title={`#${slot.index + 1} · DMC ${shown.number} ${shown.name}`}
                 >
                   {result.slots.length <= 16 ? slot.index + 1 : ''}
                 </button>
@@ -480,6 +532,8 @@ export default function ThreadMapPanel({
                 type="button"
                 className={styles.linkBtn}
                 onClick={() => {
+                  setHoverPreview(null)
+                  setAbCompareSlot(null)
                   setSwappingIndex(null)
                   resetSwaps()
                 }}
@@ -527,9 +581,19 @@ export default function ThreadMapPanel({
               {summary.headline}
             </h2>
             <span className={styles.mapStatusMetric}>
-              {result.mode === 'monochrome'
-                ? `${result.slots.length} steps · ${formatValueStep(result.score.meanDeltaL)}`
-                : `${result.slots.length} threads · avg ΔE ${formatThreadDeltaE(result.score.meanDeltaE00)}`}
+              {(() => {
+                const uniqueCount = countUniqueThreads(result.slots)
+                if (result.mode === 'monochrome') {
+                  const label = uniqueCount < result.slots.length
+                    ? `${uniqueCount} skeins (${result.slots.length} steps)`
+                    : `${result.slots.length} steps`
+                  return `${label} · ${formatValueStep(result.score.meanDeltaL)}`
+                }
+                const label = uniqueCount < result.slots.length
+                  ? `${uniqueCount} skeins (${result.slots.length} areas)`
+                  : `${result.slots.length} threads`
+                return `${label} · avg ΔE ${formatThreadDeltaE(result.score.meanDeltaE00)}`
+              })()}
             </span>
           </div>
         )}
@@ -554,15 +618,33 @@ export default function ThreadMapPanel({
             {result.slots.map((slot) => {
               const isolated = selectedSlot === slot.index
               const owned = stash.includes(slot.thread.number)
-              const locked = !isMono && lockedSet.has(slot.thread.number.toLowerCase())
+              const baseNumber = slot.originalThread?.number ?? slot.thread.number
+              const locked = !isMono && lockedSet.has(baseNumber.toLowerCase())
               const swapOpen = swappingIndex === slot.index
+              const previewed = previewSwap?.slotIndex === slot.index ? previewSwap.thread : null
+              const tileHex = (previewed ?? slot.thread).hex
               const tone = formatThreadTone(threadTone(slot.thread))
+              const sharedWith = findSharedSlotNumbers(result.slots, slot.index)
+              const comparingOriginal = abCompareSlot === slot.index && Boolean(slot.originalThread)
               const otherNumbers = result.slots
                 .filter((other) => other.index !== slot.index)
                 .map((other) => other.thread.number)
-              const otherSet = swapOpen
-                ? new Set(otherNumbers.map((n) => n.toLowerCase()))
+              const otherSlotByNumber = swapOpen
+                ? result.slots.reduce<Map<string, number[]>>((acc, other) => {
+                  if (other.index === slot.index) return acc
+                  const key = other.thread.number.toLowerCase()
+                  const list = acc.get(key)
+                  if (list) list.push(other.index + 1)
+                  else acc.set(key, [other.index + 1])
+                  return acc
+                }, new Map())
                 : null
+              const neighbors = swapOpen && geometry
+                ? getSlotNeighbors(geometry, slot.index)
+                  .slice(0, 6)
+                  .map((n) => result.slots[n.slotIndex])
+                  .filter((neighborSlot): neighborSlot is NonNullable<typeof neighborSlot> => Boolean(neighborSlot))
+                : []
               const trimmedQuery = swapOpen ? swapQuery.trim() : ''
               const searchHits = swapOpen && trimmedQuery
                 ? searchDmcThreads(allThreads, trimmedQuery, 16).filter(
@@ -588,7 +670,7 @@ export default function ThreadMapPanel({
                     >
                       <span
                         className={styles.mapSwatchTile}
-                        style={{ backgroundColor: slot.thread.hex, color: contrastInk(slot.thread.hex) }}
+                        style={{ backgroundColor: tileHex, color: contrastInk(tileHex) }}
                         aria-hidden="true"
                       >
                         {slot.index + 1}
@@ -601,9 +683,14 @@ export default function ThreadMapPanel({
                         <span className={styles.mapThreadName}>{slot.thread.name}</span>
                         <small className={styles.mapRowMeta}>
                           {tone}
+                          {slot.swapped && slot.originalThread
+                            ? ` · Replaced ${slot.originalThread.number}`
+                            : slot.swapped
+                              ? ' · Swapped'
+                              : ''}
+                          {sharedWith.length > 0 ? ` · Also #${sharedWith.join(', #')}` : ''}
                           {slot.thread.colorConfidence === 'approximate' ? ' · Approx color' : ''}
                           {locked ? ' · Locked' : ''}
-                          {slot.swapped ? ' · Swapped' : ''}
                         </small>
                       </span>
                     </button>
@@ -614,10 +701,10 @@ export default function ThreadMapPanel({
                           type="button"
                           className={styles.boxBtn}
                           aria-pressed={locked}
-                          onClick={() => onToggleLock(slot.thread.number)}
+                          onClick={() => onToggleLock(baseNumber)}
                           title={locked
-                            ? `Unlock DMC ${slot.thread.number} so thread-count changes can replace it`
-                            : `Lock DMC ${slot.thread.number} so thread-count changes keep it`}
+                            ? `Unlock region #${slot.index + 1} so thread-count changes can replace it`
+                            : `Lock region #${slot.index + 1} so thread-count changes keep it`}
                         >
                           {locked ? 'Locked' : 'Lock'}
                         </button>
@@ -643,19 +730,78 @@ export default function ThreadMapPanel({
                     </div>
                   </div>
 
+                  {slot.swapped && slot.originalThread && (
+                    <div className={styles.mapSwapBar} aria-label={`Substitution controls for thread ${slot.index + 1}`}>
+                      <span
+                        className={styles.mapSwapInfo}
+                        title={`Original: DMC ${slot.originalThread.number} ${slot.originalThread.name}`}
+                      >
+                        <span className={styles.swapDotPair} aria-hidden="true">
+                          <i style={{ backgroundColor: slot.originalThread.hex }} />
+                          <i style={{ backgroundColor: slot.thread.hex }} />
+                        </span>
+                        <span>
+                          Replaced <strong>{slot.originalThread.number}</strong>
+                        </span>
+                      </span>
+                      <div className={styles.mapSwapBtns}>
+                        <button
+                          type="button"
+                          className={styles.swapBarBtn}
+                          aria-pressed={comparingOriginal}
+                          onClick={() => {
+                            setHoverPreview(null)
+                            setAbCompareSlot((cur) => (cur === slot.index ? null : slot.index))
+                          }}
+                          title={comparingOriginal
+                            ? `Showing original DMC ${slot.originalThread.number}. Click to return to DMC ${slot.thread.number}.`
+                            : `Toggle map preview between original DMC ${slot.originalThread.number} and DMC ${slot.thread.number}`}
+                        >
+                          {comparingOriginal
+                            ? `Showing ${slot.originalThread.number}`
+                            : `Compare ${slot.originalThread.number}`}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.swapBarBtn}
+                          onClick={() => {
+                            setHoverPreview(null)
+                            if (abCompareSlot === slot.index) setAbCompareSlot(null)
+                            if (swappingIndex === slot.index) setSwappingIndex(null)
+                            revertThread(slot.index)
+                          }}
+                          title={`Revert #${slot.index + 1} back to DMC ${slot.originalThread.number} ${slot.originalThread.name}`}
+                        >
+                          Revert
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {swapOpen && (
-                    <div className={styles.swapPicker} aria-label={`Swap options for thread ${slot.index + 1}`}>
+                    <div
+                      className={styles.swapPicker}
+                      aria-label={`Swap options for thread ${slot.index + 1}`}
+                      onMouseLeave={() => setHoverPreview(null)}
+                    >
                       <div className={styles.swapHeader}>
                         <span>
                           Replace <strong>#{slot.index + 1} DMC {slot.thread.number}</strong> ({tone})
                         </span>
-                        <button
-                          type="button"
-                          className={styles.linkBtn}
-                          onClick={() => setSwappingIndex(null)}
-                        >
-                          Close
-                        </button>
+                        <span className={styles.swapHeaderActions}>
+                          {hoverPreview?.slotIndex === slot.index && (
+                            <span className={styles.swapPreviewTag}>
+                              Preview {hoverPreview.thread.number}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.linkBtn}
+                            onClick={() => setSwappingIndex(null)}
+                          >
+                            Close
+                          </button>
+                        </span>
                       </div>
 
                       <div className={styles.swapSearchRow}>
@@ -680,11 +826,56 @@ export default function ThreadMapPanel({
                         )}
                       </div>
 
+                      {neighbors.length > 0 && (
+                        <div className={styles.swapGroup}>
+                          <div className={styles.swapNeighborHead}>
+                            <span className={styles.swapGroupLabel}>Neighbors on map</span>
+                            <span
+                              className={styles.swapHarmonyBar}
+                              aria-hidden="true"
+                              title="Active or previewed shade next to its bordering map threads"
+                            >
+                              {neighbors.slice(0, 2).map((nb) => (
+                                <i key={`l-${nb.index}`} style={{ backgroundColor: nb.thread.hex }} />
+                              ))}
+                              <i
+                                className={styles.swapHarmonyCenter}
+                                style={{ backgroundColor: tileHex }}
+                              />
+                              {neighbors.slice(2, 4).map((nb) => (
+                                <i key={`r-${nb.index}`} style={{ backgroundColor: nb.thread.hex }} />
+                              ))}
+                            </span>
+                          </div>
+                          <div className={styles.neighborChipRow}>
+                            {neighbors.map((nb) => {
+                              const sameThread = nb.thread.number.toLowerCase() === slot.thread.number.toLowerCase()
+                              return (
+                                <button
+                                  key={`nb-${nb.index}`}
+                                  type="button"
+                                  className={styles.neighborChip}
+                                  disabled={sameThread}
+                                  onClick={() => applySwap(slot.index, nb.thread)}
+                                  {...(sameThread ? {} : previewHandlers(slot.index, nb.thread))}
+                                  title={sameThread
+                                    ? `#${nb.index + 1} already uses DMC ${nb.thread.number}`
+                                    : `Bordering #${nb.index + 1} · Click to paint this area in DMC ${nb.thread.number} ${nb.thread.name}`}
+                                >
+                                  <i style={{ backgroundColor: nb.thread.hex }} aria-hidden="true" />
+                                  <code>#{nb.index + 1} {nb.thread.number}</code>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {searchHits ? (
                         <div className={styles.swapGroup}>
                           <span className={styles.swapGroupLabel}>
                             {searchHits.length > 0
-                              ? `${searchHits.length} ${searchHits.length === 1 ? 'match' : 'matches'} across 488 DMC`
+                              ? `${searchHits.length} ${searchHits.length === 1 ? 'match' : 'matches'} across 488 DMC · hover to preview`
                               : 'Catalog search'}
                           </span>
                           {searchHits.length === 0 ? (
@@ -692,18 +883,21 @@ export default function ThreadMapPanel({
                           ) : (
                             <div className={styles.chipGrid}>
                               {searchHits.map((cand) => {
-                                const alreadyInMap = Boolean(otherSet?.has(cand.number.toLowerCase()))
+                                const sharedSlots = otherSlotByNumber?.get(cand.number.toLowerCase())
+                                const sublabel = sharedSlots && sharedSlots.length > 0
+                                  ? `${cand.name} · Also #${sharedSlots.join(', #')}`
+                                  : cand.name
                                 return (
                                   <button
                                     key={cand.id}
                                     type="button"
                                     className={styles.threadChip}
-                                    disabled={alreadyInMap}
-                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                    onClick={() => applySwap(slot.index, cand)}
+                                    {...previewHandlers(slot.index, cand)}
                                   >
                                     <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
                                     <code>{cand.number}</code>
-                                    <small>{alreadyInMap ? `${cand.name} · In map` : cand.name}</small>
+                                    <small>{sublabel}</small>
                                   </button>
                                 )
                               })}
@@ -721,7 +915,8 @@ export default function ThreadMapPanel({
                                     key={cand.id}
                                     type="button"
                                     className={styles.threadChip}
-                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                    onClick={() => applySwap(slot.index, cand)}
+                                    {...previewHandlers(slot.index, cand)}
                                   >
                                     <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
                                     <code>{cand.number}</code>
@@ -733,7 +928,8 @@ export default function ThreadMapPanel({
                                     key={cand.id}
                                     type="button"
                                     className={styles.threadChip}
-                                    onClick={() => applySwap(slot.index, slot.thread.number, cand)}
+                                    onClick={() => applySwap(slot.index, cand)}
+                                    {...previewHandlers(slot.index, cand)}
                                   >
                                     <i style={{ backgroundColor: cand.hex }} aria-hidden="true" />
                                     <code>{cand.number}</code>
@@ -751,7 +947,8 @@ export default function ThreadMapPanel({
                                 <button
                                   type="button"
                                   className={styles.threadChip}
-                                  onClick={() => applySwap(slot.index, slot.thread.number, swapOptions.closestOwned!)}
+                                  onClick={() => applySwap(slot.index, swapOptions.closestOwned!)}
+                                  {...previewHandlers(slot.index, swapOptions.closestOwned!)}
                                 >
                                   <i style={{ backgroundColor: swapOptions.closestOwned.hex }} aria-hidden="true" />
                                   <code>{swapOptions.closestOwned.number}</code>
@@ -772,7 +969,8 @@ export default function ThreadMapPanel({
                                     key={sub.id}
                                     type="button"
                                     className={styles.threadChip}
-                                    onClick={() => applySwap(slot.index, slot.thread.number, sub)}
+                                    onClick={() => applySwap(slot.index, sub)}
+                                    {...previewHandlers(slot.index, sub)}
                                   >
                                     <i style={{ backgroundColor: sub.hex }} aria-hidden="true" />
                                     <code>{sub.number}</code>

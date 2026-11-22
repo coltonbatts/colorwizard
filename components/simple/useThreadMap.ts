@@ -15,6 +15,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadDmcCatalog } from '@/lib/dmc/catalog'
 import {
+  applyThreadMapSwaps,
+  prepareThreadMapPixels,
+  type PreparedThreadMapPixels,
+} from '@/lib/dmc/map/engine'
+import {
   FULL_COLOR_MAX,
   THREAD_MAP_FIT_MAX_SIDE,
   THREAD_MAP_MAX_SIDE,
@@ -32,15 +37,17 @@ const WORKER_TIMEOUT_MS = 25000
 
 export interface ThreadMapState {
   status: 'idle' | 'building' | 'ready' | 'error'
-  /** Active Thread Map (includes any preserved swaps). */
+  /** Active Thread Map (base regions with any in-place user swaps applied). */
   result: ThreadMapResult | null
   /** Working-copy RGBA pixels (same width × height as `result`). */
   sourcePixels: Uint8ClampedArray | null
   /** True when the user has swapped at least one thread from the computed map. */
   hasSwaps: boolean
   error: string | null
-  /** Live-swaps a thread slot (persisted in caller's swap overrides so slider moves preserve it). */
+  /** Live-swaps a thread slot in place (persisted in caller's swap overrides so slider/detail moves preserve it). */
   swapThread: (slotIndex: number, nextThread: DMCThread) => void
+  /** Reverts a single substituted slot back to its original computed DMC thread. */
+  revertThread: (slotIndex: number) => void
   /** Clears all manual swaps. */
   resetSwaps: () => void
 }
@@ -49,6 +56,7 @@ interface Copy {
   data: Uint8ClampedArray
   width: number
   height: number
+  prepared?: PreparedThreadMapPixels | null
 }
 
 function makeScaledCopy(source: HTMLCanvasElement, maxSide: number): Copy | null {
@@ -118,27 +126,6 @@ async function computeThreadMap(
   }
 }
 
-/** Applies persisted swap overrides (`baseLowerNumber -> replacementNumber`) onto a ladder slice. */
-function applyFullColorSwaps(
-  baseNumbers: readonly string[],
-  swapOverrides: Readonly<Record<string, string>>,
-): { paletteNumbers: string[]; swappedNumbers: string[] } {
-  const paletteNumbers: string[] = []
-  const swappedNumbers: string[] = []
-  const seen = new Set<string>()
-  for (const base of baseNumbers) {
-    const key = base.trim().toLowerCase()
-    const override = swapOverrides[key]
-    const chosen = override ?? base
-    const chosenKey = chosen.trim().toLowerCase()
-    if (seen.has(chosenKey)) continue
-    seen.add(chosenKey)
-    paletteNumbers.push(chosen)
-    if (override && chosenKey !== key) swappedNumbers.push(chosen)
-  }
-  return { paletteNumbers, swappedNumbers }
-}
-
 export interface UseThreadMapConfig {
   source: HTMLCanvasElement | null
   enabled: boolean
@@ -156,7 +143,9 @@ export interface UseThreadMapConfig {
   /** Persisted Monochrome slot swaps (`slotIndex -> replacement DMC number`). */
   monoSwaps: Readonly<Record<number, string>>
   onApplyFullSwap: (baseNumber: string, nextNumber: string) => void
+  onRevertFullSwap: (baseNumber: string) => void
   onApplyMonoSwap: (slotIndex: number, nextNumber: string) => void
+  onRevertMonoSwap: (slotIndex: number) => void
   onResetSwaps: () => void
 }
 
@@ -175,18 +164,22 @@ export function useThreadMap({
   swapOverrides,
   monoSwaps,
   onApplyFullSwap,
+  onRevertFullSwap,
   onApplyMonoSwap,
+  onRevertMonoSwap,
   onResetSwaps,
 }: UseThreadMapConfig): ThreadMapState {
   const [state, setState] = useState<{
     status: 'idle' | 'building' | 'ready' | 'error'
-    result: ThreadMapResult | null
+    baseResult: ThreadMapResult | null
+    catalogThreads: DMCThread[] | null
     error: string | null
     source: HTMLCanvasElement | null
     copyKey: number
   }>({
     status: 'idle',
-    result: null,
+    baseResult: null,
+    catalogThreads: null,
     error: null,
     source: null,
     copyKey: THREAD_MAP_FIT_MAX_SIDE,
@@ -218,8 +211,6 @@ export function useThreadMap({
     () => (mode === 'full-color' ? [...lockedNumbers] : []),
     [mode, activeLockedKey], // eslint-disable-line react-hooks/exhaustive-deps
   )
-  const swapOverridesKey = useMemo(() => JSON.stringify(swapOverrides), [swapOverrides])
-  const monoSwapsKey = useMemo(() => JSON.stringify(monoSwaps), [monoSwaps])
 
   useEffect(() => {
     if (!source || !enabled) return
@@ -243,18 +234,18 @@ export function useThreadMap({
       status: 'building',
       error: null,
       source,
-      result: prev.source === source ? prev.result : null,
+      baseResult: prev.source === source ? prev.baseResult : null,
     }))
 
     // Brief settle window only when scrubbing the budget slider rapidly.
     const sameNonBudgetOptions =
       state.source === source
-      && state.result !== null
-      && state.result.mode === mode
-      && state.result.detail === detail
-      && state.result.fidelity === fidelity
-      && (mode !== 'monochrome' || state.result.monochromeTone === monochromeTone)
-      && state.result.preferBox === (preferBox && activeOwned.length > 0)
+      && state.baseResult !== null
+      && state.baseResult.mode === mode
+      && state.baseResult.detail === detail
+      && state.baseResult.fidelity === fidelity
+      && (mode !== 'monochrome' || state.baseResult.monochromeTone === monochromeTone)
+      && state.baseResult.preferBox === (preferBox && activeOwned.length > 0)
     const delayMs = sameNonBudgetOptions ? 55 : 0
 
     const ladderKey = [
@@ -288,8 +279,9 @@ export function useThreadMap({
               }
             }
 
+            // Build base regions strictly from the base DMC ladder slice; display swaps
+            // are applied in place afterward so every swapped region keeps its exact shapes.
             const baseSlice = ladder.slice(0, Math.min(budget, ladder.length))
-            const { paletteNumbers, swappedNumbers } = applyFullColorSwaps(baseSlice, swapOverrides)
             const next = await computeThreadMap(assignCopy, catalog.threads, {
               mode: 'full-color',
               budget,
@@ -298,15 +290,14 @@ export function useThreadMap({
               preferBox: preferBox && activeOwned.length > 0,
               ownedNumbers: activeOwned,
               lockedNumbers: activeLocked,
-              paletteNumbers,
-              swappedNumbers,
+              paletteNumbers: baseSlice,
               anchorBudget,
             })
-            return { ...next, ladder }
+            return { baseResult: { ...next, ladder }, catalogThreads: catalog.threads }
           }
 
-          // Monochrome mode: build ramp, then replay any persisted slot swaps.
-          let next = await computeThreadMap(assignCopy, catalog.threads, {
+          // Monochrome mode: build base ramp; slot swaps apply in place via useMemo below.
+          const next = await computeThreadMap(assignCopy, catalog.threads, {
             mode: 'monochrome',
             budget,
             monochromeTone,
@@ -315,26 +306,14 @@ export function useThreadMap({
             preferBox: preferBox && activeOwned.length > 0,
             ownedNumbers: activeOwned,
           })
-          const monoEntries = Object.entries(monoSwaps)
-          if (monoEntries.length > 0) {
-            const byNumber = new Map<string, DMCThread>()
-            for (const t of catalog.threads) byNumber.set(t.number.toLowerCase(), t)
-            const { swapMapThread } = await import('@/lib/dmc/map/engine')
-            for (const [idxStr, dmcNum] of monoEntries) {
-              const slotIdx = Number(idxStr)
-              const thread = byNumber.get(dmcNum.trim().toLowerCase())
-              if (thread && Number.isInteger(slotIdx) && slotIdx >= 0 && slotIdx < next.slots.length) {
-                next = swapMapThread(next, assignCopy.data, slotIdx, thread)
-              }
-            }
-          }
-          return next
+          return { baseResult: next, catalogThreads: catalog.threads }
         })
-        .then((next) => {
+        .then(({ baseResult, catalogThreads }) => {
           if (!cancelled) {
             setState({
               status: 'ready',
-              result: next,
+              baseResult,
+              catalogThreads,
               error: null,
               source,
               copyKey: assignMaxSide,
@@ -370,38 +349,64 @@ export function useThreadMap({
     activeOwned,
     activeLocked,
     anchorBudget,
-    swapOverridesKey,
-    monoSwapsKey,
   ])
 
-  const swapThread = (slotIndex: number, nextThread: DMCThread) => {
-    const active = state.source === source ? state.result : null
-    if (!active || slotIndex < 0 || slotIndex >= active.slots.length) return
-    const currentNumber = active.slots[slotIndex].thread.number
-    if (currentNumber.toLowerCase() === nextThread.number.toLowerCase()) return
-
-    if (mode === 'monochrome') {
-      onApplyMonoSwap(slotIndex, nextThread.number)
-      return
-    }
-
-    // Resolve the original base thread number (if this slot was already swapped before).
-    const curLower = currentNumber.toLowerCase()
-    let baseKey = curLower
-    for (const [origKey, mappedNum] of Object.entries(swapOverrides)) {
-      if (mappedNum.toLowerCase() === curLower) {
-        baseKey = origKey
-        break
-      }
-    }
-    onApplyFullSwap(baseKey, nextThread.number)
-  }
-
   const current = state.source === source
-  const result = current ? state.result : null
   const activeCopy = current && copiesRef.current?.source === source
     ? copiesRef.current.byMaxSide.get(state.copyKey) ?? null
     : null
+
+  // Apply persisted Full Color or Monochrome swaps synchronously in place onto the cached base map.
+  // Reuses `baseResult.slot` directly so vector Path2D geometry never re-compiles on swaps, reverts, or Undo/Redo.
+  const result = useMemo(() => {
+    if (!current || !state.baseResult) return null
+    if (!activeCopy || !state.catalogThreads) return state.baseResult
+    const hasOverrides = state.baseResult.mode === 'full-color'
+      ? Object.keys(swapOverrides).length > 0
+      : Object.keys(monoSwaps).length > 0
+    if (!hasOverrides) return state.baseResult
+    if (activeCopy.prepared === undefined) {
+      activeCopy.prepared = prepareThreadMapPixels(activeCopy.data, activeCopy.width * activeCopy.height)
+    }
+    return applyThreadMapSwaps(
+      state.baseResult,
+      activeCopy.data,
+      state.catalogThreads,
+      { swapOverrides, monoSwaps, shareSlotBuffer: true },
+      activeCopy.prepared,
+    )
+  }, [current, state.baseResult, state.catalogThreads, activeCopy, swapOverrides, monoSwaps])
+
+  const swapThread = (slotIndex: number, nextThread: DMCThread) => {
+    if (!result || slotIndex < 0 || slotIndex >= result.slots.length) return
+    const slot = result.slots[slotIndex]
+    if (slot.thread.number.toLowerCase() === nextThread.number.toLowerCase()) return
+    const baseThread = slot.originalThread ?? slot.thread
+
+    if (mode === 'monochrome') {
+      if (nextThread.number.toLowerCase() === baseThread.number.toLowerCase()) {
+        onRevertMonoSwap(slotIndex)
+      } else {
+        onApplyMonoSwap(slotIndex, nextThread.number)
+      }
+      return
+    }
+
+    onApplyFullSwap(baseThread.number.toLowerCase(), nextThread.number)
+  }
+
+  const revertThread = (slotIndex: number) => {
+    if (!result || slotIndex < 0 || slotIndex >= result.slots.length) return
+    const slot = result.slots[slotIndex]
+    if (!slot.swapped) return
+    if (mode === 'monochrome') {
+      onRevertMonoSwap(slotIndex)
+      return
+    }
+    const baseThread = slot.originalThread ?? slot.thread
+    onRevertFullSwap(baseThread.number.toLowerCase())
+  }
+
   const hasSwaps = Boolean(
     result && (
       result.slots.some((s) => s.swapped)
@@ -417,6 +422,7 @@ export function useThreadMap({
     hasSwaps,
     error: current ? state.error : null,
     swapThread,
+    revertThread,
     resetSwaps: onResetSwaps,
   }
 }

@@ -175,6 +175,7 @@ describe('ThreadMapPanel', () => {
     budget: 10,
     monochromeTone: null,
     detail: 'painterly',
+    fidelity: 'faithful',
     preferBox: false,
     width: 4,
     height: 4,
@@ -207,6 +208,7 @@ describe('ThreadMapPanel', () => {
       hasSwaps: false,
       error: null,
       swapThread: () => undefined,
+      revertThread: () => undefined,
       resetSwaps: () => undefined,
     },
     mode: 'full-color' as const,
@@ -219,6 +221,14 @@ describe('ThreadMapPanel', () => {
     onMonochromeToneChange: () => undefined,
     detail: 'painterly' as const,
     onDetailChange: () => undefined,
+    fidelity: 'faithful' as const,
+    onFidelityChange: () => undefined,
+    anchorBudget: 10,
+    onReoptimize: () => undefined,
+    canUndo: false,
+    canRedo: false,
+    onUndo: () => undefined,
+    onRedo: () => undefined,
     preferBox: false,
     onPreferBoxChange: () => undefined,
     lockedNumbers: [] as string[],
@@ -296,5 +306,47 @@ describe('ThreadMapPanel', () => {
     expect(html).not.toContain('Hatch what’s visibly off')
     expect(html).toContain('data-topic="thread"')
     expect(html).not.toMatch(/\bexact\b/i)
+  })
+
+  it('renders Replaced badge, A/B compare toggle, Revert button, and shared-slot label for substituted rows', () => {
+    const orig934 = makeThread('934', 'Black Avocado Green', '#313919', 0.31)
+    const sub310 = makeThread('310', 'Black', '#000000', 0.08)
+    const swappedMap: ThreadMapResult = {
+      ...sampleMap,
+      slots: [
+        sampleMap.slots[0],
+        {
+          index: 1,
+          thread: sub310,
+          originalThread: orig934,
+          area: 0.35,
+          meanDeltaE00: 7.4,
+          meanDeltaL: 0.22,
+          targetHex: '#313919',
+          swapped: true,
+        },
+        {
+          index: 2,
+          thread: sub310,
+          area: 0.25,
+          meanDeltaE00: 1.1,
+          meanDeltaL: 0.02,
+          targetHex: '#050505',
+          swapped: false,
+        },
+      ],
+    }
+    const html = renderToStaticMarkup(createElement(ThreadMapPanel, {
+      ...baseProps,
+      state: { ...baseProps.state, result: swappedMap, hasSwaps: true },
+    }))
+    expect(html).toContain('Replaced 934')
+    expect(html).toContain('Compare 934')
+    expect(html).toContain('>Revert<')
+    expect(html).toContain('Also #3')
+    expect(html).toContain('Also #2')
+    expect(html).toContain('2 skeins (3 areas)')
+    expect(html).not.toMatch(/\bexact\b/i)
+    expect(html).not.toMatch(/\bverified\b/i)
   })
 })

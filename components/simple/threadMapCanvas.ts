@@ -21,11 +21,19 @@ import {
   type ThreadMapVectorGeometry,
 } from '@/lib/dmc/map/contours'
 import type { ThreadMapResult } from '@/lib/dmc/map/types'
+import type { DMCThread } from '@/lib/dmc/types'
 import type { LabelPlacement } from '@/lib/paint/plan/labels'
 import { getRelativeLuminance, linearToSRGB } from '@/lib/valueScale'
 import type { CanvasDisplayRenderer, CanvasNavigatorRenderer } from './SimpleCanvas'
 
 export type VellumMode = 'tracing' | 'photo' | 'paper'
+
+export interface ThreadMapSwapPreview {
+  /** 0-based slot index currently being previewed on the live canvas. */
+  slotIndex: number
+  /** Temporary DMC thread color to paint that slot's exact shapes with. */
+  thread: DMCThread
+}
 
 export interface CompiledThreadMapPaths {
   geometry: ThreadMapVectorGeometry
@@ -48,6 +56,8 @@ export interface ThreadMapCanvasOptions {
   outlineLabels: OutlineLabelSet | null
   selected: number | null
   hovered?: number | null
+  /** Live non-destructive color preview while hovering/focusing a substitute or toggling A/B. */
+  previewSwap?: ThreadMapSwapPreview | null
   vellumMode?: VellumMode
   markMisses: boolean
 }
@@ -105,9 +115,51 @@ function getHatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
   return pattern
 }
 
+function createVisiblyOffPathGetter(
+  visiblyOff: Uint8Array,
+  width: number,
+  height: number,
+): () => Path2D | null {
+  let computed = false
+  let cached: Path2D | null = null
+  return () => {
+    if (!computed) {
+      computed = true
+      let anyOff = false
+      for (let i = 0; i < visiblyOff.length; i++) {
+        if (visiblyOff[i]) { anyOff = true; break }
+      }
+      if (anyOff) {
+        const maskGeom = extractBinaryMaskGeometry(visiblyOff, width, height)
+        if (maskGeom.slotLoops[0] && maskGeom.slotLoops[0].length > 0) {
+          const p = new Path2D()
+          traceSlotLoops(p, maskGeom.slotLoops[0], maskGeom.arcs)
+          cached = p
+        }
+      }
+    }
+    return cached
+  }
+}
+
 /**
- * Compiles a `ThreadMapResult` into cached `Path2D` objects once per computed map.
- * Safe to memoize with `useMemo` on `[threadMap]`.
+ * Reuses compiled slot `Path2D` geometry with an updated `visiblyOff` mask after an in-place
+ * thread substitution (0ms re-vectorization because region shapes did not change).
+ */
+export function withThreadMapVisiblyOff(
+  compiled: CompiledThreadMapPaths,
+  visiblyOff: Uint8Array,
+  width: number,
+  height: number,
+): CompiledThreadMapPaths {
+  return {
+    ...compiled,
+    getVisiblyOffPath: createVisiblyOffPathGetter(visiblyOff, width, height),
+  }
+}
+
+/**
+ * Compiles a `ThreadMapResult` into cached `Path2D` objects once per computed slot layout.
  */
 export function compileThreadMapPaths(map: ThreadMapResult): CompiledThreadMapPaths | null {
   if (typeof Path2D === 'undefined') return null
@@ -143,34 +195,13 @@ export function compileThreadMapPaths(map: ThreadMapResult): CompiledThreadMapPa
     if (lSlot < slotCount && lSlot !== rSlot) traceArc(slotRimPaths[lSlot], arc, true, true)
   }
 
-  let visiblyOffComputed = false
-  let visiblyOffPath: Path2D | null = null
-  const getVisiblyOffPath = () => {
-    if (!visiblyOffComputed) {
-      visiblyOffComputed = true
-      let anyOff = false
-      for (let i = 0; i < map.visiblyOff.length; i++) {
-        if (map.visiblyOff[i]) { anyOff = true; break }
-      }
-      if (anyOff) {
-        const maskGeom = extractBinaryMaskGeometry(map.visiblyOff, map.width, map.height)
-        if (maskGeom.slotLoops[0] && maskGeom.slotLoops[0].length > 0) {
-          const p = new Path2D()
-          traceSlotLoops(p, maskGeom.slotLoops[0], maskGeom.arcs)
-          visiblyOffPath = p
-        }
-      }
-    }
-    return visiblyOffPath
-  }
-
   return {
     geometry,
     slotFillPaths,
     slotInteriorBoundaryPaths,
     slotRimPaths,
     allInteriorOutlinePath,
-    getVisiblyOffPath,
+    getVisiblyOffPath: createVisiblyOffPathGetter(map.visiblyOff, map.width, map.height),
   }
 }
 
@@ -190,6 +221,7 @@ export function createThreadMapCanvasRenderer(
     outlineLabels,
     selected,
     hovered = null,
+    previewSwap = null,
     vellumMode = 'tracing',
     markMisses,
   } = options
@@ -197,6 +229,11 @@ export function createThreadMapCanvasRenderer(
   const validHovered = hovered !== null && hovered >= 0 && hovered < map.slots.length && hovered !== validSelected
     ? hovered
     : null
+  const validPreview = previewSwap !== null && previewSwap.slotIndex >= 0 && previewSwap.slotIndex < map.slots.length
+    ? previewSwap
+    : null
+  const effectiveThread = (slotIdx: number): DMCThread =>
+    validPreview && validPreview.slotIndex === slotIdx ? validPreview.thread : map.slots[slotIdx].thread
 
   return ({
     ctx,
@@ -324,10 +361,10 @@ export function createThreadMapCanvasRenderer(
         ctx.restore()
       }
 
-      const activeSlot = map.slots[validSelected]
-      const { r, g, b } = activeSlot.thread.rgb
-      const fillColor = valueView ? luminanceHex(r, g, b) : activeSlot.thread.hex
-      const isLight = activeSlot.thread.oklab.L > 0.62
+      const activeThread = effectiveThread(validSelected)
+      const { r, g, b } = activeThread.rgb
+      const fillColor = valueView ? luminanceHex(r, g, b) : activeThread.hex
+      const isLight = activeThread.oklab.L > 0.62
 
       ctx.save()
       ctx.translate(drawX, drawY)
@@ -378,8 +415,9 @@ export function createThreadMapCanvasRenderer(
     for (let i = 0; i < slotCount; i++) {
       const slot = map.slots[i]
       if (slot.area <= 0) continue
-      const { r, g, b } = slot.thread.rgb
-      const color = valueView ? luminanceHex(r, g, b) : slot.thread.hex
+      const thread = effectiveThread(i)
+      const { r, g, b } = thread.rgb
+      const color = valueView ? luminanceHex(r, g, b) : thread.hex
       const path = compiled.slotFillPaths[i]
 
       if (i < lastActive) {
@@ -434,10 +472,15 @@ export function createThreadMapCanvasRenderer(
 export function createThreadMapNavigatorRenderer(
   map: ThreadMapResult,
   compiled: CompiledThreadMapPaths,
-  options: { outline: boolean; mirror: boolean; selected: number | null },
+  options: { outline: boolean; mirror: boolean; selected: number | null; previewSwap?: ThreadMapSwapPreview | null },
 ): CanvasNavigatorRenderer {
-  const { outline, mirror, selected } = options
+  const { outline, mirror, selected, previewSwap = null } = options
   const validSelected = selected !== null && selected >= 0 && selected < map.slots.length ? selected : null
+  const validPreview = previewSwap !== null && previewSwap.slotIndex >= 0 && previewSwap.slotIndex < map.slots.length
+    ? previewSwap
+    : null
+  const effectiveThread = (slotIdx: number): DMCThread =>
+    validPreview && validPreview.slotIndex === slotIdx ? validPreview.thread : map.slots[slotIdx].thread
 
   return (ctx, width, height) => {
     const sx = width / map.width
@@ -483,16 +526,16 @@ export function createThreadMapNavigatorRenderer(
           ctx.fill(compiled.slotFillPaths[i], 'evenodd')
         }
       }
-      const active = map.slots[validSelected]
-      ctx.fillStyle = active.thread.hex
+      const activeThread = effectiveThread(validSelected)
+      ctx.fillStyle = activeThread.hex
       ctx.fill(compiled.slotFillPaths[validSelected], 'evenodd')
-      ctx.strokeStyle = active.thread.oklab.L > 0.62 ? 'rgba(27, 26, 24, 0.85)' : 'rgba(17, 17, 17, 0.4)'
+      ctx.strokeStyle = activeThread.oklab.L > 0.62 ? 'rgba(27, 26, 24, 0.85)' : 'rgba(17, 17, 17, 0.4)'
       ctx.lineWidth = 1.1 / s
       ctx.stroke(compiled.slotRimPaths[validSelected])
     } else {
       for (let i = 0; i < map.slots.length; i++) {
         if (map.slots[i].area <= 0) continue
-        ctx.fillStyle = map.slots[i].thread.hex
+        ctx.fillStyle = effectiveThread(i).hex
         ctx.fill(compiled.slotFillPaths[i], 'evenodd')
       }
     }

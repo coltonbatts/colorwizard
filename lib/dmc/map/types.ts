@@ -139,6 +139,12 @@ export interface ThreadMapOptions {
   paletteNumbers?: readonly string[]
   /** DMC numbers that were manually swapped in by the stitcher (sets `slot.swapped = true`). */
   swappedNumbers?: readonly string[]
+  /**
+   * Optional in-place display thread substitutions (`baseLowerNumber -> replacement DMC number`)
+   * in Full Color mode. Region assignment and spatial smoothing run on the base palette first,
+   * then substituted slots repaint in place and are honestly scored against the original photo pixels.
+   */
+  swapOverrides?: Readonly<Record<string, string>>
   /** Global k-medoids anchor count for the monotonic progressive ladder (defaults to 12). */
   anchorBudget?: number
 }
@@ -157,6 +163,8 @@ export interface ThreadMapSlot {
   targetHex: string
   /** True when the stitcher manually swapped this slot from the computed selection. */
   swapped: boolean
+  /** Original base DMC thread assigned to this region before substitution (present when substituted in place). */
+  originalThread?: DMCThread
 }
 
 export interface ThreadMapScore {

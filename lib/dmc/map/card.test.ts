@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { loadCorpus } from '@/lib/paint/plan/fixtures/corpus'
 import type { DMCThread } from '../types'
 import { buildThreadMapCard, THREAD_MAP_CARD } from './card'
-import { buildThreadMap } from './engine'
+import { buildThreadMap, swapMapThread } from './engine'
 
 const ALL_THREADS: DMCThread[] = JSON.parse(
   readFileSync(resolve(process.cwd(), 'public/data/dmc-floss.json'), 'utf8'),
@@ -146,5 +146,37 @@ describe('buildThreadMapCard', () => {
     }
     expect(noNums.badges.length).toBe(0)
     expect(noNums.unlabeledNote).toBeNull()
+  })
+
+  it('labels substituted and shared DMC slots clearly on the printed card without forbidden words', () => {
+    const base = buildThreadMap(LANDSCAPE.data, LANDSCAPE.width, LANDSCAPE.height, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 6,
+    })
+    const origNum = base.slots[1].thread.number
+    const targetThread = base.slots[4].thread
+    const swapped = swapMapThread(base, LANDSCAPE.data, 1, targetThread)
+
+    const card = buildThreadMapCard(swapped, {
+      pictureName: 'landscape.png',
+      dateText: 'November 21, 2026',
+    })
+    const cells = card.columns.flat()
+    expect(cells[1].dmcNumber).toBe(targetThread.number)
+    expect(cells[1].swatchHex).toBe(targetThread.hex)
+    expect(cells[1].detail).toContain(`Replaced ${origNum}`)
+    expect(cells[1].detail).toContain('Also #5')
+    expect(cells[4].detail).toContain('Also #2')
+    expect(card.facts.find((f) => f.label === 'Skeins')?.value).toContain('5 (6 areas)')
+
+    const allCopy = [
+      card.headline,
+      ...card.notes,
+      ...card.facts.flatMap((f) => [f.label, f.value]),
+      ...cells.map((c) => c.detail),
+      ...card.caveats,
+    ].join(' ')
+    expect(allCopy).not.toMatch(/\bexact\b/i)
+    expect(allCopy).not.toMatch(/\bverified\b/i)
   })
 })

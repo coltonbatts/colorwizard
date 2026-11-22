@@ -9,6 +9,7 @@
  */
 
 import { NO_THREAD, type ThreadMapResult } from '@/lib/dmc/map/types'
+import type { DMCThread } from '@/lib/dmc/types'
 
 /** Warm bright tracing-paper white for isolated context. */
 const PAPER_R = 248
@@ -32,6 +33,8 @@ export interface ThreadMapRenderOptions {
   markMisses: boolean
   /** Original working-copy RGBA pixels (same width × height) for crisp tracing-paper isolation context. */
   sourcePixels?: ArrayLike<number> | null
+  /** Live non-destructive color preview for one slot (e.g. Swap drawer hover or A/B compare). */
+  previewSwap?: { slotIndex: number; thread: DMCThread } | null
 }
 
 /** RGBA pixels for the painterly Thread Map repaint (`width * height * 4` bytes). */
@@ -46,9 +49,14 @@ export function renderThreadMap(
   const src = options.sourcePixels && options.sourcePixels.length >= width * height * 4
     ? options.sourcePixels
     : null
+  const preview = options.previewSwap && options.previewSwap.slotIndex >= 0 && options.previewSwap.slotIndex < slots.length
+    ? options.previewSwap
+    : null
+  const threadFor = (slotIdx: number): DMCThread =>
+    preview && preview.slotIndex === slotIdx ? preview.thread : slots[slotIdx].thread
 
   const isSelectedLight = selected !== null && selected < slots.length
-    ? slots[selected].thread.oklab.L > 0.62
+    ? threadFor(selected).oklab.L > 0.62
     : false
 
   for (let y = 0; y < height; y++) {
@@ -66,7 +74,7 @@ export function renderThreadMap(
           out[o + 1] = PAPER_G * (1 - GHOST_LUMA_WEIGHT) + luma * GHOST_LUMA_WEIGHT
           out[o + 2] = PAPER_B * (1 - GHOST_LUMA_WEIGHT) + luma * GHOST_LUMA_WEIGHT
         } else {
-          const rgb = slots[owner].thread.rgb
+          const rgb = threadFor(owner).rgb
           out[o] = rgb.r * (1 - FALLBACK_DIM) + FALLBACK_FADE[0] * FALLBACK_DIM
           out[o + 1] = rgb.g * (1 - FALLBACK_DIM) + FALLBACK_FADE[1] * FALLBACK_DIM
           out[o + 2] = rgb.b * (1 - FALLBACK_DIM) + FALLBACK_FADE[2] * FALLBACK_DIM
@@ -75,7 +83,7 @@ export function renderThreadMap(
         continue
       }
 
-      const rgb = slots[owner].thread.rgb
+      const rgb = threadFor(owner).rgb
       let r = rgb.r
       let g = rgb.g
       let b = rgb.b

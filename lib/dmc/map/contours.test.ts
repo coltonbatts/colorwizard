@@ -8,6 +8,7 @@ import {
   buildThreadMapOutlineSvg,
   extractBinaryMaskGeometry,
   extractThreadMapGeometry,
+  getSlotNeighbors,
   interiorOutlineToSvgPath,
   slotLoopsToSvgPath,
   traceArc,
@@ -261,5 +262,30 @@ describe('extractThreadMapGeometry — watertight topological arcs', () => {
       // Determinism check
       expect(buildThreadMapOutlineSvg(map, false, geomB)).toBe(outlineSvg)
     }
+  })
+
+  it('extracts physically bordering slot neighbors ordered by longest shared border', () => {
+    // 20x10 layout:
+    // - Slot 0 occupies x=0..9, y=0..9 (left half)
+    // - Slot 1 occupies x=10..19, y=0..6 (upper right: shares 7px vertical border with slot 0)
+    // - Slot 2 occupies x=10..19, y=7..9 (lower right: shares 3px vertical border with slot 0)
+    // - Slot 3 occupies x=16..19, y=0..3 (far top-right corner inside slot 1: does NOT touch slot 0)
+    const w = 20
+    const h = 10
+    const slot = new Uint8Array(w * h)
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (x < 10) slot[y * w + x] = 0
+        else if (y < 7) slot[y * w + x] = x >= 16 && y < 4 ? 3 : 1
+        else slot[y * w + x] = 2
+      }
+    }
+    const geom = extractThreadMapGeometry(slot, w, h, 4, 'crisp')
+    const neighborsOf0 = getSlotNeighbors(geom, 0)
+    expect(neighborsOf0.map((n) => n.slotIndex)).toEqual([1, 2])
+    expect(neighborsOf0[0].sharedLength).toBeGreaterThan(neighborsOf0[1].sharedLength)
+
+    const neighborsOf3 = getSlotNeighbors(geom, 3)
+    expect(neighborsOf3.map((n) => n.slotIndex)).toEqual([1])
   })
 })

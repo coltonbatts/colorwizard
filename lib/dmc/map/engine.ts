@@ -571,11 +571,36 @@ function assignInitialSlots(
   return { slot, histSlot, histBestDE }
 }
 
+export interface PreparedThreadMapPixels {
+  readonly pixelCount: number
+  readonly hist: Histogram
+  readonly histLabs: Float64Array
+  readonly pixelHistIdx: Int32Array
+}
+
+/**
+ * Precomputes histogram, CIELAB values, and pixel-to-histogram lookup for an immutable RGBA buffer
+ * so repeated in-place thread swaps, reverts, and Undo/Redo re-score in a few milliseconds.
+ */
+export function prepareThreadMapPixels(
+  rgba: ArrayLike<number>,
+  pixelCount = Math.floor(rgba.length / 4),
+): PreparedThreadMapPixels | null {
+  const hist = buildHistogram(rgba)
+  if (hist.size === 0) return null
+  return {
+    pixelCount,
+    hist,
+    histLabs: computeHistogramLab(hist),
+    pixelHistIdx: buildPixelHistIndex(rgba, pixelCount, hist),
+  }
+}
+
 /**
  * Honestly scores a final `slot` map against the ORIGINAL unsmoothed `rgba` pixels.
  * Every metric (`meanDeltaE00`, `p95DeltaE00`, `meanDeltaL`, `visiblyOffArea`, per-slot
  * `area`, `targetHex`, and per-pixel `visiblyOff`) is measured against the true photo pixels
- * so spatial smoothing never fakes accuracy.
+ * so spatial smoothing and in-place substitutions never fake accuracy.
  */
 function scoreSlotMap(
   rgba: ArrayLike<number>,
@@ -589,6 +614,8 @@ function scoreSlotMap(
   mode: 'full-color' | 'monochrome',
   swappedFlags?: readonly boolean[],
   precomputed?: { histSlot: Uint8Array; histBestDE: Float32Array } | null,
+  originalThreads?: readonly (DMCThread | undefined)[],
+  overriddenSlots?: readonly boolean[],
 ): ScoredAssignment {
   const k = threads.length
   const areaCount = new Float64Array(k)
@@ -606,7 +633,7 @@ function scoreSlotMap(
   const pixelDeltaE = new Float32Array(hist.total)
   let opaqueIdx = 0
 
-  // Lazy cache for CIEDE2000 per (histogramColor, slot) pair for boundary pixels flipped by smoothing.
+  // Lazy cache for CIEDE2000 per (histogramColor, slot) pair for smoothed boundary pixels & substituted slots.
   const useCache = hist.size * k <= 4_500_000
   const deCache = useCache ? new Float32Array(hist.size * k).fill(-1) : null
   const preSlot = precomputed?.histSlot ?? null
@@ -620,7 +647,7 @@ function scoreSlotMap(
     const o = p * 4
 
     let dE: number
-    if (preSlot && preDE && preSlot[hi] === s && preDE[hi] >= 0) {
+    if (preSlot && preDE && preSlot[hi] === s && preDE[hi] >= 0 && !overriddenSlots?.[s]) {
       dE = preDE[hi]
     } else if (deCache) {
       const cacheIdx = hi * k + s
@@ -670,6 +697,7 @@ function scoreSlotMap(
         Math.round(rgbSumB[index] / n),
       )
       : thread.hex
+    const orig = originalThreads?.[index]
     return {
       index,
       thread,
@@ -678,8 +706,16 @@ function scoreSlotMap(
       meanDeltaL: n > 0 ? deltaLSum[index] / n : NaN,
       targetHex,
       swapped: swappedFlags?.[index] ?? false,
+      ...(orig && orig.id !== thread.id ? { originalThread: orig } : {}),
     }
   })
+
+  const approxNumbers = new Set<string>()
+  for (const s of slots) {
+    if (s.thread.colorConfidence === 'approximate') {
+      approxNumbers.add(s.thread.number.toLowerCase())
+    }
+  }
 
   const score: ThreadMapScore = {
     threadCount: slots.length,
@@ -687,7 +723,7 @@ function scoreSlotMap(
     p95DeltaE00,
     meanDeltaL: totalDeltaL / totalOpaque,
     visiblyOffArea: mode === 'full-color' ? offCount / totalOpaque : 0,
-    approximateThreads: slots.filter((s) => s.thread.colorConfidence === 'approximate').length,
+    approximateThreads: approxNumbers.size,
   }
 
   return { slots, slot, visiblyOff, score }
@@ -718,6 +754,28 @@ export function buildThreadMap(
   const lockedSet = new Set((options.lockedNumbers ?? []).map((n) => n.trim().toLowerCase()).filter(Boolean))
   const swappedSet = new Set((options.swappedNumbers ?? []).map((n) => n.trim().toLowerCase()).filter(Boolean))
 
+  const overrideMap = new Map<string, string>()
+  if (options.mode === 'full-color' && options.swapOverrides) {
+    for (const [rawBase, rawNext] of Object.entries(options.swapOverrides)) {
+      const baseKey = rawBase.trim().toLowerCase()
+      const nextKey = rawNext.trim().toLowerCase()
+      if (baseKey && nextKey && baseKey !== nextKey) {
+        overrideMap.set(baseKey, nextKey)
+      }
+    }
+  }
+
+  let byNumber: Map<string, DMCThread> | null = null
+  const getByNumber = (): Map<string, DMCThread> => {
+    if (!byNumber) {
+      byNumber = new Map<string, DMCThread>()
+      for (let i = 0; i < allThreads.length; i++) {
+        byNumber.set(allThreads[i].number.toLowerCase(), allThreads[i])
+      }
+    }
+    return byNumber
+  }
+
   let chosenThreads: DMCThread[]
   let ladderNumbers: string[] | undefined
   const monochromeTone = options.mode === 'monochrome' ? (options.monochromeTone ?? 'warm-grays') : null
@@ -729,17 +787,14 @@ export function buildThreadMap(
       ownedNumbers: options.ownedNumbers,
     })
   } else if (options.paletteNumbers && options.paletteNumbers.length > 0) {
-    // Explicit precomputed palette (monotonic ladder slice + any preserved user swaps).
-    const byNumber = new Map<string, DMCThread>()
-    for (let i = 0; i < allThreads.length; i++) {
-      byNumber.set(allThreads[i].number.toLowerCase(), allThreads[i])
-    }
+    // Explicit precomputed base palette (monotonic ladder slice).
+    const lookup = getByNumber()
     const resolved: DMCThread[] = []
     const seen = new Set<string>()
     for (const raw of options.paletteNumbers) {
       const key = raw.trim().toLowerCase()
       if (seen.has(key)) continue
-      const thread = byNumber.get(key)
+      const thread = lookup.get(key)
       if (!thread) continue
       seen.add(key)
       resolved.push(thread)
@@ -824,7 +879,34 @@ export function buildThreadMap(
     }
   }
 
-  const swappedFlags = chosenThreads.map((t) => swappedSet.has(t.number.toLowerCase()))
+  // Apply in-place Full Color display substitutions AFTER region assignment & smoothing
+  // so swapped regions preserve their exact base shapes and repaint cleanly in the chosen thread.
+  const displayThreads: DMCThread[] = []
+  const displayLabs: LabTuple[] = []
+  const swappedFlags: boolean[] = []
+  const originalThreads: Array<DMCThread | undefined> = []
+  const overriddenSlots: boolean[] = []
+  const lookup = overrideMap.size > 0 ? getByNumber() : null
+
+  for (let s = 0; s < chosenThreads.length; s++) {
+    const base = chosenThreads[s]
+    const baseKey = base.number.toLowerCase()
+    const overrideKey = lookup ? overrideMap.get(baseKey) : undefined
+    const replacement = overrideKey ? lookup!.get(overrideKey) : undefined
+    if (replacement && replacement.id !== base.id) {
+      displayThreads.push(replacement)
+      displayLabs.push(getThreadLab(replacement))
+      swappedFlags.push(true)
+      originalThreads.push(base)
+      overriddenSlots.push(true)
+    } else {
+      displayThreads.push(base)
+      displayLabs.push(threadLabs[s])
+      swappedFlags.push(swappedSet.has(baseKey))
+      originalThreads.push(undefined)
+      overriddenSlots.push(false)
+    }
+  }
 
   const assigned = scoreSlotMap(
     rgba,
@@ -832,12 +914,14 @@ export function buildThreadMap(
     pixelHistIdx,
     hist,
     histLabs,
-    chosenThreads,
-    threadLabs,
+    displayThreads,
+    displayLabs,
     cleanedSlot,
     options.mode,
     swappedFlags,
     precomputed,
+    originalThreads,
+    overriddenSlots,
   )
 
   const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
@@ -861,68 +945,55 @@ export function buildThreadMap(
 }
 
 /**
- * Live-swaps a single thread in an existing Thread Map.
- * - Full Color mode: replaces the thread at `slotIndex`, re-assigns pixels by nearest CIEDE2000,
- *   applies the active spatial cleanup detail level, and honestly re-scores against original pixels.
- * - Monochrome mode: replaces the thread at `slotIndex` while preserving every slot's exact region
- *   so sculptural portrait planes stay steady while the stitcher tests a warmer/cooler or owned skein.
+ * Live-swaps a single thread in an existing Thread Map in place.
+ * Preserves every slot's exact region pixel mask in BOTH Full Color and Monochrome modes so
+ * creative thread substitutions (e.g. replacing DMC 934 with DMC 310) immediately repaint
+ * those exact shapes, while honestly re-scoring against the original photo pixels.
  */
 export function swapMapThread(
   map: ThreadMapResult,
   rgba: ArrayLike<number>,
   slotIndex: number,
   nextThread: DMCThread,
+  prepared?: PreparedThreadMapPixels | null,
 ): ThreadMapResult {
   if (slotIndex < 0 || slotIndex >= map.slots.length) return map
-  const prevThread = map.slots[slotIndex].thread
-  if (prevThread.id === nextThread.id) return map
+  const prevSlot = map.slots[slotIndex]
+  if (prevSlot.thread.id === nextThread.id) return map
 
   const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now()
-  const hist = buildHistogram(rgba)
-  if (hist.size === 0) return map
-
   const pixelCount = map.width * map.height
-  const updatedThreads = map.slots.map((s, idx) => (idx === slotIndex ? nextThread : s.thread))
-  const swappedFlags = map.slots.map((s, idx) => (idx === slotIndex ? true : s.swapped))
-  const histLabs = computeHistogramLab(hist)
-  const pixelHistIdx = buildPixelHistIndex(rgba, pixelCount, hist)
-  const threadLabs = updatedThreads.map(getThreadLab)
+  const analysis = prepared && prepared.pixelCount === pixelCount
+    ? prepared
+    : prepareThreadMapPixels(rgba, pixelCount)
+  if (!analysis) return map
 
-  let finalSlot: Uint8Array
-  let precomputed: { histSlot: Uint8Array; histBestDE: Float32Array } | null = null
-  if (map.mode === 'monochrome') {
-    finalSlot = new Uint8Array(map.slot)
-  } else {
-    const initial = assignInitialSlots(
-      pixelCount,
-      pixelHistIdx,
-      hist,
-      histLabs,
-      updatedThreads,
-      threadLabs,
-      'full-color',
-    )
-    finalSlot = smoothSlotMap(initial.slot, rgba, map.width, map.height, updatedThreads, map.detail)
-    precomputed = { histSlot: initial.histSlot, histBestDE: initial.histBestDE }
-  }
+  const baseThread = prevSlot.originalThread ?? prevSlot.thread
+  const isRevert = nextThread.id === baseThread.id
+
+  const updatedThreads = map.slots.map((s, idx) => (idx === slotIndex ? nextThread : s.thread))
+  const swappedFlags = map.slots.map((s, idx) => (idx === slotIndex ? !isRevert : s.swapped))
+  const originalThreads = map.slots.map((s, idx) => {
+    if (idx !== slotIndex) return s.originalThread
+    return isRevert ? undefined : baseThread
+  })
+  const threadLabs = updatedThreads.map(getThreadLab)
+  const finalSlot = new Uint8Array(map.slot)
 
   const assigned = scoreSlotMap(
     rgba,
     pixelCount,
-    pixelHistIdx,
-    hist,
-    histLabs,
+    analysis.pixelHistIdx,
+    analysis.hist,
+    analysis.histLabs,
     updatedThreads,
     threadLabs,
     finalSlot,
     map.mode,
     swappedFlags,
-    precomputed,
+    null,
+    originalThreads,
   )
-
-  const updatedLadder = map.ladder
-    ? map.ladder.map((n) => (n.toLowerCase() === prevThread.number.toLowerCase() ? nextThread.number : n))
-    : undefined
 
   const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
   return {
@@ -931,7 +1002,123 @@ export function swapMapThread(
     slot: assigned.slot,
     visiblyOff: assigned.visiblyOff,
     score: assigned.score,
-    ...(updatedLadder ? { ladder: updatedLadder } : {}),
+    ms: elapsed,
+  }
+}
+
+export interface ApplyThreadMapSwapsOptions {
+  /** Full Color in-place substitutions (`baseLowerNumber -> replacement DMC number`). */
+  swapOverrides?: Readonly<Record<string, string>>
+  /** Monochrome slot-index substitutions (`slotIndex -> replacement DMC number`). */
+  monoSwaps?: Readonly<Record<number, string>>
+  /**
+   * When true, reuses `baseMap.slot` directly instead of copying it (safe for immutable React state
+   * so cached vector `Path2D` geometry never re-compiles when only display colors change).
+   */
+  shareSlotBuffer?: boolean
+}
+
+/**
+ * Applies persisted Full Color (`swapOverrides`) or Monochrome (`monoSwaps`) substitutions
+ * in place onto a base `ThreadMapResult`, preserving every region's exact pixel mask while
+ * honestly re-scoring against the original photo pixels.
+ */
+export function applyThreadMapSwaps(
+  baseMap: ThreadMapResult,
+  rgba: ArrayLike<number>,
+  allThreads: readonly DMCThread[],
+  options: ApplyThreadMapSwapsOptions,
+  prepared?: PreparedThreadMapPixels | null,
+): ThreadMapResult {
+  const isMono = baseMap.mode === 'monochrome'
+  const hasFull = !isMono && Boolean(options.swapOverrides && Object.keys(options.swapOverrides).length > 0)
+  const hasMono = isMono && Boolean(options.monoSwaps && Object.keys(options.monoSwaps).length > 0)
+  if (!hasFull && !hasMono) return baseMap
+
+  const byNumber = new Map<string, DMCThread>()
+  for (let i = 0; i < allThreads.length; i++) {
+    byNumber.set(allThreads[i].number.toLowerCase(), allThreads[i])
+  }
+
+  const normalizedFull = new Map<string, string>()
+  if (hasFull && options.swapOverrides) {
+    for (const [rawBase, rawNext] of Object.entries(options.swapOverrides)) {
+      const baseKey = rawBase.trim().toLowerCase()
+      const nextKey = rawNext.trim().toLowerCase()
+      if (baseKey && nextKey && baseKey !== nextKey) {
+        normalizedFull.set(baseKey, nextKey)
+      }
+    }
+  }
+
+  const updatedThreads: DMCThread[] = []
+  const swappedFlags: boolean[] = []
+  const originalThreads: Array<DMCThread | undefined> = []
+  let anyChange = false
+
+  for (let i = 0; i < baseMap.slots.length; i++) {
+    const slot = baseMap.slots[i]
+    const baseThread = slot.originalThread ?? slot.thread
+    let replacement: DMCThread | undefined
+    if (isMono && options.monoSwaps) {
+      const raw = options.monoSwaps[slot.index]
+      if (raw) replacement = byNumber.get(raw.trim().toLowerCase())
+    } else if (!isMono) {
+      const nextKey = normalizedFull.get(baseThread.number.toLowerCase())
+      if (nextKey) replacement = byNumber.get(nextKey)
+    }
+
+    if (replacement && replacement.id !== baseThread.id) {
+      updatedThreads.push(replacement)
+      swappedFlags.push(true)
+      originalThreads.push(baseThread)
+      if (replacement.id !== slot.thread.id || !slot.swapped || slot.originalThread?.id !== baseThread.id) {
+        anyChange = true
+      }
+    } else {
+      updatedThreads.push(baseThread)
+      swappedFlags.push(false)
+      originalThreads.push(undefined)
+      if (baseThread.id !== slot.thread.id || slot.swapped || slot.originalThread !== undefined) {
+        anyChange = true
+      }
+    }
+  }
+
+  if (!anyChange) return baseMap
+
+  const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  const pixelCount = baseMap.width * baseMap.height
+  const analysis = prepared && prepared.pixelCount === pixelCount
+    ? prepared
+    : prepareThreadMapPixels(rgba, pixelCount)
+  if (!analysis) return baseMap
+
+  const threadLabs = updatedThreads.map(getThreadLab)
+  const targetSlot = options.shareSlotBuffer ? baseMap.slot : new Uint8Array(baseMap.slot)
+
+  const assigned = scoreSlotMap(
+    rgba,
+    pixelCount,
+    analysis.pixelHistIdx,
+    analysis.hist,
+    analysis.histLabs,
+    updatedThreads,
+    threadLabs,
+    targetSlot,
+    baseMap.mode,
+    swappedFlags,
+    null,
+    originalThreads,
+  )
+
+  const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+  return {
+    ...baseMap,
+    slots: assigned.slots,
+    slot: assigned.slot,
+    visiblyOff: assigned.visiblyOff,
+    score: assigned.score,
     ms: elapsed,
   }
 }

@@ -112,6 +112,28 @@ describe('renderThreadMap — tracing-paper isolation & boundary contours', () =
     const bgO = (0 * w + 0) * 4
     expect(out[bgO]).toBeGreaterThan(220)
   })
+
+  it('live-previews a substitute color on only the targeted slot without mutating the map', () => {
+    const w = 6
+    const h = 4
+    const slot = new Uint8Array(w * h)
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) slot[y * w + x] = x < 3 ? 0 : 1
+    }
+    const map = makeSyntheticMap(w, h, [WHITE, RED], slot)
+    const out = renderThreadMap(map, {
+      selected: null,
+      markMisses: false,
+      previewSwap: { slotIndex: 0, thread: BLACK },
+    })
+
+    // Slot 0 pixels repaint in BLACK; slot 1 pixels stay RED; map.slots[0] stays WHITE.
+    expect(out[(1 * w + 1) * 4]).toBe(BLACK.rgb.r)
+    expect(out[(1 * w + 1) * 4 + 1]).toBe(BLACK.rgb.g)
+    expect(out[(1 * w + 1) * 4 + 2]).toBe(BLACK.rgb.b)
+    expect(out[(1 * w + 4) * 4]).toBe(RED.rgb.r)
+    expect(map.slots[0].thread.id).toBe(WHITE.id)
+  })
 })
 
 describe('renderThreadMapOutline — Fabric Transfer Outline & Mirror', () => {

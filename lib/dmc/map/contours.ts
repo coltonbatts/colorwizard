@@ -871,6 +871,59 @@ export function interiorOutlineToSvgPath(geometry: ThreadMapVectorGeometry): str
   return out.toString()
 }
 
+export interface SlotNeighbor {
+  /** 0-based index of the bordering thread slot. */
+  slotIndex: number
+  /** Total shared interior boundary length in map pixels along touching vector arcs. */
+  sharedLength: number
+}
+
+function arcPolylineLength(points: Float32Array, isClosed: boolean): number {
+  const count = points.length / 2
+  if (count < 2) return 0
+  let total = 0
+  for (let i = 1; i < count; i++) {
+    total += Math.hypot(points[i * 2] - points[(i - 1) * 2], points[i * 2 + 1] - points[(i - 1) * 2 + 1])
+  }
+  if (isClosed) {
+    total += Math.hypot(points[0] - points[(count - 1) * 2], points[1] - points[(count - 1) * 2 + 1])
+  }
+  return total
+}
+
+/**
+ * Finds all slots that physically border `slotIndex` along interior arcs in the watertight
+ * contour graph, ordered by longest shared boundary first (ties broken by slot index).
+ */
+export function getSlotNeighbors(
+  geometry: ThreadMapVectorGeometry,
+  slotIndex: number,
+): SlotNeighbor[] {
+  if (slotIndex < 0 || slotIndex >= geometry.slotCount) return []
+  const lengths = new Float64Array(geometry.slotCount)
+
+  for (let i = 0; i < geometry.arcs.length; i++) {
+    const arc = geometry.arcs[i]
+    if (arc.onFrame) continue
+    let other = NO_THREAD
+    if (arc.rightSlot === slotIndex) other = arc.leftSlot
+    else if (arc.leftSlot === slotIndex) other = arc.rightSlot
+    else continue
+
+    if (other === NO_THREAD || other === slotIndex || other < 0 || other >= geometry.slotCount) continue
+    lengths[other] += arcPolylineLength(arc.points, arc.isClosed)
+  }
+
+  const neighbors: SlotNeighbor[] = []
+  for (let s = 0; s < geometry.slotCount; s++) {
+    if (lengths[s] > 0) {
+      neighbors.push({ slotIndex: s, sharedLength: lengths[s] })
+    }
+  }
+  neighbors.sort((a, b) => b.sharedLength - a.sharedLength || a.slotIndex - b.slotIndex)
+  return neighbors
+}
+
 /** Builds an SVG path `d` string for all arcs bordering `slotIndex`. */
 export function slotBoundaryToSvgPath(
   geometry: ThreadMapVectorGeometry,

@@ -101,9 +101,36 @@ export function buildPullName(
   return fit(raw)
 }
 
+/** Counts unique DMC thread numbers across all slots (handles shared substituted skeins). */
+export function countUniqueThreads(slots: readonly ThreadMapResult['slots'][number][]): number {
+  const unique = new Set<string>()
+  for (let i = 0; i < slots.length; i++) {
+    unique.add(slots[i].thread.number.toLowerCase())
+  }
+  return unique.size
+}
+
+/** Returns 1-based slot numbers of any OTHER slots currently sharing the same DMC thread number. */
+export function findSharedSlotNumbers(
+  slots: readonly ThreadMapResult['slots'][number][],
+  slotIndex: number,
+): number[] {
+  const current = slots[slotIndex]
+  if (!current) return []
+  const targetKey = current.thread.number.toLowerCase()
+  const shared: number[] = []
+  for (let i = 0; i < slots.length; i++) {
+    if (i !== slotIndex && slots[i].thread.number.toLowerCase() === targetKey) {
+      shared.push(slots[i].index + 1)
+    }
+  }
+  return shared
+}
+
 export function describeThreadMap(map: ThreadMapResult): ThreadMapSummary {
   const { score, slots, budget, mode } = map
   const used = slots.length
+  const uniqueCount = countUniqueThreads(slots)
   const notes: string[] = []
 
   if (mode === 'monochrome') {
@@ -135,7 +162,7 @@ export function describeThreadMap(map: ThreadMapResult): ThreadMapSummary {
       notes,
       facts: [
         { label: 'Ramp', value: toneLabel },
-        { label: 'Skeins', value: `${used} steps` },
+        { label: 'Skeins', value: uniqueCount < used ? `${uniqueCount} (${used} steps)` : `${used} steps` },
         { label: 'Avg value diff', value: formatValueStep(score.meanDeltaL) },
         { label: 'Photo values', value: `${lowL}–${highL}% L` },
       ],
@@ -172,12 +199,18 @@ export function describeThreadMap(map: ThreadMapResult): ThreadMapSummary {
     notes.push(`More skeins wouldn’t improve this photo much, so it uses ${used} of ${budget} threads.`)
   }
 
+  const skeinsValue = uniqueCount < used
+    ? `${uniqueCount} (${used} areas)`
+    : used < budget
+      ? `${used} of ${budget}`
+      : `${used}`
+
   return {
     verdict,
     headline,
     notes,
     facts: [
-      { label: 'Skeins', value: used < budget ? `${used} of ${budget}` : `${used}` },
+      { label: 'Skeins', value: skeinsValue },
       { label: 'Average diff', value: `ΔE ${formatThreadDeltaE(score.meanDeltaE00)}` },
       { label: 'Visibly off', value: formatThreadShare(score.visiblyOffArea) },
       { label: 'Avg value diff', value: formatValueStep(score.meanDeltaL) },
@@ -239,6 +272,7 @@ export function getSwapOptions(
 export function describeSlotMeta(
   slot: ThreadMapResult['slots'][number],
   mode: ThreadMapResult['mode'],
+  sharedWithNumbers?: readonly number[],
 ): string {
   const tone = formatThreadTone(threadTone(slot.thread))
   const metric = mode === 'monochrome'
@@ -247,6 +281,14 @@ export function describeSlotMeta(
       ? `ΔE ${formatThreadDeltaE(slot.meanDeltaE00)}`
       : 'Unused'
   const parts = [tone, metric]
+  if (slot.swapped && slot.originalThread) {
+    parts.push(`Replaced ${slot.originalThread.number}`)
+  } else if (slot.swapped) {
+    parts.push('Swapped')
+  }
+  if (sharedWithNumbers && sharedWithNumbers.length > 0) {
+    parts.push(`Also #${sharedWithNumbers.join(', #')}`)
+  }
   if (slot.thread.colorConfidence === 'approximate') parts.push('Approximate')
   return parts.join(' · ')
 }

@@ -37,6 +37,7 @@ import type {
   ThreadMatchResult,
 } from '@/lib/dmc/types'
 import { buildPullName } from '@/lib/dmc/map/mapFit'
+import type { ThreadMapVectorGeometry } from '@/lib/dmc/map/contours'
 import type {
   FullColorBudget,
   MonochromeBudget,
@@ -50,6 +51,7 @@ import BasisNote from './BasisNote'
 import FlossImage from './FlossImage'
 import { SETTLE_MS, useCopy, useDmcCatalog, useSettled, useThreadMatch } from './readoutHooks'
 import type { PickedColor } from './SimpleCanvas'
+import type { ThreadMapSwapPreview } from './threadMapCanvas'
 import ThreadMapPanel from './ThreadMapPanel'
 import type { ShownThread } from './ThreadView'
 import type { ThreadMapState } from './useThreadMap'
@@ -606,6 +608,9 @@ export interface ThreadMapBindings {
   outlineNumbers: boolean
   selectedSlot: number | null
   onSelectSlot: (slot: number | null) => void
+  geometry?: ThreadMapVectorGeometry | null
+  previewSwap?: ThreadMapSwapPreview | null
+  onPreviewSwap?: (preview: ThreadMapSwapPreview | null) => void
   markMisses: boolean
   onMarkMissesChange: (on: boolean) => void
   onSaveMapPull: (threads: ThreadSavePayload[], pullName: string) => string | null
@@ -1455,6 +1460,9 @@ export default function ThreadStudio({
         outlineNumbers={threadMap.outlineNumbers}
         selectedSlot={threadMap.selectedSlot}
         onSelectSlot={threadMap.onSelectSlot}
+        geometry={threadMap.geometry ?? null}
+        previewSwap={threadMap.previewSwap ?? null}
+        onPreviewSwap={threadMap.onPreviewSwap}
         markMisses={threadMap.markMisses}
         onMarkMissesChange={threadMap.onMarkMissesChange}
         allThreads={catalog?.threads ?? []}

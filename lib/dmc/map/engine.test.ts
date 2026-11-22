@@ -2,9 +2,17 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { converter } from 'culori'
+import { ciede2000 } from '@/lib/paint/plan/deltaE'
 import { loadCorpus } from '@/lib/paint/plan/fixtures/corpus'
 import type { DMCThread } from '../types'
-import { buildThreadLadder, buildThreadMap, srgb8ToLab65, swapMapThread } from './engine'
+import {
+  applyThreadMapSwaps,
+  buildThreadLadder,
+  buildThreadMap,
+  prepareThreadMapPixels,
+  srgb8ToLab65,
+  swapMapThread,
+} from './engine'
 import { buildPullName, describeThreadMap, getSwapOptions, THREAD_MAP_CAVEAT_CATALOG, THREAD_MAP_CAVEAT_COPY, THREAD_MAP_CAVEAT_REAL, THREAD_MAP_PRINT_CAVEAT } from './mapFit'
 import { getMonochromePool } from './monochrome'
 import { MONOCHROME_TONES, NO_THREAD, type MonochromeTone } from './types'
@@ -259,8 +267,8 @@ describe('buildThreadMap — Monochrome / Value Ramp mode', () => {
   })
 })
 
-describe('swapMapThread', () => {
-  it('updates Full Color pixels, shares, and scores live', () => {
+describe('swapMapThread & in-place Full Color substitution', () => {
+  it('updates Full Color thread color and scores live while preserving exact slot pixel masks', () => {
     const map = buildThreadMap(PORTRAIT.data, PORTRAIT.width, PORTRAIT.height, ALL_THREADS, {
       mode: 'full-color',
       budget: 6,
@@ -272,23 +280,137 @@ describe('swapMapThread', () => {
 
     const swapped = swapMapThread(map, PORTRAIT.data, targetIdx, replacement)
     expect(swapped.slots[targetIdx].thread.id).toBe(replacement.id)
+    expect(swapped.slots[targetIdx].originalThread?.id).toBe(originalThread.id)
     expect(swapped.slots[targetIdx].swapped).toBe(true)
     expect(swapped.slots.length).toBe(map.slots.length)
+    // Exact pixel mask and region share stay locked in place!
+    expect(Array.from(swapped.slot)).toEqual(Array.from(map.slot))
+    expect(swapped.slots[targetIdx].area).toBeCloseTo(map.slots[targetIdx].area, 6)
     const areaSum = swapped.slots.reduce((acc, s) => acc + s.area, 0)
     expect(areaSum).toBeCloseTo(1, 5)
     expect(Number.isFinite(swapped.score.meanDeltaE00)).toBe(true)
   })
 
-  it('preserves slot regions when swapping in Monochrome mode', () => {
+  it('substituting DMC 934 -> DMC 310 in Full Color preserves the exact 934 pixel mask even when 310 is already in the map, and scores honestly against original pixels', () => {
+    const t934 = ALL_THREADS.find((t) => t.number === '934')!
+    const t310 = ALL_THREADS.find((t) => t.number === '310')!
+    const t3346 = ALL_THREADS.find((t) => t.number === '3346')! // Neighboring green that used to steal 934 pixels!
+    const tWhite = ALL_THREADS.find((t) => t.number === 'White')!
+    expect(t934).toBeDefined()
+    expect(t310).toBeDefined()
+    expect(t3346).toBeDefined()
+
+    // Synthetic 4-quadrant photo matching White, 3346 (medium green), 934 (dark avocado green), and 310 (black).
+    const w = 32
+    const h = 32
+    const rgba = new Uint8ClampedArray(w * h * 4)
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const o = (y * w + x) * 4
+        const src = y < 16
+          ? (x < 16 ? tWhite : t3346)
+          : (x < 16 ? t934 : t310)
+        rgba[o] = src.rgb.r
+        rgba[o + 1] = src.rgb.g
+        rgba[o + 2] = src.rgb.b
+        rgba[o + 3] = 255
+      }
+    }
+
+    const basePalette = ['White', '3346', '934', '310']
+    const base = buildThreadMap(rgba, w, h, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 4,
+      detail: 'painterly',
+      paletteNumbers: basePalette,
+    })
+
+    const idx934 = base.slots.findIndex((s) => s.thread.number === '934')
+    const idx310 = base.slots.findIndex((s) => s.thread.number === '310')
+    expect(idx934).toBeGreaterThanOrEqual(0)
+    expect(idx310).toBeGreaterThanOrEqual(0)
+    expect(base.slots[idx934].area).toBeCloseTo(0.25, 3)
+    expect(base.slots[idx310].area).toBeCloseTo(0.25, 3)
+
+    // 1. Live swapMapThread: 934 -> 310 (while 310 is ALREADY another slot in the map!)
+    const viaSwap = swapMapThread(base, rgba, idx934, t310)
+    expect(viaSwap.slots.length).toBe(4)
+    expect(viaSwap.slots[idx934].thread.number).toBe('310')
+    expect(viaSwap.slots[idx934].originalThread?.number).toBe('934')
+    expect(viaSwap.slots[idx934].swapped).toBe(true)
+    expect(viaSwap.slots[idx310].thread.number).toBe('310')
+    expect(viaSwap.slots[idx310].swapped).toBe(false)
+    // Exact pixel mask preserved: neither 3346 nor 310 stole a single pixel from the 934 quadrant.
+    expect(Array.from(viaSwap.slot)).toEqual(Array.from(base.slot))
+    expect(viaSwap.slots[idx934].area).toBeCloseTo(base.slots[idx934].area, 6)
+
+    // Independently verify honest CIEDE2000 of the 934 quadrant pixels measured against substituted 310.
+    const toLab65 = converter('lab65')
+    const lab934 = toLab65({ mode: 'rgb', r: t934.rgb.r / 255, g: t934.rgb.g / 255, b: t934.rgb.b / 255 })!
+    const lab310 = toLab65({ mode: 'rgb', r: t310.rgb.r / 255, g: t310.rgb.g / 255, b: t310.rgb.b / 255 })!
+    const expectedSlotDE = ciede2000(lab934.l, lab934.a, lab934.b, lab310.l, lab310.a, lab310.b, 1)
+    expect(expectedSlotDE).toBeGreaterThan(5)
+    expect(viaSwap.slots[idx934].meanDeltaE00).toBeCloseTo(expectedSlotDE, 2)
+    expect(viaSwap.score.meanDeltaE00).toBeGreaterThan(base.score.meanDeltaE00)
+    // Visibly off mask flags the 934 quadrant honestly because ΔE(934, 310) > 5!
+    expect(viaSwap.visiblyOff[20 * w + 4]).toBe(1)
+    expect(viaSwap.visiblyOff[20 * w + 24]).toBe(0) // Original 310 quadrant still matches 310 cleanly.
+
+    // 2. buildThreadMap with swapOverrides produces the exact same result.
+    const viaBuild = buildThreadMap(rgba, w, h, ALL_THREADS, {
+      mode: 'full-color',
+      budget: 4,
+      detail: 'painterly',
+      paletteNumbers: basePalette,
+      swapOverrides: { '934': '310' },
+    })
+    expect(Array.from(viaBuild.slot)).toEqual(Array.from(base.slot))
+    expect(viaBuild.slots[idx934].thread.number).toBe('310')
+    expect(viaBuild.slots[idx934].originalThread?.number).toBe('934')
+    expect(viaBuild.slots[idx934].meanDeltaE00).toBeCloseTo(viaSwap.slots[idx934].meanDeltaE00, 4)
+    expect(viaBuild.score.meanDeltaE00).toBeCloseTo(viaSwap.score.meanDeltaE00, 4)
+    expect(Array.from(viaBuild.visiblyOff)).toEqual(Array.from(viaSwap.visiblyOff))
+
+    // 3. applyThreadMapSwaps with prepared pixel cache matches byte-for-byte.
+    const prepared = prepareThreadMapPixels(rgba, w * h)
+    const viaApply = applyThreadMapSwaps(base, rgba, ALL_THREADS, {
+      swapOverrides: { '934': '310' },
+      shareSlotBuffer: true,
+    }, prepared)
+    expect(viaApply.slot).toBe(base.slot)
+    expect(viaApply.slots[idx934].thread.number).toBe('310')
+    expect(viaApply.slots[idx934].originalThread?.number).toBe('934')
+    expect(viaApply.score).toEqual(viaSwap.score)
+    expect(Array.from(viaApply.visiblyOff)).toEqual(Array.from(viaSwap.visiblyOff))
+
+    // 4. Chaining another swap (310 -> 666) keeps originalThread as 934, and reverting to 934 clears swapped.
+    const t666 = ALL_THREADS.find((t) => t.number === '666')!
+    const chained = swapMapThread(viaSwap, rgba, idx934, t666)
+    expect(chained.slots[idx934].thread.number).toBe('666')
+    expect(chained.slots[idx934].originalThread?.number).toBe('934')
+    expect(chained.slots[idx934].swapped).toBe(true)
+    expect(Array.from(chained.slot)).toEqual(Array.from(base.slot))
+
+    const reverted = swapMapThread(chained, rgba, idx934, t934)
+    expect(reverted.slots[idx934].thread.number).toBe('934')
+    expect(reverted.slots[idx934].originalThread).toBeUndefined()
+    expect(reverted.slots[idx934].swapped).toBe(false)
+    expect(reverted.slots[idx310].thread.number).toBe('310')
+    expect(reverted.score.meanDeltaE00).toBeCloseTo(base.score.meanDeltaE00, 5)
+  })
+
+  it('preserves slot regions when swapping in Monochrome mode and tracks originalThread', () => {
     const map = buildThreadMap(PORTRAIT.data, PORTRAIT.width, PORTRAIT.height, ALL_THREADS, {
       mode: 'monochrome',
       budget: 7,
       monochromeTone: 'warm-grays',
     })
+    const orig = map.slots[3].thread
     const replacement = ALL_THREADS.find((t) => t.number === '415')! // Cool Pearl Gray
     const swapped = swapMapThread(map, PORTRAIT.data, 3, replacement)
 
     expect(swapped.slots[3].thread.number).toBe('415')
+    expect(swapped.slots[3].originalThread?.id).toBe(orig.id)
     expect(swapped.slots[3].swapped).toBe(true)
     // Exact same pixel region assignments!
     expect(Array.from(swapped.slot)).toEqual(Array.from(map.slot))

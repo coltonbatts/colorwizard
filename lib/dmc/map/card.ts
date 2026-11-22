@@ -10,6 +10,7 @@ import { formatThreadTone, threadTone } from '../studio'
 import {
   describeSlotMeta,
   describeThreadMap,
+  findSharedSlotNumbers,
   formatThreadMapModeLabel,
   formatThreadShare,
   THREAD_MAP_CAVEAT_CATALOG,
@@ -146,7 +147,7 @@ export function buildThreadMapCard(
     swatchHex: slot.thread.hex,
     tone: formatThreadTone(threadTone(slot.thread)),
     share: formatThreadShare(slot.area),
-    detail: describeSlotMeta(slot, map.mode),
+    detail: describeSlotMeta(slot, map.mode, findSharedSlotNumbers(map.slots, slot.index)),
     owned: ownedSet.has(slot.thread.number.toLowerCase()),
     approximate: slot.thread.colorConfidence === 'approximate',
   }))
