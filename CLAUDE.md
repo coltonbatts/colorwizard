@@ -33,7 +33,7 @@ npm run generate:data    # Generate static DMC floss + color names JSON to publi
 
 ### Web vs. Desktop Split
 
-The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The routes are `/` (`HomeSwitch`: simple app on the web, workbench in Tauri), `/simple` and `/workbench`. The `postbuild` script (`scripts/clean-desktop-export.mjs`) runs after every `npm run build`, web and desktop alike; the pages it would strip from `out/` (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`, `/support`) no longer exist, so today it removes nothing. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
+The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The routes are `/` (`HomeSwitch`: simple app on the web, workbench in Tauri), `/simple`, `/thread` (the simple app opened on DMC Thread Studio, see below) and `/workbench`. The `postbuild` script (`scripts/clean-desktop-export.mjs`) runs after every `npm run build`, web and desktop alike; the pages it would strip from `out/` (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`, `/support`) no longer exist, so today it removes nothing. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
 
 There is no cloud code: accounts, Supabase, Stripe and email were removed (2026-11-10) because nothing used them. The app needs no environment variables. Tiers are local only (`lib/hooks/useUserTier.ts`: desktop is Pro, web is free). `supabase/migrations/` is kept as a record of the old `user_profiles` table.
 
@@ -148,6 +148,49 @@ A bar at the bottom of the phone panel switches between "All details" (the unifi
 - Saving here passes no paint, and `saveColor` keeps any recipe already attached. Wording comes from `describeThreadFit` and `BasisNote`, as elsewhere; the "never exact" rule holds (`ThreadView.test.ts`).
 - The light-to-dark row appears only when the thread's family has more than one shade: 68 of 344 families do. That is the catalog, not a bug.
 - **Browser check**: `threadFlow` in `scripts/smoke-core-flow.mjs` (390×844 and 320×553 with touch). **Not verified**: real iOS/Android/Safari, reach on a physical phone.
+- Since Thread Studio (below), the phone Thread view has a sub-bar with Match / Map / Browse / Tray. Match is still `ThreadView`; the other three render `ThreadStudio` with its own tabs hidden.
+
+### DMC Thread Studio and Thread Map (web, added 2026-11-20/21)
+
+A thread workspace for needle painting. It is the `thread` section of `SimpleApp` (`AppSection = 'color' | 'thread'`): the "Thread" button in the desktop toolbar, the phone Thread view, and `/thread` (`app/thread/page.tsx`, `<SimpleApp initialSection="thread" />`), which also works with no picture open (`standalone` layout). Desktop (Tauri) does not have it. Eight commits, `a2b4f080`..`69aa48e2`; there is no Studio Ops task or design doc for it, so the code and this section are the record.
+
+**Thread Studio** (`components/simple/ThreadStudio.tsx`, `threadStudio.module.css`; helpers in `lib/dmc/studio.ts`, pure). Four tabs:
+- **Match**: the thread for the sampled color, with value notes from the picture (`computeImageValueContextFromCanvas`), a shading run, the family's light-to-dark ladder, and "Also close".
+- **Map**: the Thread Map (below). It needs an open picture.
+- **Browse**: search and the color card across all 488 catalog threads (`searchDmcThreads`, `BROWSE_GROUPS`), grays split warm / neutral / cool (`threadTone`), closest substitutes, and a Bridge finder that looks for shades between two skeins in OKLab (`findBridgeThreads`).
+- **Tray**: the threads you've pulled, with a grayscale value check (`analyzeValueGaps`: close / smooth / jump), notes, a "Need to buy" filter and list export (`formatThreadList`).
+
+Where the studio keeps things:
+- A **pull** is a collection in the saved-color library (`lib/colorLibrary.ts`). Saving a map's threads (`saveThreadMapPull` in `SimpleApp`) creates a collection and saves each thread as a `SavedColor` with a thread attachment. Deleting a pull keeps its colors in All.
+- **Owned threads** ("my box") are `useDmcStore` (`stash` / `shoppingList`, persisted under `colorwizard-dmc-inventory`). The desktop `components/tabs/StitchTab.tsx` uses the same store code.
+
+**Thread Map** (`lib/dmc/map/`, pure and React-free; UI in `ThreadMapPanel`, `useThreadMap`, `threadMapCanvas`, `threadMapRender`, `ThreadMapCard`). It turns the open picture into regions, one DMC thread per region. Slots are numbered 1..N **lightest to darkest**, which is the opposite of Plan piles (dark to light).
+- **Modes** (`types.ts`): Full color uses 2–30 threads (default 12), with Fidelity "True to photo" or "Vibrant accents". Monochrome uses 2–12 threads (default 7) in one of four tones (warm, neutral, cool grays, sepia), as a lightness ramp (`monochrome.ts`).
+- **How a map is made** (`engine.ts`):
+  - The palette is fitted on a canonical 512 px copy with deterministic k-medoids over the catalog, using CIEDE2000 plus a fidelity weighting.
+  - `buildThreadLadder` turns it into an ordered ladder, so the thread-count slider adds or removes one skein at a time instead of reshuffling the palette.
+  - Pixels are then assigned at the Detail preset's size (Crisp 1024 / Painterly 640 / Broad 512 px). `smooth.ts` removes speckle (single stray pixels and tiny islands) at each preset's strength.
+  - Locked threads stay fixed in the palette. "Prefer my box" gives owned threads a 1.75 ΔE00 bonus (`PREFER_BOX_DELTA_E_BONUS`).
+  - Everything runs in `threadMap.worker.ts` (Comlink, `lib/workers/index.ts`).
+- **Scoring**: scores are measured against the **original, unsmoothed** pixels, using CIEDE2000 to the thread's **catalog** color. The "visibly off" mask is >5 ΔE00 (`VISIBLE_THREAD_MISS`, the same threshold as Plan and `threadFit`).
+  - Full color verdicts are banded on the share of the picture visibly off: <10% close, <30% fair, <60% rough, otherwise poor.
+  - Monochrome verdicts are banded on mean OKLab ΔL: <0.045 close, <0.075 fair, otherwise rough.
+  - There is no paint or physical model here. The only thing it predicts is the catalog colors, which come from DMC's product photos.
+- **Swaps**: swapping a thread repaints that slot's exact region and re-scores it (`swapMapThread`, `applyThreadMapSwaps`; `swapOverrides` in full color, `monoSwaps` in monochrome). Assignment and smoothing are not rerun. The panel also has a hover preview and an A/B compare against the original thread.
+- **Undo/redo** (`history.ts`, ⌘Z): slider drags are merged into one undo step. It covers the controls, locks and swaps.
+  - Only mode, budgets, tone, detail, fidelity and "Prefer my box" are saved (`prefs.ts`, `colorwizard-simple-thread-map-prefs`, and a corrupt value is ignored). Locks, swaps and history are lost on reload.
+  - `history.ts` mentions "Studio Save States", but none are built.
+- **Rendering** (`contours.ts`, `threadMapCanvas.ts`): the slot map is turned into vector shapes whose shared edges are smoothed. Neighbouring regions share the same edge, so fills have no gaps and an outline draws each boundary once. These shapes become cached `Path2D`s drawn at `devicePixelRatio` under the stage camera, so the map stays sharp at any zoom. The canvas can also isolate one thread over the photo (tracing-paper, photo or paper backdrop) and zoom to that area.
+- **Print** (`card.ts`, `ThreadMapCard.tsx`, `threadMapImages.ts`): a one-page card in two variants: the color map, or a black-and-white **Fabric Transfer Outline** that can be mirrored. It copies PlanCard's approach: the same 718 × 980 page, number badges placed by `placeLabels`, a body-level portal only while printing, and zoom-to-fit. Have/Need boxes are text, so it survives grayscale.
+- **Wording**: wording lives in `mapFit.ts`. It never says "exact" or "verified" and flags `approximate` catalog colors. The caveats are `THREAD_MAP_CAVEAT_CATALOG`, `_REAL`, `_COPY`, `THREAD_MAP_PRINT_CAVEAT` and `THREAD_MAP_PRINT_NOTE`. Reuse them verbatim, like the plan caveats. Nobody has said whether changing them needs the owner's OK, so ask.
+
+**Tests**: `lib/dmc/studio.test.ts`; `lib/dmc/map/{engine,smooth,contours,history,card}.test.ts`; `components/simple/{ThreadStudio,ThreadMapCard,threadMapRender}.test.ts`. They pass in the full suite (829 tests on 2026-11-22). There is no benchmark or ratchet for Thread Map quality.
+
+**Not verified, do not claim**:
+- No browser smoke covers it: `scripts/smoke-core-flow.mjs` has no Thread Studio or Thread Map scenario.
+- No print run is recorded for the card (page count, Letter/A4, grayscale), and nothing has been checked on paper or fabric.
+- Not checked on real iOS/Android/Safari, against physical skeins, or for performance at Crisp on large photos.
+- Whether these commits are deployed has not been checked; the last verified production deploy is `042fc6f3`.
 
 ### Working in this repo
 
@@ -183,3 +226,4 @@ Tests live alongside source with `.test.ts` suffix:
 - `lib/paint/plan/*.test.ts` (library, selector, planner ratchets in `benchmark.test.ts`, worker-free `picture.test.ts`)
 - `lib/paint/plan/planFit.test.ts`, `lib/paint/paintFit.test.ts` (wording), `components/simple/planRender.test.ts` (Plan view repaint)
 - `lib/paint/plan/export.test.ts` (shared export model, mix order), `procreatePalette.test.ts` (unzip-and-parse, HSB units), `labels.test.ts` (badge placement), `card.test.ts` (card model), `components/simple/PlanCard.test.ts` (card markup, rendered with `react-dom/server`)
+- `lib/dmc/studio.test.ts`, `lib/dmc/map/*.test.ts`, `components/simple/{ThreadStudio,ThreadMapCard,threadMapRender}.test.ts` (Thread Studio and Thread Map)
