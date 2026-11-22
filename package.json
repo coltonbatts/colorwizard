@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest",
     "smoke:core": "node scripts/smoke-core-flow.mjs",
+    "smoke:canvas": "node scripts/smoke-canvas-setup.mjs",
     "unreachable": "node scripts/find-unreachable.mjs",
     "unreachable:check": "node scripts/find-unreachable.mjs --check",
     "unreachable:update": "node scripts/find-unreachable.mjs --update-baseline",
