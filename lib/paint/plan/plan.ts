@@ -63,7 +63,7 @@ export interface PlanOptions {
      * for a color the palette cannot reach exactly it rates a gray as nearer than a vivid neighbour, and
      * plain ΔE00 picking turned saturated pictures into grays. On ten real pictures (Core six, 8 piles)
      * 0.3 keeps about 89% of the picture's chroma instead of 69%, for +0.1 mean ΔE00; on the generated
-     * corpus +0.01 at 8 piles and +0.16 at 12. Pixels are still given to piles, and scored, by plain ΔE00.
+     * corpus ±0.0 at 8 piles and +0.07 at 12. Pixels are still given to piles, and scored, by plain ΔE00.
      */
     chroma?: number
     library?: LibraryOptions
@@ -221,20 +221,25 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
                 }
                 members[best].push(i)
             }
+            // Find every pile's best derivation against this round's members, then apply them biggest gain
+            // first. Applying them in pile order let an early, small gain block a later, larger one (a pile
+            // that becomes a base can no longer be derived, and a derived pile can no longer be a base).
             const isBase = states.map((_, p) => states.some((s) => s.derived?.base === p))
-            let changed = false
+            const masks = states.map((s) => s.mask)
+            const proposals: Array<{ p: number; gain: number; pick: { base: number; cand: DerivedCandidate } }> = []
             for (let p = 0; p < states.length; p++) {
                 if (isBase[p] || members[p].length === 0) continue
                 let others = 0
-                states.forEach((s, q) => {
-                    if (q !== p) others |= s.mask
+                masks.forEach((mask, q) => {
+                    if (q !== p) others |= mask
                 })
                 const valueOf = (lab: [number, number, number], parts: number, mask: number) => {
                     let sum = 0
                     for (const i of members[p]) sum += weight[i] * pickCost(fitLab[i * 3], fitLab[i * 3 + 1], fitLab[i * 3 + 2], lab[0], lab[1], lab[2], o.kL, o.chroma)
                     return sum + o.alpha * parts + pigmentCost(mask, others)
                 }
-                let best = valueOf(states[p].lab, states[p].parts, states[p].mask)
+                const current = valueOf(states[p].lab, states[p].parts, states[p].mask)
+                let best = current
                 let pick: { base: number; cand: DerivedCandidate } | null = null
                 for (let q = 0; q < states.length; q++) {
                     if (q === p || states[q].derived) continue
@@ -246,11 +251,16 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
                         }
                     }
                 }
-                if (pick) {
-                    states[p] = { lib: states[p].lib, derived: pick, lab: pick.cand.lab, rgb: pick.cand.rgb, parts: pick.cand.baseParts + pick.cand.extraParts, mask: pick.cand.mask }
-                    isBase[pick.base] = true
-                    changed = true
-                }
+                if (pick) proposals.push({ p, gain: current - best, pick })
+            }
+            proposals.sort((x, y) => y.gain - x.gain || x.p - y.p)
+            let changed = false
+            for (const { p, pick } of proposals) {
+                // Skip a proposal an earlier one made impossible: this pile is now a base, or its base is now derived.
+                if (isBase[p] || states[pick.base].derived) continue
+                states[p] = { lib: states[p].lib, derived: pick, lab: pick.cand.lab, rgb: pick.cand.rgb, parts: pick.cand.baseParts + pick.cand.extraParts, mask: pick.cand.mask }
+                isBase[pick.base] = true
+                changed = true
             }
             if (!changed) break
         }

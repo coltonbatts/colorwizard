@@ -322,10 +322,26 @@ Chroma kept is the area-weighted C* of the repaint over that of the original. Th
 
 **What got worse.**
 - The 12-pile plans on the corpus lose 0.16 mean ΔE00 (3.89 → 4.05): with more piles the term buys chroma with some accuracy.
-- **`landscape` is no longer monotone from 8 to 12 piles** (6.45 → 6.68; it was 6.30 → 5.98). The monotonicity ratchets only cover 5 and 8 piles, so no test catches it. Its yellow-greens are beyond the 16-part library (Phase 2, weak spot 1), and at 12 piles the term spends piles on vivid-but-off greens.
+- **`landscape` was no longer monotone from 8 to 12 piles** (6.45 → 6.68; it was 6.30 → 5.98). Fixed the same day, see below.
 - Pale and saturated accents still sit in the tail; the term protects average chroma, not small accents.
 
 Before/after renders (original | palette floor | 8 | 12 piles) were written to `output/plan-chroma/` (gitignored), from scratch scripts that were not kept.
+
+### Follow-up: derivations applied biggest gain first (2026-11-23)
+
+The `landscape` regression was not pile selection: with derivation off, it improves at every budget from 5 to 14 with the chroma term on. The jump was in the derivation pass, at 11 piles (6.13 → 6.73). That pass walked the piles in index order and applied each pile's best derivation at once; a pile that becomes a base can no longer be derived, and a derived pile can no longer be a base, so an early small gain could block a later, larger one. Now each round finds every pile's best derivation against the round's members first, then applies them biggest gain first, skipping any an earlier one made impossible. Same work per round.
+
+| | pile order | **biggest gain first** |
+|---|---|---|
+| generated corpus, mean ΔE00 @5 / 8 / 12 | 5.30 / 4.33 / 4.05 | **5.30 / 4.32 / 3.96** |
+| generated corpus @8: p95 / visibly off / parts | 10.59 / 29.7% / 59.7 | 10.66 / 28.8% / 61.0 |
+| `landscape` @8 / 12 | 6.45 / 6.68 | 6.45 / **6.05** |
+| corpus, budgets 4–16: rises over the best smaller budget | 11, worst +0.60 (`landscape` 11) | 10, worst +0.25 (`high-key` 5, in both) |
+| Zorn, mean ΔE00 @5 / 8 / 12 | 7.06 / 6.19 / 5.91 | 7.07 / 6.17 / 5.88 |
+| real pictures, mean ΔE00 @8 / 12 | 6.49 / 5.91 | 6.46 / 5.88 |
+| real pictures, chroma kept @8 / 12 | 90% / 91% | 89% / 89% |
+
+The demo picture is unchanged at 8 piles (30% visibly off, ΔE 4.4). Outside the app's budgets a few small rises remain (`interior-warm` +0.06 to +0.09 at 10, 15 and 16 piles; `landscape` +0.03 at 9). The library ratchets now plan 5, 8 and 12 piles: the 0.05 monotonicity check covers 8 → 12, and 12 piles must stay under 4.05 mean ΔE00. Both fail on the pile-order code.
 
 # Phase 3: the Plan view on `/`
 

@@ -99,15 +99,15 @@ describe('library planner (the current algorithm)', () => {
     let rows: PlanRow[] = []
     let scratchRows: PlanRow[] = []
     beforeAll(async () => {
-        rows = await runBenchmark(images, [5, 8], PLANNERS.library, contextFor('core6'))
+        rows = await runBenchmark(images, [5, 8, 12], PLANNERS.library, contextFor('core6'))
         scratchRows = await runBenchmark(images, [5, 8], PLANNERS['library-scratch'], contextFor('core6'))
     }, 180000)
 
-    it('stays within the measured envelope at 5 and 8 piles', () => {
+    it('stays within the measured envelope at 5, 8 and 12 piles', () => {
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
-        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 38.5%; 8 piles mean 4.33, p95 10.59,
-        // visibly off 29.7%, value error 2.69, 59.7 parts, 2.4 derived piles. Naive baseline was 6.46 / 52.8% and
+        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 38.5%; 8 piles mean 4.32, p95 10.66,
+        // visibly off 28.8%, value error 2.69, 61.0 parts, 2.1 derived piles; 12 piles mean 3.96. Naive baseline was 6.46 / 52.8% and
         // 4.92 / 9.97 / 38.2% / 2.49 / 47.3 parts (its 29% unmeasurable piles count as zero parts).
         // p95 was 10.22 (limit 10.5) before the chroma-loss price (plan.ts `chroma`, 2026-11-23): keeping saturated
         // pictures vivid costs some tail error here, and no weight above 0 kept it under 10.5. Owner approved the
@@ -121,6 +121,8 @@ describe('library planner (the current algorithm)', () => {
         expect(eight.totalParts).toBeLessThan(68)
         expect(eight.derivedPiles).toBeGreaterThan(1.5)
         expect(eight.msP95).toBeLessThan(2000)
+        // 12 piles was 4.05 while the derivation pass applied piles in index order (landscape got worse from 8 to 12).
+        expect(summarize(rows.filter((r) => r.budget === 12)).meanDeltaE00).toBeLessThan(4.05)
     })
 
     it('beats the recorded naive baseline by a margin larger than k-means seed noise (about 0.2)', () => {
@@ -208,7 +210,8 @@ describe('library planner (the current algorithm)', () => {
     it('never looks worse with more piles: exactly for scratch plans, within 0.05 ΔE00 with derived piles', () => {
         // A nearest-swatch repaint cannot get worse when piles are added, and greedy selection builds a superset: zero.
         expect(monotonicityViolations(scratchRows)).toEqual([])
-        // The derivation pass is greedy, so it can give back a hair: high-key 5 -> 8 piles goes 2.09 -> 2.10.
+        // The derivation pass is greedy, so it can give back a hair; this covers 5 -> 8 -> 12 piles. Applying derivations
+        // in pile order once made landscape 6.45 -> 6.68 from 8 to 12; biggest gain first gives 6.45 -> 6.05.
         expect(monotonicityViolations(rows, 0.05)).toEqual([])
     })
 
