@@ -59,13 +59,22 @@ export interface PlanOptions {
     kL?: number
     /**
      * Chroma-loss weight used to choose piles: ΔE00 added per unit of CIELAB C* a swatch is duller than
-     * the color it stands for (default 0.3). CIEDE2000 compresses chroma differences at high chroma, so
+     * the color it stands for (default 0.2). CIEDE2000 compresses chroma differences at high chroma, so
      * for a color the palette cannot reach exactly it rates a gray as nearer than a vivid neighbour, and
-     * plain ΔE00 picking turned saturated pictures into grays. On ten real pictures (Core six, 8 piles)
-     * 0.3 keeps about 89% of the picture's chroma instead of 69%, for +0.1 mean ΔE00; on the generated
-     * corpus ±0.0 at 8 piles and +0.07 at 12. Pixels are still given to piles, and scored, by plain ΔE00.
+     * plain ΔE00 picking turned saturated pictures into grays (69% of their chroma kept). With these
+     * tubes chroma comes with darkness (white kills it), so a heavier price (0.3) pulled pale areas
+     * toward darker, browner mixes. Pixels are still given to piles, and scored, by plain ΔE00.
      */
     chroma?: number
+    /**
+     * Value equalization used to choose piles: each color's weight is its area divided by
+     * (the share of the picture in its 5-L* value band)^valueEqualize (default 0.5; 0 is plain area).
+     * Plain area weighting let small value extremes (highlights, deepest darks) be merged into
+     * mid-value piles, so plans came out flat: on ten real pictures at 8 piles the lights were
+     * 2.4 L* too dark on average (7.8 on one) and the darks 1.9 too light. With 0.5 (and chroma 0.2)
+     * the lights are 0.7 too dark and mean ΔE00 is lower (6.33 vs 6.46). Scoring stays area-weighted.
+     */
+    valueEqualize?: number
     library?: LibraryOptions
     /**
      * Let piles be mixed from other piles ("3 parts of pile A + 1 part white"): tints finer than 16
@@ -84,7 +93,8 @@ export const DEFAULT_PLAN_OPTIONS: Required<Omit<PlanOptions, 'library' | 'deriv
     beta: 0.1,
     minGain: 0,
     kL: 0.65,
-    chroma: 0.3,
+    chroma: 0.2,
+    valueEqualize: 0.5,
 }
 
 /** The cost piles are chosen by: ΔE00 (value-weighted by kL) plus `chroma` per unit of C* the swatch is duller than the color. */
@@ -93,6 +103,31 @@ export function pickCost(l1: number, a1: number, b1: number, l2: number, a2: num
     if (chroma === 0) return d
     const loss = Math.sqrt(a1 * a1 + b1 * b1) - Math.sqrt(a2 * a2 + b2 * b2)
     return loss > 0 ? d + chroma * loss : d
+}
+
+/** VALUE_BAND L* wide bands, 0..100 (L* 100 falls in the last band). */
+const VALUE_BAND = 5
+const VALUE_BANDS = Math.ceil(100 / VALUE_BAND)
+
+/**
+ * What each merged color counts for when piles are chosen: its area, divided by the share of the
+ * picture in its value band raised to `valueEqualize`, normalized to sum to 1. 0 is plain area.
+ */
+export function selectionWeights(count: ArrayLike<number>, lab: ArrayLike<number>, valueEqualize: number): Float64Array {
+    const n = count.length
+    const bandOf = (i: number) => Math.min(VALUE_BANDS - 1, Math.max(0, Math.floor(lab[i * 3] / VALUE_BAND)))
+    let total = 0
+    for (let i = 0; i < n; i++) total += count[i]
+    const band = new Float64Array(VALUE_BANDS)
+    for (let i = 0; i < n; i++) band[bandOf(i)] += count[i] / total
+    const weight = new Float64Array(n)
+    let sum = 0
+    for (let i = 0; i < n; i++) {
+        weight[i] = valueEqualize === 0 ? count[i] : count[i] / Math.pow(band[bandOf(i)], valueEqualize)
+        sum += weight[i]
+    }
+    for (let i = 0; i < n; i++) weight[i] /= sum
+    return weight
 }
 
 /** Library indices nearest to each fit color by CIELAB distance, merged into one sorted set. */
@@ -160,7 +195,7 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
     const fit = coarsenHistogram(hist, o.fitColors)
     const n = fit.size
     const fitLab = histogramLab(fit)
-    const weight = Float64Array.from(fit.count, (c) => c / fit.total)
+    const weight = selectionWeights(fit.count, fitLab, o.valueEqualize)
 
     const cand = pruneCandidates(lib, fitLab, n, Math.min(o.candidates, lib.size), o.kL)
     const m = cand.length

@@ -106,18 +106,19 @@ describe('library planner (the current algorithm)', () => {
     it('stays within the measured envelope at 5, 8 and 12 piles', () => {
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
-        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 38.5%; 8 piles mean 4.32, p95 10.66,
-        // visibly off 28.8%, value error 2.69, 61.0 parts, 2.1 derived piles; 12 piles mean 3.96. Naive baseline was 6.46 / 52.8% and
+        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.40, visibly off 38.8%; 8 piles mean 4.44, p95 10.11,
+        // visibly off 30.3%, value error 2.76, 59.0 parts, 2.4 derived piles; 12 piles mean 3.99. Naive baseline was 6.46 / 52.8% and
         // 4.92 / 9.97 / 38.2% / 2.49 / 47.3 parts (its 29% unmeasurable piles count as zero parts).
-        // p95 was 10.22 (limit 10.5) before the chroma-loss price (plan.ts `chroma`, 2026-11-23): keeping saturated
-        // pictures vivid costs some tail error here, and no weight above 0 kept it under 10.5. Owner approved the
-        // loosening; tighten it again if a later change brings p95 down.
+        // Value equalization (plan.ts `valueEqualize` 0.5, chroma 0.3 -> 0.2, 2026-11-23) chooses piles so highlights and
+        // deep darks keep piles of their own. On ten real pictures it lowers mean ΔE00 and stops lights coming out 2.4 L*
+        // too dark, but on these generated pictures area-weighted scores get a little worse: value error 2.69 -> 2.76
+        // (limit 2.75 -> 2.8, owner approved). p95 came down 10.66 -> 10.11, so its limit is back to 10.5.
         expect(five.meanDeltaE00).toBeLessThan(5.45)
         expect(five.visiblyOffArea).toBeLessThan(0.39)
         expect(eight.meanDeltaE00).toBeLessThan(4.45)
-        expect(eight.p95DeltaE00).toBeLessThan(10.7)
+        expect(eight.p95DeltaE00).toBeLessThan(10.5)
         expect(eight.visiblyOffArea).toBeLessThan(0.31)
-        expect(eight.meanValueError).toBeLessThan(2.75)
+        expect(eight.meanValueError).toBeLessThan(2.8)
         expect(eight.totalParts).toBeLessThan(68)
         expect(eight.derivedPiles).toBeGreaterThan(1.5)
         expect(eight.msP95).toBeLessThan(2000)
@@ -127,22 +128,26 @@ describe('library planner (the current algorithm)', () => {
 
     it('beats the recorded naive baseline by a margin larger than k-means seed noise (about 0.2)', () => {
         // Naive baseline, seed 1, Core six (docs/paint-plan-audit.md): 5 piles 6.46 / 52.8% visibly off, 8 piles 4.92 / 38.2%.
+        // The 8-pile margin was 0.5 until value equalization (2026-11-23, 4.32 -> 4.44); owner approved 0.45.
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
         expect(five.meanDeltaE00).toBeLessThan(6.46 - 0.9)
-        expect(eight.meanDeltaE00).toBeLessThan(4.92 - 0.5)
+        expect(eight.meanDeltaE00).toBeLessThan(4.92 - 0.45)
         expect(five.visiblyOffArea).toBeLessThan(0.528 - 0.13)
         expect(eight.visiblyOffArea).toBeLessThan(0.382 - 0.07)
     })
 
-    it('knows where it is still behind the naive baseline: landscape at 5 piles (7.78 vs 7.37)', () => {
+    it('knows where it is still behind the naive baseline: landscape at 5 and 8 piles (8.42 vs 7.37, 6.87 vs 6.16)', () => {
         // The library only holds recipes of at most 16 parts; landscape's yellow-greens and pale blues need a touch of a
-        // strong pigment. Recorded so the gap can only close: no picture may be more than 0.5 ΔE00 behind the naive plan.
+        // strong pigment. Recorded so the gap can only close: no picture may be more than 0.5 ΔE00 behind the naive plan,
+        // except landscape. It was 7.78 / 6.45 until value equalization and the lighter chroma price (2026-11-23), which
+        // help real pictures but cost this generated one; owner approved the allowances below.
         const naive = { 'landscape@5': 7.37, 'landscape@8': 6.16, 'high-key@8': 2.01, 'fruit-saturated@5': 7.26, 'sunset@5': 10.49 }
+        const allowance: Record<string, number> = { 'landscape@5': 1.1, 'landscape@8': 0.75 }
         for (const [key, baseline] of Object.entries(naive)) {
             const [image, budget] = key.split('@')
             const row = rows.find((r) => r.image === image && r.budget === Number(budget))!
-            expect(row.score.meanDeltaE00).toBeLessThan(baseline + 0.5)
+            expect(row.score.meanDeltaE00).toBeLessThan(baseline + (allowance[key] ?? 0.5))
         }
     })
 
@@ -212,13 +217,18 @@ describe('library planner (the current algorithm)', () => {
         expect(monotonicityViolations(scratchRows)).toEqual([])
         // The derivation pass is greedy, so it can give back a hair; this covers 5 -> 8 -> 12 piles. Applying derivations
         // in pile order once made landscape 6.45 -> 6.68 from 8 to 12; biggest gain first gives 6.45 -> 6.05.
-        expect(monotonicityViolations(rows, 0.05)).toEqual([])
+        // One recorded exception since value equalization (2026-11-23, owner approved): high-key 5 -> 8 piles goes
+        // 2.03 -> 2.24 mean ΔE00 while its visibly-off share drops 5.7% -> 3.0%; the extra piles go to its rarer values.
+        const violations = monotonicityViolations(rows, 0.05)
+        expect(violations.map((v) => `${v.image}@${v.from}->${v.to}`)).toEqual(violations.length ? ['high-key@5->8'] : [])
+        for (const v of violations) expect(v.after).toBeLessThan(2.3)
     })
 
     it('derived piles are what fixes pale tints: high-key gets clearly better than from-scratch piles', () => {
         const pick = (set: PlanRow[]) => set.find((r) => r.image === 'high-key' && r.budget === 8)!.score.meanDeltaE00
-        // measured 2.62 from scratch, 2.10 with derived piles
-        expect(pick(rows)).toBeLessThan(pick(scratchRows) - 0.3)
+        // measured 2.53 from scratch, 2.24 with derived piles (2.62 / 2.10 before value equalization; margin 0.3 -> 0.25,
+        // owner approved)
+        expect(pick(rows)).toBeLessThan(pick(scratchRows) - 0.25)
     })
 
     it('spends no more parts than from-scratch piles, and gets a better repaint for them', () => {

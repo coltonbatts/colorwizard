@@ -5,7 +5,9 @@ import { hexToRgb, oklabToSrgb8, rgbToHex, srgb8ToOklab } from './color'
 import { loadCorpus } from './fixtures/corpus'
 import { buildHistogram } from './histogram'
 import { kmeans } from './kmeans'
-import { assignPixels, scorePlan } from './metrics'
+import { PALETTES } from './benchmark'
+import { assignPixels, hexLab, scorePlan } from './metrics'
+import { makePlan, selectionWeights } from './plan'
 import type { Plan, PlanPile } from './types'
 
 /** RGBA pixels: `colors` is [hex, how many pixels]. */
@@ -166,4 +168,31 @@ describe('plan metrics', () => {
         const { pile: assigned } = assignPixels(hist, plan)
         expect(Math.max(...assigned)).toBeLessThan(3)
     })
+})
+
+describe('selection weights (value equalization)', () => {
+    // L* 30, 32 (one band), 60 and 90: counts 50, 30, 18, 2
+    const count = [50, 30, 18, 2]
+    const lab = [30, 0, 0, 32, 0, 0, 60, 0, 0, 90, 0, 0]
+
+    it('is plain area share at 0', () => {
+        expect(Array.from(selectionWeights(count, lab, 0))).toEqual([0.5, 0.3, 0.18, 0.02])
+    })
+
+    it('lifts colors whose value is rare, keeps proportions inside a band, and sums to 1', () => {
+        const w = selectionWeights(count, lab, 0.5)
+        expect(w.reduce((s, x) => s + x, 0)).toBeCloseTo(1, 12)
+        expect(w[3]).toBeGreaterThan(0.02 * 3) // a 2% highlight counts for several times its area
+        expect(w[0] / w[1]).toBeCloseTo(50 / 30, 12) // same value band: relative weight unchanged
+        expect(w[0] + w[1]).toBeLessThan(0.8)
+    })
+
+    it('gives a small highlight a pile of its own that area weighting would merge into the midtones', async () => {
+        const hist = buildHistogram(pixels([['#7a6a5a', 400], ['#6a5a4a', 300], ['#5a4a3a', 260], ['#e8e0d4', 40]]))
+        const lightest = async (valueEqualize: number) =>
+            Math.max(...(await makePlan(hist, 3, PALETTES.core6.pigments, { valueEqualize })).piles.map((p) => hexLab(p.recipe.predictedHex).l))
+        // measured: 46 with plain area weights, 87 with 0.5; the highlight is L* 89
+        expect(await lightest(0)).toBeLessThan(60)
+        expect(await lightest(0.5)).toBeGreaterThan(80)
+    }, 30000)
 })

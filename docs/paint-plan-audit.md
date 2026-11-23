@@ -343,6 +343,60 @@ The `landscape` regression was not pile selection: with derivation off, it impro
 
 The demo picture is unchanged at 8 piles (30% visibly off, ΔE 4.4). Outside the app's budgets a few small rises remain (`interior-warm` +0.06 to +0.09 at 10, 15 and 16 piles; `landscape` +0.03 at 9). The library ratchets now plan 5, 8 and 12 piles: the 0.05 monotonicity check covers 8 → 12, and 12 piles must stay under 4.05 mean ΔE00. Both fail on the pile-order code.
 
+## Step 4: value equalization (`plan.ts` `valueEqualize`, 2026-11-23)
+
+The owner, after Step 3: plans still look "muddled and dark, not enough contrast, all on the same tone". The repaint is drawn honestly (each pixel is its pile's predicted swatch, the hatch darkens one pixel row in eight), so the piles themselves had to be the cause.
+
+**What was measured** (ten real pictures, Core six, signed mean ΔL* of the repaint by the original's value band: dark < 35, light > 65):
+
+- Plans compress value. At 8 piles the lights came out 2.43 L* too dark on average (Big Sur 7.8, Sonoma 6.3, The Beach 4.2) and the darks 1.88 too light.
+- The cause is area weighting. Big Sur at 12 piles spent five piles on darks between L* 26 and 33 and none on its lights. Those are 3.7% of the picture, and the library mixes them within 1.6 ΔE00. By area-weighted ΔE00 that is the best plan; to a painter it is the wrong one.
+- The 0.3 chroma price makes it worse in pale areas. With these tubes chroma comes with darkness (white kills it), so pricing chroma loss pulls a pale, mixed cluster toward a darker, browner swatch. Valley Light's rock piles sat at L* 51–58, where an unconstrained 8-color k-means puts them at 71–79.
+- Mean value error (area-weighted |ΔL*|, what "Tried and not adopted: a structural value-first mode" judged by) barely sees this, because the extremes are small.
+
+**Tried, no effect on value compression:**
+
+- A direct price per unit |ΔL*| (0.15–1.0).
+- Plain value-weighted CIELAB distance instead of ΔE00.
+- Lower kL (0.45).
+- Area^γ weights (γ 0.5, 0.75).
+
+**Adopted:** each merged color is weighted by area / (share of the picture in its 5-L* band)^0.5 (`selectionWeights`), and `chroma` drops to 0.2. Pile areas, targets, assignment and every score stay area-weighted plain ΔE00.
+
+| ten real pictures | ΔE00 @5 / 8 / 12 | lights' ΔL* @8 / 12 | darks' ΔL* @8 / 12 | chroma kept @8 / 12 | local contrast kept @8 |
+|---|---|---|---|---|---|
+| before | 7.61 / 6.46 / 5.88 | −2.43 / −1.15 | +1.88 / +2.10 | 89% / 89% | 79% |
+| after | 7.56 / 6.33 / 5.82 | −0.74 / −0.46 | +1.73 / +1.47 | 86% / 87% | 82% |
+
+On the 9 generated pictures area-weighted scores get a little worse:
+
+| generated corpus | ΔE00 @5 / 8 / 12 | visibly off @8 | value error @8 | p95 @8 |
+|---|---|---|---|---|
+| before | 5.30 / 4.32 / 3.96 | 28.8% | 2.69 | 10.66 |
+| after | 5.40 / 4.44 / 3.99 | 30.3% | 2.76 | 10.11 |
+
+Most of that comes from the lower chroma price, not from value equalization (0.5 alone costs +0.03 to +0.14).
+
+The owner approved loosening:
+
+- value error at 8 piles < 2.8;
+- the 8-pile margin over naive, 0.45;
+- `landscape` allowed 1.1 / 0.75 ΔE00 behind naive at 5 / 8 piles (8.42 and 6.87; it was 7.78 and 6.45);
+- one monotonicity exception, `high-key` 5 → 8 (2.03 → 2.24, while its visibly-off share drops 5.7% → 3.0%);
+- the derived-vs-scratch margin on `high-key`, 0.25.
+
+p95 came down, so its limit is back to 10.5.
+
+New tests in `plan.test.ts` (`selectionWeights`, and a 4% highlight that gets its own pile at 3 piles: L* 87 instead of 46) fail with the rule turned off.
+
+**The demo** was "A fair repaint" at 8 piles by a hair: 29.6% visibly off against the 30% cutoff. It now reads "A rough repaint" (about 32%), and "A fair repaint" at 12 (24%). No value-equalized setting kept it under 30% with a margin. The owner chose to ship. `demoFlow` in the smoke script now expects "A rough repaint".
+
+**What this does not fix:**
+
+- Eight flat colors look flat even when unconstrained (an ideal 8-color CIELAB k-means of Valley Light reads as taupe too).
+- The palette has no violet, magenta or bright yellow (The Cliffs, The Beach, Sonoma stay "poor").
+- Pale blues need less than 1 part Phthalo Blue in 16 (best library match for a pale sky is ΔE00 6.9), so skies come out more saturated than the picture.
+
 # Phase 3: the Plan view on `/`
 
 Press **P** (or the Plan button beside Open and Value) with a picture open. The stage shows the picture repainted with only the plan's piles; the panel shows a pile budget (5 / 8 / 12), a headline with the numbers behind it, and each pile: swatch, recipe in whole parts, share of the picture, and the same fit label the Paint section uses. Click a pile to see where it goes (everything else fades); click a spot in the picture to find its pile; hold **B** or the "Hold for original" button to see the original; **Esc** lets go of a pile. Changing tubes under "Your paints" re-plans. The plan runs in a Web Worker (`plan.worker.ts`) on a copy of the picture at most 512 px on the long side, and nothing is uploaded.

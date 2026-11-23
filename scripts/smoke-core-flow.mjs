@@ -227,9 +227,10 @@ async function demoFlow(name, options) {
     assert.equal(hex, '#DAC49F', 'The demo’s first sample moved; re-check lib/demoPicture.ts')
     await waitForRecipe(page, hex)
     await page.getByText('Close in catalog').first().waitFor()
-    // Plan is one click away and the demo was chosen because it reads as a fair repaint at the default 8 piles.
+    // Plan is one click away. The demo was chosen as a fair repaint at the default 8 piles (29.6% off); since value
+    // equalization (plan.ts `valueEqualize`, 2026-11-23, owner's call) it reads as a rough one (about 32%).
     await tap(page, page.getByRole('button', { name: 'Plan', exact: true }), options.hasTouch)
-    await page.getByRole('heading', { name: 'A fair repaint' }).waitFor({ timeout: 30000 })
+    await page.getByRole('heading', { name: 'A rough repaint' }).waitFor({ timeout: 30000 })
     await page.screenshot({ path: path.join(artifacts, `demo-${name}.png`) })
     assert.deepEqual(issues, [])
     results.push({ name: `demo-${name}`, status: 'passed', hex })
