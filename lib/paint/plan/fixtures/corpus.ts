@@ -33,3 +33,17 @@ export function loadCorpus(filter: 'all' | 'synthetic' | 'photo' = 'all'): Corpu
         })
         .filter((image) => filter === 'all' || (filter === 'synthetic') === image.synthetic)
 }
+
+/**
+ * Three flat bands (wall, skin, shadow): a picture with fewer colors than a 12-pile budget, so its
+ * plan always comes back short ("N of 12 piles"). For the export tests; not part of the benchmark.
+ */
+export function bandsPicture(): CorpusImage {
+    const width = 96
+    const height = 48
+    const bands: Array<[number, number, number]> = [[0x80, 0x77, 0x70], [0xd8, 0xa0, 0x80], [0x3a, 0x30, 0x2c]]
+    const data = new Uint8Array(width * height * 4)
+    for (let y = 0; y < height; y++)
+        for (let x = 0; x < width; x++) data.set([...bands[Math.floor((x * bands.length) / width)], 255], (y * width + x) * 4)
+    return { name: 'bands', width, height, data, synthetic: true }
+}

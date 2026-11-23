@@ -106,13 +106,16 @@ describe('library planner (the current algorithm)', () => {
     it('stays within the measured envelope at 5 and 8 piles', () => {
         const five = summarize(rows.filter((r) => r.budget === 5))
         const eight = summarize(rows.filter((r) => r.budget === 8))
-        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 37.8%; 8 piles mean 4.32, p95 10.22,
-        // visibly off 30.0%, value error 2.65, 61.9 parts, 2.1 derived piles. Naive baseline was 6.46 / 52.8% and
+        // Measured (9 pictures, Core six): 5 piles mean ΔE00 5.30, visibly off 38.5%; 8 piles mean 4.33, p95 10.59,
+        // visibly off 29.7%, value error 2.69, 59.7 parts, 2.4 derived piles. Naive baseline was 6.46 / 52.8% and
         // 4.92 / 9.97 / 38.2% / 2.49 / 47.3 parts (its 29% unmeasurable piles count as zero parts).
+        // p95 was 10.22 (limit 10.5) before the chroma-loss price (plan.ts `chroma`, 2026-11-23): keeping saturated
+        // pictures vivid costs some tail error here, and no weight above 0 kept it under 10.5. Owner approved the
+        // loosening; tighten it again if a later change brings p95 down.
         expect(five.meanDeltaE00).toBeLessThan(5.45)
         expect(five.visiblyOffArea).toBeLessThan(0.39)
         expect(eight.meanDeltaE00).toBeLessThan(4.45)
-        expect(eight.p95DeltaE00).toBeLessThan(10.5)
+        expect(eight.p95DeltaE00).toBeLessThan(10.7)
         expect(eight.visiblyOffArea).toBeLessThan(0.31)
         expect(eight.meanValueError).toBeLessThan(2.75)
         expect(eight.totalParts).toBeLessThan(68)

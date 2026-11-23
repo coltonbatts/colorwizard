@@ -215,7 +215,9 @@ describe('placeLabels on real plans', () => {
     const p = await cases[cases.length - 1][1]()
     const { labels, unlabeled } = placeLabels(p.pile, p.width, p.height, p.plan.piles.length, { radius: 8 })
     const owned = p.score.pileAreas.filter((a) => a > 0).length
-    expect(labels.length / owned).toBeGreaterThanOrEqual(0.5)
+    // 0.42 since the chroma-loss price (2026-11-23, owner approved; was 0.5): vivid piles split this rainbow noise
+    // into thinner regions. Real pictures were unchanged (99% of piles numbered at 8 piles, 95% at 12).
+    expect(labels.length / owned).toBeGreaterThanOrEqual(0.4)
     expect(labels.length + unlabeled.length).toBe(owned)
   })
 })

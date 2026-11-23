@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { PALETTES } from './benchmark'
 import { buildCard, CARD, MIX_ORDER_LABEL, PARTS_LABEL } from './card'
 import { describePlanForExport } from './export'
-import { loadCorpus } from './fixtures/corpus'
+import { bandsPicture, loadCorpus } from './fixtures/corpus'
 import { planPicture, type PicturePlan } from './picture'
 import { MODEL_CAVEAT, PLAN_CAVEAT_COPY, PRINT_CAVEAT, PARTS_CAVEAT } from './planFit'
 
-const corpus = loadCorpus('synthetic')
+const corpus = [...loadCorpus('synthetic'), bandsPicture()]
 const plans = new Map<string, Promise<PicturePlan>>()
 function plan(name: string, budget: number): Promise<PicturePlan> {
   const key = `${name}:${budget}`
@@ -22,7 +22,7 @@ async function card(name: string, budget: number, dateText = 'September 28, 2026
   const model = describePlanForExport(p, { ...OPTIONS, pictureName: name })
   return { p, model, card: buildCard(p, model, { dateText }) }
 }
-const CASES: Array<[string, number]> = [['landscape', 5], ['landscape', 12], ['sunset', 8], ['portrait-light', 12], ['high-key', 12]]
+const CASES: Array<[string, number]> = [['landscape', 5], ['landscape', 12], ['sunset', 8], ['portrait-light', 12], ['high-key', 12], ['bands', 12]]
 
 describe('the card lists every pile once, with the export model’s words', () => {
   it.each(CASES)('%s at %i piles', async (name, budget) => {
@@ -48,7 +48,7 @@ describe('the card lists every pile once, with the export model’s words', () =
   })
 
   it('says "8 of 12"-style counts in the header line, with the date it was given', async () => {
-    const { model, card: c } = await card('high-key', 12, 'January 2, 2027')
+    const { model, card: c } = await card('bands', 12, 'January 2, 2027')
     expect(model.pileCount).toBeLessThan(12)
     expect(c.metaLine).toBe(`The Core six · ${model.pileCount} of 12 piles · January 2, 2027`)
     expect((await card('portrait-light', 12)).card.metaLine).toContain('· 12 piles ·')

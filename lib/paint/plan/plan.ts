@@ -9,7 +9,8 @@
  *     distance), then score those exactly in ΔE00.
  *  3. k-medoids over that table (select.ts): greedy forward selection, then medoid refinement,
  *     minimizing area-weighted ΔE00 to the nearest chosen swatch plus a small price per part
- *     of measuring and per extra tube.
+ *     of measuring and per extra tube, and a price for chroma lost (so out-of-reach colors
+ *     become the nearest vivid mix, not a gray).
  *  4. Give every pixel of the full picture to its nearest swatch; each pile's target is the
  *     average color of the pixels it ended up with, and its label says how well the swatch
  *     matches that.
@@ -56,6 +57,15 @@ export interface PlanOptions {
      * about 12% less value error, same mean ΔE00 from 8 piles up, +0.1 at 5). Scoring always uses 1.
      */
     kL?: number
+    /**
+     * Chroma-loss weight used to choose piles: ΔE00 added per unit of CIELAB C* a swatch is duller than
+     * the color it stands for (default 0.3). CIEDE2000 compresses chroma differences at high chroma, so
+     * for a color the palette cannot reach exactly it rates a gray as nearer than a vivid neighbour, and
+     * plain ΔE00 picking turned saturated pictures into grays. On ten real pictures (Core six, 8 piles)
+     * 0.3 keeps about 89% of the picture's chroma instead of 69%, for +0.1 mean ΔE00; on the generated
+     * corpus +0.01 at 8 piles and +0.16 at 12. Pixels are still given to piles, and scored, by plain ΔE00.
+     */
+    chroma?: number
     library?: LibraryOptions
     /**
      * Let piles be mixed from other piles ("3 parts of pile A + 1 part white"): tints finer than 16
@@ -74,6 +84,15 @@ export const DEFAULT_PLAN_OPTIONS: Required<Omit<PlanOptions, 'library' | 'deriv
     beta: 0.1,
     minGain: 0,
     kL: 0.65,
+    chroma: 0.3,
+}
+
+/** The cost piles are chosen by: ΔE00 (value-weighted by kL) plus `chroma` per unit of C* the swatch is duller than the color. */
+export function pickCost(l1: number, a1: number, b1: number, l2: number, a2: number, b2: number, kL: number, chroma: number): number {
+    const d = ciede2000(l1, a1, b1, l2, a2, b2, kL)
+    if (chroma === 0) return d
+    const loss = Math.sqrt(a1 * a1 + b1 * b1) - Math.sqrt(a2 * a2 + b2 * b2)
+    return loss > 0 ? d + chroma * loss : d
 }
 
 /** Library indices nearest to each fit color by CIELAB distance, merged into one sorted set. */
@@ -152,7 +171,7 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
         const b = fitLab[i * 3 + 2]
         for (let c = 0; c < m; c++) {
             const j = cand[c]
-            const d = ciede2000(l, a, b, lib.lab[j * 3], lib.lab[j * 3 + 1], lib.lab[j * 3 + 2], o.kL)
+            const d = pickCost(l, a, b, lib.lab[j * 3], lib.lab[j * 3 + 1], lib.lab[j * 3 + 2], o.kL, o.chroma)
             cost[i * m + c] = d
         }
     }
@@ -194,7 +213,7 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
                 let best = 0
                 let bestD = Infinity
                 for (let p = 0; p < states.length; p++) {
-                    const d = ciede2000(fitLab[i * 3], fitLab[i * 3 + 1], fitLab[i * 3 + 2], states[p].lab[0], states[p].lab[1], states[p].lab[2], o.kL)
+                    const d = pickCost(fitLab[i * 3], fitLab[i * 3 + 1], fitLab[i * 3 + 2], states[p].lab[0], states[p].lab[1], states[p].lab[2], o.kL, o.chroma)
                     if (d < bestD) {
                         bestD = d
                         best = p
@@ -212,7 +231,7 @@ export async function makePlan(hist: Histogram, budget: number, pigments: Pigmen
                 })
                 const valueOf = (lab: [number, number, number], parts: number, mask: number) => {
                     let sum = 0
-                    for (const i of members[p]) sum += weight[i] * ciede2000(fitLab[i * 3], fitLab[i * 3 + 1], fitLab[i * 3 + 2], lab[0], lab[1], lab[2], o.kL)
+                    for (const i of members[p]) sum += weight[i] * pickCost(fitLab[i * 3], fitLab[i * 3 + 1], fitLab[i * 3 + 2], lab[0], lab[1], lab[2], o.kL, o.chroma)
                     return sum + o.alpha * parts + pigmentCost(mask, others)
                 }
                 let best = valueOf(states[p].lab, states[p].parts, states[p].mask)

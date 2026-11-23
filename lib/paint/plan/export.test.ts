@@ -4,11 +4,11 @@ import { resolvePalettePigments } from '../palettePigments'
 import { describePaintFit } from '../paintFit'
 import { PALETTES } from './benchmark'
 import { describePlanForExport, mixOrderOf, type PlanExport } from './export'
-import { loadCorpus } from './fixtures/corpus'
+import { bandsPicture, loadCorpus } from './fixtures/corpus'
 import { planPicture, type PicturePlan } from './picture'
 import { DERIVED_CAVEAT, MODEL_CAVEAT, PLAN_CAVEAT_COPY, PRINT_CAVEAT, PARTS_CAVEAT, planVerdict, pileRecipeText } from './planFit'
 
-const corpus = loadCorpus('synthetic')
+const corpus = [...loadCorpus('synthetic'), bandsPicture()]
 const plans = new Map<string, Promise<PicturePlan>>()
 function plan(name: string, budget: number, pigments = PALETTES.core6.pigments): Promise<PicturePlan> {
   const key = `${name}:${budget}:${pigments.length}`
@@ -20,7 +20,7 @@ function plan(name: string, budget: number, pigments = PALETTES.core6.pigments):
 }
 
 const OPTIONS = { paletteName: 'The Core six', pictureName: 'landscape' }
-const CASES: Array<[string, number]> = [['landscape', 8], ['sunset', 5], ['portrait-light', 12], ['high-key', 12]]
+const CASES: Array<[string, number]> = [['landscape', 8], ['sunset', 5], ['portrait-light', 12], ['high-key', 12], ['bands', 12]]
 
 describe('describePlanForExport: every pile once, with the plan’s own numbers', () => {
   it.each(CASES)('%s at %i piles', async (name, budget) => {
@@ -136,8 +136,8 @@ describe('a base that no pixel uses', () => {
 
 describe('fewer piles than the budget', () => {
   it('says "N of M piles" and never pads', async () => {
-    const p = await plan('high-key', 12)
-    expect(p.plan.piles.length).toBeLessThan(12) // audit: high-key returns 8 of 12
+    const p = await plan('bands', 12)
+    expect(p.plan.piles.length).toBeLessThan(12) // three flat colors cannot fill 12 piles
     const model = describePlanForExport(p, OPTIONS)
     expect(model.pileCountLabel).toBe(`${p.plan.piles.length} of 12 piles`)
     expect(model.piles).toHaveLength(p.plan.piles.length)

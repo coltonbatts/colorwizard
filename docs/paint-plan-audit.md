@@ -300,6 +300,33 @@ No variant moves value error by more than 0.04 ΔL* while mean ΔE00 gets worse 
 5. **`landscape` is still behind the naive plan at 5 and 12 piles** (7.78 vs 7.37, 5.98 vs 5.57), recorded as a ratchet so the gap can only close.
 6. **Not tested: real photographs.** All of this is on nine generated pictures.
 
+## Step 3: a price for chroma lost (`plan.ts` `chroma`, 2026-11-23)
+
+**Symptom** (owner, in the app): plans of oil-painting references came out flat, dull and gray. Two causes, measured on ten real pictures (macOS wallpapers and photos at 512 px, default palette):
+
+1. **The palette's reach.** The default tubes have no violet, magenta or bright yellow. The nearest library swatch to each pixel (a pile per color) already loses chroma on those pictures; no selection can get it back. Only more tubes can.
+2. **Selection by ΔE00 prefers grays.** CIEDE2000 divides chroma differences by S_C = 1 + 0.045·C̄, so at high chroma a loss of saturation costs little. For a color the palette cannot reach exactly, a gray mix rates "nearer" than a vivid neighbour, and k-medoids drifts to gray compromises (slate seas, muddy pinks).
+
+**Fix.** The cost piles are *chosen* by (`pickCost`) is ΔE00 plus `chroma` × max(0, C*target − C*swatch): a swatch duller than the colors it stands for pays per unit of chroma lost; a more saturated one pays nothing extra. It is used for the selection table and in the derive round. Pixels are still *assigned* to the nearest swatch by plain ΔE00, and every score is plain ΔE00, so the numbers cannot be flattered by the term. A chroma-aware pixel assignment was also tried and rejected (value error at 8 piles 2.78, past its ratchet, for little gain), as was a dead zone below which chroma loss is free (noisy, not reliably better).
+
+| | chroma 0 | **0.3** |
+|---|---|---|
+| real pictures, chroma kept @8 / 12 | 69% / 72% | **89% / 91%** |
+| real pictures, mean ΔE00 @8 / 12 | 6.38 / 5.80 | 6.49 / 5.91 |
+| real pictures, value error @8 | 3.23 | 3.47 |
+| generated corpus, mean ΔE00 @5 / 8 / 12 | 5.30 / 4.32 / 3.89 | 5.30 / 4.33 / 4.05 |
+| generated corpus @8: p95 / value error / parts | 10.22 / 2.65 / 61.9 | 10.59 / 2.69 / 59.7 |
+| generated corpus @8: visibly off | 30.0% | 29.7% |
+
+Chroma kept is the area-weighted C* of the repaint over that of the original. The weight was swept from 0 to 0.5; the p95 at 8 piles moved unevenly between 10.54 and 11.06 for every weight above 0, so it is not tunable to stay under its old 10.5 ratchet. With the owner's OK the ratchets moved: p95 at 8 piles < 10.7 (was 10.5), and the busy-noise card test numbers ≥ 40% of piles (was 50%; measured 42%). Badge coverage on the real pictures did not change (99% of piles at 8, 95% at 12). In the app, Big Sur Coastline at 12 piles plans a blue sea instead of slate gray ("A fair repaint", 23% visibly off).
+
+**What got worse.**
+- The 12-pile plans on the corpus lose 0.16 mean ΔE00 (3.89 → 4.05): with more piles the term buys chroma with some accuracy.
+- **`landscape` is no longer monotone from 8 to 12 piles** (6.45 → 6.68; it was 6.30 → 5.98). The monotonicity ratchets only cover 5 and 8 piles, so no test catches it. Its yellow-greens are beyond the 16-part library (Phase 2, weak spot 1), and at 12 piles the term spends piles on vivid-but-off greens.
+- Pale and saturated accents still sit in the tail; the term protects average chroma, not small accents.
+
+Before/after renders (original | palette floor | 8 | 12 piles) were written to `output/plan-chroma/` (gitignored), from scratch scripts that were not kept.
+
 # Phase 3: the Plan view on `/`
 
 Press **P** (or the Plan button beside Open and Value) with a picture open. The stage shows the picture repainted with only the plan's piles; the panel shows a pile budget (5 / 8 / 12), a headline with the numbers behind it, and each pile: swatch, recipe in whole parts, share of the picture, and the same fit label the Paint section uses. Click a pile to see where it goes (everything else fades); click a spot in the picture to find its pile; hold **B** or the "Hold for original" button to see the original; **Esc** lets go of a pile. Changing tubes under "Your paints" re-plans. The plan runs in a Web Worker (`plan.worker.ts`) on a copy of the picture at most 512 px on the long side, and nothing is uploaded.

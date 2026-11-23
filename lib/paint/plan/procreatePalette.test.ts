@@ -6,11 +6,11 @@ import { DEFAULT_PALETTE } from '../../types/palette'
 import { resolvePalettePigments } from '../palettePigments'
 import { PALETTES } from './benchmark'
 import { describePlanForExport, type PlanExport } from './export'
-import { loadCorpus } from './fixtures/corpus'
+import { bandsPicture, loadCorpus } from './fixtures/corpus'
 import { planPicture } from './picture'
 import { planToProcreatePalette } from './procreatePalette'
 
-const corpus = loadCorpus('synthetic')
+const corpus = [...loadCorpus('synthetic'), bandsPicture()]
 const OPTIONS = { paletteName: 'The Core six' }
 
 async function model(name: string, budget: number, pigments = PALETTES.core6.pigments): Promise<PlanExport> {
@@ -81,11 +81,11 @@ describe('the .swatches file for a plan', () => {
   })
 
   it('names the palette and file from the picture and the pile count, without padding "8 of 12"', async () => {
-    const m = await model('high-key', 12)
+    const m = await model('bands', 12)
     const built = planToProcreatePalette(m)
     expect(m.pileCount).toBeLessThan(12)
-    expect(built.paletteName).toBe(`high-key · ${m.pileCount} of 12 piles`)
-    expect(built.filename).toBe(`high-key-${m.pileCount}-of-12-piles.swatches`)
+    expect(built.paletteName).toBe(`bands · ${m.pileCount} of 12 piles`)
+    expect(built.filename).toBe(`bands-${m.pileCount}-of-12-piles.swatches`)
     expect(built.colors).toHaveLength(m.pileCount)
     const anon = planToProcreatePalette({ ...m, title: 'Paint plan', pictureName: null })
     expect(anon.filename).toMatch(/^paint-plan-\d+-of-12-piles\.swatches$/)
