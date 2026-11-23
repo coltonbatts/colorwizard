@@ -50,8 +50,35 @@ export const PALETTE: Pigment[] = [
     {
         id: 'raw-umber',
         name: 'Raw Umber',
-        hex: '#735C44',
+        // As it looks squeezed out (was #735C44, a light grayish tint that could not make darks; 2026-11-23)
+        hex: '#45392B',
         tintingStrength: 1.2, // Earth color, standard
+    },
+];
+
+/**
+ * Warm earth tubes a painter can add in the web app's "Your paints". Same conventions and the same
+ * caveat as PALETTE: hex is the tube as it looks squeezed out, tinting strength is hand-set, and
+ * neither is measured from real paint. They are kept out of PALETTE because the desktop MixLab draws
+ * a slider for every PALETTE pigment.
+ *
+ * Why (2026-11-23): the Core six cannot mix a dark, warm, yellow-leaning brown. Darkening with Ivory
+ * Black kills the color and Cadmium Red turns it maroon. On the owner's reference (a dark ground,
+ * L* 10, C* 8.3), the best Core six mix reached C* 4.1; adding either tube took the 12-pile plan
+ * from 26% visibly off to 3%.
+ */
+export const EARTH_TUBES: Pigment[] = [
+    {
+        id: 'burnt-sienna',
+        name: 'Burnt Sienna',
+        hex: '#6E2E1C',
+        tintingStrength: 1.2,
+    },
+    {
+        id: 'burnt-umber',
+        name: 'Burnt Umber',
+        hex: '#45301F',
+        tintingStrength: 1.5,
     },
 ];
 
@@ -59,7 +86,7 @@ export const PALETTE: Pigment[] = [
  * Get a map of pigment ID to Pigment for quick lookup.
  */
 export const PALETTE_MAP = new Map<string, Pigment>(
-    PALETTE.map((p) => [p.id, p])
+    [...PALETTE, ...EARTH_TUBES].map((p) => [p.id, p])
 );
 
 /**

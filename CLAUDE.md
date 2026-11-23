@@ -74,6 +74,10 @@ The app has **two separate** recipe generators — don't conflate them:
 
 **Default palette**: `lib/spectral/palette.ts` defines seven pigments; the solver defaults to the Core 6 (Titanium White, Ivory Black, Yellow Ochre, Cadmium Red, Phthalo Blue, Phthalo Green) via `CORE_SIX_PIGMENT_IDS`. `colorMixer.ts` hard-codes those six names. Users can instead solve with their own palette (`SolveOptions.pigments` from `lib/paint/palettePigments.ts`, stored in `usePaletteStore`, custom tubes carry their own hex and strength) or the Winsor & Newton catalog (`useCatalog`, `usePaintPaletteStore`).
 
+**Earth tubes (2026-11-23, owner approved)**: `EARTH_TUBES` in `palette.ts` adds Burnt Sienna (#6E2E1C, strength 1.2) and Burnt Umber (#45301F, 1.5). They are in `PALETTE_MAP`, so a saved palette can name them, and they show as Add chips in the web "Your paints". They are kept out of `PALETTE` because the desktop MixLab draws a slider for every `PALETTE` pigment. Raw Umber's hex went from #735C44 (a light grayish tint that could not make darks) to #45392B, as it looks squeezed out. Its strength is unchanged. That hex is shared, so desktop mixes with Raw Umber change too (not checked in the desktop app). None of these values is measured from real paint.
+- Why: the Core six cannot mix a dark, warm, yellow-leaning brown (Ivory Black kills the color, Cadmium Red turns it maroon). On the owner's reference (a dark ground, L* 10, C* 8.3) the best Core six mix reached C* 4.1, and the 12-pile plan was 26% visibly off. With either earth tube it was 3%, and the ground's hue came out right.
+- `lib/spectral/palette.test.ts` checks that both tubes reach dark warm browns the Core six cannot (≤ 2.5 against > 4 ΔE00).
+
 Accuracy: `npm run benchmark:paint` (add `--skip-baseline` for a fast run) measures both engines; `lib/paint/benchmark/benchmark.test.ts` holds ratchets that only tighten. Findings and method: `docs/paint-accuracy-audit.md`. Solver or palette changes must keep both solvers' tests and the ratchets passing.
 
 ### Whole-Picture Paint Plan

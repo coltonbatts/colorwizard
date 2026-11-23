@@ -7,7 +7,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { makeCustomTube, MAX_TINTING_STRENGTH, MIN_TINTING_STRENGTH, resolvePalettePigments } from '@/lib/paint/palettePigments'
-import { PALETTE } from '@/lib/spectral/palette'
+import { EARTH_TUBES, PALETTE } from '@/lib/spectral/palette'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { ALL_PALETTE_COLORS, DEFAULT_PALETTE, type Palette } from '@/lib/types/palette'
 import styles from './simple.module.css'
@@ -34,7 +34,7 @@ export default function PaintPalette({ palette }: { palette: Palette }) {
   const tubes = resolvePalettePigments(palette.colors)
   const mine = !palette.isDefault
   const spareLibrary = ALL_PALETTE_COLORS.concat(
-    PALETTE.filter((pigment) => !ALL_PALETTE_COLORS.some((color) => color.id === pigment.id)).map((pigment) => ({ id: pigment.id, displayName: pigment.name })),
+    [...PALETTE, ...EARTH_TUBES].filter((pigment) => !ALL_PALETTE_COLORS.some((color) => color.id === pigment.id)).map((pigment) => ({ id: pigment.id, displayName: pigment.name })),
   ).filter((color) => !palette.colors.some((existing) => existing.id === color.id))
 
   const startOwn = () => {
