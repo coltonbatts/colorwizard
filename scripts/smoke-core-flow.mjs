@@ -228,9 +228,10 @@ async function demoFlow(name, options) {
     await waitForRecipe(page, hex)
     await page.getByText('Close in catalog').first().waitFor()
     // Plan is one click away. The demo was chosen as a fair repaint at the default 8 piles (29.6% off); since value
-    // equalization (plan.ts `valueEqualize`, 2026-11-23, owner's call) it reads as a rough one (about 32%).
+    // equalization (plan.ts `valueEqualize`, 2026-11-23, owner's call) it read as a rough one (31.6%); with Burnt
+    // Sienna in the web default palette (2026-11-24) it is fair again, only just (29.7%, the band ends at 30%).
     await tap(page, page.getByRole('button', { name: 'Plan', exact: true }), options.hasTouch)
-    await page.getByRole('heading', { name: 'A rough repaint' }).waitFor({ timeout: 30000 })
+    await page.getByRole('heading', { name: 'A fair repaint' }).waitFor({ timeout: 30000 })
     await page.screenshot({ path: path.join(artifacts, `demo-${name}.png`) })
     assert.deepEqual(issues, [])
     results.push({ name: `demo-${name}`, status: 'passed', hex })

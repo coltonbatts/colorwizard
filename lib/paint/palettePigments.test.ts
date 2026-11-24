@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Palette } from '../types/palette';
 import { usePaletteStore } from '../store/usePaletteStore';
-import { DEFAULT_PALETTE } from '../types/palette';
+import { DEFAULT_PALETTE, WEB_DEFAULT_PALETTE } from '../types/palette';
 import { getPaletteSolveOptions, makeCustomTube, resolvePalettePigments } from './palettePigments';
 import { solveRecipe } from './solveRecipe';
 import { generatePaintRecipe } from '../colorMixer';
@@ -32,6 +32,15 @@ describe('custom tubes', () => {
         expect(getPaletteSolveOptions({ isDefault: false, colors: [white, black] })).toEqual({ paletteColorIds: ['titanium-white', 'ivory-black'] });
         const tube = makeCustomTube('Cobalt', '#0047AB', 2)!;
         expect(getPaletteSolveOptions({ isDefault: false, colors: [white, tube] })?.pigments).toHaveLength(2);
+    });
+
+    it('solves the web default with Burnt Sienna, not silently on the Core six', async () => {
+        const options = getPaletteSolveOptions(WEB_DEFAULT_PALETTE);
+        expect(options).toEqual({ paletteColorIds: [...DEFAULT_PALETTE.colors.map((c) => c.id), 'burnt-sienna'] });
+        // A dark warm brown the Core six cannot reach (lib/spectral/palette.test.ts)
+        const recipe = await solveRecipe('#3A2214', options);
+        expect(recipe.ingredients.map((i) => i.pigment.id)).toContain('burnt-sienna');
+        expect(resolvePalettePigments(WEB_DEFAULT_PALETTE.colors).map((p) => p.id)).toContain('burnt-sienna');
     });
 });
 

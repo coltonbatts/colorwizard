@@ -2,21 +2,24 @@
 
 /**
  * "Your paints": the tubes the paint recipe is allowed to use. The default is the
- * Core six; a painter can switch to their own set and add tubes of their own.
+ * Core six plus Burnt Sienna (WEB_DEFAULT_PALETTE); a painter can switch to their own
+ * set and add tubes of their own.
  */
 
 import { useState, type FormEvent } from 'react'
 import { makeCustomTube, MAX_TINTING_STRENGTH, MIN_TINTING_STRENGTH, resolvePalettePigments } from '@/lib/paint/palettePigments'
 import { EARTH_TUBES, PALETTE } from '@/lib/spectral/palette'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
-import { ALL_PALETTE_COLORS, DEFAULT_PALETTE, type Palette } from '@/lib/types/palette'
+import { ALL_PALETTE_COLORS, DEFAULT_PALETTE, WEB_DEFAULT_PALETTE, type Palette } from '@/lib/types/palette'
 import styles from './simple.module.css'
 
 const MIN_TUBES = 2
 
 export function usePaintPalette(): Palette {
   const palettes = usePaletteStore((state) => state.palettes)
-  return palettes.find((palette) => palette.isActive) ?? palettes.find((palette) => palette.isDefault) ?? DEFAULT_PALETTE
+  const palette = palettes.find((entry) => entry.isActive) ?? palettes.find((entry) => entry.isDefault) ?? DEFAULT_PALETTE
+  // The stored default is the shared Core six (the desktop workbench uses it); the web default adds Burnt Sienna.
+  return palette.isDefault ? WEB_DEFAULT_PALETTE : palette
 }
 
 export default function PaintPalette({ palette }: { palette: Palette }) {
@@ -68,7 +71,7 @@ export default function PaintPalette({ palette }: { palette: Palette }) {
   return (
     <details className={styles.paints}>
       <summary>
-        Your paints <span>{mine ? palette.name : 'Core six'} · {tubes.length}</span>
+        Your paints <span>{palette.name} · {tubes.length}</span>
       </summary>
 
       <ul className={styles.tubes}>
@@ -117,7 +120,7 @@ export default function PaintPalette({ palette }: { palette: Palette }) {
             <p>Strength is your estimate. 1 is as strong as white; phthalo blue is 10.</p>
           </form>
 
-          <button type="button" className={styles.linkButton} onClick={() => setActivePalette(DEFAULT_PALETTE.id)}>Back to the Core six</button>
+          <button type="button" className={styles.linkButton} onClick={() => setActivePalette(DEFAULT_PALETTE.id)}>Back to {WEB_DEFAULT_PALETTE.name}</button>
         </>
       )}
     </details>

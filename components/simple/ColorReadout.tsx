@@ -64,7 +64,7 @@ export default function ColorReadout({ color, arrival, canSave, savedColor, exis
   const recipe = snapshot ?? (paint?.key === currentKey ? paint.recipe : null)
   const paintFailed = !snapshot && paint?.key === currentKey && paint.failed
   const name = savedColor?.nameSnapshot || (named?.hex === color.hex ? named.name : '')
-  const paletteName = snapshot ? savedColor.attachments.paint!.paletteName : palette.isDefault ? 'Core six' : palette.name
+  const paletteName = snapshot ? savedColor.attachments.paint!.paletteName : palette.name
   const { copied, copy } = useCopy()
   const [kept, setKept] = useState<'created' | 'updated' | null>(null)
   useEffect(() => setKept(null), [color.hex])

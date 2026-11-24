@@ -64,6 +64,20 @@ export const DEFAULT_PALETTE: Palette = {
 };
 
 /**
+ * The web app's default paints: the Core six plus Burnt Sienna (owner's call, 2026-11-24).
+ * The Core six cannot mix a dark, warm, yellow-leaning brown (see EARTH_TUBES in
+ * spectral/palette.ts). It keeps the default palette's id, so "Back to" and a saved
+ * active state still work; the stored copy of the default palette is never edited, and
+ * `usePaintPalette` (components/simple/PaintPalette.tsx) swaps this in for it. The
+ * desktop workbench still uses DEFAULT_PALETTE, the Core six.
+ */
+export const WEB_DEFAULT_PALETTE: Palette = {
+    ...DEFAULT_PALETTE,
+    name: 'Core six + Burnt Sienna',
+    colors: [...ALL_PALETTE_COLORS, { id: 'burnt-sienna', displayName: 'Burnt Sienna' }],
+};
+
+/**
  * Generate a unique ID for new palettes.
  */
 export function generatePaletteId(): string {

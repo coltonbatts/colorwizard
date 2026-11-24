@@ -38,7 +38,7 @@ interface PlanPanelProps {
 }
 
 export default function PlanPanel({ state, budget, onBudget, palette, selected, onSelect, markMisses, onMarkMisses, pictureName, pictureSource, canvasTransfer }: PlanPanelProps) {
-  const paletteName = palette.isDefault ? 'The Core six' : 'Your palette'
+  const paletteName = palette.isDefault ? `The ${palette.name}` : 'Your palette'
   const { result } = state
   const summary = useMemo(() => (result ? describePlan(result, state.resultBudget ?? budget, paletteName) : null), [result, state.resultBudget, budget, paletteName])
   const piles = useMemo(() => (result ? describePiles(result, paletteName) : []), [result, paletteName])

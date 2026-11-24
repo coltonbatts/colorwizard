@@ -17,7 +17,7 @@ import {
     createColor,
     registerPigments,
 } from '../spectral/adapter';
-import { CORE_SIX_PIGMENT_IDS } from '../spectral/palette';
+import { CORE_SIX_PIGMENT_IDS, EARTH_TUBES } from '../spectral/palette';
 import { nelderMeadRefine } from './nelderMead';
 import { differenceCiede2000 } from 'culori';
 import { SpectralRecipe, MixInput, getMatchQuality00, Pigment } from '../spectral/types';
@@ -274,8 +274,14 @@ export async function solveRecipe(
             filteredPalette.map((p) => ({ id: p.id, hex: p.hex, tintingStrength: p.tintingStrength }))
         );
     } else if (options?.paletteColorIds) {
-        // Legacy mode: filter by pigment IDs
-        filteredPalette = PALETTE.filter(p => options.paletteColorIds!.includes(p.id));
+        // Legacy mode: filter by pigment IDs. The earth tubes are library colors too (the
+        // adapter resolves them through PALETTE_MAP); before 2026-11-24 they were dropped here.
+        filteredPalette = [...PALETTE, ...EARTH_TUBES].filter(p => options.paletteColorIds!.includes(p.id));
+        const earth = filteredPalette.filter((p) => EARTH_TUBES.includes(p));
+        if (earth.length > 0) {
+            // Only PALETTE is pre-warmed in the adapter's color cache.
+            await registerPigments(earth.map((p) => ({ id: p.id, hex: p.hex, tintingStrength: p.tintingStrength })));
+        }
     } else {
         // Default: stay on the current six-color palette only.
         filteredPalette = PALETTE.filter(p => CORE_SIX.has(p.id));

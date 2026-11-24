@@ -8,7 +8,7 @@
 import { performance } from 'node:perf_hooks'
 import { solveRecipe, type SolveOptions } from '../solveRecipe'
 import { resolvePalettePigments } from '../palettePigments'
-import { DEFAULT_PALETTE, type Palette } from '../../types/palette'
+import { DEFAULT_PALETTE, WEB_DEFAULT_PALETTE, type Palette } from '../../types/palette'
 import type { Pigment, SpectralRecipe } from '../../spectral/types'
 import { buildHistogram, type Histogram } from './histogram'
 import type { CorpusImage } from './fixtures/corpus'
@@ -48,12 +48,17 @@ const palette = (name: string, ids: string[]): Palette => ({
 })
 
 /**
- * Palettes the benchmark runs. `core6` is the app default; `zorn` is the classic four-tube
- * limited palette. Each gives the solver options the naive baseline uses and the pigments
+ * Palettes the benchmark runs. `core6` is the solver's default and the one the ratchets are
+ * set on; `web` is the web app's default (the Core six plus Burnt Sienna, WEB_DEFAULT_PALETTE);
+ * `zorn` is the classic four-tube limited palette. Each gives the solver options the naive baseline uses and the pigments
  * the library planner uses, both from the same palette.
  */
 export const PALETTES: Record<string, { options: SolveOptions | undefined; pigments: Pigment[] }> = {
     core6: { options: undefined, pigments: resolvePalettePigments(DEFAULT_PALETTE.colors) },
+    web: {
+        options: { paletteColorIds: WEB_DEFAULT_PALETTE.colors.map((c) => c.id) },
+        pigments: resolvePalettePigments(WEB_DEFAULT_PALETTE.colors),
+    },
     zorn: {
         options: { paletteColorIds: ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red'] },
         pigments: resolvePalettePigments(palette('zorn', ['titanium-white', 'ivory-black', 'yellow-ochre', 'cadmium-red']).colors),

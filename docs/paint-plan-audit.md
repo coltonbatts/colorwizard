@@ -399,6 +399,19 @@ New tests in `plan.test.ts` (`selectionWeights`, and a 4% highlight that gets it
 
 **Follow-up, the owner's reference (2026-11-23).** A dark ground (L* 10, C* 8.3, hue 72) under a teal sky. Even the best Core six library match for each ground pixel only reached C* 4.1 at hue 45, and the plan matched that floor. So the dull ground was the palette, not the pile choice. Adding Burnt Sienna or Burnt Umber took the 12-pile plan from 26% visibly off to 3%, with the ground at C* 6.1–6.3 and the right hue. A heavier chroma price did not get past that. They are now built-in tubes (`EARTH_TUBES` in `spectral/palette.ts`, offered in "Your paints"); Raw Umber's hex was a light tint and is now its squeezed-out color. The Core six default is unchanged, so this benchmark is unchanged.
 
+**Burnt Sienna in the web default (2026-11-24, owner's call).** The web app's default paints are now the Core six plus Burnt Sienna (`WEB_DEFAULT_PALETTE`); the ratchets above stay on the Core six, and `--palette web` measures the new default. Same planner, same options:
+
+| Pictures | Piles | Core six ΔE00 / off | + Burnt Sienna ΔE00 / off |
+|---|---|---|---|
+| Generated (9) | 5 | 5.40 / 38.8% | 5.25 / 37.5% |
+| Generated (9) | 8 | 4.44 / 30.3% | 4.28 / 28.5% |
+| Generated (9) | 12 | 3.99 / 25.3% | 3.76 / 23.1% |
+| Real (10) | 8 | 6.33 / 49.8% | 6.38 / 50.0% |
+| Real (10) | 12 | 5.82 / 44.1% | 5.72 / 43.1% |
+| Owner's reference | 12 | 3.25 / 26% | 2.34 / 3% |
+
+The biggest corpus gain is `low-key` (3.99 → 3.18 at 8 piles), dark warm areas the Core six cannot reach; `pigment-study` got worse at 8 piles (2.46 → 2.77), a pile choice the bigger library steered elsewhere. Plans take about 20% longer (p50 232 → 286 ms at 8 piles on the corpus) and the library grows from 37k to 53k recipes.
+
 # Phase 3: the Plan view on `/`
 
 Press **P** (or the Plan button beside Open and Value) with a picture open. The stage shows the picture repainted with only the plan's piles; the panel shows a pile budget (5 / 8 / 12), a headline with the numbers behind it, and each pile: swatch, recipe in whole parts, share of the picture, and the same fit label the Paint section uses. Click a pile to see where it goes (everything else fades); click a spot in the picture to find its pile; hold **B** or the "Hold for original" button to see the original; **Esc** lets go of a pile. Changing tubes under "Your paints" re-plans. The plan runs in a Web Worker (`plan.worker.ts`) on a copy of the picture at most 512 px on the long side, and nothing is uploaded.

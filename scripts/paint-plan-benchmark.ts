@@ -2,7 +2,7 @@
  * Whole-picture paint plan benchmark.
  *
  *   npx vite-node -c vitest.config.ts scripts/paint-plan-benchmark.ts \
- *     [--algo library|naive] [--palette core6|zorn] [--budgets 5,8,12] [--reference] [--photos] [--json out.json]
+ *     [--algo library|naive] [--palette core6|web|zorn] [--budgets 5,8,12] [--reference] [--photos] [--json out.json]
  *
  * Plans every corpus picture (lib/paint/plan/fixtures/) at each pile budget with the chosen
  * algorithm and prints markdown tables: quality per picture, the summary per budget, and

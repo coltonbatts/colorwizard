@@ -95,6 +95,35 @@ describe('plan invariants (any algorithm)', () => {
     }, 30000)
 })
 
+describe('web default palette (the Core six plus Burnt Sienna)', () => {
+    let core: PlanRow[] = []
+    let web: PlanRow[] = []
+    beforeAll(async () => {
+        core = await runBenchmark(images, [8, 12], PLANNERS.library, contextFor('core6'))
+        web = await runBenchmark(images, [8, 12], PLANNERS.library, contextFor('web'))
+    }, 180000)
+
+    it('plans the generated corpus better than the Core six alone at 8 and 12 piles', () => {
+        // Measured 2026-11-24 (9 pictures): 8 piles 4.44 -> 4.28 mean ΔE00, 30.3% -> 28.5% visibly off;
+        // 12 piles 3.99 -> 3.76, 25.3% -> 23.1%. Ten real pictures came out about even (6.33 -> 6.38 at 8,
+        // 5.82 -> 5.72 at 12); the owner's reference went 26% -> 3% visibly off at 12.
+        for (const budget of [8, 12]) {
+            const c = summarize(core.filter((r) => r.budget === budget))
+            const w = summarize(web.filter((r) => r.budget === budget))
+            expect(w.meanDeltaE00, `${budget} piles`).toBeLessThan(c.meanDeltaE00 - 0.1)
+            expect(w.visiblyOffArea, `${budget} piles`).toBeLessThan(c.visiblyOffArea)
+        }
+        expect(summarize(web.filter((r) => r.budget === 8)).meanDeltaE00).toBeLessThan(4.3)
+        expect(summarize(web.filter((r) => r.budget === 12)).meanDeltaE00).toBeLessThan(3.8)
+    })
+
+    it('gets the dark low-key picture clearly closer: the warm darks the Core six cannot mix', () => {
+        const at = (rows: PlanRow[]) => rows.find((r) => r.image === 'low-key' && r.budget === 8)!.score.meanDeltaE00
+        // 3.99 -> 3.18
+        expect(at(web)).toBeLessThan(at(core) - 0.5)
+    })
+})
+
 describe('library planner (the current algorithm)', () => {
     let rows: PlanRow[] = []
     let scratchRows: PlanRow[] = []

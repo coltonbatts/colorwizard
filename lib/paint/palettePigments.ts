@@ -8,7 +8,7 @@
  * is the user's estimate. Default 1 is a neutral guess.
  */
 import type { PaletteColor } from '../types/palette';
-import { PALETTE_MAP } from '../spectral/palette';
+import { CORE_SIX_PIGMENT_IDS, PALETTE_MAP } from '../spectral/palette';
 import type { Pigment } from '../spectral/types';
 
 export const CUSTOM_TUBE_PREFIX = 'custom-';
@@ -64,13 +64,20 @@ export function resolvePalettePigments(colors: PaletteColor[]): Pigment[] {
     return out;
 }
 
+function isCoreSix(colors: PaletteColor[]): boolean {
+    const ids = new Set(colors.map((color) => color.id));
+    return ids.size === CORE_SIX_PIGMENT_IDS.length && CORE_SIX_PIGMENT_IDS.every((id) => ids.has(id));
+}
+
 /**
  * Solver options for an active palette. The default palette returns undefined
- * (the Core 6). A palette with none of the user's own tubes keeps the plain
- * id-filter mode; one with custom tubes passes resolved pigments.
+ * (the solver's own default, the Core 6) while it holds exactly those six; the
+ * web default adds Burnt Sienna and so filters by id like any other palette. A
+ * palette with none of the user's own tubes keeps the plain id-filter mode; one
+ * with custom tubes passes resolved pigments.
  */
 export function getPaletteSolveOptions(palette: { isDefault: boolean; colors: PaletteColor[] } | undefined) {
-    if (!palette || palette.isDefault) return undefined;
+    if (!palette || (palette.isDefault && isCoreSix(palette.colors))) return undefined;
     if (palette.colors.some(isCustomTube)) return { pigments: resolvePalettePigments(palette.colors) };
     return { paletteColorIds: palette.colors.map((color) => color.id) };
 }
