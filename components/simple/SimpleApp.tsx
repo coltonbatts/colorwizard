@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { averageColorAt, DEMO_PICTURE, firstSamplePixel } from '@/lib/demoPicture'
+import { WelcomeWordmark } from './WelcomeWordmark'
 import { collectionNameProblem, createCollection, deleteCollection, emptyLibrary, findByHex, loadLibrary, removeColor, saveColor, setMembership, setNote, storeLibrary, type ColorLibrary, type SaveInput, type SavedColor } from '@/lib/colorLibrary'
 import { hexToRgb, rgbToHex } from '@/lib/color/conversions'
 import { newId } from '@/lib/newId'
@@ -1174,23 +1175,10 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
       <main id="main-content" className={`${styles.app} ${styles.welcome} ${isDragging ? styles.dragging : ''}`}>
         {fileInput}
         <div className={styles.welcomeBody}>
-          <figure className={styles.pigmentStudy} aria-hidden="true">
-            {/* A plain <img> so phones get the 768 px file: next/image writes no srcset with `images.unoptimized`. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/welcome-pigment-cutout.webp"
-              srcSet="/images/welcome-pigment-cutout-768.webp 768w, /images/welcome-pigment-cutout.webp 1536w"
-              sizes="(max-width: 760px) 100vw, 740px"
-              alt=""
-              width={1536}
-              height={512}
-              fetchPriority="high"
-              decoding="async"
-              className={styles.pigmentImage}
-            />
-            <figcaption className={styles.studyCaption}>A study in color</figcaption>
-          </figure>
-          <h1 className={styles.wordmark}>ColorWizard</h1>
+          <div className={styles.pigmentStudy} aria-hidden="true">
+            <WelcomeWordmark />
+          </div>
+          <h1 className={styles.srOnly}>ColorWizard</h1>
           <p className={styles.tagline}>Open a picture. Click any color.</p>
           <button type="button" className={styles.primaryButton} onClick={choosePicture}>
             {opening ? 'Opening…' : 'Open picture'} <span aria-hidden="true">↗</span>
