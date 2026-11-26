@@ -6,11 +6,13 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 import {
   initDatabase,
+  resolveTauriCanvasImageSrc,
   resolveTauriImageSrc,
   sanitizeDesktopProjectImageSrc,
 } from './tauriClient'
 
 afterEach(() => {
+  vi.restoreAllMocks()
   delete (globalThis as { window?: unknown }).window
 })
 
@@ -59,5 +61,30 @@ describe('tauriClient invoke', () => {
         'asset://localhost/%2FUsers%2Fcoltonbatts%2FDesktop%2Fstudy.jpg',
       ),
     ).toBe('asset://localhost/%2FUsers%2Fcoltonbatts%2FDesktop%2Fstudy.jpg')
+  })
+
+  it('surfaces rejected native image read errors as Error instances on canvas fallback', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('asset blocked'))
+
+    ;(globalThis as unknown as {
+      window: {
+        __TAURI_INTERNALS__: {
+          invoke: (cmd: string) => Promise<never>
+          convertFileSrc: (path: string) => string
+        }
+      }
+    }).window = {
+      __TAURI_INTERNALS__: {
+        invoke: () => Promise.reject('Unsupported image file type for /tmp/notes.txt'),
+        convertFileSrc: (path: string) => `asset://localhost/${encodeURIComponent(path)}`,
+      },
+    }
+
+    await expect(resolveTauriCanvasImageSrc('/tmp/notes.txt')).rejects.toThrow(
+      'Unsupported image file type for /tmp/notes.txt',
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledTimes(1)
   })
 })

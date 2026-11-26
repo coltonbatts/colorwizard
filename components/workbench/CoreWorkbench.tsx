@@ -139,6 +139,7 @@ export default function CoreWorkbench() {
   const [pendingWorkspaceChange, setPendingWorkspaceChange] = useState<PendingWorkspaceChange | null>(null)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [dismissPreviewSignal, setDismissPreviewSignal] = useState(0)
+  const [imageLoadError, setImageLoadError] = useState<string | null>(null)
   const [imageAnalysis, setImageAnalysis] = useState<ImageAnalysisSnapshot>(EMPTY_IMAGE_ANALYSIS)
   const [stitchLegend, setStitchLegend] = useState<import('@/lib/image/quantization').QuantizationResult | null>(null)
   const { ref: workspaceFrameRef, size: workspaceFrameSize } = useElementSize<HTMLDivElement>()
@@ -249,6 +250,7 @@ export default function CoreWorkbench() {
 
   // Wrapper for setImage that always resets value mode
   const handleImageLoad = useCallback((img: HTMLImageElement, persistSrc?: string | null) => {
+    setImageLoadError(null)
     setImage(img, persistSrc)
     setReferenceOpacity(1)
     resetReferenceTransform()
@@ -283,6 +285,7 @@ export default function CoreWorkbench() {
     setShowPaletteManager(false)
     setShowCalibrationModal(false)
     setShowCanvasSettingsModal(false)
+    setImageLoadError(null)
     lastProcessedRef.current = null
   }, [normalizeValueWorkflow, resetReferenceTransform, setActiveHighlightColor, setBreakdownValue, setDemoReferenceHex, setHistogramBins, setImage, setMeasureMode, setMeasurePoints, setReferenceImage, setReferenceOpacity, setSampledColor, setSurfaceBounds, setSurfaceImage, setValueScaleResult])
 
@@ -336,6 +339,7 @@ export default function CoreWorkbench() {
     if (referenceImage !== lastProcessedRef.current) {
       let cancelled = false
       lastProcessedRef.current = referenceImage
+      setImageLoadError(null)
 
       void resolveTauriCanvasImageSrc(referenceImage)
         .then((src) => {
@@ -377,14 +381,22 @@ export default function CoreWorkbench() {
         .catch((error) => {
           if (cancelled) return
           console.error('[Home] Failed to resolve reference image:', error)
+          const message =
+            error instanceof Error && error.message.trim().length > 0
+              ? error.message
+              : 'Could not open that image file.'
+          setImageLoadError(message)
           lastProcessedRef.current = null
+          if (!useCanvasStore.getState().image) {
+            setReferenceImage(null)
+          }
         })
 
       return () => {
         cancelled = true
       }
     }
-  }, [referenceImage, handleImageLoad])
+  }, [referenceImage, handleImageLoad, setReferenceImage])
 
   // Session palette integration
   const { addColor: addToSession } = useSessionPalette()
@@ -714,6 +726,24 @@ export default function CoreWorkbench() {
       suppressHydrationWarning
       className={`workbench-shell flex h-[100dvh] min-h-[100dvh] flex-col bg-paper overflow-hidden overscroll-none ${compactMode ? 'compact-mode' : ''}`}
     >
+      {imageLoadError && (
+        <div
+          role="alert"
+          className="fixed left-0 right-0 top-0 z-[250] flex items-start justify-center gap-3 border-b border-warning bg-paper-elevated px-4 py-2.5 text-xs leading-snug text-ink"
+        >
+          <p className="max-w-2xl text-center">
+            <span className="font-semibold">Could not open image.</span> {imageLoadError}
+          </p>
+          <button
+            type="button"
+            onClick={() => setImageLoadError(null)}
+            aria-label="Dismiss image load error"
+            className="shrink-0 border border-ink-hairline px-1.5 leading-tight text-ink-muted transition-colors duration-normal hover:border-ink hover:text-ink"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {!isMobile ? (
         <DesktopWorkbench
           hasImage={!!image}

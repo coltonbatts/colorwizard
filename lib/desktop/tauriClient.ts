@@ -161,7 +161,12 @@ export async function resolveTauriCanvasImageSrc(src: string | null | undefined)
       return URL.createObjectURL(blob)
     } catch (error) {
       console.warn('[Tauri] Falling back to native image read for canvas load:', error)
-      return invoke('cw_read_file_as_data_url', { path: sanitizedSrc }) as Promise<string>
+      try {
+        return (await invoke('cw_read_file_as_data_url', { path: sanitizedSrc })) as string
+      } catch (readError) {
+        const message = readError instanceof Error ? readError.message : String(readError)
+        throw new Error(message || 'Could not read image file')
+      }
     }
   }
 
@@ -269,6 +274,7 @@ export async function pickImagePath(): Promise<string | null> {
           'png',
           'jpg',
           'jpeg',
+          'gif',
           'webp',
           'heic',
           'heif',

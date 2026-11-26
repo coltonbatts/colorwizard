@@ -517,24 +517,140 @@ fn resolve_string_arg(
         .ok_or_else(|| format!("missing required key {arg_name}"))
 }
 
-fn image_mime_type(path: &str) -> &'static str {
-    match path
-        .rsplit('.')
-        .next()
-        .map(|ext| ext.to_ascii_lowercase())
-        .as_deref()
-    {
-        Some("jpg") | Some("jpeg") => "image/jpeg",
-        Some("png") => "image/png",
-        Some("gif") => "image/gif",
-        Some("webp") => "image/webp",
-        Some("bmp") => "image/bmp",
-        Some("avif") => "image/avif",
-        Some("heic") => "image/heic",
-        Some("heif") => "image/heif",
-        Some("tif") | Some("tiff") => "image/tiff",
-        _ => "application/octet-stream",
+const MAX_IMAGE_FILE_BYTES: u64 = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_IMAGE_EXTENSIONS: &str =
+    "jpg, jpeg, png, gif, webp, bmp, avif, heic, heif, tif, tiff";
+
+fn image_mime_type_for_path(path: &Path) -> Option<&'static str> {
+    let ext = path.extension()?.to_str()?;
+    match ext.to_ascii_lowercase().as_str() {
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "png" => Some("image/png"),
+        "gif" => Some("image/gif"),
+        "webp" => Some("image/webp"),
+        "bmp" => Some("image/bmp"),
+        "avif" => Some("image/avif"),
+        "heic" => Some("image/heic"),
+        "heif" => Some("image/heif"),
+        "tif" | "tiff" => Some("image/tiff"),
+        _ => None,
     }
+}
+
+fn format_size_mb(bytes: u64) -> String {
+    format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
+}
+
+async fn read_image_file_as_data_url(path: &Path, max_bytes: u64) -> Result<String, String> {
+    use tokio::io::AsyncReadExt;
+
+    if path.as_os_str().is_empty() {
+        return Err("Cannot read image: file path is empty".to_string());
+    }
+
+    let path_mime = image_mime_type_for_path(path);
+
+    let meta = match tokio::fs::metadata(path).await {
+        Ok(meta) => meta,
+        Err(err) => {
+            if path_mime.is_none() {
+                return Err(format!(
+                    "Unsupported image file type for {}: only {ALLOWED_IMAGE_EXTENSIONS} are allowed",
+                    path.display()
+                ));
+            }
+            return Err(format!("Failed to inspect image {}: {err}", path.display()));
+        }
+    };
+
+    if meta.is_dir() {
+        return Err(format!(
+            "Cannot read image {}: path is a directory",
+            path.display()
+        ));
+    }
+
+    if !meta.is_file() {
+        return Err(format!(
+            "Cannot read image {}: path is not a regular file",
+            path.display()
+        ));
+    }
+
+    if path_mime.is_none() {
+        return Err(format!(
+            "Unsupported image file type for {}: only {ALLOWED_IMAGE_EXTENSIONS} are allowed",
+            path.display()
+        ));
+    }
+
+    let canonical = tokio::fs::canonicalize(path)
+        .await
+        .map_err(|err| format!("Failed to resolve image path {}: {err}", path.display()))?;
+
+    // Guard against symlinks with an image extension pointing at a non-image file.
+    let canonical_mime = image_mime_type_for_path(&canonical).ok_or_else(|| {
+        format!(
+            "Unsupported image file type for resolved path {}: only {ALLOWED_IMAGE_EXTENSIONS} are allowed",
+            canonical.display()
+        )
+    })?;
+
+    let file = tokio::fs::File::open(&canonical)
+        .await
+        .map_err(|err| format!("Failed to open image {}: {err}", path.display()))?;
+
+    // Inspect metadata on the open file handle before reading into memory.
+    let file_meta = file
+        .metadata()
+        .await
+        .map_err(|err| format!("Failed to inspect open image {}: {err}", path.display()))?;
+
+    if file_meta.is_dir() {
+        return Err(format!(
+            "Cannot read image {}: path is a directory",
+            path.display()
+        ));
+    }
+
+    if !file_meta.is_file() {
+        return Err(format!(
+            "Cannot read image {}: path is not a regular file",
+            path.display()
+        ));
+    }
+
+    let file_len = file_meta.len();
+    if file_len > max_bytes {
+        return Err(format!(
+            "Image file {} is too large ({} / {} bytes; maximum allowed is {} / {} bytes)",
+            path.display(),
+            format_size_mb(file_len),
+            file_len,
+            format_size_mb(max_bytes),
+            max_bytes
+        ));
+    }
+
+    let capacity = usize::try_from(file_len).unwrap_or(0);
+    let mut bytes = Vec::with_capacity(capacity);
+    let limit = max_bytes.saturating_add(1);
+    file.take(limit)
+        .read_to_end(&mut bytes)
+        .await
+        .map_err(|err| format!("Failed to read image {}: {err}", path.display()))?;
+
+    if (bytes.len() as u64) > max_bytes {
+        return Err(format!(
+            "Image file {} exceeds the maximum allowed size ({} / {} bytes)",
+            path.display(),
+            format_size_mb(max_bytes),
+            max_bytes
+        ));
+    }
+
+    let encoded = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    Ok(format!("data:{canonical_mime};base64,{encoded}"))
 }
 
 #[tauri::command]
@@ -549,12 +665,7 @@ pub async fn cw_init_database(
 
 #[tauri::command]
 pub async fn cw_read_file_as_data_url(path: String) -> Result<String, String> {
-    let bytes = tokio::fs::read(&path)
-        .await
-        .map_err(|e| format!("failed to read image {path}: {e}"))?;
-    let mime = image_mime_type(&path);
-    let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
-    Ok(format!("data:{mime};base64,{encoded}"))
+    read_image_file_as_data_url(Path::new(&path), MAX_IMAGE_FILE_BYTES).await
 }
 
 #[tauri::command]
@@ -1133,5 +1244,243 @@ mod tests {
         for task in tasks {
             task.await.expect("concurrent task panicked");
         }
+    }
+
+    #[test]
+    fn image_mime_type_allows_only_explicit_image_extensions() {
+        let allowed = [
+            ("photo.jpg", "image/jpeg"),
+            ("photo.JPEG", "image/jpeg"),
+            ("study.png", "image/png"),
+            ("anim.GiF", "image/gif"),
+            ("ref.webp", "image/webp"),
+            ("scan.bmp", "image/bmp"),
+            ("hdr.avif", "image/avif"),
+            ("iphone.heic", "image/heic"),
+            ("iphone.HEIF", "image/heif"),
+            ("print.tif", "image/tiff"),
+            ("print.TIFF", "image/tiff"),
+        ];
+
+        for (file, expected) in allowed {
+            assert_eq!(
+                image_mime_type_for_path(Path::new(file)),
+                Some(expected),
+                "expected {file} to map to {expected}"
+            );
+        }
+
+        let rejected = [
+            "notes.txt",
+            ".env",
+            "/Users/artist/.env",
+            "config.env",
+            "vector.svg",
+            "page.html",
+            "data.json",
+            "doc.pdf",
+            "Makefile",
+            "png",
+            ".png",
+            "",
+        ];
+
+        for file in rejected {
+            assert_eq!(
+                image_mime_type_for_path(Path::new(file)),
+                None,
+                "expected {file:?} to be rejected"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn read_image_file_as_data_url_succeeds_for_all_allowed_extensions() {
+        let tmp = TempDbPath::new("img_allowed");
+        let payload = b"\x89PNG\r\n\x1a\nhello";
+        let expected_b64 = base64::engine::general_purpose::STANDARD.encode(payload);
+
+        let cases = [
+            ("a.jpg", "image/jpeg"),
+            ("b.jpeg", "image/jpeg"),
+            ("c.PNG", "image/png"),
+            ("d.gif", "image/gif"),
+            ("e.webp", "image/webp"),
+            ("f.bmp", "image/bmp"),
+            ("g.avif", "image/avif"),
+            ("h.heic", "image/heic"),
+            ("i.heif", "image/heif"),
+            ("j.tif", "image/tiff"),
+            ("k.tiff", "image/tiff"),
+        ];
+
+        for (name, mime) in cases {
+            let file_path = tmp.dir.join(name);
+            std::fs::write(&file_path, payload).expect("write image fixture");
+
+            let url = read_image_file_as_data_url(&file_path, MAX_IMAGE_FILE_BYTES)
+                .await
+                .unwrap_or_else(|e| panic!("expected {name} to succeed, got: {e}"));
+            assert_eq!(url, format!("data:{mime};base64,{expected_b64}"));
+        }
+    }
+
+    #[tokio::test]
+    async fn read_image_file_as_data_url_rejects_disallowed_extensions_and_empty_paths() {
+        let tmp = TempDbPath::new("img_disallowed");
+
+        let empty_err = read_image_file_as_data_url(Path::new(""), MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("empty path must fail");
+        assert!(empty_err.to_lowercase().contains("empty"));
+
+        for name in ["notes.txt", ".env", "no_extension", "png", ".png", "icon.svg"] {
+            let file_path = tmp.dir.join(name);
+            std::fs::write(&file_path, b"secret contents").expect("write non-image fixture");
+
+            let err = read_image_file_as_data_url(&file_path, MAX_IMAGE_FILE_BYTES)
+                .await
+                .expect_err("disallowed extension must fail");
+            assert!(
+                err.to_lowercase().contains("unsupported image file type"),
+                "expected unsupported-type error for {name}, got: {err}"
+            );
+        }
+
+        // Non-existent non-image path should also fail with unsupported type rather than leaking existence.
+        let missing_env = tmp.dir.join("missing.env");
+        let err = read_image_file_as_data_url(&missing_env, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("missing .env must fail");
+        assert!(err.to_lowercase().contains("unsupported image file type"));
+    }
+
+    #[tokio::test]
+    async fn read_image_file_as_data_url_rejects_directories() {
+        let tmp = TempDbPath::new("img_dirs");
+
+        let plain_dir = tmp.dir.join("folder");
+        std::fs::create_dir_all(&plain_dir).expect("create plain dir");
+        let err = read_image_file_as_data_url(&plain_dir, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("directory must be rejected");
+        assert!(
+            err.to_lowercase().contains("directory"),
+            "expected directory error, got: {err}"
+        );
+
+        // Even a directory whose name ends in `.png` must be rejected as a directory.
+        let sneaky_dir = tmp.dir.join("sneaky.png");
+        std::fs::create_dir_all(&sneaky_dir).expect("create sneaky.png dir");
+        let err = read_image_file_as_data_url(&sneaky_dir, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("directory with .png suffix must be rejected");
+        assert!(
+            err.to_lowercase().contains("directory"),
+            "expected directory error for sneaky.png, got: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn read_image_file_as_data_url_enforces_size_limit_before_reading() {
+        let tmp = TempDbPath::new("img_oversize");
+
+        // Exact boundary passes; 1 byte over fails.
+        let exact_path = tmp.dir.join("exact.png");
+        std::fs::write(&exact_path, vec![0xAB; 16]).expect("write 16-byte image");
+        let ok = read_image_file_as_data_url(&exact_path, 16)
+            .await
+            .expect("exact-limit file should succeed");
+        assert!(ok.starts_with("data:image/png;base64,"));
+
+        let over_path = tmp.dir.join("over.png");
+        std::fs::write(&over_path, vec![0xAB; 17]).expect("write 17-byte image");
+        let err = read_image_file_as_data_url(&over_path, 16)
+            .await
+            .expect_err("1 byte over limit must fail");
+        assert!(
+            err.to_lowercase().contains("too large"),
+            "expected size-limit error, got: {err}"
+        );
+
+        // Production 50 MB cap tested via sparse file length so metadata check rejects without allocating 50 MB.
+        let huge_path = tmp.dir.join("huge.jpg");
+        let huge_file = std::fs::File::create(&huge_path).expect("create sparse file");
+        huge_file
+            .set_len(MAX_IMAGE_FILE_BYTES + 1)
+            .expect("set sparse length over 50 MB");
+        drop(huge_file);
+
+        let err = read_image_file_as_data_url(&huge_path, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("file over 50 MB must be rejected");
+        assert!(
+            err.to_lowercase().contains("too large") && err.contains("50.0 MB"),
+            "expected clear 50 MB error, got: {err}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn read_image_file_as_data_url_rejects_symlink_to_non_image_target() {
+        use std::os::unix::fs::symlink;
+
+        let tmp = TempDbPath::new("img_symlink");
+        let target = tmp.dir.join("secret.txt");
+        std::fs::write(&target, b"private").expect("write secret target");
+        let link = tmp.dir.join("disguised.png");
+        symlink(&target, &link).expect("create symlink");
+
+        let err = read_image_file_as_data_url(&link, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("symlink pointing to .txt must be rejected");
+        assert!(
+            err.to_lowercase().contains("unsupported image file type"),
+            "expected unsupported-type error for symlink target, got: {err}"
+        );
+
+        // Symlink pointing to a valid image succeeds and uses the resolved target's MIME type.
+        let valid_target = tmp.dir.join("real.jpg");
+        std::fs::write(&valid_target, b"\xff\xd8\xff\xe0").expect("write valid jpg");
+        let valid_link = tmp.dir.join("alias.png");
+        symlink(&valid_target, &valid_link).expect("create valid image symlink");
+        let ok = read_image_file_as_data_url(&valid_link, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect("symlink pointing to valid image should succeed");
+        assert!(ok.starts_with("data:image/jpeg;base64,"));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn read_image_file_as_data_url_rejects_non_regular_files() {
+        use std::os::unix::fs::symlink;
+
+        let tmp = TempDbPath::new("img_non_regular");
+
+        // Character device (/dev/null) via image-extension symlink must be rejected before opening.
+        let devnull_link = tmp.dir.join("device.png");
+        symlink(Path::new("/dev/null"), &devnull_link).expect("symlink to /dev/null");
+        let err = read_image_file_as_data_url(&devnull_link, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("character device must be rejected");
+        assert!(
+            err.to_lowercase().contains("not a regular file"),
+            "expected non-regular file error for /dev/null, got: {err}"
+        );
+
+        // Named pipe (FIFO) with image extension must be rejected before opening (otherwise open blocks).
+        let fifo_path = tmp.dir.join("stream.png");
+        let status = std::process::Command::new("mkfifo")
+            .arg(&fifo_path)
+            .status()
+            .expect("run mkfifo");
+        assert!(status.success(), "mkfifo failed");
+        let err = read_image_file_as_data_url(&fifo_path, MAX_IMAGE_FILE_BYTES)
+            .await
+            .expect_err("FIFO must be rejected");
+        assert!(
+            err.to_lowercase().contains("not a regular file"),
+            "expected non-regular file error for FIFO, got: {err}"
+        );
     }
 }
