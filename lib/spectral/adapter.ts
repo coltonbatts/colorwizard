@@ -147,10 +147,31 @@ export async function registerPigments(
 ): Promise<void> {
     await isSpectralAvailable(); // Ensure spectral is loaded
 
+    const replacedKeys: string[] = [];
     for (const p of pigments) {
+        const previous = dynamicPigmentRegistry.get(p.id);
+        if (
+            previous &&
+            (previous.hex !== p.hex || previous.tintingStrength !== p.tintingStrength)
+        ) {
+            replacedKeys.push(colorCacheKey(previous.hex, previous.tintingStrength));
+        }
         dynamicPigmentRegistry.set(p.id, { hex: p.hex, tintingStrength: p.tintingStrength });
         // Pre-warm permanent dynamic pigment cache so transient evictions never drop it.
         await getOrCreatePermanentColor(dynamicColorCache, p.hex, p.tintingStrength);
+    }
+
+    // Prune orphaned entries when an existing pigment ID is re-registered with a new hex/strength.
+    if (replacedKeys.length > 0) {
+        const activeKeys = new Set<string>();
+        for (const entry of dynamicPigmentRegistry.values()) {
+            activeKeys.add(colorCacheKey(entry.hex, entry.tintingStrength));
+        }
+        for (const oldKey of replacedKeys) {
+            if (!activeKeys.has(oldKey)) {
+                dynamicColorCache.delete(oldKey);
+            }
+        }
     }
 }
 

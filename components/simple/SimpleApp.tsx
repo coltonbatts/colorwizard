@@ -181,7 +181,16 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
         ? thread.threadMapFallbackDisplay
         : null
 
-  const { restoreForPicture, closeSetup, setMarkTool } = canvasSetup
+  const {
+    restoreForPicture,
+    closeSetup,
+    setMarkTool,
+    setupOpen,
+    markTool,
+    canvasDraft,
+    crop,
+    placeMarkAt,
+  } = canvasSetup
   const { setSavedColor } = lib
   const {
     resetForNewPicture,
@@ -287,9 +296,9 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
   }
 
   const handleSample = useCallback((nextPoint: SamplePoint, picked: PickedColor, origin?: PourOrigin) => {
-    if (canvasSetup.setupOpen && canvasSetup.markTool && canvasSetup.canvasDraft && originalSource && canvasSetup.crop && source) {
+    if (setupOpen && markTool && canvasDraft && originalSource && crop && source) {
       if (!origin) return
-      canvasSetup.placeMarkAt(nextPoint, source)
+      placeMarkAt(nextPoint, source)
       return
     }
 
@@ -315,14 +324,18 @@ export default function SimpleApp({ initialSection }: SimpleAppProps = {}) {
     arrive(origin)
   }, [
     arrive,
-    canvasSetup,
+    canvasDraft,
+    crop,
+    markTool,
     originalSource,
+    placeMarkAt,
     plan,
     planMode,
     processMode,
     selectSlotAtPoint,
     setSavedColor,
     setThreadTab,
+    setupOpen,
     source,
     thread.isThreadMapActive,
     thread.threadMap,

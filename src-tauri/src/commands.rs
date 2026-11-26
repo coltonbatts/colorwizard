@@ -44,10 +44,18 @@ impl DbState {
     }
 
     pub async fn get_pool(&self, app: &tauri::AppHandle) -> Result<&SqlitePool, String> {
-        let db_file = app_db_file(app)?;
-        self.get_or_init_at(&db_file).await
+        if let Some(pool) = self.pool.get() {
+            return Ok(pool);
+        }
+        self.pool
+            .get_or_try_init(|| async {
+                let db_file = app_db_file(app)?;
+                init_pool_at(&db_file).await
+            })
+            .await
     }
 
+    #[cfg(test)]
     async fn get_or_init_at(&self, db_file: &Path) -> Result<&SqlitePool, String> {
         self.pool
             .get_or_try_init(|| init_pool_at(db_file))
@@ -96,17 +104,24 @@ const PROJECT_BY_ID_SQL: &str = "
     WHERE p.id = ?
 ";
 
-fn app_db_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+fn app_db_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    std::fs::create_dir_all(&app_data_dir).map_err(|e| {
-        format!(
-            "failed to create app data directory {}: {}",
-            app_data_dir.display(),
-            e
-        )
-    })?;
-
     Ok(app_data_dir.join("colorwizard.db"))
+}
+
+fn app_db_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let db_file = app_db_path(app)?;
+    if let Some(app_data_dir) = db_file.parent() {
+        std::fs::create_dir_all(app_data_dir).map_err(|e| {
+            format!(
+                "failed to create app data directory {}: {}",
+                app_data_dir.display(),
+                e
+            )
+        })?;
+    }
+
+    Ok(db_file)
 }
 
 async fn ensure_tables(pool: &SqlitePool) -> Result<(), String> {
@@ -243,8 +258,8 @@ async fn init_pool_at(db_file: &Path) -> Result<SqlitePool, String> {
             )
         })?;
 
-    ensure_tables(&pool).await?;
     apply_sqlite_pragmas(&pool).await?;
+    ensure_tables(&pool).await?;
     Ok(pool)
 }
 
@@ -280,10 +295,15 @@ fn parse_palettes_json(palettes_json: &str) -> Result<Vec<ParsedPalette>, String
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false),
         );
-        let colors = palette
-            .get("colors")
-            .map(ToString::to_string)
-            .unwrap_or_else(|| "[]".to_string());
+        let colors = match palette.get("colors") {
+            None | Some(serde_json::Value::Null) => "[]".to_string(),
+            Some(v) if v.is_array() => v.to_string(),
+            Some(_) => {
+                return Err(format!(
+                    "invalid palette at index {idx}: expected 'colors' to be a JSON array"
+                ));
+            }
+        };
         parsed.push(ParsedPalette {
             id,
             name,
@@ -523,7 +543,7 @@ pub async fn cw_init_database(
     db: tauri::State<'_, DbState>,
 ) -> Result<String, String> {
     let _pool = db.get_pool(&app).await?;
-    let path = app_db_file(&app)?;
+    let path = app_db_path(&app)?;
     Ok(format!("OK: {}", path.to_string_lossy()))
 }
 
@@ -820,8 +840,13 @@ mod tests {
             .expect("save initial palettes");
         assert_eq!(saved, "saved 1");
 
-        // Malformed syntax, wrong top-level type, and non-object element must all fail cleanly.
-        for bad_payload in ["{not valid json", r#"{"id":"not-an-array"}"#, "[123]"] {
+        // Malformed syntax, wrong top-level type, non-object element, and non-array colors must all fail cleanly.
+        for bad_payload in [
+            "{not valid json",
+            r#"{"id":"not-an-array"}"#,
+            "[123]",
+            r#"[{"id":"pal-bad","name":"Bad","colors":"not-an-array"}]"#,
+        ] {
             let err = save_palettes_in_pool(pool, project_id, bad_payload)
                 .await
                 .expect_err("bad palette payload should fail");
@@ -908,6 +933,116 @@ mod tests {
             .await
             .expect_err("foreign key violation should roll back");
         assert!(err.to_lowercase().contains("foreign key"));
+    }
+
+    #[tokio::test]
+    async fn save_palettes_rolls_back_delete_on_mid_transaction_insert_failure() {
+        let tmp = TempDbPath::new("palettes_tx_rollback");
+        let db = DbState::new();
+        let pool = db
+            .get_or_init_at(&tmp.db_file)
+            .await
+            .expect("init shared pool");
+        let project_id = create_project(pool, "Landscape").await;
+
+        let initial_json = serde_json::json!([
+            {
+                "id": "orig-1",
+                "name": "Original Palette",
+                "isActive": true,
+                "isDefault": true,
+                "colors": ["#112233"]
+            }
+        ])
+        .to_string();
+        save_palettes_in_pool(pool, project_id, &initial_json)
+            .await
+            .expect("seed initial palette");
+
+        // Force a SQLite failure on the second inserted row after DELETE has already run.
+        sqlx::query(
+            "CREATE TRIGGER fail_second_palette BEFORE INSERT ON palettes
+             WHEN NEW.palette_id = 'boom'
+             BEGIN
+                 SELECT RAISE(ABORT, 'simulated mid-transaction palette failure');
+             END",
+        )
+        .execute(pool)
+        .await
+        .expect("create palette failure trigger");
+
+        let replacement_json = serde_json::json!([
+            { "id": "new-1", "name": "New 1", "isActive": true, "isDefault": false, "colors": [] },
+            { "id": "boom", "name": "New 2", "isActive": false, "isDefault": false, "colors": [] }
+        ])
+        .to_string();
+        let err = save_palettes_in_pool(pool, project_id, &replacement_json)
+            .await
+            .expect_err("mid-transaction insert failure should roll back");
+        assert!(err.contains("simulated mid-transaction palette failure"));
+
+        let loaded = load_palettes_in_pool(pool, project_id)
+            .await
+            .expect("load palettes after rollback");
+        let parsed: Vec<serde_json::Value> =
+            serde_json::from_str(&loaded).expect("parse palettes");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0]["id"], "orig-1");
+        assert_eq!(parsed[0]["name"], "Original Palette");
+    }
+
+    #[tokio::test]
+    async fn save_pinned_colors_rolls_back_delete_on_mid_transaction_insert_failure() {
+        let tmp = TempDbPath::new("pinned_tx_rollback");
+        let db = DbState::new();
+        let pool = db
+            .get_or_init_at(&tmp.db_file)
+            .await
+            .expect("init shared pool");
+        let project_id = create_project(pool, "Still Life").await;
+
+        let initial_json = serde_json::json!([
+            {
+                "id": "orig-pin",
+                "hex": "#397DA8",
+                "rgb": { "r": 57.0, "g": 125.0, "b": 168.0 },
+                "notes": "Keep me"
+            }
+        ])
+        .to_string();
+        save_pinned_colors_in_pool(pool, project_id, &initial_json)
+            .await
+            .expect("seed initial pinned color");
+
+        sqlx::query(
+            "CREATE TRIGGER fail_second_pin BEFORE INSERT ON pinned_colors
+             WHEN NEW.color_id = 'boom'
+             BEGIN
+                 SELECT RAISE(ABORT, 'simulated mid-transaction pin failure');
+             END",
+        )
+        .execute(pool)
+        .await
+        .expect("create pin failure trigger");
+
+        let replacement_json = serde_json::json!([
+            { "id": "new-pin", "hex": "#111111", "rgb": { "r": 17.0, "g": 17.0, "b": 17.0 }, "notes": "" },
+            { "id": "boom", "hex": "#222222", "rgb": { "r": 34.0, "g": 34.0, "b": 34.0 }, "notes": "" }
+        ])
+        .to_string();
+        let err = save_pinned_colors_in_pool(pool, project_id, &replacement_json)
+            .await
+            .expect_err("mid-transaction pin insert failure should roll back");
+        assert!(err.contains("simulated mid-transaction pin failure"));
+
+        let loaded = load_pinned_colors_in_pool(pool, project_id)
+            .await
+            .expect("load pinned colors after rollback");
+        let parsed: Vec<serde_json::Value> =
+            serde_json::from_str(&loaded).expect("parse pinned colors");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0]["id"], "orig-pin");
+        assert_eq!(parsed[0]["notes"], "Keep me");
     }
 
     #[tokio::test]

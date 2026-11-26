@@ -148,4 +148,32 @@ describe('spectral adapter', () => {
         expect(getCachedColorSync(pinnedTransient)).toBeDefined()
         expect(() => getCachedColorSync(victimTransient)).toThrow()
     })
+
+    it('promotes pre-sampled transient colors into permanent cache on registration and prunes replaced dynamic keys', async () => {
+        await isSpectralAvailable()
+        const initialHex = '#7A4928'
+        const updatedHex = '#5B341C'
+
+        // Sample first as a transient color (strength 1), then register as a dynamic pigment.
+        await createColor(initialHex)
+        expect(getColorCacheStats().transient).toBe(1)
+
+        await registerPigments([{ id: 'custom-earth', hex: initialHex, tintingStrength: 1 }])
+        expect(getColorCacheStats().transient).toBe(0)
+        expect(getColorCacheStats().dynamic).toBe(1)
+
+        // Flooding transient cache must not evict the promoted dynamic pigment.
+        for (let i = 0; i < MAX_TRANSIENT_COLOR_CACHE_SIZE + 10; i++) {
+            await createColor(`#${i.toString(16).padStart(6, '0').toUpperCase()}`)
+        }
+        expect(getPigmentColorSync('custom-earth')).toBeDefined()
+        expect(getCachedColorSync(initialHex, 1)).toBeDefined()
+
+        // Re-registering the same pigment ID with a new hex prunes the orphaned old dynamic entry.
+        await registerPigments([{ id: 'custom-earth', hex: updatedHex, tintingStrength: 1 }])
+        expect(getColorCacheStats().dynamic).toBe(1)
+        expect(getPigmentColorSync('custom-earth')).toBeDefined()
+        expect(getCachedColorSync(updatedHex, 1)).toBeDefined()
+        expect(() => getCachedColorSync(initialHex, 1)).toThrow()
+    })
 })

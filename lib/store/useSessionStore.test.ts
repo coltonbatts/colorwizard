@@ -69,4 +69,48 @@ describe('explicit workbench Save', () => {
     expect(() => useSessionStore.getState().pinColor(sample)).not.toThrow()
     expect(useSessionStore.getState().pinnedColors).toEqual([sample])
   })
+
+  it('never notifies subscribers with uncommitted state when web pinColor persistence fails', () => {
+    const setItem = vi.fn(() => { throw new Error('blocked') })
+    vi.stubGlobal('window', { localStorage: { setItem } })
+
+    const observed: PinnedColor[][] = []
+    const unsub = useSessionStore.subscribe((state) => {
+      observed.push(state.pinnedColors)
+    })
+    try {
+      expect(() => useSessionStore.getState().pinColor(sample)).toThrow('blocked')
+      expect(observed).toEqual([])
+      expect(useSessionStore.getState().pinnedColors).toEqual([])
+    } finally {
+      unsub()
+    }
+  })
+
+  it('notifies subscribers only after localStorage persists and clears strict mode before callbacks run', () => {
+    const events: string[] = []
+    let failNextWrite = false
+    const setItem = vi.fn(() => {
+      if (failNextWrite) throw new Error('secondary-write-blocked')
+      events.push('localStorage.setItem')
+    })
+    vi.stubGlobal('window', { localStorage: { setItem } })
+
+    const unsub = useSessionStore.subscribe((state, prev) => {
+      if (state.pinnedColors !== prev.pinnedColors) {
+        events.push(`subscriber:${state.pinnedColors.length}`)
+        // A non-pin preference written inside a subscriber must still use in-memory fallback.
+        failNextWrite = true
+        expect(() => useSessionStore.getState().setValueModeEnabled(true)).not.toThrow()
+      }
+    })
+    try {
+      useSessionStore.getState().pinColor(sample)
+      expect(events).toEqual(['localStorage.setItem', 'subscriber:1'])
+      expect(useSessionStore.getState().pinnedColors).toEqual([sample])
+      expect(useSessionStore.getState().valueModeEnabled).toBe(true)
+    } finally {
+      unsub()
+    }
+  })
 })

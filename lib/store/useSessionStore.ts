@@ -53,13 +53,19 @@ const persistedSession = (state: SessionState) => ({
     selectionSoundEnabled: state.selectionSoundEnabled,
 })
 
-// Explicit web `pinColor` writes must fail loudly when localStorage throws, while
-// background session preferences keep the in-memory fallback. Letting Zustand's
-// `persist` middleware serialize the snapshot avoids duplicating its private envelope.
+// Explicit web `pinColor` writes must persist cleanly before subscribers observe
+// the new state and must fail loudly when localStorage throws, while background
+// session preferences keep the in-memory fallback. Letting Zustand's `persist`
+// middleware serialize the snapshot avoids duplicating its private envelope.
+type SessionListener = (state: SessionState, prevState: SessionState) => void
+
 let strictWebWrite = false
 let suppressStorageWrite = false
+let deferSubscribers = false
+let deferredPrevState: SessionState | null = null
+const listenerUnsubs = new Map<SessionListener, () => void>()
 
-const sessionPersistStorage = createJSONStorage(() => {
+const sessionPersistStorage = createJSONStorage<ReturnType<typeof persistedSession>>(() => {
     const memoryStorage: Record<string, string> = {}
 
     return {
@@ -100,73 +106,111 @@ const sessionPersistStorage = createJSONStorage(() => {
     }
 })
 
-export const useSessionStore = create<SessionState>()(
-    persist(
-        (set, get) => ({
-            sampledColor: null,
-            activeHighlightColor: null,
-            highlightTolerance: 20,
-            highlightMode: 'solid',
-            pinnedColors: [],
-            valueModeEnabled: false,
-            valueModeSteps: DEFAULT_VALUE_STEP_COUNT,
-            lastSampleTime: 0,
-            selectionSoundEnabled: true,
+const persistedSessionCreator = persist<SessionState, [], [], ReturnType<typeof persistedSession>>(
+    (set, get) => ({
+        sampledColor: null,
+        activeHighlightColor: null,
+        highlightTolerance: 20,
+        highlightMode: 'solid',
+        pinnedColors: [],
+        valueModeEnabled: false,
+        valueModeSteps: DEFAULT_VALUE_STEP_COUNT,
+        lastSampleTime: 0,
+        selectionSoundEnabled: true,
 
-            setSampledColor: (sampledColor) => {
-                if (sampledColor) {
-                    set({ sampledColor, lastSampleTime: Date.now() })
-                } else {
-                    set({ sampledColor })
-                }
-            },
-            setLastSampleTime: (lastSampleTime) => set({ lastSampleTime }),
-            selectSampledColor: (color) => {
-                get().setSampledColor(color)
-                if (color) void playColorSelectionSound(() => get().selectionSoundEnabled)
-            },
-            setSelectionSoundEnabled: (selectionSoundEnabled) => set({ selectionSoundEnabled }),
-            setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
-            setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
-            setHighlightMode: (highlightMode) => set({ highlightMode }),
-            setPinnedColors: (pinnedColors) => set({ pinnedColors }),
-            setValueModeEnabled: (valueModeEnabled) => set({ valueModeEnabled }),
-            toggleValueMode: () => set((state) => ({ valueModeEnabled: !state.valueModeEnabled })),
-            setValueModeSteps: (valueModeSteps) => set({ valueModeSteps }),
+        setSampledColor: (sampledColor) => {
+            if (sampledColor) {
+                set({ sampledColor, lastSampleTime: Date.now() })
+            } else {
+                set({ sampledColor })
+            }
+        },
+        setLastSampleTime: (lastSampleTime) => set({ lastSampleTime }),
+        selectSampledColor: (color) => {
+            get().setSampledColor(color)
+            if (color) void playColorSelectionSound(() => get().selectionSoundEnabled)
+        },
+        setSelectionSoundEnabled: (selectionSoundEnabled) => set({ selectionSoundEnabled }),
+        setActiveHighlightColor: (activeHighlightColor) => set({ activeHighlightColor }),
+        setHighlightTolerance: (highlightTolerance) => set({ highlightTolerance }),
+        setHighlightMode: (highlightMode) => set({ highlightMode }),
+        setPinnedColors: (pinnedColors) => set({ pinnedColors }),
+        setValueModeEnabled: (valueModeEnabled) => set({ valueModeEnabled }),
+        toggleValueMode: () => set((state) => ({ valueModeEnabled: !state.valueModeEnabled })),
+        setValueModeSteps: (valueModeSteps) => set({ valueModeSteps }),
 
-            pinColor: (newPin) => {
-                const prevPinnedColors = get().pinnedColors
-                const filtered = prevPinnedColors.filter((pinnedColor) => pinnedColor.hex !== newPin.hex)
-                const next = [newPin, ...filtered].slice(0, 30)
-                if (typeof window === 'undefined' || isDesktopApp()) {
-                    set({ pinnedColors: next })
-                    return
-                }
-                strictWebWrite = true
+        pinColor: (newPin) => {
+            const prevPinnedColors = get().pinnedColors
+            const filtered = prevPinnedColors.filter((pinnedColor) => pinnedColor.hex !== newPin.hex)
+            const next = [newPin, ...filtered].slice(0, 30)
+            if (typeof window === 'undefined' || isDesktopApp()) {
+                set({ pinnedColors: next })
+                return
+            }
+            deferSubscribers = true
+            deferredPrevState = null
+            strictWebWrite = true
+            let persisted = false
+            try {
+                set({ pinnedColors: next })
+                persisted = true
+            } catch (err) {
+                strictWebWrite = false
+                suppressStorageWrite = true
                 try {
-                    set({ pinnedColors: next })
-                } catch (err) {
-                    strictWebWrite = false
-                    suppressStorageWrite = true
-                    try {
-                        set({ pinnedColors: prevPinnedColors })
-                    } finally {
-                        suppressStorageWrite = false
-                    }
-                    throw err
+                    set({ pinnedColors: prevPinnedColors })
                 } finally {
-                    strictWebWrite = false
+                    suppressStorageWrite = false
                 }
-            },
-            unpinColor: (id) => set((state) => ({
-                pinnedColors: state.pinnedColors.filter((pinnedColor) => pinnedColor.id !== id)
-            })),
-            clearPinned: () => set({ pinnedColors: [] }),
-        }),
-        {
-            name: 'colorwizard-session',
-            storage: sessionPersistStorage,
-            partialize: persistedSession,
-        }
-    )
+                throw err
+            } finally {
+                strictWebWrite = false
+                deferSubscribers = false
+                const prevToNotify = deferredPrevState
+                deferredPrevState = null
+                if (persisted && prevToNotify !== null) {
+                    const committedState = get()
+                    Array.from(listenerUnsubs.keys()).forEach((listener) => {
+                        if (listenerUnsubs.has(listener)) {
+                            listener(committedState, prevToNotify)
+                        }
+                    })
+                }
+            }
+        },
+        unpinColor: (id) => set((state) => ({
+            pinnedColors: state.pinnedColors.filter((pinnedColor) => pinnedColor.id !== id)
+        })),
+        clearPinned: () => set({ pinnedColors: [] }),
+    }),
+    {
+        name: 'colorwizard-session',
+        storage: sessionPersistStorage,
+        partialize: persistedSession,
+    }
 )
+
+export const useSessionStore = create<SessionState>()((set, get, api) => {
+    const baseSubscribe = api.subscribe
+    api.subscribe = (listener) => {
+        const existingUnsub = listenerUnsubs.get(listener)
+        if (existingUnsub) return existingUnsub
+
+        const wrapped: SessionListener = (state, prevState) => {
+            if (deferSubscribers) {
+                if (deferredPrevState === null) deferredPrevState = prevState
+                return
+            }
+            listener(state, prevState)
+        }
+        const baseUnsub = baseSubscribe(wrapped)
+        const unsub = () => {
+            listenerUnsubs.delete(listener)
+            baseUnsub()
+        }
+        listenerUnsubs.set(listener, unsub)
+        return unsub
+    }
+
+    return persistedSessionCreator(set, get, api as Parameters<typeof persistedSessionCreator>[2])
+})
