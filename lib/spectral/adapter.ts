@@ -8,10 +8,54 @@ import type { Color as SpectralColor } from 'spectral.js';
 
 type SpectralModule = typeof import('spectral.js');
 
-// Cached spectral module and colors
+// Cached spectral module and colors.
+// Palette and dynamically registered pigments live in permanent maps so they are
+// never evicted; arbitrary sampled hexes live in a bounded LRU map.
 let spectralModule: SpectralModule | null = null;
 let spectralError: Error | null = null;
-const colorCache = new Map<string, SpectralColor>();
+export const MAX_TRANSIENT_COLOR_CACHE_SIZE = 500;
+const paletteColorCache = new Map<string, SpectralColor>();
+const dynamicColorCache = new Map<string, SpectralColor>();
+const transientColorCache = new Map<string, SpectralColor>();
+
+function colorCacheKey(hex: string, tintingStrength: number): string {
+    return `${hex}-${tintingStrength}`;
+}
+
+function lookupColorCache(cacheKey: string): SpectralColor | undefined {
+    const paletteHit = paletteColorCache.get(cacheKey);
+    if (paletteHit) return paletteHit;
+
+    const dynamicHit = dynamicColorCache.get(cacheKey);
+    if (dynamicHit) return dynamicHit;
+
+    const transientHit = transientColorCache.get(cacheKey);
+    if (transientHit) {
+        // Refresh LRU order on read.
+        transientColorCache.delete(cacheKey);
+        transientColorCache.set(cacheKey, transientHit);
+        return transientHit;
+    }
+
+    return undefined;
+}
+
+function setTransientColor(cacheKey: string, color: SpectralColor): void {
+    if (paletteColorCache.has(cacheKey) || dynamicColorCache.has(cacheKey)) {
+        return;
+    }
+
+    if (transientColorCache.has(cacheKey)) {
+        transientColorCache.delete(cacheKey);
+    } else if (transientColorCache.size >= MAX_TRANSIENT_COLOR_CACHE_SIZE) {
+        const oldestKey = transientColorCache.keys().next().value;
+        if (oldestKey !== undefined) {
+            transientColorCache.delete(oldestKey);
+        }
+    }
+
+    transientColorCache.set(cacheKey, color);
+}
 
 /**
  * Lazily load and cache the spectral.js module.
@@ -30,19 +74,43 @@ async function getSpectral(): Promise<SpectralModule> {
     }
 }
 
-/**
- * Get or create a cached spectral Color for a hex value.
- */
-async function getSpectralColor(hex: string, tintingStrength = 1): Promise<SpectralColor> {
-    const cacheKey = `${hex}-${tintingStrength}`;
-    if (colorCache.has(cacheKey)) {
-        return colorCache.get(cacheKey)!;
+async function getOrCreatePermanentColor(
+    target: Map<string, SpectralColor>,
+    hex: string,
+    tintingStrength: number
+): Promise<SpectralColor> {
+    const cacheKey = colorCacheKey(hex, tintingStrength);
+    const existing = target.get(cacheKey);
+    if (existing) return existing;
+
+    const cached = lookupColorCache(cacheKey);
+    if (cached) {
+        target.set(cacheKey, cached);
+        transientColorCache.delete(cacheKey);
+        return cached;
     }
 
     const spectral = await getSpectral();
     const color = new spectral.Color(hex);
     color.tintingStrength = tintingStrength;
-    colorCache.set(cacheKey, color);
+    target.set(cacheKey, color);
+    return color;
+}
+
+/**
+ * Get or create a cached spectral Color for a hex value.
+ */
+async function getSpectralColor(hex: string, tintingStrength = 1): Promise<SpectralColor> {
+    const cacheKey = colorCacheKey(hex, tintingStrength);
+    const cached = lookupColorCache(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    const spectral = await getSpectral();
+    const color = new spectral.Color(hex);
+    color.tintingStrength = tintingStrength;
+    setTransientColor(cacheKey, color);
     return color;
 }
 
@@ -53,7 +121,11 @@ export async function getPaletteColors(): Promise<Map<string, SpectralColor>> {
     const paletteColors = new Map<string, SpectralColor>();
 
     for (const pigment of PALETTE) {
-        const color = await getSpectralColor(pigment.hex, pigment.tintingStrength);
+        const color = await getOrCreatePermanentColor(
+            paletteColorCache,
+            pigment.hex,
+            pigment.tintingStrength
+        );
         paletteColors.set(pigment.id, color);
     }
 
@@ -77,8 +149,8 @@ export async function registerPigments(
 
     for (const p of pigments) {
         dynamicPigmentRegistry.set(p.id, { hex: p.hex, tintingStrength: p.tintingStrength });
-        // Pre-warm color cache
-        await getSpectralColor(p.hex, p.tintingStrength);
+        // Pre-warm permanent dynamic pigment cache so transient evictions never drop it.
+        await getOrCreatePermanentColor(dynamicColorCache, p.hex, p.tintingStrength);
     }
 }
 
@@ -87,6 +159,31 @@ export async function registerPigments(
  */
 export function clearDynamicPigments(): void {
     dynamicPigmentRegistry.clear();
+    dynamicColorCache.clear();
+}
+
+/**
+ * Clear transient sampled color entries while keeping permanent pigment caches intact.
+ */
+export function clearTransientColorCache(): void {
+    transientColorCache.clear();
+}
+
+/**
+ * Cache diagnostics for testing and memory checks.
+ */
+export function getColorCacheStats(): {
+    palette: number;
+    dynamic: number;
+    transient: number;
+    maxTransient: number;
+} {
+    return {
+        palette: paletteColorCache.size,
+        dynamic: dynamicColorCache.size,
+        transient: transientColorCache.size,
+        maxTransient: MAX_TRANSIENT_COLOR_CACHE_SIZE,
+    };
 }
 
 /**
@@ -199,8 +296,8 @@ export function getSpectralSync(): SpectralModule {
 }
 
 export function getCachedColorSync(hex: string, tintingStrength = 1): SpectralColor {
-    const cacheKey = `${hex}-${tintingStrength}`;
-    const color = colorCache.get(cacheKey);
+    const cacheKey = colorCacheKey(hex, tintingStrength);
+    const color = lookupColorCache(cacheKey);
     if (!color) throw new Error(`Color ${hex} not in cache. Pre-warm cache with getPaletteColors().`);
     return color;
 }
@@ -222,7 +319,7 @@ export function getPigmentColorSync(pigmentId: string): SpectralColor {
         throw new Error(`Pigment ${pigmentId} not registered. Call registerPigments() first.`);
     }
 
-    const color = colorCache.get(`${pigmentData.hex}-${pigmentData.tintingStrength}`);
+    const color = lookupColorCache(colorCacheKey(pigmentData.hex, pigmentData.tintingStrength));
     if (!color) {
         throw new Error(`Color for pigment ${pigmentId} not in cache.`);
     }

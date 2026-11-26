@@ -1,10 +1,24 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
     mixPigments,
     deltaEOK,
     isSpectralAvailable,
     PALETTE,
+    getPaletteColors,
+    registerPigments,
+    clearDynamicPigments,
+    clearTransientColorCache,
+    createColor,
+    getCachedColorSync,
+    getPigmentColorSync,
+    getColorCacheStats,
+    MAX_TRANSIENT_COLOR_CACHE_SIZE,
 } from './adapter'
+
+afterEach(() => {
+    clearDynamicPigments()
+    clearTransientColorCache()
+})
 
 describe('spectral adapter', () => {
     it('spectral.js should be available', async () => {
@@ -82,5 +96,56 @@ describe('spectral adapter', () => {
         // Should be in middle range
         expect(r).toBeGreaterThan(50)
         expect(r).toBeLessThan(200)
+    })
+
+    it('caps transient sampled hex entries while keeping palette and registered pigments permanently cached', async () => {
+        await getPaletteColors()
+        const customPigment = { id: 'test-burnt-sienna', hex: '#6E2E1C', tintingStrength: 1.2 }
+        await registerPigments([customPigment])
+
+        const totalTransient = MAX_TRANSIENT_COLOR_CACHE_SIZE + 125
+        for (let i = 0; i < totalTransient; i++) {
+            const hex = `#${i.toString(16).padStart(6, '0').toUpperCase()}`
+            await createColor(hex)
+        }
+
+        const stats = getColorCacheStats()
+        expect(stats.transient).toBe(MAX_TRANSIENT_COLOR_CACHE_SIZE)
+        expect(stats.palette).toBe(PALETTE.length)
+        expect(stats.dynamic).toBe(1)
+
+        // Oldest transient entry should have been evicted.
+        expect(() => getCachedColorSync('#000000')).toThrow()
+        // Most recent transient entry should remain cached.
+        const lastHex = `#${(totalTransient - 1).toString(16).padStart(6, '0').toUpperCase()}`
+        expect(getCachedColorSync(lastHex)).toBeDefined()
+
+        // Pre-warmed PALETTE pigments and registered dynamic pigments must never be evicted.
+        for (const pigment of PALETTE) {
+            expect(getCachedColorSync(pigment.hex, pigment.tintingStrength)).toBeDefined()
+            expect(getPigmentColorSync(pigment.id)).toBeDefined()
+        }
+        expect(getCachedColorSync(customPigment.hex, customPigment.tintingStrength)).toBeDefined()
+        expect(getPigmentColorSync(customPigment.id)).toBeDefined()
+    })
+
+    it('refreshes LRU order when a transient color is accessed again before eviction', async () => {
+        await isSpectralAvailable()
+        const pinnedTransient = '#000001'
+        const victimTransient = '#000002'
+        await createColor(pinnedTransient)
+        await createColor(victimTransient)
+
+        // Fill up to capacity - 1, touching pinnedTransient so it becomes most-recently-used.
+        for (let i = 3; i <= MAX_TRANSIENT_COLOR_CACHE_SIZE; i++) {
+            await createColor(`#${i.toString(16).padStart(6, '0').toUpperCase()}`)
+        }
+        // Touch pinnedTransient via sync lookup before forcing one eviction.
+        expect(getCachedColorSync(pinnedTransient)).toBeDefined()
+        await createColor('#FFFFFF')
+
+        expect(getColorCacheStats().transient).toBe(MAX_TRANSIENT_COLOR_CACHE_SIZE)
+        expect(getCachedColorSync(pinnedTransient)).toBeDefined()
+        expect(() => getCachedColorSync(victimTransient)).toThrow()
     })
 })

@@ -1,9 +1,8 @@
 'use client'
 
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import { PinnedColor } from '../types/pinnedColor'
-import { safeStorage } from './storage'
 import { DEFAULT_VALUE_STEP_COUNT } from '../valueMode'
 import { isDesktopApp } from '../desktop/detect'
 import { playColorSelectionSound } from '../audio/colorSelectionSound'
@@ -54,6 +53,53 @@ const persistedSession = (state: SessionState) => ({
     selectionSoundEnabled: state.selectionSoundEnabled,
 })
 
+// Explicit web `pinColor` writes must fail loudly when localStorage throws, while
+// background session preferences keep the in-memory fallback. Letting Zustand's
+// `persist` middleware serialize the snapshot avoids duplicating its private envelope.
+let strictWebWrite = false
+let suppressStorageWrite = false
+
+const sessionPersistStorage = createJSONStorage(() => {
+    const memoryStorage: Record<string, string> = {}
+
+    return {
+        getItem: (name: string): string | null => {
+            try {
+                if (typeof window === 'undefined') return null
+                return window.localStorage.getItem(name) ?? memoryStorage[name] ?? null
+            } catch {
+                return memoryStorage[name] ?? null
+            }
+        },
+        setItem: (name: string, value: string): void => {
+            if (suppressStorageWrite) return
+            if (strictWebWrite) {
+                window.localStorage.setItem(name, value)
+                memoryStorage[name] = value
+                return
+            }
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(name, value)
+                }
+                memoryStorage[name] = value
+            } catch {
+                memoryStorage[name] = value
+            }
+        },
+        removeItem: (name: string): void => {
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.removeItem(name)
+                }
+                delete memoryStorage[name]
+            } catch {
+                delete memoryStorage[name]
+            }
+        },
+    }
+})
+
 export const useSessionStore = create<SessionState>()(
     persist(
         (set, get) => ({
@@ -89,17 +135,28 @@ export const useSessionStore = create<SessionState>()(
             setValueModeSteps: (valueModeSteps) => set({ valueModeSteps }),
 
             pinColor: (newPin) => {
-                const state = get()
-                const filtered = state.pinnedColors.filter((pinnedColor) => pinnedColor.hex !== newPin.hex)
+                const prevPinnedColors = get().pinnedColors
+                const filtered = prevPinnedColors.filter((pinnedColor) => pinnedColor.hex !== newPin.hex)
                 const next = [newPin, ...filtered].slice(0, 30)
-                // An explicit web Save must persist before it is acknowledged. Other session
-                // preferences can still use safeStorage's in-memory fallback; Tauri uses SQLite.
-                if (typeof window !== 'undefined' && !isDesktopApp()) {
-                    window.localStorage.setItem('colorwizard-session', JSON.stringify({
-                        state: { ...persistedSession(state), pinnedColors: next }, version: 0,
-                    }))
+                if (typeof window === 'undefined' || isDesktopApp()) {
+                    set({ pinnedColors: next })
+                    return
                 }
-                set({ pinnedColors: next })
+                strictWebWrite = true
+                try {
+                    set({ pinnedColors: next })
+                } catch (err) {
+                    strictWebWrite = false
+                    suppressStorageWrite = true
+                    try {
+                        set({ pinnedColors: prevPinnedColors })
+                    } finally {
+                        suppressStorageWrite = false
+                    }
+                    throw err
+                } finally {
+                    strictWebWrite = false
+                }
             },
             unpinColor: (id) => set((state) => ({
                 pinnedColors: state.pinnedColors.filter((pinnedColor) => pinnedColor.id !== id)
@@ -108,7 +165,7 @@ export const useSessionStore = create<SessionState>()(
         }),
         {
             name: 'colorwizard-session',
-            storage: safeStorage,
+            storage: sessionPersistStorage,
             partialize: persistedSession,
         }
     )
