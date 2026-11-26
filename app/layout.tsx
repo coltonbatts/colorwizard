@@ -3,7 +3,7 @@ import Script from 'next/script'
 import StoreBootstrap from '@/components/StoreBootstrap'
 import CanvasPersistenceNotice from '@/components/CanvasPersistenceNotice'
 import DesktopRuntimeMount from '@/components/desktop/DesktopRuntimeMount'
-import TauriAppShell from '@/components/desktop/TauriAppShell'
+import DesktopShellGate from '@/components/desktop/DesktopShellGate'
 // The combined stylesheets carry unicode-range, so a browser only fetches the subsets a page uses.
 // (The per-subset files, e.g. latin-400.css, have no range, and every one of them was downloaded.)
 import '@fontsource/eb-garamond/400.css'
@@ -61,6 +61,11 @@ export const metadata: Metadata = {
   },
 }
 
+// Set by `scripts/build-desktop.mjs`, `scripts/tauri-dev.mjs` and `npm run dev:tauri`.
+// Desktop builds mount `TauriAppShell` immediately on the client; web builds render
+// `children` directly and only dynamically load `TauriAppShell` if opened inside Tauri.
+const isDesktopBuild = process.env.COLORWIZARD_DESKTOP === '1'
+
 export default function RootLayout({
   children,
 }: {
@@ -114,9 +119,9 @@ export default function RootLayout({
           </a>
           <StoreBootstrap />
           <CanvasPersistenceNotice />
-          <TauriAppShell>
+          <DesktopShellGate desktopBuild={isDesktopBuild}>
             {children}
-          </TauriAppShell>
+          </DesktopShellGate>
         </div>
       </body>
     </html>

@@ -320,6 +320,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     mountedRef.current = true
     setHasMounted(true)
+    document.documentElement.dataset.reactMounted = 'true'
     return () => {
       mountedRef.current = false
     }
