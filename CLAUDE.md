@@ -45,7 +45,7 @@ The app deploys from a single Next.js codebase as both a web app (Vercel) and a 
 - Measured with Playwright and Chrome (Slow 4G, 4× CPU, 412×823 at 2×, median of 5): `/` first paint 2.19 → 0.89 s, LCP 4.09 → 2.93 s, Next first-load JS 272 → 189 KB. The remaining LCP is the 146 KB welcome image sharing the connection with the JS. A lighter image is a design call. About 103 KB of first-load JS is React and Next itself.
 - The desktop export was checked as files (`npm run build:desktop`: no welcome in `index.html`, relative asset paths) and in Chrome with a stubbed Tauri runtime. **Not verified**: the real Tauri app (dev or bundled).
 
-There is no cloud code: accounts, Supabase, Stripe and email were removed (2026-11-10) because nothing used them. The app needs no environment variables. Tiers are local only (`lib/hooks/useUserTier.ts`: desktop is Pro, web is free). `supabase/migrations/` is kept as a record of the old `user_profiles` table.
+There is no cloud code: accounts, Supabase, Stripe and email were removed (2026-11-10) because nothing used them. The app needs no environment variables. Tiers are local only (`hooks/useUserTier.ts`: desktop is Pro, web is free). `supabase/migrations/` is kept as a record of the old `user_profiles` table.
 
 ### State Management
 

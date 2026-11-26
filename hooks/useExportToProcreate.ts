@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useUserTier } from '@/lib/hooks/useUserTier';
+import { useUserTier } from '@/hooks/useUserTier';
 import { exportToProcreate } from '@/lib/procreateExport';
 import type { ProcreateColor, ProcreateExportOptions } from '@/lib/types/procreate';
 import { getFeatureLimit } from '@/lib/featureFlags';

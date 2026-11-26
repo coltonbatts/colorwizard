@@ -6,7 +6,7 @@
 'use client'
 
 import { ReactNode } from 'react'
-import { useFeatureAccess } from '@/lib/hooks/useFeatureAccess'
+import { useFeatureAccess } from '@/hooks/useFeatureAccess'
 import { type FeatureName, FEATURES } from '@/lib/featureFlags'
 import UpgradePrompt from './UpgradePrompt'
 

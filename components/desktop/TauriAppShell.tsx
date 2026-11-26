@@ -418,7 +418,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
       settled = true
       window.clearTimeout(timer)
     }
-  }, [])
+  }, [recordStartupStep])
 
   const handleActivated = useCallback(() => {
     recordStartupStep('activation', 'Activation completed successfully.')
@@ -472,7 +472,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [activeProjectId])
+  }, [activeProjectId, recordStartupStep])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -546,7 +546,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [activeProjectId, dbUnlocked, launchResolved, licensed])
+  }, [activeProjectId, dbUnlocked, launchResolved, licensed, recordStartupStep])
 
   useEffect(() => {
     if (!isDesktopApp()) return
@@ -579,7 +579,7 @@ export default function TauriAppShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [activeProjectId])
+  }, [activeProjectId, recordStartupStep])
 
   if (!hasMounted || !isDesktopApp()) {
     return children

@@ -9,7 +9,7 @@
  */
 'use client'
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import { isCalibrationStale, type CalibrationData } from '@/lib/calibration'
 import { usePaletteStore } from '@/lib/store/usePaletteStore'
 import { usePaintPaletteStore, type PaintPalette } from '@/lib/store/usePaintPaletteStore'
@@ -17,7 +17,7 @@ import { useSessionStore } from '@/lib/store/useSessionStore'
 import { useCalibrationStore } from '@/lib/store/useCalibrationStore'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { useLayoutStore } from '@/lib/store/useLayoutStore'
-import { DEFAULT_PALETTE } from '@/lib/types/palette'
+import { DEFAULT_PALETTE, type Palette } from '@/lib/types/palette'
 import { DEFAULT_CANVAS_SETTINGS, type CanvasSettings } from '@/lib/types/canvas'
 import type { PinnedColor } from '@/lib/types/pinnedColor'
 import { DEFAULT_VALUE_SCALE_SETTINGS, type ValueScaleSettings } from '@/lib/types/valueScale'
@@ -245,67 +245,17 @@ function sanitizePinnedColors(value: unknown): PinnedColor[] {
   })
 }
 
-/** Reads latest state from stores (not React closures) so lifecycle flushes are never stale. */
-function persistDesktopProjectSnapshot(projectId: number): void {
-  const palettes = usePaletteStore.getState().palettes
-  const pinnedColors = useSessionStore.getState().pinnedColors
-  const cal = useCalibrationStore.getState()
-  const calibration = cal.calibration
-  const rulerGridEnabled = cal.rulerGridEnabled
-  const rulerGridSpacing = cal.rulerGridSpacing
-  const gridOpacity = cal.gridOpacity
-  const measurementLayer = cal.measurementLayer
-  const layout = useLayoutStore.getState()
-  const sidebarCollapsed = layout.sidebarCollapsed
-  const compactMode = layout.compactMode
-  const sidebarWidth = layout.sidebarWidth
-  const simpleMode = layout.simpleMode
-  const c = useCanvasStore.getState()
-  const referenceImage = c.referenceImage
-  const surfaceImage = c.surfaceImage
-  const surfaceBounds = c.surfaceBounds
-  const referenceOpacity = c.referenceOpacity
-  const referenceLocked = c.referenceLocked
-  const referenceTransform = c.referenceTransform
-  const valueScaleSettings = c.valueScaleSettings
-  const activeValueBandIndex = c.activeValueBandIndex
-  const canvasSettings = c.canvasSettings
-  const pp = usePaintPaletteStore.getState()
-  const selectedPaintIds = pp.selectedPaintIds
-  const savedPaintPalettes = pp.savedPalettes
-  const activePaintPaletteId = pp.activePaletteId
-  const isPaintPaletteDirty = pp.isDirty
+interface PersistedProjectSnapshot {
+  palettes: Palette[]
+  pinnedColors: PinnedColor[]
+  canvasState: PersistedCanvasState
+  calibrationState: PersistedCalibrationState
+  layoutState: PersistedLayoutState
+  paintPaletteState: PersistedPaintPaletteState
+}
 
-  const canvasState: PersistedCanvasState = {
-    referenceImage: sanitizeDesktopProjectImageSrc(referenceImage),
-    surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage),
-    surfaceBounds,
-    referenceOpacity,
-    referenceLocked,
-    referenceTransform,
-    valueScaleSettings,
-    activeValueBandIndex,
-    canvasSettings,
-  }
-  const calibrationState: PersistedCalibrationState = {
-    calibration,
-    rulerGridEnabled,
-    rulerGridSpacing,
-    gridOpacity,
-    measurementLayer,
-  }
-  const layoutState: PersistedLayoutState = {
-    sidebarCollapsed,
-    compactMode,
-    sidebarWidth,
-    simpleMode,
-  }
-  const paintPaletteState: PersistedPaintPaletteState = {
-    selectedPaintIds,
-    savedPalettes: savedPaintPalettes,
-    activePaletteId: activePaintPaletteId,
-    isDirty: isPaintPaletteDirty,
-  }
+function persistDesktopProjectState(projectId: number, snapshot: PersistedProjectSnapshot): void {
+  const { palettes, pinnedColors, canvasState, calibrationState, layoutState, paintPaletteState } = snapshot
 
   savePalettes(projectId, palettes).catch((err: unknown) => {
     console.error('[Tauri] Save palettes failed:', err)
@@ -333,6 +283,51 @@ function persistDesktopProjectSnapshot(projectId: number): void {
 
   updateProject(projectId, undefined, canvasState.referenceImage).catch((err: unknown) => {
     console.error('[Tauri] Failed to update project modified time:', err)
+  })
+}
+
+/** Reads latest state from stores (not React closures) so lifecycle flushes are never stale. */
+function persistDesktopProjectSnapshot(projectId: number): void {
+  const palettes = usePaletteStore.getState().palettes
+  const pinnedColors = useSessionStore.getState().pinnedColors
+  const cal = useCalibrationStore.getState()
+  const layout = useLayoutStore.getState()
+  const c = useCanvasStore.getState()
+  const pp = usePaintPaletteStore.getState()
+
+  persistDesktopProjectState(projectId, {
+    palettes,
+    pinnedColors,
+    canvasState: {
+      referenceImage: sanitizeDesktopProjectImageSrc(c.referenceImage),
+      surfaceImage: sanitizeDesktopProjectImageSrc(c.surfaceImage),
+      surfaceBounds: c.surfaceBounds,
+      referenceOpacity: c.referenceOpacity,
+      referenceLocked: c.referenceLocked,
+      referenceTransform: c.referenceTransform,
+      valueScaleSettings: c.valueScaleSettings,
+      activeValueBandIndex: c.activeValueBandIndex,
+      canvasSettings: c.canvasSettings,
+    },
+    calibrationState: {
+      calibration: cal.calibration,
+      rulerGridEnabled: cal.rulerGridEnabled,
+      rulerGridSpacing: cal.rulerGridSpacing,
+      gridOpacity: cal.gridOpacity,
+      measurementLayer: cal.measurementLayer,
+    },
+    layoutState: {
+      sidebarCollapsed: layout.sidebarCollapsed,
+      compactMode: layout.compactMode,
+      sidebarWidth: layout.sidebarWidth,
+      simpleMode: layout.simpleMode,
+    },
+    paintPaletteState: {
+      selectedPaintIds: pp.selectedPaintIds,
+      savedPalettes: pp.savedPalettes,
+      activePaletteId: pp.activePaletteId,
+      isDirty: pp.isDirty,
+    },
   })
 }
 
@@ -607,7 +602,70 @@ export default function TauriPersistence({
     }
   }, [onReady, onSeedReferenceConsumed, persistenceDisabled, projectId, resetProjectState])
 
-  const debouncedSave = useCallback(() => {
+  const persistedSnapshot = useMemo<PersistedProjectSnapshot>(
+    () => ({
+      palettes,
+      pinnedColors,
+      canvasState: {
+        referenceImage: sanitizeDesktopProjectImageSrc(referenceImage),
+        surfaceImage: sanitizeDesktopProjectImageSrc(surfaceImage),
+        surfaceBounds,
+        referenceOpacity,
+        referenceLocked,
+        referenceTransform,
+        valueScaleSettings,
+        activeValueBandIndex,
+        canvasSettings,
+      },
+      calibrationState: {
+        calibration,
+        rulerGridEnabled,
+        rulerGridSpacing,
+        gridOpacity,
+        measurementLayer,
+      },
+      layoutState: {
+        sidebarCollapsed,
+        compactMode,
+        sidebarWidth,
+        simpleMode,
+      },
+      paintPaletteState: {
+        selectedPaintIds,
+        savedPalettes: savedPaintPalettes,
+        activePaletteId: activePaintPaletteId,
+        isDirty: isPaintPaletteDirty,
+      },
+    }),
+    [
+      activePaintPaletteId,
+      activeValueBandIndex,
+      calibration,
+      canvasSettings,
+      compactMode,
+      gridOpacity,
+      isPaintPaletteDirty,
+      measurementLayer,
+      palettes,
+      pinnedColors,
+      referenceImage,
+      referenceLocked,
+      referenceOpacity,
+      referenceTransform,
+      rulerGridEnabled,
+      rulerGridSpacing,
+      savedPaintPalettes,
+      selectedPaintIds,
+      sidebarCollapsed,
+      sidebarWidth,
+      simpleMode,
+      surfaceBounds,
+      surfaceImage,
+      valueScaleSettings,
+    ],
+  )
+
+  useEffect(() => {
     if (!persistenceActive || hydratedProjectId === null) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
       return
@@ -616,40 +674,9 @@ export default function TauriPersistence({
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
 
     saveTimeoutRef.current = setTimeout(() => {
-      persistDesktopProjectSnapshot(hydratedProjectId)
+      persistDesktopProjectState(hydratedProjectId, persistedSnapshot)
     }, 500)
-  }, [
-    activePaintPaletteId,
-    calibration,
-    canvasSettings,
-    compactMode,
-    gridOpacity,
-    hydratedProjectId,
-    isPaintPaletteDirty,
-    measurementLayer,
-    palettes,
-    pinnedColors,
-    referenceImage,
-    referenceLocked,
-    referenceOpacity,
-    referenceTransform,
-    rulerGridEnabled,
-    rulerGridSpacing,
-    savedPaintPalettes,
-    selectedPaintIds,
-    sidebarCollapsed,
-    sidebarWidth,
-    simpleMode,
-    surfaceBounds,
-    surfaceImage,
-    valueScaleSettings,
-    activeValueBandIndex,
-    persistenceActive,
-  ])
-
-  useEffect(() => {
-    debouncedSave()
-  }, [debouncedSave])
+  }, [hydratedProjectId, persistedSnapshot, persistenceActive])
 
   const flushPendingSave = useCallback(() => {
     if (saveTimeoutRef.current) {

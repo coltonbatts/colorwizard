@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import SampleInspector, { type InspectorDisclosure } from '@/components/workbench/SampleInspector'
-import type { SampleReadoutColor } from '@/lib/hooks/useSampleReadout'
+import type { SampleReadoutColor } from '@/hooks/useSampleReadout'
 import type { Palette } from '@/lib/types/palette'
 import type { PinnedColor } from '@/lib/types/pinnedColor'
 

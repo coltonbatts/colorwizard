@@ -103,6 +103,7 @@ function ProjectThumbnail({ project, thumbnail }: { project: ProjectInfo; thumbn
 
   if (thumbnail) {
     return (
+      /* eslint-disable-next-line @next/next/no-img-element -- Tauri asset URL thumbnail; images.unoptimized is true for static/desktop export */
       <img
         src={thumbnail}
         alt=""

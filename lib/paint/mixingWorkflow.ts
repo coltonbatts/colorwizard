@@ -372,7 +372,7 @@ function roleLabelForRole(role: MixIngredientRole): string {
   }
 }
 
-function explanationForRole(role: MixIngredientRole, ingredient: WorkflowIngredient): string {
+function explanationForRole(role: MixIngredientRole): string {
   switch (role) {
     case 'value_base':
       return 'Builds the pile value before chroma.'
@@ -439,7 +439,7 @@ export function classifyMixPushes(
       ingredient,
       role,
       roleLabel: roleLabelForRole(role),
-      explanation: explanationForRole(role, ingredient),
+      explanation: explanationForRole(role),
       pushes: pushesForRole(role, ingredient),
     }
   })

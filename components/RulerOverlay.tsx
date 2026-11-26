@@ -56,6 +56,8 @@ function getLayerLabel(layer: MeasurementLayer | undefined): string {
     }
 }
 
+const DEFAULT_TRANSFORM: TransformState = { zoomLevel: 1, panOffset: { x: 0, y: 0 } }
+
 export default function RulerOverlay({
     gridEnabled,
     gridSpacing,
@@ -79,7 +81,7 @@ export default function RulerOverlay({
     const pointB = externalPointB !== undefined ? externalPointB : internalPointB
 
     // Default transform state (no zoom/pan)
-    const transform: TransformState = transformState || { zoomLevel: 1, panOffset: { x: 0, y: 0 } }
+    const transform: TransformState = transformState ?? DEFAULT_TRANSFORM
 
     // Convert image-space points to screen-space for rendering
     const screenPointA = useMemo(() => {
@@ -91,22 +93,6 @@ export default function RulerOverlay({
         if (!pointB || !image) return null
         return imageToScreen(pointB.x, pointB.y, transform, image.width, image.height)
     }, [pointB, transform, image])
-
-    const setPointA = (p: Point | null) => {
-        if (onMeasurePointsChange) {
-            onMeasurePointsChange(p, pointB ?? null)
-        } else {
-            setInternalPointA(p)
-        }
-    }
-
-    const setPointB = (p: Point | null) => {
-        if (onMeasurePointsChange) {
-            onMeasurePointsChange(pointA ?? null, p)
-        } else {
-            setInternalPointB(p)
-        }
-    }
 
     // Calculate grid pattern
     const gridStyle = useMemo(() => {
@@ -139,7 +125,7 @@ export default function RulerOverlay({
             backgroundSize: `${spacingPx}px ${spacingPx}px`,
             backgroundPosition: `${gridX}px ${gridY}px`
         }
-    }, [gridEnabled, calibration, gridSpacing, transform, image])
+    }, [gridEnabled, calibration, gridSpacing, gridOpacity, transform, image])
 
     // Calculate distance between points (in image-space for accurate measurement)
     const measurementInfo = useMemo(() => {
@@ -187,7 +173,7 @@ export default function RulerOverlay({
             midY,
             angle
         }
-    }, [pointA, pointB, calibration, screenPointA, screenPointB, image, transform.imageDrawInfo])
+    }, [pointA, pointB, calibration, canvasSettings, screenPointA, screenPointB, image, transform.imageDrawInfo])
 
     const clearMeasurement = () => {
         if (onMeasurePointsChange) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { converter, formatHex } from 'culori'
 
 interface HSV {
@@ -15,6 +15,35 @@ interface PhotoshopColorWheelProps {
 }
 
 const toHsv = converter('hsv')
+
+const WHEEL_SIZE = 240
+const RING_WIDTH = 20
+const CENTER_X = WHEEL_SIZE / 2
+const CENTER_Y = WHEEL_SIZE / 2
+const OUTER_RADIUS = WHEEL_SIZE / 2
+const INNER_RADIUS = OUTER_RADIUS - RING_WIDTH - 10
+
+// Triangle vertices (static relative to center)
+// Tip: Right (0 degrees)
+// White: Top Left
+// Black: Bottom Left
+function getTriangleVertices() {
+    const rad = INNER_RADIUS
+    // Equilateral triangle inscribed in circle of INNER_RADIUS
+    // Tip (Pure Hue)
+    const vHue = { x: CENTER_X + rad, y: CENTER_Y }
+    // White (Top Left)
+    const vWhite = {
+        x: CENTER_X + rad * Math.cos(120 * Math.PI / 180),
+        y: CENTER_Y + rad * Math.sin(120 * Math.PI / 180)
+    }
+    // Black (Bottom Left)
+    const vBlack = {
+        x: CENTER_X + rad * Math.cos(240 * Math.PI / 180),
+        y: CENTER_Y + rad * Math.sin(240 * Math.PI / 180)
+    }
+    return { vHue, vWhite, vBlack }
+}
 
 export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorWheelProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -34,75 +63,46 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
         }
     }, [color])
 
-    const wheelSize = 240
-    const ringWidth = 20
-    const centerX = wheelSize / 2
-    const centerY = wheelSize / 2
-    const outerRadius = wheelSize / 2
-    const innerRadius = outerRadius - ringWidth - 10
-
-    // Triangle vertices (static relative to center)
-    // Tip: Right (0 degrees)
-    // White: Top Left
-    // Black: Bottom Left
-    const getTriangleVertices = (hue: number) => {
-        const rad = innerRadius
-        // Equilateral triangle inscribed in circle of innerRadius
-        // Tip (Pure Hue)
-        const vHue = { x: centerX + rad, y: centerY }
-        // White (Top Left)
-        const vWhite = {
-            x: centerX + rad * Math.cos(120 * Math.PI / 180),
-            y: centerY + rad * Math.sin(120 * Math.PI / 180)
-        }
-        // Black (Bottom Left)
-        const vBlack = {
-            x: centerX + rad * Math.cos(240 * Math.PI / 180),
-            y: centerY + rad * Math.sin(240 * Math.PI / 180)
-        }
-        return { vHue, vWhite, vBlack }
-    }
-
-    const draw = () => {
+    const draw = useCallback(() => {
         const canvas = canvasRef.current
         if (!canvas) return
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
-        ctx.clearRect(0, 0, wheelSize, wheelSize)
+        ctx.clearRect(0, 0, WHEEL_SIZE, WHEEL_SIZE)
 
         // 1. Draw Hue Ring
         for (let i = 0; i < 360; i++) {
             const startAngle = (i - 1) * Math.PI / 180
             const endAngle = (i + 1) * Math.PI / 180
             ctx.beginPath()
-            ctx.arc(centerX, centerY, outerRadius - ringWidth / 2, startAngle, endAngle)
+            ctx.arc(CENTER_X, CENTER_Y, OUTER_RADIUS - RING_WIDTH / 2, startAngle, endAngle)
             const strokeColor = formatHex({ mode: 'hsv', h: i, s: 1, v: 1 })
             ctx.strokeStyle = strokeColor || '#000'
-            ctx.lineWidth = ringWidth
+            ctx.lineWidth = RING_WIDTH
             ctx.stroke()
         }
 
         // 2. Draw Hue Marker
         const hueRad = (hsvState.h) * Math.PI / 180
-        const mx = centerX + (outerRadius - ringWidth / 2) * Math.cos(hueRad)
-        const my = centerY + (outerRadius - ringWidth / 2) * Math.sin(hueRad)
+        const mx = CENTER_X + (OUTER_RADIUS - RING_WIDTH / 2) * Math.cos(hueRad)
+        const my = CENTER_Y + (OUTER_RADIUS - RING_WIDTH / 2) * Math.sin(hueRad)
         ctx.beginPath()
-        ctx.arc(mx, my, ringWidth / 2 + 2, 0, Math.PI * 2)
+        ctx.arc(mx, my, RING_WIDTH / 2 + 2, 0, Math.PI * 2)
         ctx.strokeStyle = 'white'
         ctx.lineWidth = 2
         ctx.stroke()
         ctx.beginPath()
-        ctx.arc(mx, my, ringWidth / 2 - 2, 0, Math.PI * 2)
+        ctx.arc(mx, my, RING_WIDTH / 2 - 2, 0, Math.PI * 2)
         ctx.strokeStyle = 'black'
         ctx.lineWidth = 1
         ctx.stroke()
 
         // 3. Draw Triangle
-        const { vHue, vWhite, vBlack } = getTriangleVertices(hsvState.h)
+        const { vHue, vWhite, vBlack } = getTriangleVertices()
 
         // We render triangle using a simple pixel loop for smooth gradient
-        const imageData = ctx.createImageData(wheelSize, wheelSize)
+        const imageData = ctx.createImageData(WHEEL_SIZE, WHEEL_SIZE)
         const data = imageData.data
 
         // Helper to check if point is in triangle and get barycentric coords
@@ -124,18 +124,18 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
             const t = v * (1 - (1 - f) * s);
             let r = 0, g = 0, b = 0;
             switch (i % 6) {
-                case 0: r = v, g = t, b = p; break;
-                case 1: r = q, g = v, b = p; break;
-                case 2: r = p, g = v, b = t; break;
-                case 3: r = p, g = q, b = v; break;
-                case 4: r = t, g = p, b = v; break;
-                case 5: r = v, g = p, b = q; break;
+                case 0: r = v; g = t; b = p; break;
+                case 1: r = q; g = v; b = p; break;
+                case 2: r = p; g = v; b = t; break;
+                case 3: r = p; g = q; b = v; break;
+                case 4: r = t; g = p; b = v; break;
+                case 5: r = v; g = p; b = q; break;
             }
             return { r: r * 255, g: g * 255, b: b * 255 };
         }
 
-        for (let y = 0; y < wheelSize; y++) {
-            for (let x = 0; x < wheelSize; x++) {
+        for (let y = 0; y < WHEEL_SIZE; y++) {
+            for (let x = 0; x < WHEEL_SIZE; x++) {
                 const { a, b, c } = getBarycentric(x, y)
                 if (a >= -0.01 && b >= -0.01 && c >= -0.01) { // Slight buffer for anti-aliasing feel
                     // s_val = a / (a + b)
@@ -144,7 +144,7 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
                     const s_val = v_val > 0.001 ? a / v_val : 0
 
                     const rgb_val = toRgb(hsvState.h, s_val * 100, v_val * 100)
-                    const idx = (y * wheelSize + x) * 4
+                    const idx = (y * WHEEL_SIZE + x) * 4
                     data[idx] = rgb_val.r
                     data[idx + 1] = rgb_val.g
                     data[idx + 2] = rgb_val.b
@@ -155,8 +155,8 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
 
         // Put triangle pixels on a temporary canvas
         const tempCanvas = document.createElement('canvas')
-        tempCanvas.width = wheelSize
-        tempCanvas.height = wheelSize
+        tempCanvas.width = WHEEL_SIZE
+        tempCanvas.height = WHEEL_SIZE
         const tempCtx = tempCanvas.getContext('2d')
         if (tempCtx) {
             tempCtx.putImageData(imageData, 0, 0)
@@ -192,22 +192,22 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
         ctx.strokeStyle = v_in > 0.5 ? 'white' : 'black'
         ctx.lineWidth = 1
         ctx.stroke()
-    }
+    }, [hsvState])
 
     useEffect(() => {
         draw()
-    }, [hsvState])
+    }, [draw])
 
     const handleMouseDown = (e: React.MouseEvent) => {
         const rect = canvasRef.current?.getBoundingClientRect()
         if (!rect) return
         const x = e.clientX - rect.left
         const y = e.clientY - rect.top
-        const dx = x - centerX
-        const dy = y - centerY
+        const dx = x - CENTER_X
+        const dy = y - CENTER_Y
         const dist = Math.sqrt(dx * dx + dy * dy)
 
-        if (dist > innerRadius + 5) {
+        if (dist > INNER_RADIUS + 5) {
             isDraggingHue.current = true
             updateHue(x, y)
         } else {
@@ -235,7 +235,7 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
     }
 
     const updateHue = (x: number, y: number) => {
-        const angle = Math.atan2(y - centerY, x - centerX) * 180 / Math.PI
+        const angle = Math.atan2(y - CENTER_Y, x - CENTER_X) * 180 / Math.PI
         const h = (angle + 360) % 360
         const newHsv = { ...hsvState, h }
         setHsvState(newHsv)
@@ -243,16 +243,14 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
     }
 
     const updateSV = (x: number, y: number) => {
-        const { vHue, vWhite, vBlack } = getTriangleVertices(hsvState.h)
+        const { vHue, vWhite, vBlack } = getTriangleVertices()
         const denom = (vWhite.y - vBlack.y) * (vHue.x - vBlack.x) + (vBlack.x - vWhite.x) * (vHue.y - vBlack.y)
         const a = ((vWhite.y - vBlack.y) * (x - vBlack.x) + (vBlack.x - vWhite.x) * (y - vBlack.y)) / denom
         const b = ((vBlack.y - vHue.y) * (x - vBlack.x) + (vHue.x - vBlack.x) * (y - vBlack.y)) / denom
-        const c = 1 - a - b
 
         // Parametric clamping to triangle
         const a_c = Math.max(0, Math.min(1, a))
         const b_c = Math.max(0, Math.min(1 - a_c, b))
-        const c_c = 1 - a_c - b_c
 
         // Final normalization
         const v_val = a_c + b_c
@@ -286,14 +284,14 @@ export default function PhotoshopColorWheel({ color, onChange }: PhotoshopColorW
             <div className="relative w-full flex justify-center py-2">
                 <canvas
                     ref={canvasRef}
-                    width={wheelSize}
-                    height={wheelSize}
+                    width={WHEEL_SIZE}
+                    height={WHEEL_SIZE}
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
                     className="cursor-crosshair touch-none"
-                    style={{ width: wheelSize, height: wheelSize }}
+                    style={{ width: WHEEL_SIZE, height: WHEEL_SIZE }}
                     role="img"
                     aria-label={`Color wheel. Hue ${Math.round(hsvState.h)} degrees, saturation ${Math.round(hsvState.s)} percent, brightness ${Math.round(hsvState.v)} percent.`}
                 />

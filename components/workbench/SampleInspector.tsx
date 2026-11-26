@@ -14,7 +14,7 @@ import { RecipeSolverErrorFallback } from '@/components/errors/RecipeSolverError
 import MixColorPushMap from '@/components/paint/MixColorPushMap'
 import { createColorCard, createPinnedColor } from '@/lib/colorArtifacts'
 import { PICKED_COLOR_DISCLAIMER } from '@/lib/colorSemantics'
-import { useSampleReadout, type SampleReadoutColor } from '@/lib/hooks/useSampleReadout'
+import { useSampleReadout, type SampleReadoutColor } from '@/hooks/useSampleReadout'
 import { useCanvasStore } from '@/lib/store/useCanvasStore'
 import { usePaintPaletteStore } from '@/lib/store/usePaintPaletteStore'
 import type { ColorCard } from '@/lib/types/colorCard'

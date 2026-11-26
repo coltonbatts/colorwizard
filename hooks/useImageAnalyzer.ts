@@ -137,7 +137,7 @@ export function useImageAnalyzer(
 
         // Track current image source for race condition handling
         // We use the image itself as the key
-        (currentImageRef.current as any) = image;
+        currentImageRef.current = image;
         setIsAnalyzing(true);
         setError(null);
         const sourceWidth = image instanceof HTMLImageElement ? image.width : (image instanceof HTMLCanvasElement ? image.width : 0);

@@ -7,6 +7,11 @@ const nextConfig = {
   // Keep the workbench visually unobstructed while reviewing in development.
   devIndicators: false,
 
+  // Include consolidated hooks/ alongside Next's default lint directories.
+  eslint: {
+    dirs: ['app', 'components', 'hooks', 'lib'],
+  },
+
   // Static HTML export is only for `next build` (Vercel + Tauri `out/`).
   // If `output: 'export'` is enabled during `next dev`, App Router CSS can 404 at
   // `/_next/static/css/app/layout.css`, which leaves the app totally unstyled in

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useUserTier } from '@/lib/hooks/useUserTier';
+import { useUserTier } from '@/hooks/useUserTier';
 import { generateAiSuggestions } from '@/lib/ai/suggestions';
 import FeatureGate from './FeatureGate';
 
