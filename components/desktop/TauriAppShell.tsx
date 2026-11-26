@@ -9,9 +9,9 @@
  *    - Valid key: show ProjectGallery or app content
  * 2. In Browser: pass through children unchanged.
  *
- * Route guard: when running in Tauri, any non-root route (pricing, support,
- * dashboard, settings, trace, color-theory) is immediately redirected to `/`.
- * The main workbench lives at `/`; marketing-only web routes never appear in Pro.
+ * Route guard: when running in Tauri, web-only routes (`/simple`, `/thread`)
+ * redirect to `/`. The desktop shell's project gallery and SQLite persistence
+ * are wired to `CoreWorkbench` (rendered at `/` and `/workbench`), not `SimpleApp`.
  */
 'use client'
 
@@ -56,14 +56,15 @@ import ProjectGallery from '@/components/desktop/ProjectGallery'
 import TauriPersistence from '@/components/desktop/TauriPersistence'
 import LicenseActivation from '@/components/desktop/LicenseActivation'
 
-/** Routes that exist on the web but should not be accessible inside the desktop app */
+/**
+ * Web-only routes that render `SimpleApp`, which is not wired to Tauri's
+ * project gallery or SQLite persistence (`TauriPersistence` expects the
+ * workbench stores rendered at `/` and `/workbench`). Redirect back to `/`
+ * if Tauri ever navigates to one (e.g. during `dev:tauri`).
+ */
 const DESKTOP_BLOCKED_ROUTES = new Set([
-  '/pricing',
-  '/support',
-  '/dashboard',
-  '/settings',
-  '/trace',
-  '/color-theory',
+  '/simple',
+  '/thread',
 ])
 
 const LAST_OPENED_PROJECT_KEY = 'last_opened_project'

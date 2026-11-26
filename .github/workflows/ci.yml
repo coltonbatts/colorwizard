@@ -28,6 +28,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
         
+      - name: Validate paints
+        run: npm run validate:paints
+        
+      - name: Check unreachable files
+        run: npm run unreachable:check
+        
       - name: Test
         run: npm test -- --run
         

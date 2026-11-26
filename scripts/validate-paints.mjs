@@ -32,6 +32,7 @@ function calculateChecksum(filePath) {
  * Validate a single paint data file.
  * @param {string} filePath
  * @param {string | undefined} expectedChecksum
+ * @param {number | undefined} expectedPaintCount
  * @returns {{
  *   file: string,
  *   valid: boolean,
@@ -41,7 +42,7 @@ function calculateChecksum(filePath) {
  *   paintCount?: number,
  * }}
  */
-function validatePaintFile(filePath, expectedChecksum) {
+function validatePaintFile(filePath, expectedChecksum, expectedPaintCount) {
   const result = {
     file: filePath,
     valid: true,
@@ -59,7 +60,7 @@ function validatePaintFile(filePath, expectedChecksum) {
     const actualChecksum = calculateChecksum(filePath);
     result.checksumValid = actualChecksum === expectedChecksum;
     if (!result.checksumValid) {
-      result.warnings.push(`Checksum mismatch: expected ${expectedChecksum}, got ${actualChecksum}`);
+      result.errors.push(`Checksum mismatch: expected ${expectedChecksum}, got ${actualChecksum}`);
     }
   }
 
@@ -107,6 +108,10 @@ function validatePaintFile(filePath, expectedChecksum) {
     result.valid = false;
   } else {
     result.paintCount = obj.paints.length;
+
+    if (expectedPaintCount !== undefined && result.paintCount !== expectedPaintCount) {
+      result.errors.push(`Paint count mismatch: manifest says ${expectedPaintCount}, file has ${result.paintCount}`);
+    }
 
     for (let index = 0; index < obj.paints.length; index += 1) {
       const paint = /** @type {Record<string, unknown>} */ (obj.paints[index]);
@@ -162,14 +167,11 @@ function main() {
 
     console.log(`\n${relativePath}`);
 
-    const result = validatePaintFile(filePath, source.checksum);
+    const result = validatePaintFile(filePath, source.checksum, source.paintCount);
     results.push(result);
 
     if (result.valid) {
       console.log(`   Valid (${result.paintCount} paints)`);
-      if (result.checksumValid === false) {
-        console.log('   Checksum mismatch - consider updating manifest');
-      }
     } else {
       hasErrors = true;
       console.log('   Invalid');
@@ -180,10 +182,6 @@ function main() {
 
     for (const warning of result.warnings) {
       console.log(`   Warning: ${warning}`);
-    }
-
-    if (result.paintCount !== undefined && result.paintCount !== source.paintCount) {
-      console.log(`   Paint count mismatch: manifest says ${source.paintCount}, file has ${result.paintCount}`);
     }
   }
 

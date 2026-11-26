@@ -495,13 +495,21 @@ function readBaseline() {
 }
 
 function writeBaseline(result) {
+  const existing = readBaseline()
+  const files = result.unreachable.map((u) => u.file).sort()
+  const fileSet = new Set(files)
+  const notes =
+    existing.notes && typeof existing.notes === 'object'
+      ? Object.fromEntries(Object.entries(existing.notes).filter(([file]) => fileSet.has(file)))
+      : undefined
   const payload = {
     $comment:
       'Files known to be unreachable from the app entry points and deliberately kept. ' +
       'Regenerate with `npm run unreachable:update`. Adding a file here is a decision to ' +
       'keep dead-but-intentional code; removing one means it got wired up or deleted.',
     generated: new Date().toISOString().slice(0, 10),
-    files: result.unreachable.map((u) => u.file).sort(),
+    files,
+    ...(notes && Object.keys(notes).length > 0 ? { notes } : {}),
   }
   writeFileSync(BASELINE_PATH, JSON.stringify(payload, null, 2) + '\n')
   console.log(`Wrote baseline: ${relative(REPO_ROOT, BASELINE_PATH)} (${payload.files.length} files)`)

@@ -1,6 +1,6 @@
 {
   "$comment": "Files known to be unreachable from the app entry points and deliberately kept. Regenerate with `npm run unreachable:update`. Adding a file here is a decision to keep dead-but-intentional code; removing one means it got wired up or deleted.",
-  "generated": "2026-11-10",
+  "generated": "2026-11-26",
   "files": [
     "lib/camera/useCamera.ts",
     "lib/dmc/index.ts",
@@ -24,9 +24,13 @@
     "lib/paint/plan/rng.ts",
     "lib/paletteGenerator.ts",
     "lib/perspectiveWarp.ts",
+    "lib/spectral/calibration.ts",
     "lib/spectral/pigmentDNA.ts",
     "lib/store/useStore.ts",
     "lib/valueComparison.ts",
     "lib/zebraStripeRenderer.ts"
-  ]
+  ],
+  "notes": {
+    "lib/spectral/calibration.ts": "Intentional WIP kept for physical swatch tinting-strength fitting; covered by lib/spectral/calibration.test.ts."
+  }
 }

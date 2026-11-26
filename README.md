@@ -56,8 +56,10 @@ Open [localhost:3000](http://localhost:3000). No environment variables are requi
 ```sh
 npm run lint
 npm run typecheck
-npm test -- --run
+npm run test:fast          # fast dev loop (skips benchmark.test.ts ratchet suites)
+npm test -- --run          # full suite including benchmark ratchets (CI)
 npm run validate:paints
+npm run unreachable:check
 npm run build
 ```
 

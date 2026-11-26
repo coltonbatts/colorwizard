@@ -10,18 +10,20 @@ npm run dev              # Next.js dev server (localhost:3000)
 npm run dev:tauri        # Dev server wired for Tauri desktop
 
 # Build
-npm run build            # Static export to out/ (runs generate:data prebuild + postbuild cleanup)
+npm run build            # Static export to out/ (runs generate:data prebuild)
 npm run tauri:build      # Build macOS DMG (requires out/ from npm run build)
 
 # Testing
-npm test                 # Run all Vitest tests
+npm run test:fast        # Run unit/component tests without `**/benchmark.test.ts` ratchets (fast dev loop)
+npm test                 # Run all Vitest tests (use `npm test -- --run` for the full CI suite incl. benchmark ratchets)
 npm test -- <path>       # Run specific test file
 npm test -- --watch      # Watch mode (tests are `lib/**/*.test.ts` and `components/**/*.test.ts` only; JSX renders with the automatic runtime, see vitest.config.ts)
 
 # Quality
 npm run lint             # ESLint
 npm run typecheck        # tsc for the app, then tsconfig.test.json for the test files too (CI runs this)
-npm run validate:paints  # Validate paint palette data integrity
+npm run validate:paints  # Validate paint palette data integrity & manifest checksum/counts (CI runs this)
+npm run unreachable:check # Verify no new unreachable source files outside scripts/unreachable-baseline.json (CI runs this)
 npm run benchmark:paint  # Per-color recipe accuracy (see docs/paint-accuracy-audit.md)
 npm run benchmark:plan   # Whole-picture plans (see docs/paint-plan-audit.md); --algo naive|library, --palette core6|zorn, --reference, --photos
 
@@ -33,7 +35,7 @@ npm run generate:data    # Generate static DMC floss + color names JSON to publi
 
 ### Web vs. Desktop Split
 
-The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The routes are `/` (simple app on the web, workbench in Tauri; see "First load" below), `/simple`, `/thread` (the simple app opened on DMC Thread Studio, see below) and `/workbench`. The `postbuild` script (`scripts/clean-desktop-export.mjs`) runs after every `npm run build`, web and desktop alike; the pages it would strip from `out/` (`/pricing`, `/dashboard`, `/settings`, `/color-theory`, `/trace`, `/support`) no longer exist, so today it removes nothing. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app.
+The app deploys from a single Next.js codebase as both a web app (Vercel) and a macOS desktop app (Tauri). `next.config.js` uses `output: 'export'` for static generation. The routes are `/` (simple app on the web, workbench in Tauri; see "First load" below), `/simple`, `/thread` (the simple app opened on DMC Thread Studio, see below) and `/workbench`. Tauri serves `out/` as `frontendDist` — no Node server runs in the desktop app — and `TauriAppShell` redirects the web-only `/simple` and `/thread` routes back to `/`.
 
 **First load (2026-11-22).** Keep the web welcome in the static HTML and the first-load JS small:
 - `app/page.tsx` chooses at build time. `COLORWIZARD_DESKTOP=1` (set by `scripts/build-desktop.mjs`, `scripts/tauri-dev.mjs` and `npm run dev:tauri`) renders `HomeSwitch`, which outputs nothing until mount and then opens the workbench; desktop behaviour is unchanged. Without the flag (Vercel, `npm run build`, `npm run dev`) it renders `WebHome`: `SimpleApp` server-rendered into `out/index.html`, which still switches to the workbench after mount if it finds itself inside Tauri. A desktop build made without the flag would open the simple app first, so keep the flag in every desktop entry point.
