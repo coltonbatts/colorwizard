@@ -74,6 +74,7 @@ npm run tauri:build:dmg
 
 ## Further reading
 
+- [Architecture overview](ARCHITECTURE.md) — routes, hooks, paint/thread engines, persistence, and dev commands
 - [Paint recipe accuracy audit](docs/paint-accuracy-audit.md)
 - [Whole-picture paint planning audit](docs/paint-plan-audit.md)
 - [Painting Process design notes](docs/painting-process.md)
