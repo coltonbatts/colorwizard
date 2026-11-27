@@ -69,22 +69,23 @@
 
 .pigmentStudy {
   width: min(100%, 740px);
-  margin: 0 0 38px;
+  margin: 0 0 6px;
 }
 
-.pigmentImage {
+.welcomeWordmark {
   display: block;
   width: 100%;
   height: auto;
-}
-
-.studyCaption {
-  margin-top: 10px;
-  color: #716a5e;
-  font-family: var(--s-serif);
-  font-size: 17px;
-  font-style: italic;
-  letter-spacing: 0.015em;
+  /* The clip is shot on its own paper with a vignette; fade all four edges into the page's paper
+     so no rectangle shows (two linear fades, intersected). */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 74%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 22%, #000 74%, transparent);
+  mask-composite: intersect;
 }
 
 .wordmark {
@@ -140,12 +141,8 @@
   }
 
   .pigmentStudy {
-    width: calc(100% + 24px);
-    margin-bottom: 32px;
-  }
-
-  .studyCaption {
-    font-size: 15px;
+    width: calc(100% + 48px);
+    margin-bottom: 0;
   }
 
   .tagline {
